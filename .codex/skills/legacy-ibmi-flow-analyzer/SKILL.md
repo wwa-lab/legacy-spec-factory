@@ -198,6 +198,14 @@ Examples:
 
 ## Anti-Hallucination Rules
 
+**Code is ground truth.** See `../../docs/code-as-ground-truth.md`. Every
+edge in this flow must trace to a CALL / CALLP / CALLPRC / SBMJOB / trigger
+registration / MQ config statement in actual source code. Shop documentation,
+prior architecture diagrams, and SME recollection are navigation aids; they
+do not become evidence until tier-1 source confirmation exists. If SME claims
+a flow path the code does not contain, both observations are recorded and a
+TBD blocks the flow until SME reconciles them.
+
 **Do NOT invent:**
 
 - **Calls** not visible in any program's `program-analysis` External Calls section

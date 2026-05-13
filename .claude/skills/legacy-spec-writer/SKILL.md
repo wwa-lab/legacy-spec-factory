@@ -177,6 +177,18 @@ Examples:
 This is the layer where business rules become formal — the temptation to
 "smooth out" gaps is highest. The discipline is the strictest.
 
+**Code is ground truth.** See `../../docs/code-as-ground-truth.md`. A BR
+can only be `approved` when it is grounded in:
+- **Tier 1** (currently-deployed source code) — for what the system does, or
+- **Tier 2** (named, date-stamped SME confirmation) — for why the system
+  does it / what business policy applies
+
+Tier 3 (comments, flow headers, prior specs) and tier 4 (wikis, vendor docs)
+are hypotheses, never evidence. If a candidate BR has only tier 3/4 backing,
+it stays in `needs_sme_review`. The rule-extraction protocol
+(`references/rule-extraction-protocol.md`) enforces this through the
+A/B/C/D classification.
+
 **Do NOT:**
 
 - **Invent business rules** beyond what is suggested by upstream BR seeds

@@ -168,6 +168,19 @@ Examples:
 
 ## Anti-Hallucination Rules
 
+**Code is ground truth.** See `../../docs/code-as-ground-truth.md`.
+View 1 (Operation Flow) and View 2 (System Flow) **necessarily** rely on
+SME and integration documentation (tier 2/3) because business "why" and
+architectural intent live outside code. However, any tier-2 claim that
+contradicts tier-1 evidence (e.g., SME says "we no longer use path X"
+but code still has the path; SME says "every transaction is logged" but
+the log write is conditional in code) **does not override the code**.
+The spec records what code does; the SME claim becomes a TBD requiring
+SME to confirm whether the code is dead, drifted, or correct.
+
+Views 3 and 4 are tier-1-grounded by construction (they aggregate
+code-derived flow / program analyses).
+
 **Do NOT invent:**
 
 - **Business actors** not named by SME (no inferring "the marketing team

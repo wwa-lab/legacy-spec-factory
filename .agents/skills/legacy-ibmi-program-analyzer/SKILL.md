@@ -98,7 +98,7 @@ Examples:
      |    |-- SR110           Currency conversion
      |    |    |-- SR111      Convert transaction amount
      ```
-     If present, capture it verbatim — it is the program author's documented intent.
+     If present, capture it verbatim — it is the program author's documented intent (tier 3 evidence per `../../docs/code-as-ground-truth.md`). Useful as a navigation aid, **not authoritative** when it disagrees with actual EXSR/CALL statements.
    - **Independently derive a call graph from code** by scanning for EXSR / CALLP / CALL / PERFORM / CALLPRC statements and BEGPR-ENDPR / paragraph definitions.
    - **Compare header vs. code-derived graph:**
      - If they match → tag `confirmed_from_code` (with source-level flow header as evidence)
@@ -164,6 +164,14 @@ Examples:
    - Gate: Analysis artifact is ready when every non-TBD behavior has an evidence_strength of `confirmed_from_code`, `strongly_inferred`, or `medium_confidence` (the latter two only when an SME review note is attached)
 
 ## Anti-Hallucination Rules
+
+**Code is ground truth.** See `../../docs/code-as-ground-truth.md` for
+the full principle. When source code disagrees with comments,
+source-level flow headers, shop tool outputs, or SME recollection,
+**the code wins** for behavioral claims. The disagreement itself
+becomes a TBD asking the SME to confirm whether the secondary source
+is stale or the code drifted from intent — but until then, the
+analysis describes what the code actually does.
 
 **Do NOT invent:**
 

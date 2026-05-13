@@ -112,10 +112,17 @@ Examples:
 
 ## Anti-Hallucination Rules
 
+**Code is ground truth.** See `../../docs/code-as-ground-truth.md`. The
+inventory enumerates objects that actually exist in the production
+library — confirmed via current `WRKOBJ` / `DSPOBJD` / source-member
+listings (tier 1). Prior inventory spreadsheets, shop catalogs, wikis,
+and SME recollection are starting points (tier 3/4); every entry must
+be verified against tier 1 before being recorded.
+
 - Do not invent libraries, programs, files, fields, jobs, reports, or calls.
-- If a referenced object is not present, create a TBD instead of filling it in.
+- If a referenced object is not present in current production, create a TBD instead of filling it in (it may be deprecated, renamed, or never have existed).
 - Do not infer business rules from inventory alone.
-- Do not treat source comments as truth without evidence or SME review.
+- Do not treat source comments as truth without tier-1 verification or SME review.
 - Keep `observed`, `inferred`, and `unknown` separate.
 
 ## SME Review Questions
