@@ -42,12 +42,12 @@ Run commands from the repository root. Add model or auth flags required by the
 local environment.
 
 ```bash
-claude -p --permission-mode dontAsk --tools "" --max-budget-usd 0.05 \
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
   "Use /legacy-modernization-orchestrator. User input: I have redacted RPGLE source, DDS, a spool sample, redacted sample transactions, and an SME contact for a CREDIT-CHECK capability. What should I do next? Return only: current stage, recommended next skill, gate check."
 ```
 
 ```bash
-opencode run \
+opencode run -m opencode/minimax-m2.5-free \
   "Use /legacy-modernization-orchestrator. User input: I have redacted RPGLE source, DDS, a spool sample, redacted sample transactions, and an SME contact for a CREDIT-CHECK capability. What should I do next? Return only: current stage, recommended next skill, gate check."
 ```
 
