@@ -135,9 +135,9 @@ the program does without re-reading the source.
 ## When to Stop Using a Manual Fallback
 
 Switch back to the orchestrator-recommended skill the moment it becomes
-implemented (status moves from `Planned` to `Implemented` in
-[README target skill family](../../../README.md#target-skill-family)). The
-manual artifact, if it followed the contract, drops in unchanged.
+implemented (status moves from `Planned` to `Implemented` in repository
+`README.md#target-skill-family`). The manual artifact, if it followed the
+contract, drops in unchanged.
 
 If the artifact does not follow the contract, treat the implemented skill as
 authoritative and regenerate — do not patch the manual artifact to look like

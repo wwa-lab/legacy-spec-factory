@@ -61,5 +61,5 @@ When only forward chain artifacts exist:
 | 9 | `06_quality/` |
 | 10 | `07_forward-sdlc/` (handoff manifest) |
 
-See [README artifact chain](../../../README.md#artifact-chain) for the full
-directory layout.
+See the repository `README.md#artifact-chain` section for the full directory
+layout.

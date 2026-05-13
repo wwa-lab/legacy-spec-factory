@@ -399,10 +399,15 @@ Runtime copies may be synced to:
 .codex/skills/legacy-modernization-orchestrator/SKILL.md
 ```
 
-Use `../../scripts/sync-skills.sh` to create or check runtime copies.
+From the repository root, use `scripts/sync-skills.sh` to create or check
+runtime copies.
 
 ## Version History
 
+- v0.1.1 (2026-05-13): Hardened runtime portability notes by using
+  repository-root-relative paths for cross-repository references so synced
+  adapter copies do not depend on canonical folder depth. Added a planned-skill
+  manual-fallback routing example.
 - v0.1.0 (2026-05-13): Initial entry-point router. Covers all 11 planned
   reverse-chain skills (1 implemented, 10 planned) plus the four hard gates
   and forward SDLC handoff. Includes manual-fallback guidance so the

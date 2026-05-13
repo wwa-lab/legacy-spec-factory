@@ -227,7 +227,9 @@ scripts/sync-skills.sh --target all
 scripts/sync-skills.sh --target all --check
 ```
 
-Track validation in [docs/runtime-matrix.md](docs/runtime-matrix.md).
+Track validation in [docs/runtime-matrix.md](docs/runtime-matrix.md). Use
+[docs/runtime-smoke-tests.md](docs/runtime-smoke-tests.md) before promoting a
+runtime from `synced` to `loaded`, `executed`, or `passed`.
 
 The portability goal is simple: one skill design, multiple execution surfaces.
 Team members can use Codex, Claude Code, or OpenCode without changing the
@@ -313,7 +315,7 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | Planned (entry-point skill) |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | Implemented (v0.1.1, repo-ready; not field-pilot ready) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Planned |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Planned |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | MVP candidate |

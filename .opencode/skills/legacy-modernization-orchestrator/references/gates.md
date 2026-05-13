@@ -60,8 +60,8 @@ or any approval transition on rules / behaviors
 - all linked TBDs resolved or marked non-blocking by SME
 - `review_status` is `approved`
 
-See [docs/evidence-and-knowledge-taxonomy.md](../../../docs/evidence-and-knowledge-taxonomy.md)
-for the canonical taxonomy.
+See repository path `docs/evidence-and-knowledge-taxonomy.md` for the
+canonical taxonomy.
 
 **Block actions:**
 
@@ -89,8 +89,8 @@ strength; they need architecture/product approval recorded in
   redacted
 - modernization decisions are clearly separated from observed behavior
 
-See [docs/forward-sdlc-contract.md](../../../docs/forward-sdlc-contract.md)
-for the full handoff contract.
+See repository path `docs/forward-sdlc-contract.md` for the full handoff
+contract.
 
 **Block actions:**
 
