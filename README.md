@@ -268,6 +268,67 @@ The review focuses on:
 Any skill below 9.0 must iterate. Any skill below 9.5 should not be used in a
 field pilot unless the gap is explicitly accepted by the project owner.
 
+### Current Skill Scores
+
+The scores below are the current repository-facing quality signal. They are
+deliberately conservative: the review gate caps a skill at **9.0** when it has
+not yet passed the runtime smoke protocol in Codex, Claude Code, and OpenCode,
+even if the static review score is higher.
+
+| Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
+| --- | --- | ---: | ---: | --- | --- |
+| `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
+| `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Runtime smoke prompts exist, but three-runtime execution evidence is pending |
+| `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Three-runtime smoke execution has not been recorded |
+| `legacy-ibmi-module-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.0-scorecard.md) | 9.15 | 9.0 | Repo-ready | Runtime smoke pending; output contract and view-reference hardening still needed |
+| `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Runtime smoke pending; schema/template/checker enforceability still needs one pass |
+| `legacy-modernization-orchestrator` | [v0.1.1 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md) | 9.50 for v0.1.1 | 9.0 for current v0.2.0 scope | v0.1.1 field-pilot ready; current expanded scope needs re-smoke | v0.2.0 added flow/module/spec routing and needs refreshed runtime evidence |
+
+For public trust, scorecards should show both the score before caps and the
+score after caps. A 9.0 here should usually be read as "repo-ready and
+structurally strong, but not yet proven across all runtime surfaces."
+
+### What the Scores Are Based On
+
+Each review uses [docs/skill-review-gate.md](docs/skill-review-gate.md) and
+[templates/skill-review-scorecard.md](templates/skill-review-scorecard.md).
+The weighted rubric evaluates:
+
+- purpose and trigger clarity
+- workflow completeness
+- IBM i / AS400 domain correctness
+- evidence and anti-hallucination discipline
+- output contract quality
+- progressive disclosure
+- Codex / Claude Code / OpenCode portability
+- reviewability and testability
+- engineering handoff value
+- maintainability
+
+The reviewer checks these evidence sources:
+
+- **Canonical skill source:** `skills/<skill-name>/SKILL.md`
+- **Bundled skill assets:** `references/`, `templates/`, `examples/`, and
+  `scripts/` under each skill folder
+- **Repository governance docs:** [docs/id-conventions.md](docs/id-conventions.md),
+  [docs/evidence-and-knowledge-taxonomy.md](docs/evidence-and-knowledge-taxonomy.md),
+  [docs/code-as-ground-truth.md](docs/code-as-ground-truth.md), and
+  [docs/data-collection-and-redaction.md](docs/data-collection-and-redaction.md)
+- **Runtime portability evidence:** [scripts/sync-skills.sh](scripts/sync-skills.sh),
+  [docs/runtime-matrix.md](docs/runtime-matrix.md), and
+  [docs/runtime-smoke-tests.md](docs/runtime-smoke-tests.md)
+- **Spec contract evidence:** [schemas/spec.schema.yaml](schemas/spec.schema.yaml),
+  [templates/spec.yaml](templates/spec.yaml),
+  [skills/legacy-spec-writer/templates/spec.yaml](skills/legacy-spec-writer/templates/spec.yaml),
+  and [scripts/check-spec-contract.py](scripts/check-spec-contract.py)
+- **Review records:** concrete scorecards under [docs/reviews](docs/reviews)
+  rather than informal claims in prose
+
+Mandatory stop conditions can cap a skill at 8.0. Runtime portability that is
+synced but not smoke-tested caps a skill at 9.0. A skill should only be called
+field-pilot ready when the scorecard, runtime matrix, and smoke-test evidence
+all agree.
+
 ## Target Skill Family
 
 The skill family is split into two layers:
@@ -593,22 +654,30 @@ documentation patterns, workflow model, and modernization approach.
 
 ## Current Status
 
-This repository is in the design-plus-reference stage. It now contains the
-architecture, governance model, quality gate, scorecard templates, structured
-spec contract, ID conventions, data safety guidance, runtime sync script, and
-the first reference skill:
+This repository is in the MVP hardening stage. It now contains the architecture,
+governance model, quality gate, scorecard templates, structured spec contract,
+ID conventions, data safety guidance, runtime sync script, and the core Legacy
+Spec Factory skill set:
 
+- `skills/legacy-modernization-orchestrator`
 - `skills/legacy-ibmi-inventory`
+- `skills/legacy-ibmi-program-analyzer`
+- `skills/legacy-ibmi-flow-analyzer`
+- `skills/legacy-ibmi-module-analyzer`
+- `skills/legacy-spec-writer`
 
-That skill is currently scored as repo-ready at 9.0 after the runtime cap. Its
-canonical source has been synced to Codex, Claude Code, OpenCode, and `.agents`
-adapter folders, but it still needs runtime load/execution validation before it
-can be considered field-pilot ready.
+The canonical skills have author/copyright notices and are synced to Codex,
+Claude Code, OpenCode, and `.agents` adapter folders. Current review posture:
+repo-ready at 9.0 across the skill family, with one prior 9.5 field-pilot
+scorecard for `legacy-modernization-orchestrator` v0.1.1. The expanded current
+scope still needs runtime smoke execution and a small hardening pass before the
+whole family should be called field-pilot ready.
 
 The next implementation steps are:
 
-1. `legacy-modernization-orchestrator` — the entry-point routing skill, so new
-   users get a guided path through the chain even while most Layer 1/2 skills
-   are still planned.
-2. `legacy-ibmi-program-analyzer` — second Layer 1 extractor.
-3. `legacy-spec-writer` — first Layer 2 synthesizer.
+1. Run the smoke protocol in Codex, Claude Code, and OpenCode for each core
+   skill, then update [docs/runtime-matrix.md](docs/runtime-matrix.md).
+2. Close the remaining hardening items in the module analyzer and spec writer
+   scorecards.
+3. Refresh the scorecards after the smoke runs so field-pilot readiness is
+   backed by evidence, not just intent.
