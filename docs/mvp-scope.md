@@ -14,9 +14,12 @@ Target:
 
 Minimum skills:
 
-1. `ibm-i-legacy-inventory`
-2. `ibm-i-program-analyzer`
-3. `legacy-spec-writer`
+1. `legacy-ibmi-inventory` (Layer 1, platform-specific)
+2. `legacy-ibmi-program-analyzer` (Layer 1, platform-specific)
+3. `legacy-spec-writer` (Layer 2, platform-agnostic)
+
+A fourth entry-point skill, `legacy-modernization-orchestrator`, sits above
+these to guide users through the chain.
 
 ## Success Criteria
 

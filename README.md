@@ -268,22 +268,57 @@ field pilot unless the gap is explicitly accepted by the project owner.
 
 ## Target Skill Family
 
-The intended implementation is a family of agent skills and deterministic
-analysis tools.
+The skill family is split into two layers:
+
+- **Layer 1 — Platform-specific extraction.** Each Layer 1 skill targets one
+  legacy platform (IBM i first; COBOL/JCL planned). Skills here read source
+  code and runtime artifacts whose syntax and idioms are platform-bound.
+- **Layer 2 — Platform-agnostic synthesis.** Layer 2 skills consume the
+  structured outputs of Layer 1 and never read raw legacy source. Adding a
+  new legacy platform means adding a new Layer 1 family; Layer 2 is reused.
+
+Naming convention:
+
+```
+legacy-<platform>-<extractor>    # Layer 1, e.g. legacy-ibmi-inventory
+legacy-<synthesizer>             # Layer 2, e.g. legacy-spec-writer
+```
+
+The `legacy-` prefix distinguishes this reverse chain from the forward chain
+at [`wwa-lab/build-agent-skill`](https://github.com/wwa-lab/build-agent-skill),
+which uses `ibm-i-*`.
+
+### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `ibm-i-legacy-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Reference implementation |
-| `ibm-i-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Planned |
-| `ibm-i-crud-matrix-analyzer` | Map programs to physical/logical files and DB2 operations | `crud-matrix.md` | Planned |
-| `ibm-i-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Planned |
-| `ibm-i-program-analyzer` | Explain RPGLE/CLLE/COBOL logic, control flow, and data flow | `program-analysis.md` | MVP candidate |
-| `ibm-i-runtime-evidence-miner` | Mine job logs, spool files, transaction samples, and test data | `runtime-evidence.jsonl` | Planned |
-| `ibm-i-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Planned |
-| `ibm-i-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Planned |
+| `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Reference implementation |
+| `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | MVP candidate |
+| `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Planned |
+| `legacy-ibmi-crud-matrix-analyzer` | Map programs to physical/logical files and DB2 operations | `crud-matrix.md` | Planned |
+| `legacy-ibmi-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Planned |
+| `legacy-ibmi-runtime-evidence-miner` | Mine job logs, spool files, transaction samples, and test data | `runtime-evidence.jsonl` | Planned |
+
+### Layer 1 — Other platforms (`legacy-<platform>-*`)
+
+| Family | Status |
+| --- | --- |
+| `legacy-cobol-*` (z/OS COBOL, JCL, copybooks) | Future |
+| `legacy-mainframe-*` (CICS, DB2, IMS) | Future |
+
+These are not yet planned in detail; the slot is reserved so that Layer 2
+contracts remain platform-agnostic from day one.
+
+### Layer 2 — Platform-agnostic synthesis (`legacy-*`)
+
+| Skill | Purpose | Primary Output | Status |
+| --- | --- | --- | --- |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | Planned (entry-point skill) |
+| `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Planned |
+| `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Planned |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | MVP candidate |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
-| `equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
+| `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
 
 ## Artifact Chain
 
@@ -483,8 +518,9 @@ The first milestone should be narrower than the full target pipeline. See
 Minimum MVP:
 
 - one business capability
-- three skills: `ibm-i-legacy-inventory`, `ibm-i-program-analyzer`, and
-  `legacy-spec-writer`
+- three skills: `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, and
+  `legacy-spec-writer`, with `legacy-modernization-orchestrator` as the entry
+  point
 - one reviewed `spec.yaml` / `spec.md`
 - one SME approval pass
 
@@ -560,12 +596,17 @@ architecture, governance model, quality gate, scorecard templates, structured
 spec contract, ID conventions, data safety guidance, runtime sync script, and
 the first reference skill:
 
-- `skills/ibm-i-legacy-inventory`
+- `skills/legacy-ibmi-inventory`
 
 That skill is currently scored as repo-ready at 9.0 after the runtime cap. Its
 canonical source has been synced to Codex, Claude Code, OpenCode, and `.agents`
 adapter folders, but it still needs runtime load/execution validation before it
 can be considered field-pilot ready.
 
-The next implementation step is to generate and review the next MVP skill,
-`ibm-i-program-analyzer`, against the 9.0 / 9.5 review gate.
+The next implementation steps are:
+
+1. `legacy-modernization-orchestrator` — the entry-point routing skill, so new
+   users get a guided path through the chain even while most Layer 1/2 skills
+   are still planned.
+2. `legacy-ibmi-program-analyzer` — second Layer 1 extractor.
+3. `legacy-spec-writer` — first Layer 2 synthesizer.
