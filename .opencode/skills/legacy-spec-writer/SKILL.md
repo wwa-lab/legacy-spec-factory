@@ -1,0 +1,242 @@
+---
+name: legacy-spec-writer
+description: Produce evidence-backed `spec.yaml` and `spec.md` artifacts from approved module + flow + program analyses. One spec per business capability (CAP-*). Layer 2 (platform-agnostic) skill — sits at the boundary between reverse engineering and forward SDLC, producing the contract that `build-agent-skill` consumes. Implements `schemas/spec.schema.yaml`.
+---
+
+<!--
+Legacy Spec Factory
+Copyright 2026 Leo L Zhang
+
+Original author: Leo L Zhang
+License: Apache License 2.0
+
+This skill is part of the Legacy Spec Factory project.
+Retain this notice in substantial copies or derived versions.
+-->
+
+# Legacy Spec Writer
+
+## Purpose
+
+Synthesize one **business capability spec** from approved upstream
+analyses. The output is a structured, evidence-backed `spec.yaml` (plus a
+human-readable `spec.md`) that the forward SDLC (`build-agent-skill`)
+can consume to generate target-platform code.
+
+This skill is the **first platform-agnostic layer**. It does not look at
+IBM i source code directly — only at the analyses produced by
+`legacy-ibmi-module-analyzer`, `legacy-ibmi-flow-analyzer`, and
+`legacy-ibmi-program-analyzer`.
+
+One capability = one `spec.yaml`. A module typically produces multiple
+specs (one per capability identified in the module overview's "Capability
+Seeds" section).
+
+## Inputs
+
+Accept:
+
+- **Approved module analysis** (`02_modules/<MODULE-SLUG>/` with all four
+  views at `approved` or `approved_with_non_blocking_tbd`)
+- **All approved flow analyses** referenced by that module
+- **All approved program analyses** referenced by those flows
+- **All approved inventory** (`01_inventory/inventory.yaml`)
+- **Capability seed** — one specific `CAP-*` from the module overview;
+  the SME has confirmed this is a distinct capability worth specifying
+- **Target platform hint** (optional) — Java/Spring, Java/Quarkus,
+  serverless, etc. Used to inform `target_platform` and `modernization_decisions`
+- **SME availability** — capability owner who will approve `business_rules`,
+  `acceptance_criteria`, and resolve open `TBD-*`
+
+Stop and require clarification if:
+
+- Module status is not `approved` or `approved_with_non_blocking_tbd` →
+  route to `legacy-ibmi-module-analyzer`
+- The chosen capability seed has unresolved blocking TBDs in the module
+  analysis
+- No SME owns the capability (without SME, `business_rules` cannot move
+  beyond `draft`)
+- Target platform is completely unspecified and decisions cannot be
+  framed → request platform hint
+
+## Output Contract
+
+Produce a directory `03_specs/<CAPABILITY-SLUG>/`:
+
+```
+03_specs/<CAPABILITY-SLUG>/
+├── spec.yaml              ← canonical machine-readable contract (schemas/spec.schema.yaml)
+├── spec.md                ← human-readable rendering of the same content
+├── spec-review.md         ← SME review checklist and sign-off page
+└── traceability.md        ← cross-reference report (BR→EV→AC→TC)
+```
+
+Use:
+
+- `../../schemas/spec.schema.yaml` as the authoritative format
+- `templates/spec.yaml`, `templates/spec.md` as starting structure
+- `references/synthesis-rules.md` for how to derive each field
+- `references/rule-extraction-protocol.md` for promoting capability seeds
+  to approved `BR-*` (the most delicate step)
+- `references/anti-hallucination.md` for what the writer must refuse to invent
+
+Follow:
+
+- `../../docs/id-conventions.md` for stable IDs (`CAP-*`, `BR-*`, `BEH-*`,
+  `DEC-*`, `IN-*`, `OUT-*`, `EX-*`, `STEP-*`, `AC-*`, `TC-*`, `TBD-*`)
+- `../../docs/evidence-and-knowledge-taxonomy.md` for the
+  knowledge-type / evidence-strength model
+- `../../docs/forward-sdlc-contract.md` for the handoff contract to
+  `build-agent-skill`
+
+Examples:
+
+- `examples/spec-positive/` — one approved capability spec (Credit Limit
+  Enforcement, derived from CARD-AUTH module)
+
+## Workflow
+
+1. **Confirm Capability Scope**
+   - Take one `CAP-*` from the module overview's Capability Seeds
+   - Validate with SME: is this a distinct capability worth its own spec?
+   - Assign `spec_id` and confirm `capability.{id,name,slug,owner}`
+   - Define `scope.in_scope` and `scope.out_of_scope` from SME
+
+2. **Collect Evidence Bundle**
+   - Gather every `EV-*` referenced by any flow / program analysis that
+     touches this capability
+   - Populate `evidence[]` array — every `EV-*` becomes one row
+   - Confirm `sensitive` flag is set; if any `sensitive: unknown` exists,
+     stop and request redaction review
+
+3. **Lift Observed Behaviors (BEH-*)**
+   - From flow analyses' control flow + branch points + error propagation
+     (factual statements about what the legacy system does)
+   - Each BEH must trace to ≥1 EV-*
+   - These are *factual* — what the system does, not why
+
+4. **Lift Business Rules (BR-*)**
+   - From module analysis's BR-* seeds (View 1) + cross-checked against
+     flow analyses' SEED-* + SME confirmation
+   - This is the most delicate step — see `references/rule-extraction-protocol.md`
+   - Each BR must:
+     - Be confirmed by SME (or explicitly marked `needs_sme_review`)
+     - Reference ≥1 BEH it abstracts
+     - Reference ≥1 EV that supports it
+   - **A BR with no SME confirmation cannot be `approved` — only `draft`**
+
+5. **Record Modernization Decisions (DEC-*)**
+   - For each significant choice the target system must make (e.g.,
+     "store transaction log in append-only table vs event store"),
+     record a DEC-*
+   - Decisions must have a `rationale` tied to BR or BEH or to
+     `target_platform` constraints
+   - Decisions are *forward-looking* — they tell `build-agent-skill` how
+     to implement, not what the legacy does
+
+6. **Define Data Model**
+   - For each target entity, map to legacy `OBJ-*` (the originating PF/LF)
+   - For each entity field, map to legacy field name + target type
+   - Use the module's View 4 (Data Flow) as primary input
+   - Capture lifecycle hints (immutable / mutable / append-only)
+
+7. **Define Process Flow, Inputs, Outputs, Exceptions**
+   - `process_flow.steps[]` from the relevant flow analysis Sequence Diagram
+   - `inputs[]` from flow analysis Trigger Context + UI surfaces' input fields
+   - `outputs[]` from flow analysis exit nodes + Cross-Program Data Flow's
+     out-of-band consumers
+   - `exceptions[]` from flow analysis Error Propagation + program analyses'
+     error handling
+
+8. **Write Acceptance Criteria (AC-*)**
+   - For each `approved` BR, produce at least one AC
+   - Prefer Gherkin (`given/when/then`) when behavior is procedural
+   - Use checklist when behavior is declarative
+   - `validates: [BR-*]` is mandatory
+   - SME must approve each AC
+
+9. **Optional: Sketch Test Cases (TC-*)**
+   - Only if the spec is moving toward field pilot
+   - Golden-master and equivalence tests defer to future skills; the spec
+     writer may sketch identifiers and intent only
+
+10. **Build Traceability**
+    - Generate `traceability.md` with the full chain:
+      `BR-* → EV-* → AC-* (→ TC-* if defined)`
+    - Verify every approved BR has at least one supporting EV and one AC
+    - Verify every AC traces to an approved BR
+
+11. **Prepare for SME Approval**
+    - Mark `status: in_review`
+    - Capture open `TBD-*` with `blocking` status
+    - Generate `spec-review.md` checklist
+    - The capability owner SME approves; the spec is then `status: approved`
+
+## Anti-Hallucination Rules
+
+This is the layer where business rules become formal — the temptation to
+"smooth out" gaps is highest. The discipline is the strictest.
+
+**Do NOT:**
+
+- **Invent business rules** beyond what is suggested by upstream BR seeds
+  *and* confirmed by SME
+- **Promote a "weak" BR to `approved`** without explicit SME approval
+- **Generate ACs for unapproved BRs** — every AC must validate an approved BR
+- **Include in the spec any fact** that doesn't trace to an EV-* in `evidence[]`
+- **Specify target architecture details** that have no rationale tied to BRs,
+  BEHs, or platform constraints
+- **Fill data-model field meanings** from field names alone (e.g., a field
+  called `STATUS` does not imply the spec should say "status is one of
+  ACTIVE, INACTIVE, CLOSED" without evidence)
+- **Pretend ambiguity is resolved** by picking one interpretation when SME
+  hasn't confirmed → mark as TBD
+
+**Instead:**
+
+- If a BR seed seems important but SME hasn't confirmed → BR with
+  `review_status: needs_sme_review`, do not generate AC for it
+- If `target_platform` is hinted but not committed → DEC entries are
+  `draft`; rationale acknowledges uncertainty
+- If a field's meaning is unclear → entity field carries a TBD on
+  semantics; type is best-effort with `needs_sme_review` evidence
+
+**The contract with `build-agent-skill`:**
+
+- Every `approved` BR has ≥1 AC → testable
+- Every `approved` AC has explicit `validates: [BR]` → traceable
+- Every `approved` DEC has explicit rationale → reviewable
+- Every TBD is explicit → no silent gaps
+
+If a spec arrives at `build-agent-skill` with silent gaps, the modernization
+will encode the gaps as defects. The whole skill family exists to prevent
+this.
+
+## SME Review Questions
+
+The capability owner SME must validate:
+
+- [ ] Capability name, slug, scope reflect business reality
+- [ ] All BR-* are accurate; no invented rules
+- [ ] All BEH-* match observed legacy behavior
+- [ ] All DEC-* rationale make sense to business + tech
+- [ ] Data model fields map correctly to legacy
+- [ ] Process flow matches actual legacy sequence
+- [ ] Inputs / Outputs / Exceptions are complete
+- [ ] Acceptance criteria are testable and meaningful
+- [ ] Open TBDs are tracked with named owners
+- [ ] No silent gap — spec can be implemented without re-interrogating SME
+
+## Runtime Portability
+
+Canonical: `skills/legacy-spec-writer/SKILL.md`
+
+Synced to all four runtime adapters.
+
+## Version History
+
+- v0.1.0 (2026-05-14): Initial release
+  - 11-step workflow producing spec.yaml + spec.md + spec-review.md + traceability.md
+  - Strict anti-hallucination at the rule-promotion step
+  - Forward-handoff gate with `build-agent-skill`
+  - Example: Credit Limit Enforcement capability from CARD-AUTH module
