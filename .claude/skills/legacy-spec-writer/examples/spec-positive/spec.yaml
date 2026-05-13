@@ -190,31 +190,43 @@ data_model:
           type: string  # UUID
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
         - name: customerId
           legacy_field: CustID
           type: string
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
         - name: requestedAmount
           legacy_field: AuthAmt
           type: BigDecimal
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
         - name: decision
           legacy_field: Decision
           type: enum {APPROVED, DECLINED}
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
         - name: declineReason
           legacy_field: DeclineRsn
           type: string (nullable)
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
         - name: decisionTimestamp
           legacy_field: DecTimestamp
           type: Instant
           evidence_ids:
             - EV-CARD-AUTH-CREDLIM-002
+          evidence_strength: confirmed_from_code
+          review_status: approved
 
 process_flow:
   steps:

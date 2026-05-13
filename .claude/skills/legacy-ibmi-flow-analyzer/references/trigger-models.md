@@ -173,6 +173,11 @@ INSERT / UPDATE / DELETE / READ event occurs.
 - What the trigger does (writes audit, validates, propagates)
 - Whether the trigger can veto the operation (signals an error to caller)
 
+**Evidence requirements** (see `output-contract.md` Evidence Taxonomy):
+- **Type 1 (Source statement):** ADDPFTRG command in CL, or SQL CREATE TRIGGER statement
+- **Type 2 (Config export):** WRKPFTRG listing or trigger configuration export showing file + event + program
+- **Type 4 (SME confirmation):** Business purpose (audit / validation / replication), failure behavior, implicit vs. explicit trigger knowledge
+
 **SME questions:**
 - Why does this trigger exist? (audit / business rule / replication)
 - Who knows it exists? (often invisible to application developers)
@@ -190,14 +195,22 @@ INSERT / UPDATE / DELETE / READ event occurs.
 **Characteristics:**
 - Time-driven (cron-like): daily 18:00, weekday 09:00, last working day
   of month, etc.
-- May submit a CL (which then becomes a Batch Job flow) — chain through
-  to the underlying batch flow
+- Usually submits a batch job via `SBMJOB`, or directly `CALL`s a program
+- When a scheduler entry submits a CL via `SBMJOB`, the flow is still
+  **one flow** with **one primary trigger (the scheduler entry)**, not two
+  separate flows. The `SBMJOB` is the submission mechanism; the CL program(s)
+  are nodes in the same flow.
 
 **Capture in flow analysis:**
 - Scheduler entry ID
 - Frequency (`SCDDATE`, `SCDDAY`, `SCDTIME`, `FRQ`)
 - Submitted command (`CMD()` — usually `SBMJOB` or `CALL`)
-- The downstream batch / API flow this triggers
+- If `SBMJOB`: the CL program name and parameters; continue analysis into the batch program chain
+- If direct `CALL`: the program name and parameters
+
+**Evidence requirements** (see `output-contract.md` Evidence Taxonomy):
+- **Type 2 (Config export):** WRKJOBSCDE entry listing with frequency, command, and parameters
+- **Type 4 (SME confirmation):** Business purpose, SLA (cut-off time), downstream dependencies, failure recovery procedure
 
 **SME questions:**
 - What does this job do for the business?
@@ -227,6 +240,10 @@ data queue from another partition.
 - Parameter / payload contract (from copybook, JSON schema, fixed-width
   template)
 - Source system (Visa, Mastercard, channel system, partner bank)
+
+**Evidence requirements** (see `output-contract.md` Evidence Taxonomy):
+- **Type 3 (Integration contract):** MQ queue configuration, API gateway route definition, DDM registration, FTP drop location documented in system-integration agreement
+- **Type 4 (SME confirmation):** Upstream system name + organization, SLA and throughput expectations, retry semantics, idempotency and exactly-once delivery guarantees
 
 **SME questions:**
 - Who is the upstream system? (name + integration agreement)

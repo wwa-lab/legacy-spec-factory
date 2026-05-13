@@ -70,11 +70,10 @@ Produce a directory `02_modules/<MODULE-SLUG>/`:
 
 Use:
 
-- `templates/module-overview.md`, `templates/view-*.md` as scaffolding
-- `references/output-contract.md` for each view's required fields
+- `templates/module-overview.md` and `templates/view-template.md` as scaffolding
+- `references/output-contract.md` for the file format and required fields for
+  module-overview and all four views
 - `references/synthesis-rules.md` for how to aggregate across flows
-- `references/view-1-operation-flow.md` through `references/view-4-data-flow.md`
-  for per-view methodology
 - `../../docs/module-analysis-model.md` for the canonical model
 
 Follow:

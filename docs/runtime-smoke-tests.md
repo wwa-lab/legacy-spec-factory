@@ -365,6 +365,251 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the incomplete-source prompt above into
 the same commands.
 
+### `legacy-ibmi-flow-analyzer`
+
+#### Scenario (Positive — Scheduler + Batch Job Flow)
+
+```text
+Use /legacy-ibmi-flow-analyzer.
+
+User input:
+I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits
+a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry,
+orchestrator), RECON01R (validates transactions), RECON02R (builds exception
+report), RECONSQL (final cross-check with GL ledger via SQL). All four program
+analyses are approved. Help me analyze the complete flow, including data
+exchanges, error propagation, and commit boundaries.
+
+Return the flow analysis with all 9 sections populated.
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- **Metadata section:** Flow ID (FLOW-NIGHTLY-RECON-001 or similar), Trigger Model correctly identified as Scheduler or Scheduler + SBMJOB, all 4 nodes listed
+- **Trigger Context:** Scheduler entry name, frequency (daily 22:00), SBMJOB command details, SLA (must complete before 06:00)
+- **Sequence Diagram:** Scheduler entry → SBMJOB → 4 nodes in sequence, all edges traced
+- **Nodes section:** 4 programs with roles (orchestrator, worker, reporter, data-access), all marked as approved program-analyses
+- **Edges section:** 5 edges including scheduler-fire edge and CALL edges between nodes, all with call sites and conditions
+- **Cross-Program Data Flow:** RUNDATE parameter, shared file TXNLOGPF, shared file GLPOSTPF, spool RECONPRT, DTAQ message, data area with completion flag
+- **Branch Points:** RC-driven conditional branches in orchestrator CL program
+- **Error Propagation & Commit Boundaries:** 3 commit boundaries clearly identified, vulnerable windows documented
+- **Business Capability Seeds:** SEED-* IDs (not BR-*) for candidate rules like "all transactions for a run date must be reconciled before GL consolidation"
+- **TBDs & Review Checklist:** All blocking TBDs resolved; SME review checklist complete; status = draft or approved (not blocked)
+- No files are created or edited
+
+#### Scenario (Negative — Missing Program Analysis)
+
+```text
+Use /legacy-ibmi-flow-analyzer.
+
+User input:
+I have a flow definition for WEB-ORDER. The entry point is an MQ queue
+WEBORDER.IN. The flow calls WEBORDIN → ORDVAL → ORDPRICE → ORDPERSIST → WEBORDOUT.
+Program analyses exist for WEBORDIN, ORDVAL, and ORDPERSIST, but ORDPRICE and
+WEBORDOUT have no program-analysis yet. What should I do?
+
+Return the flow analysis output showing the correct stop/blocking behavior.
+```
+
+#### Pass Criteria (Negative)
+
+- **Status:** blocked_pending_source (not draft; analysis cannot proceed)
+- **Does NOT complete** full 9-section analysis
+- **Creates blocking TBDs** for each missing program-analysis:
+  - TBD-WEB-ORDER-001: ORDPRICE lacks approved program-analysis; routes to legacy-ibmi-program-analyzer
+  - TBD-WEB-ORDER-002: WEBORDOUT lacks approved program-analysis; routes to legacy-ibmi-program-analyzer
+- **Sequence Diagram:** Shows 5 nodes; marks 2 as ❌ MISSING
+- **Refuses to guess** ORDPRICE or WEBORDOUT behavior
+- **Nodes table:** Shows all 5; marks ORDPRICE and WEBORDOUT with MISSING status
+- **TBDs section:** Clearly distinguishes `blocking: pending_source` from non-blocking TBDs
+- **Routing decision:** Routes to program-analyzer, not to next skill
+- No files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+```
+
+For the negative scenario, substitute the missing-program-analysis prompt above into
+the same commands.
+
+### `legacy-ibmi-module-analyzer`
+
+#### Scenario (Positive — Complete Module)
+
+```text
+Use /legacy-ibmi-module-analyzer.
+
+User input:
+I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH),
+approved program analyses for all programs, an approved inventory with the
+CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner).
+Module slug is CARD-AUTH, business name is "Card Authorization". Help me
+synthesize the four-view module analysis.
+
+Return the module-overview.md and all four views (01-operation-flow.md through
+04-data-flow.md) following the output contract format.
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- **Module-overview.md:** MODULE-CARD-AUTH-001 ID, Scope Statement, In-scope Flows list with FLOW-* links, View Index table showing all 4 views with status, at least one CAP-* capability seed, Module Review Checklist with cross-view consistency checks, no blocking TBDs (or only non-blocking TBDs)
+- **01-operation-flow.md:** Business Scope, Business Actors (ACTOR-*), Business Events (EVENT-*), BAU Rhythm, Manual Intervention Points, Exception Lifecycle, Business Rule Seeds (BR-*), evidence linking to SME or BAU source
+- **02-system-flow.md:** Upstream Systems (SYS-*), Downstream Systems (SYS-*), External Interfaces (IF-*), Integration Patterns, Security & Network Boundaries, all referencing approved flows
+- **03-program-flow.md:** Flow Inventory (all 3 flows), Cross-Flow Dependencies (TXNLOGPF shared file), Shared Sub-Programs (CREDITCHK), Call Topology, evidence from approved program/flow analyses
+- **04-data-flow.md:** Data Objects (with OBJ-* and Coupling Score), Lifecycle per object, Coupling Hotspots, DB Table Relationships, Cross-Module Dependencies, evidence from program analyses
+- **Status values:** All views marked as `draft` or `approved_with_non_blocking_tbd` (no blocked status; all required evidence present)
+- **All four views present:** No view is marked blocked or missing
+- **Evidence tagged:** All major actors, systems, programs, data objects, and lifecycle phases link to EV-*, OBJ-*, FLOW-*, or SME confirmation
+- No files are created or edited
+
+#### Scenario (Negative — Missing Flow Analysis)
+
+```text
+Use /legacy-ibmi-module-analyzer.
+
+User input:
+I have approved flow analyses for ONUS-AUTH and MANUAL-AUTH, but NIGHTLY-RECON
+has no approved flow analysis yet. Module scope includes all three flows.
+Inventory is approved. SME BAU notes are complete. What should the output look like?
+
+Return only:
+- the module-overview.md
+- the blocked status and reason
+```
+
+#### Pass Criteria (Negative)
+
+- **Status:** blocked_pending_source (one required flow analysis is missing)
+- **Module-overview.md:** Identifies MODULE-CARD-AUTH-001 and the three flows; shows FLOW-NIGHTLY-RECON marked as MISSING
+- **Does NOT produce** any of the four views
+- **Creates blocking TBD:** TBD-CARD-AUTH-001: FLOW-NIGHTLY-RECON lacks approved flow-analysis; routes to legacy-ibmi-flow-analyzer
+- **View Index:** Shows all 4 views but marks View 1–4 as blocked or incomplete due to missing flow
+- **Refuses to synthesize** views without complete flow and program evidence
+- No files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+```
+
+For the negative scenario, substitute the missing-flow-analysis prompt above into
+the same commands.
+
+### `legacy-spec-writer`
+
+#### Scenario (Positive — All Analyses Approved)
+
+```text
+Use /legacy-spec-writer.
+
+User input:
+I have:
+- Approved module analysis (CARD-AUTH module, all four views approved)
+- Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved)
+- Approved program analyses for all 8 programs referenced by those flows
+- Approved inventory with CARD-AUTH scope confirmed
+- SME owner: Anna Chen (capability owner)
+- Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT
+- Target platform: Java 21 + Spring Boot 3 + PostgreSQL
+
+Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced.
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- **spec.yaml structure:** SPEC-CREDIT-LIMIT-ENFORCEMENT-001 ID, CAP-CREDIT-LIMIT-ENFORCEMENT ownership, all top-level keys from schemas/spec.schema.yaml
+- **Capability & scope:** capability.owner = Anna Chen, scope.in_scope lists credit limit validation, scope.out_of_scope excludes card issuance
+- **Evidence section:** All EV-* IDs referenced by the three flows and eight programs are listed with evidence_strength (confirmed_from_code / confirmed_by_sme)
+- **Observed Behaviors (BEH-*):** At least 3 behaviors (e.g., "validates transaction against customer credit limit", "propagates hold decision to downstream") each tracing to ≥1 EV-*
+- **Business Rules (BR-*):** At least 2 business rules lifted from module View 1 seeds, each with review_status (draft or approved based on SME confirmation), linked to supporting BEH-*
+- **Modernization Decisions (DEC-*):** At least 1 decision (e.g., "store transaction audit in append-only table"), referencing BR-* or target_platform
+- **Data model:** Target entities (e.g., CreditTransaction, CustomerCreditLimit) mapped to legacy OBJ-* with field mappings
+- **Process flow & I/O:** process_flow.steps from the ONUS-AUTH flow analysis, inputs (e.g., transaction), outputs (e.g., hold_decision)
+- **Acceptance criteria:** AC-* items validating approved BRs; no ACs for draft or needs_sme_review BRs
+- **Open questions:** No blocking TBDs for a complete spec; status = draft or in_review (not blocked)
+- **spec.md outline:** Human-readable rendering of the same content
+- **References to spec-review.md and traceability.md:** Output acknowledges these will be produced
+- No files are created or edited
+
+#### Scenario (Negative — Incomplete Upstream Analysis)
+
+```text
+Use /legacy-spec-writer.
+
+User input:
+I have approved module analysis (CARD-AUTH), approved flow for ONUS-AUTH, but
+NIGHTLY-RECON flow analysis is still in draft status. I also have approved
+program analyses for 7 of the 8 programs. Inventory is approved, SME is Anna Chen.
+Can I produce the spec anyway?
+
+Return:
+- the blocking TBD(s) and reason
+- where the analysis is incomplete
+```
+
+#### Pass Criteria (Negative)
+
+- **Status:** blocked_pending_source (incomplete upstream analyses block spec synthesis)
+- **Does NOT produce** a complete spec.yaml
+- **Creates blocking TBDs:**
+  - TBD-CREDIT-LIMIT-ENFORCEMENT-001: NIGHTLY-RECON flow analysis is draft; needs approval (routes to legacy-ibmi-flow-analyzer)
+  - TBD-CREDIT-LIMIT-ENFORCEMENT-002: One program analysis missing or draft (routes to legacy-ibmi-program-analyzer)
+- **Refuses to invent** missing behavior or business rules from incomplete analyses
+- **Identifies what IS available:** Lists ONUS-AUTH, 7 complete programs, and notes what blocks proceeding
+- **Routing:** Routes to flow-analyzer for NIGHTLY-RECON and program-analyzer for the 8th program
+- No files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+```
+
+For the negative scenario, substitute the incomplete-upstream-analysis prompt above into
+the same commands.
+
 ## Pass Example — `legacy-modernization-orchestrator` v0.1.1
 
 | Runtime | Model | Discovery | Trigger | Outcome |

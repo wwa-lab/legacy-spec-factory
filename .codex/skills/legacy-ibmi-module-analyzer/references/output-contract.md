@@ -19,7 +19,12 @@ document defines the *file format*; that document defines the *intent*.
 - **Scope Statement:** [one paragraph from SME]
 - **Module Owner:** [SME name / role]
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]
-- **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | rejected
+- **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | 
+  blocked_pending_source | blocked_pending_sme | rejected
+
+**Blocked Status Values:**
+- `blocked_pending_source`: One or more required flow analyses or program analyses are missing or incomplete
+- `blocked_pending_sme`: Module boundary, scope, or critical SME input (e.g., BAU notes) is missing
 
 ## View Index
 | View | File | Status | Reviewer |
@@ -59,7 +64,7 @@ resolves each into one or more `spec.yaml` artifacts.)
 ```markdown
 # View 1: Operation Flow / Business Background — [Module Name]
 
-## Status: draft | needs_sme_review | approved | ...
+## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_sme | rejected
 
 ## Business Scope
 [Paragraph from SME describing what the module does for the business.]
@@ -109,11 +114,26 @@ through to resolution. Often a small flowchart.]
 ## TBDs
 (Group by blocking status, with the SME each TBD requires.)
 
-## Review Checklist
-[per-view checklist]
+| TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
+| --- | --- | --- | --- | --- | --- |
+| TBD-CARD-AUTH-001 | pending_source | BAU notes for peak hours | Anna Chen | (awaiting input) | no |
+
+## Review Checklist — View 1
+
+Per the SME Review Questions in SKILL.md, the reviewer should verify:
+
+- [ ] **Business actors complete?** All roles interacting with the module are named; no inferred actors (e.g., "probably marketing uses this")
+- [ ] **BAU rhythm correct?** Cut-off times, peak hours, seasonal patterns match operational reality
+- [ ] **Exception procedures accurate?** Manual intervention points and escalation paths match how the team actually handles failures
+- [ ] **Business-rule seeds reasonable?** Seeds are phrased as open questions, not invented rules
+- [ ] **Evidence linked?** Every major actor, event, BAU cadence, and intervention links to SME confirmation or source document
+- [ ] **No code-hallucinations?** No procedures, actors, or timing derived solely from program names / table names
 
 ## SME Sign-Off
-[reviewer / date / decision]
+- **Reviewer:** ____
+- **Review Date:** ____
+- **Decision:** ____
+- **Notes:** ____
 ```
 
 ---
@@ -123,7 +143,7 @@ through to resolution. Often a small flowchart.]
 ```markdown
 # View 2: System Flow — [Module Name]
 
-## Status: ...
+## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme | rejected
 
 ## Upstream Systems
 | System ID | Name | Type | Integration Pattern | Flow(s) | Evidence |
@@ -153,8 +173,27 @@ through to resolution. Often a small flowchart.]
 ## Security & Network Boundaries
 [Diagram or text describing DMZ, partition boundaries, where TLS terminates, etc.]
 
-## TBDs / Checklist / Sign-Off
-[as for View 1]
+## TBDs
+
+| TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
+| --- | --- | --- | --- | --- | --- |
+| TBD-CARD-AUTH-101 | pending_source | GL system schema contract | David Park | (awaiting integration spec) | yes |
+
+## Review Checklist — View 2
+
+Per the SME Review Questions in SKILL.md, the reviewer should verify:
+
+- [ ] **All upstream/downstream systems listed?** Every external counterparty and internal system boundary is named
+- [ ] **Integration patterns correct?** Sync vs. async, retry logic, and SLA enforcement match actual deployment
+- [ ] **SLAs accurate?** Response time, availability, and throughput requirements reflect operational contracts
+- [ ] **Security boundaries enforced?** TLS, authentication, and authorization mechanisms documented
+- [ ] **Evidence linked?** Each system and interface references an integration spec, deployment diagram, or SME confirmation
+
+## SME Sign-Off
+- **Reviewer:** ____
+- **Review Date:** ____
+- **Decision:** ____
+- **Notes:** ____
 ```
 
 ---
@@ -164,7 +203,7 @@ through to resolution. Often a small flowchart.]
 ```markdown
 # View 3: Program Flow — [Module Name]
 
-## Status: ...
+## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | rejected
 
 ## Flow Inventory
 | Flow ID | Business Event | Trigger Model | Entry Program | Exit Program | Runtime |
@@ -188,7 +227,27 @@ through to resolution. Often a small flowchart.]
 ## Overall Call Topology
 [Top-level sequence / ASCII tree showing how flows compose.]
 
-## TBDs / Checklist / Sign-Off
+## TBDs
+
+| TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
+| --- | --- | --- | --- | --- | --- |
+| TBD-CARD-AUTH-201 | pending_sme | CREDITCHK scope in MANUAL-AUTH flow | Liu Wei | (awaiting SME confirmation) | no |
+
+## Review Checklist — View 3
+
+Per the SME Review Questions in SKILL.md, the reviewer should verify:
+
+- [ ] **All flows in scope?** Flow Inventory lists every business event touched by this module; no missing or extra flows
+- [ ] **Cross-flow dependencies correct?** Shared files, data areas, and sub-program calls accurately reflect the code and approved flow analyses
+- [ ] **Shared sub-programs correctly identified?** Every CALL statement touching multiple flows is documented
+- [ ] **Call topology sound?** The sequence / tree accurately represents the actual call graph from approved flow and program analyses
+- [ ] **Evidence linked?** Each node, edge, and dependency references a FLOW-* ID or approved program-analysis
+
+## SME Sign-Off
+- **Reviewer:** ____
+- **Review Date:** ____
+- **Decision:** ____
+- **Notes:** ____
 ```
 
 ---
@@ -198,7 +257,7 @@ through to resolution. Often a small flowchart.]
 ```markdown
 # View 4: Data Flow — [Module Name]
 
-## Status: ...
+## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | rejected
 
 ## Data Objects in Scope
 (Aggregated from every program's Object Dependencies section.)
@@ -234,7 +293,28 @@ PF / LF / SQL tables.]
 | CUSTMSTR | CUSTOMER-MASTER module | CARD-AUTH (read-only lookup) | Direct CHAIN |
 | GLPOSTPF | (this module produces; GL consumes) | n/a | File handoff |
 
-## TBDs / Checklist / Sign-Off
+## TBDs
+
+| TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
+| --- | --- | --- | --- | --- | --- |
+| TBD-CARD-AUTH-301 | pending_sme | GLPOSTPF archival policy | Maria Lopez | (awaiting data governance) | no |
+
+## Review Checklist — View 4
+
+Per the SME Review Questions in SKILL.md, the reviewer should verify:
+
+- [ ] **Data lifecycle correct?** Created / Updated / Read / Archived / Purged lifecycle per object matches code evidence and BAU (View 1)
+- [ ] **Coupling hotspots match reality?** HIGH coupling scores point to objects that are actually "scary to change" in operations
+- [ ] **Cross-module dependencies identified?** Every object consumed by another module or producing for external systems is listed
+- [ ] **DB relationships documented?** PK/FK, versioning, and archival strategy are clear
+- [ ] **Evidence linked?** Each object and lifecycle phase references an EV-* ID, OBJ-* ID, or FLOW-* from approved analyses
+- [ ] **No hallucinated fields?** Coupling scores and lifecycle phases derived solely from code and flow evidence, not speculation
+
+## SME Sign-Off
+- **Reviewer:** ____
+- **Review Date:** ____
+- **Decision:** ____
+- **Notes:** ____
 ```
 
 ---

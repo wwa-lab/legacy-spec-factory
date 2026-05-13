@@ -74,7 +74,8 @@ Produce a directory `03_specs/<CAPABILITY-SLUG>/`:
 Use:
 
 - `../../schemas/spec.schema.yaml` as the authoritative format
-- `templates/spec.yaml`, `templates/spec.md` as starting structure
+- `templates/spec.yaml`, `templates/spec.md`, `templates/spec-review.md`,
+  `templates/traceability.md` as starting structure
 - `references/synthesis-rules.md` for how to derive each field
 - `references/rule-extraction-protocol.md` for promoting capability seeds
   to approved `BR-*` (the most delicate step)

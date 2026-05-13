@@ -48,6 +48,8 @@ Use:
 - `references/output-contract.md` for field definitions and evidence tagging
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
+- `references/evidence-tagging.md` for evidence strength levels and tagging methodology
+- `templates/evidence-tags.md` as a quick reference card for inline evidence annotation
 
 Follow:
 
@@ -71,8 +73,9 @@ Examples:
 2. **Extract Entry Points & Parameters**
    - Identify main entry point (program parameter list, return value or status code)
    - Identify callable sub-procedures:
-     - RPGLE: BEGPR / ENDPR blocks, callable subroutines
-     - CLLE: subroutine labels, CALL targets within same source
+     - RPGLE procedures: Fixed-form `P ... B` / `P ... E` or free-form `dcl-proc` / `end-proc`; both callable via CALL statement
+     - RPGLE subroutines: `BEGSR` / `ENDSR` blocks (internal subroutines, callable only from within same program)
+     - CLLE: `SUBR` label blocks and `CALLSUBR` invocations (internal subroutines); external procedures via CALL
      - COBOL: ENTRY statements, PERFORM … UNTIL / VARYING
    - Document parameter types, expected ranges, and direction (input/output/both)
    - Tag with evidence: `confirmed_from_code` (from source headers or RPGLE specifications)
@@ -125,12 +128,15 @@ Examples:
 
 6. **Document File I/O**
    - For each file from step 5 (PF / LF / DSPF / PRTF), classify operations:
-     - Read operations: SETLL (set lower limit), READE (read equal), CHAIN (random access)
+     - Sequential read: READ (next record), READP / READPE (read previous)
+     - Random read: SETLL (set lower limit), READE (read equal), CHAIN (random access)
      - Write operations: WRITE (add new record), UPDATE (modify record), DELETE
+     - Display file: EXFMT (format + read interaction with DSPF for menus, input screens)
+     - Embedded SQL / SQLRPGLE: EXEC SQL blocks, cursor operations, SQLCODE / SQLSTATE error handling
      - Note key fields used in each operation (e.g., CHAIN on CUSTID)
    - Reference file definitions from inventory via evidence ID (EV-\*)
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
-   - Create TBD if DDS is missing or key field unclear
+   - Create TBD if DDS is missing, key field unclear, or SQL schema is not documented
 
 7. **Identify External Calls**
    - List all external program calls:

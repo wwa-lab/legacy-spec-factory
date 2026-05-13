@@ -98,13 +98,16 @@ Examples:
    - Determine which of the seven trigger models applies (see
      `references/trigger-models.md`). If unsure, ask the SME — do not guess.
    - Document the trigger object:
-     - batch job → CL program + SBMJOB statement, or scheduler entry
+     - batch job → CL program + direct CALL from another program or operator
      - menu → `*MENU` object name + option number
      - subfile dispatch → DSPF subfile + option-code table
      - F-key → DSPF + function-key handler
      - DB trigger → file name + trigger program + event (insert/update/delete)
-     - scheduler → WRKJOBSCDE entry + frequency
+     - scheduler → WRKJOBSCDE entry + frequency (may submit a batch job via SBMJOB)
      - API / remote → remote-call mechanism + parameter contract
+   - **Note:** Scheduler-submitted batch jobs form a single flow: the scheduler
+     entry is the primary trigger, SBMJOB is the submission mechanism, and the
+     CL/RPG program(s) are the nodes. This is one trigger model, not two.
    - Assign `FLOW-<SLUG>-<NNN>` ID.
    - Capture the **business event name** the SME uses for this flow
      (e.g., "Customer authorization request", not "RPG1 call").
@@ -175,20 +178,29 @@ Examples:
    - See `references/error-propagation.md`.
 
 8. **Business Capability Seeds**
-   - Extract `BR-*` candidates (business rule seeds) that this flow
+   - Extract `SEED-*` candidates (business rule seeds) that this flow
      plausibly enforces — **without inventing rules**.
    - Each seed is a *question* for SME review (e.g., "Does the rule
      'credit limit must not be exceeded' live in this flow?"), with
      pointers to the program(s) and field(s) that suggest it.
    - The spec-writer skill will resolve seeds into approved rules; the
      flow analyzer never approves rules itself.
+   - **Note:** `BR-*` IDs are reserved for **branch points** (decision nodes
+     in the flow). Capability seeds use `SEED-*` IDs.
 
 9. **Prepare for SME Review**
    - Consolidate all TBDs grouped by blocking status (`pending_source` /
      `pending_sme_judgment` / `non_blocking`).
-   - Confirm every node's `program-analysis` is approved.
-   - Generate the flow review checklist (see `templates/trigger-checklist.md`).
-   - Mark flow as `draft` and route to SME.
+   - **If any blocking TBDs exist:**
+     - Mark flow as `blocked_pending_source` (missing program-analysis, missing DSPF, etc.)
+       or `blocked_pending_sme` (ambiguous trigger, unclear error handling, missing business context)
+     - Do not complete all 9 sections; provide partial flow stub
+     - Route to `legacy-ibmi-program-analyzer` or SME assignment process
+     - Do not proceed to module-analyzer
+   - **If no blocking TBDs:**
+     - Confirm every node's `program-analysis` is approved.
+     - Generate the flow review checklist (see `templates/trigger-checklist.md`).
+     - Mark flow as `draft` and route to SME.
    - **Gate:** the flow is ready for module-analyzer when:
      - all 9 sections populated
      - every node has an approved `program-analysis`
@@ -199,22 +211,28 @@ Examples:
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md`. Every
-edge in this flow must trace to a CALL / CALLP / CALLPRC / SBMJOB / trigger
-registration / MQ config statement in actual source code. Shop documentation,
-prior architecture diagrams, and SME recollection are navigation aids; they
-do not become evidence until tier-1 source confirmation exists. If SME claims
-a flow path the code does not contain, both observations are recorded and a
-TBD blocks the flow until SME reconciles them.
+edge in this flow must trace to **evidence** from authoritative sources
+(see `references/output-contract.md` Evidence Taxonomy). Authoritative
+evidence includes:
+
+- **Source statements** (CALL, CALLP, SBMJOB in code)
+- **Configuration exports** (WRKJOBSCDE, DSPF DDS, trigger registration)
+- **Integration contracts** (MQ queue configs, API gateway definitions, DDM registrations)
+- **SME confirmation** (documented procedures, business event naming, SLA agreement)
+
+Shop documentation, prior architecture diagrams, and SME recollection are
+navigation aids; they do not become evidence until **tier-1 authoritative
+confirmation** exists. If SME claims a flow path the code does not contain,
+both observations are recorded and a TBD blocks the flow until SME reconciles them.
 
 **Do NOT invent:**
 
 - **Calls** not visible in any program's `program-analysis` External Calls section
 - **Data flow** that requires guessing parameter semantics (use only what
   source explicitly shows or SME confirms)
-- **Branch destinations** for F-keys / options not visible in DSPF
-  definitions
-- **Trigger conditions** for DB triggers without seeing the trigger
-  configuration
+- **Branch destinations** for F-keys / options not visible in DSPF DDS
+- **Trigger conditions** for DB triggers without seeing trigger configuration export
+- **Scheduler frequency or submitted command** without WRKJOBSCDE evidence
 - **Commit boundaries** if neither code nor SME has confirmed them
 - **Business capabilities or rules** — these are seeds (questions), not
   facts; spec-writer resolves them
@@ -223,20 +241,20 @@ TBD blocks the flow until SME reconciles them.
 
 - If a node's `program-analysis` is missing → `TBD: pending_source` →
   route to `legacy-ibmi-program-analyzer`
+- If configuration evidence is missing → `TBD: pending_source` → request
+  WRKJOBSCDE export, DDS listing, or trigger configuration
 - If a trigger model is ambiguous → `TBD: pending_sme_judgment`
 - If the SME cannot name the business event → stop and request a name
   (do not autogenerate from program names)
 - If error propagation is unclear → tag `needs_sme_review`; do not assume
   commit / rollback behavior
 
-**Evidence minimum:**
+**Evidence minimum** (see Evidence Taxonomy):
 
-- Every edge must trace to a CALL/CALLP/CALLPRC/SBMJOB/trigger-config
-  statement in some program's source.
-- Every data exchange must trace to a parameter list, data area, data
-  queue, or file in source.
-- Every UI surface must trace to a DSPF / PRTF / MENU object that exists
-  in inventory.
+- Every edge must trace to evidence type 1, 2, or 3 (source statement, config export, or integration contract)
+- Every data exchange must trace to source (parameter, data area, queue, file)
+- Every UI surface must trace to a DSPF / PRTF / MENU object in inventory
+- Every trigger must have evidence type 2 (config export) + evidence type 4 (SME confirmation of business meaning)
 
 ## SME Review Questions
 
@@ -273,6 +291,16 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.1.1 (2026-05-14): Field-pilot hardening
+  - Added smoke test prompts and evidence taxonomy
+  - Clarified trigger model rules: Scheduler + SBMJOB is one trigger (not composite)
+  - Added blocked status values (blocked_pending_source, blocked_pending_sme) with routing rules
+  - Standardized capability seed IDs on SEED-* (not BR-*, which are reserved for branch points)
+  - Added evidence taxonomy: 4 types (source statement, IBM i config, integration contract, SME confirmation)
+  - Updated anti-hallucination rules to allow config and contract evidence, not just source code
+  - All 5 review blockers (FLOW-REV-001 to FLOW-REV-005) resolved
+  - Ready for smoke test execution in Codex CLI, Claude Code, and OpenCode
 
 - v0.1.0 (2026-05-14): Initial release
   - 9-step workflow

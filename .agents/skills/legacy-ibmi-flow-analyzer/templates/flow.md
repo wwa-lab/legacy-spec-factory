@@ -5,11 +5,12 @@
 - **Flow ID:** FLOW-[SLUG]-[NNN]
 - **Business Event Name:** [SME-confirmed name]
 - **Trigger Model:** batch job | menu | subfile | F-key | DB trigger | scheduler | API/remote
+  - (If scheduler + SBMJOB: use "Scheduler (submitted via SBMJOB)", not "Scheduler → Batch Job")
 - **Module:** MODULE-[SLUG]
 - **Entry Node:** NODE-[SLUG]-01 (program [NAME] / OBJ-[SLUG]-[NNN])
 - **Exit Node(s):** NODE-[SLUG]-[NN] ...
 - **Runtime Model:** synchronous / asynchronous, real-time / batch, SLA
-- **Status:** draft
+- **Status:** draft | needs_sme_review | approved | blocked_pending_source | blocked_pending_sme
 
 ---
 

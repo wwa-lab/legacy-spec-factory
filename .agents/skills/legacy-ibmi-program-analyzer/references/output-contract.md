@@ -333,14 +333,20 @@ If the shop's `F5-OBJREF TREE` output is provided as input:
 
 **Requirements:**
 - One table row per file accessed
-- Columns: File name, Type (PF / LF / DSPF / PRTF), Operations (SETLL, READE, CHAIN, WRITE, UPDATE, DELETE), Key fields, Purpose, Evidence link
+- Columns: File name, Type (PF / LF / DSPF / PRTF), Operations, Key fields, Purpose, Evidence link
+- Supported operations:
+  - Sequential: READ (next record), READP / READPE (read previous)
+  - Random: SETLL (set lower limit), READE (read equal), CHAIN (random access)
+  - Write: WRITE (add new record), UPDATE (modify record), DELETE (remove record)
+  - Display: EXFMT (formatted I/O on DSPF, used for menus and interactive input screens)
+  - SQL: EXEC SQL blocks, cursor operations, SQLCODE / SQLSTATE error handling
 - For each operation, document:
   - Key fields used in access (e.g., CHAIN on CUSTID)
-  - Indicators set (e.g., *IN99 for not found)
+  - Indicators set (e.g., *IN99 for not found) or status variables (SQLCODE)
   - Expected record count or iteration scope
-- Reference file definitions from inventory (EV-*)
+- Reference file definitions from inventory (EV-*) and DDS / SQL schema where available
 - Tag evidence as `confirmed_from_code` or `needs_sme_review`
-- Create TBD for missing DDS, unclear key fields, or undocumented access patterns
+- Create TBD for missing DDS, unclear key fields, SQL schema not documented, or undocumented access patterns
 
 ---
 
@@ -510,6 +516,7 @@ Every claim (entry point, control flow step, file I/O, external call, error hand
 
 - **draft** — initial analysis, ready for SME review
 - **needs_sme_review** — waiting for SME validation (has blocking TBDs or ambiguities)
+- **blocked_pending_source** — source incomplete or unavailable; analysis paused pending artifact delivery (DDS, CALL definitions, file descriptions) or SME unblock. Analyzer stops instead of guessing.
 - **approved** — SME confirmed all behaviors and resolved TBDs
 - **approved_with_non_blocking_tbd** — SME approved despite non-blocking TBDs (e.g., undocumented call without impact on this program's behavior)
 - **rejected** — SME found serious errors or inconsistencies

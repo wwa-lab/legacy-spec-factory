@@ -4,7 +4,7 @@
 
 - **Flow ID:** FLOW-NIGHTLY-RECON-001
 - **Business Event Name:** Nightly reconciliation of on-us card transactions to GL
-- **Trigger Model:** Scheduler → Batch Job (combined)
+- **Trigger Model:** Scheduler (submitted via SBMJOB)
 - **Module:** CARD-AUTH
 - **Entry Node:** NODE-NIGHTLY-RECON-01 (RECONCL / OBJ-CARD-AUTH-101)
 - **Exit Node(s):** NODE-NIGHTLY-RECON-04 (RECONSQL / OBJ-CARD-AUTH-104)

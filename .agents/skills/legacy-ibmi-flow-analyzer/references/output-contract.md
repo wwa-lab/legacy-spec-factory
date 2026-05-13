@@ -36,8 +36,15 @@ This document defines the precise shape and required fields for every
 - **Entry Node:** OBJ-AUTH-ONUS-001 (program CU101A)
 - **Exit Node(s):** OBJ-AUTH-ONUS-014 (program CU199Z, returns response to Visa)
 - **Runtime Model:** synchronous, real-time, sub-second SLA
-- **Status:** draft | needs_sme_review | approved
+- **Status:** draft | needs_sme_review | approved | blocked_pending_source | blocked_pending_sme
 ```
+
+**Status values:**
+- `draft` — Initial analysis; workflow incomplete, awaiting SME review
+- `needs_sme_review` — All sections populated; awaiting SME judgment on business accuracy
+- `approved` — SME reviewed and confirmed; ready for downstream processing
+- `blocked_pending_source` — Analysis blocked; missing program-analysis, missing DSPF, or other source artifacts required before continuing
+- `blocked_pending_sme` — Analysis blocked; ambiguous trigger model, unclear error intent, or missing SME business context; clarification required before continuing
 
 ---
 
@@ -327,6 +334,58 @@ Before approval, SME must validate:
 - **Decision:** approved | approved_with_non_blocking_tbd | rejected
 - **Notes:** ____________________
 ```
+
+---
+
+## Evidence Taxonomy
+
+Flow analysis requires **evidence** for every edge, data exchange, branch point, and trigger. This section defines what counts as authoritative evidence.
+
+### Evidence Types
+
+**1. Source Statement** (highest confidence for call flow)
+- CALL / CALLP / CALLPRC in RPGLE
+- CALL / SBMJOB in CL
+- Trigger registration in CL (ADDPFTRG result, trigger program declaration)
+- Example: EV-*: RECONCL line 38 CALL PGM(RECON01R)
+
+**2. IBM i Object / Config Export** (authoritative for configuration)
+- WRKJOBSCDE entry details (scheduler frequency, submitted command)
+- DDS export for DSPF / PRTF / MENU (option codes, F-key handlers)
+- ADDPFTRG output or trigger configuration listing
+- File relationship details from DSPF (subfile control records, SFLCTL keywords)
+- Example: EV-*: WRKJOBSCDE export, entry NIGHTLY-RECON (daily Mon-Fri 22:00)
+
+**3. Integration Contract** (authoritative for external triggers)
+- MQ queue configuration (queue name, message contract, publishing system)
+- API gateway route definition and payload schema
+- DDM registration for remote program calls
+- FTP / IFS drop location and file format contract
+- HTTP endpoint and request/response schema
+- Example: EV-*: MQ queue WEBORDER.IN documented contract (JSON schema version 2.1)
+
+**4. SME Confirmation** (authoritative for business context and intent)
+- Documented BAU (business-as-usual) procedure or runbook
+- Production execution procedures or disaster recovery playbook
+- System-integration agreement with another department or external party
+- Business event name and SLA confirmation
+- Example: EV-*: Anna Chen (Finance Ops) confirmed: "Reconciliation must complete before 06:00 next-day GL consolidation"
+
+### Using Multiple Evidence Types
+
+A single edge or feature may require evidence from multiple types:
+
+- **Scheduler entry submitting a batch job:** Evidence type 2 (WRKJOBSCDE export) + type 4 (SME confirmation of frequency and business meaning)
+- **Trigger program defined by code + evidence of execution:** Evidence type 1 (ADDPFTRG statement in CL) + type 4 (SME confirmation of when trigger fires)
+- **Remote program call:** Evidence type 3 (DDM or MQ contract) + type 4 (SME confirmation of partner system and SLA)
+- **F-key dispatcher:** Evidence type 2 (DSPF DDS export showing CAxx keywords) + type 1 (IF/WHEN statements in source showing which programs are called)
+
+### When TBD Is Required
+
+If an edge or feature lacks evidence:
+- `TBD-*: pending_source` — Missing type 1 or type 2 evidence (source code / config export)
+- `TBD-*: pending_sme_judgment` — Missing type 4 evidence (SME confirmation of intent / business meaning)
+- `TBD-*: non_blocking` — Evidence is weak but analysis can continue; noted for downstream review
 
 ---
 

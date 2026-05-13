@@ -96,6 +96,8 @@ spec:
             type: "target type"
             evidence_ids:
               - "EV-<SLUG>-<NNN>"
+            evidence_strength: "confirmed_from_code | observed_in_runtime | confirmed_by_sme | strongly_inferred | weakly_inferred | needs_sme_review | contradictory | missing"
+            review_status: "draft | needs_sme_review | approved | rejected | retired"
   process_flow:
     steps:
       - id: "STEP-<SLUG>-<NNN>"

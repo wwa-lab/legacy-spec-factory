@@ -3,10 +3,14 @@
 
 Rules:
 - Every name in `required_top_level_fields` must appear as a key in the
-  schema's `spec:` block and as a top-level key in `templates/spec.yaml`.
-- Every top-level key in `templates/spec.yaml` must appear in the schema's
+  schema's `spec:` block and as a top-level key in the template.
+- Every top-level key in the template must appear in the schema's
   `spec:` block (either required or optional).
 - Every name in `optional_top_level_fields` must appear in the `spec:` block.
+
+Usage:
+  python3 check-spec-contract.py              # Check root template
+  python3 check-spec-contract.py <skill-name> # Check skill-local template
 
 Exit 0 on alignment, 1 on drift.
 
@@ -31,7 +35,19 @@ except ImportError:
 def main() -> int:
     root = Path(__file__).resolve().parent.parent
     schema_path = root / "schemas" / "spec.schema.yaml"
-    template_path = root / "templates" / "spec.yaml"
+
+    # Determine which template to validate
+    skill_name = sys.argv[1] if len(sys.argv) > 1 else None
+    if skill_name:
+        template_path = root / "skills" / skill_name / "templates" / "spec.yaml"
+        if not template_path.exists():
+            print(
+                f"Skill template not found: {template_path}",
+                file=sys.stderr,
+            )
+            return 1
+    else:
+        template_path = root / "templates" / "spec.yaml"
 
     with schema_path.open() as f:
         schema = yaml.safe_load(f) or {}
@@ -81,13 +97,15 @@ def main() -> int:
         )
 
     if errors:
-        print("Spec contract drift detected:")
+        template_label = f"{skill_name} skill" if skill_name else "root"
+        print(f"Spec contract drift detected ({template_label} template):")
         for e in errors:
             print(f"  - {e}")
         return 1
 
+    template_label = f"{skill_name} skill" if skill_name else "root"
     print(
-        "OK: spec contract aligned "
+        f"OK: spec contract aligned ({template_label} template) "
         f"({len(required)} required, {len(optional)} optional, "
         f"{len(spec_block_keys)} defined in schema, "
         f"{len(template_keys)} in template)"

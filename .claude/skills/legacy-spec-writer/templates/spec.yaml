@@ -83,6 +83,8 @@ data_model:
           type: "<target type>"
           evidence_ids:
             - EV-<CAP-SLUG>-001
+          evidence_strength: confirmed_from_code  # confirmed_from_code | observed_in_runtime | confirmed_by_sme | strongly_inferred | weakly_inferred | needs_sme_review | contradictory | missing
+          review_status: draft  # draft | needs_sme_review | approved | rejected | retired
 
 process_flow:
   steps:
@@ -116,15 +118,10 @@ exceptions:
     evidence_ids:
       - EV-<CAP-SLUG>-001
 
-acceptance_criteria:
-  - id: AC-<CAP-SLUG>-001
-    format: gherkin  # gherkin | checklist
-    text: |
-      Given <context>
-      When <event>
-      Then <outcome>
-    validates:
-      - BR-<CAP-SLUG>-001
+# Acceptance criteria: emit only for APPROVED business rules.
+# Do not generate ACs for draft or needs_sme_review rules.
+# Once the SME approves a BR, add a corresponding AC here.
+acceptance_criteria: []
 
 # tests: optional sketch only
 # tests:
@@ -141,8 +138,10 @@ open_questions:
     related_ids:
       - EV-<CAP-SLUG>-001
 
+# Traceability: map BRs to supporting evidence and approved ACs.
+# Only include AC-* for approved BRs. For needs_sme_review or draft BRs,
+# reference evidence only until the BR is approved.
 traceability:
   - from_id: BR-<CAP-SLUG>-001
     to_ids:
       - EV-<CAP-SLUG>-001
-      - AC-<CAP-SLUG>-001
