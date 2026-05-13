@@ -8,7 +8,7 @@
 - **In-scope Flows:**
   - FLOW-[SLUG]-001 ([business event])
   - FLOW-[SLUG]-002 ([business event])
-- **Status:** draft
+- **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme | rejected
 
 ## View Index
 | View | File | Status | Reviewer |

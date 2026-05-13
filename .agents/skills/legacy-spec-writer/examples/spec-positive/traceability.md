@@ -90,7 +90,7 @@ To reach `status: approved`:
 - [X] Every approved BR has ≥1 confirmed-strength evidence
 - [X] Every approved BR has ≥1 approved AC
 - [X] Every approved AC validates an approved BR
-- [X] No `blocking: yes` TBD without SME waiver — **NO**, TBD-001 is blocking and not waived
+- [ ] No `blocking: yes` TBD without SME waiver — **NO**, TBD-001 is blocking and not waived
 - [X] No `evidence_strength: missing` in data model
 - [X] Capability owner SME signed off — yes for BR-001/002; pending for BR-003
 

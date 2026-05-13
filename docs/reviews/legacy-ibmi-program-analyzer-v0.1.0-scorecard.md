@@ -27,9 +27,9 @@
   reported `OK`.
 - Checked `docs/runtime-matrix.md`; all target runtimes are still `synced`, not
   `loaded`, `executed`, or `passed`.
-- Checked `docs/runtime-smoke-tests.md`; no program-analyzer prompt has been
-  added yet, so the reusable smoke protocol cannot be run verbatim for this
-  skill.
+- Checked `docs/runtime-smoke-tests.md`; positive and negative
+  `legacy-ibmi-program-analyzer` smoke prompts now exist. Execution results in
+  Codex CLI, Claude Code, and OpenCode are still pending.
 
 ## Mandatory Stop Conditions
 
@@ -39,8 +39,8 @@ A 9.0 cap applies under the review gate:
 
 - portability has been considered and adapter drift has been checked, but the
   skill has not been loaded or executed in Codex CLI, Claude Code, and OpenCode
-- the runtime-smoke-test prompt set does not yet include
-  `legacy-ibmi-program-analyzer`
+- the runtime-smoke-test prompt set exists, but no three-runtime pass evidence
+  has been recorded yet
 
 ## Weighted Score
 
@@ -105,8 +105,9 @@ Notes:
 
 The skill keeps SMEs in the approval loop and uses TBDs correctly for missing
 DDS, missing subroutines, unclear external parameters, and comment/code drift.
-Before field-pilot use, the IBM i idiom coverage should be tightened so SMEs do
-not have to mentally translate imprecise procedure or I/O terminology.
+The IBM i terminology and I/O hardening requested in the original review was
+completed in commit `99e27f4`; the remaining field-pilot blocker is runtime
+smoke execution evidence.
 
 ## Runtime Portability Review
 
@@ -137,24 +138,18 @@ yet loaded or executed this skill through the reusable smoke-test protocol.
 ## Requested Revision Prompt For Claude Code
 
 ```text
-Revise legacy-ibmi-program-analyzer to address the following review findings.
+Revise legacy-ibmi-program-analyzer to finish the remaining review finding.
 
 Current score: 9.0/10 after the runtime-testing cap.
 Target score: 9.5/10.
 
-Blocking issues:
-1. Runtime smoke prompts and three-runtime execution evidence are missing.
-2. RPGLE / CLLE procedure and subroutine terminology needs field-pilot precision.
-3. File I/O coverage needs sequential read, display/printer interactions, and embedded SQL / SQLRPGLE handling.
-4. Blocked-source status must be aligned across SKILL.md, the output contract, templates, and negative example.
+Blocking issue:
+1. Three-runtime smoke execution evidence is missing.
 
 Required changes:
-- Add `legacy-ibmi-program-analyzer` positive and negative prompts to `docs/runtime-smoke-tests.md`, including pass criteria.
 - Run the smoke protocol in Codex CLI, Claude Code, and OpenCode; update `docs/runtime-matrix.md` with exact runtime/model/date notes.
-- Replace `BEGPR / ENDPR` language with accurate RPGLE forms: fixed-form `P ... B` / `P ... E`, free-form `dcl-proc` / `end-proc`, and `BEGSR` / `ENDSR`; add CLLE `SUBR` / `CALLSUBR` handling.
-- Add sequential and display/printer I/O recognition (`READ`, `READP`, `READPE`, `EXFMT`, relevant WRITE formats) and embedded SQL / SQLRPGLE evidence handling (`EXEC SQL`, cursor operations, `SQLCODE` / `SQLSTATE`).
-- Align blocked analysis status values so incomplete source produces an explicit blocked artifact state instead of a normal draft.
-- Link or remove the currently unlinked evidence-tagging reference/template.
+- If all three pass, update this scorecard from repo-ready to field-pilot ready
+  and lift the runtime cap.
 
 Do not remove author/copyright notices.
 Keep the canonical skill under skills/legacy-ibmi-program-analyzer/.

@@ -31,9 +31,9 @@
   reported `OK`.
 - Checked `docs/runtime-matrix.md`; all target runtimes are still `synced`, not
   `loaded`, `executed`, or `passed`.
-- Checked `docs/runtime-smoke-tests.md`; no module-analyzer prompt has been
-  added yet, so the reusable smoke protocol cannot be run verbatim for this
-  skill.
+- Checked `docs/runtime-smoke-tests.md`; positive and negative
+  `legacy-ibmi-module-analyzer` smoke prompts now exist. Execution results in
+  Codex CLI, Claude Code, and OpenCode are still pending.
 
 ## Mandatory Stop Conditions
 
@@ -43,11 +43,8 @@ A 9.0 cap applies under the review gate:
 
 - portability has been considered and adapter drift has been checked, but the
   skill has not been loaded or executed in Codex CLI, Claude Code, and OpenCode
-- the runtime-smoke-test prompt set does not yet include
-  `legacy-ibmi-module-analyzer`
-- `SKILL.md` links several per-view methodology files and a wildcard view
-  template that do not exist in the canonical folder, so progressive disclosure
-  is not clean enough for 9.5 field-pilot use
+- the runtime-smoke-test prompt set exists, but no three-runtime pass evidence
+  has been recorded yet
 
 ## Weighted Score
 
@@ -76,11 +73,11 @@ Decision: **repo-ready, not field-pilot ready**
 
 | ID | Severity | Finding | Required Change | Affects |
 | --- | --- | --- | --- | --- |
-| MOD-REV-001 | High | Runtime portability is structurally clean but not tested. `docs/runtime-matrix.md` records this skill as `synced` only, and `docs/runtime-smoke-tests.md` has no positive or negative prompt for it. | Add module-analyzer smoke prompts and pass criteria, run the protocol in Codex CLI, Claude Code, and OpenCode, then update `docs/runtime-matrix.md` and the scorecard. | Runtime portability, reviewability |
-| MOD-REV-002 | High | `SKILL.md` points to files that do not exist: `templates/view-*.md` and `references/view-1-operation-flow.md` through `references/view-4-data-flow.md`. The actual template is `templates/view-template.md`, and per-view methodology currently lives inside `references/synthesis-rules.md` / `references/output-contract.md`. | Either add the four per-view reference files and split view templates, or update `SKILL.md` to link only existing canonical files. Afterward run `scripts/sync-skills.sh --target all` and re-check drift. | Progressive disclosure, maintainability, runtime portability |
-| MOD-REV-003 | Medium | Blocked-module status is inconsistent. The negative example correctly uses `blocked_pending_source`, but `SKILL.md`, `templates/module-overview.md`, `templates/view-template.md`, and `references/output-contract.md` list only draft/review/approved-style statuses. | Add blocked statuses such as `blocked_pending_source` and `blocked_pending_sme` to the output contract and templates, and state exactly when the analyzer emits a blocked overview instead of all four views. | Output contract, downstream automation |
-| MOD-REV-004 | Medium | Evidence traceability is asserted but not enforceable enough in the artifact contract. Several tables use generic `Source` or `Evidence` prose, while `docs/evidence-and-knowledge-taxonomy.md` requires linked `evidence_ids`, knowledge type, confidence, and review status for approved claims. | Add required evidence columns or a per-view evidence register so every actor, event, system, interface, cross-flow dependency, data object, lifecycle claim, and rule seed can point to concrete `EV-*`, `FLOW-*`, `OBJ-*`, SME note, and TBD IDs. | Evidence integrity, SME correctness, downstream automation |
-| MOD-REV-005 | Medium | Per-view review checklists are not fully materialized. `templates/view-template.md` says to see per-view checklists in `references/output-contract.md`, but the output contract mostly uses placeholders like `TBDs / Checklist / Sign-Off`; measurable per-view acceptance items live only as prose in `SKILL.md`. | Add explicit per-view checklist sections to the output contract/template, covering the View 1/2/3/4 SME questions and cross-view mapping checks. | Reviewability, SME governance |
+| MOD-REV-001 | High | Runtime portability is structurally clean but not tested. | Smoke prompts and pass criteria now exist in `docs/runtime-smoke-tests.md`; run the protocol in Codex CLI, Claude Code, and OpenCode, then update `docs/runtime-matrix.md` and this scorecard. | Runtime portability, reviewability |
+| MOD-REV-002 | High | `SKILL.md` pointed to nonexistent per-view methodology files and a wildcard template. | ✅ Resolved. Workflow now points to existing `references/output-contract.md`, `references/synthesis-rules.md`, and `templates/view-template.md`; adapter drift check should remain clean after sync. | Progressive disclosure, maintainability, runtime portability |
+| MOD-REV-003 | Medium | Blocked-module status was inconsistent across contract and templates. | ✅ Resolved. Blocked statuses are now listed in the output contract, module overview template, and view template. | Output contract, downstream automation |
+| MOD-REV-004 | Medium | Evidence traceability was asserted but not enforceable enough in the artifact contract. | Partially resolved. The output contract now requires evidence references in per-view tables; a final field-pilot rescore should verify whether this is strict enough for every claim type. | Evidence integrity, SME correctness, downstream automation |
+| MOD-REV-005 | Medium | Per-view review checklists were not fully materialized. | ✅ Resolved. `references/output-contract.md` now contains measurable per-view checklist sections and the view template points to them. | Reviewability, SME governance |
 
 ### Strengths
 
@@ -127,11 +124,9 @@ claims without relying on prose memory.
 
 Notes:
 
-Adapter drift check passes. The field-pilot cap remains because no runtime has
-yet loaded or executed this skill through the reusable smoke-test protocol.
-The broken canonical links should be fixed before running smoke tests, because
-they may produce runtime-dependent behavior when an agent tries to follow the
-referenced per-view files.
+Adapter drift check passes. The broken canonical links have been corrected.
+The field-pilot cap remains because no runtime has yet loaded or executed this
+skill through the reusable smoke-test protocol.
 
 ## Adversarial Pass
 
@@ -144,32 +139,26 @@ referenced per-view files.
 | SME says a path is dead but flow analysis found code/config evidence | Record conflict and create TBD; code wins on behavior | Covered |
 | Cross-flow dependency inferred from shared file | Must trace to flow data sections / object dependencies | Covered |
 | System/interface detail is absent from flow or integration docs | Create pending-source or SME TBD | Covered |
-| Per-view methodology file is followed from `SKILL.md` | Currently fails because linked files do not exist | Needs hardening |
+| Per-view methodology file is followed from `SKILL.md` | Follow existing output-contract and synthesis-rules references | Covered after post-review hardening |
 | Runtime adapter folder differs from canonical path depth | Sync strategy works structurally; smoke not run | Structurally covered |
 
 ## Requested Revision Prompt For Claude Code
 
 ```text
-Revise legacy-ibmi-module-analyzer to address the following review findings.
+Revise legacy-ibmi-module-analyzer to finish the remaining review findings.
 
 Current score: 9.0/10 after the runtime-testing and broken-reference caps.
 Target score: 9.5/10.
 
-Blocking issues:
-1. Runtime smoke prompts and three-runtime execution evidence are missing.
-2. SKILL.md links nonexistent per-view reference files and a nonexistent view-template wildcard.
-3. Blocked-module status values are not aligned across SKILL.md, output contract, templates, and negative example.
-4. Evidence traceability is required in principle but not enforceable enough in the output artifacts.
-5. Per-view review checklists are referenced but not fully specified as measurable artifact sections.
+Remaining issues:
+1. Three-runtime smoke execution evidence is missing.
+2. Evidence traceability has been strengthened, but should be re-scored after
+   smoke output is available.
 
 Required changes:
-- Add `legacy-ibmi-module-analyzer` positive and negative prompts to `docs/runtime-smoke-tests.md`, including pass criteria for complete four-view synthesis and a missing-flow / missing-SME blocked case.
-- Fix progressive-disclosure links by either adding `references/view-1-operation-flow.md` through `references/view-4-data-flow.md` plus matching templates, or updating `SKILL.md` to reference only existing `references/synthesis-rules.md`, `references/output-contract.md`, and `templates/view-template.md`.
-- Add blocked statuses such as `blocked_pending_source` and `blocked_pending_sme` to the output contract and templates, and define when only `module-overview.md` should be produced.
-- Add required `evidence_ids`, source/TBD references, and review-status fields or columns for module overview and all four views.
-- Add measurable per-view review checklist sections to the output contract and template.
-- Run `scripts/sync-skills.sh --target all`, then `scripts/sync-skills.sh --target all --check`.
 - Run the smoke protocol in Codex CLI, Claude Code, and OpenCode; update `docs/runtime-matrix.md` with exact runtime/model/date notes.
+- Re-score the output contract after smoke output is available; if all
+  remaining criteria pass, update this scorecard toward field-pilot readiness.
 
 Do not remove author/copyright notices.
 Keep the canonical skill under skills/legacy-ibmi-module-analyzer/.

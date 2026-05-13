@@ -104,7 +104,8 @@ Examples:
      `pending_source` TBDs for gaps
 
 3. **Build View 1 — Operation Flow / Business Background**
-   - See `references/view-1-operation-flow.md`
+   - Use the View 1 section in `references/output-contract.md` and the
+     aggregation rules in `references/synthesis-rules.md`
    - **Primary source: SME interviews + BAU notes.** Code is secondary.
    - Capture: business scope, actors, business events, BAU rhythm,
      manual intervention points, exception lifecycle, business-rule seeds
@@ -112,7 +113,8 @@ Examples:
    - Output: `01-operation-flow.md`
 
 4. **Build View 2 — System Flow**
-   - See `references/view-2-system-flow.md`
+   - Use the View 2 section in `references/output-contract.md` and the
+     aggregation rules in `references/synthesis-rules.md`
    - **Primary source: architecture diagrams, integration specs, SME.**
      Code (especially API/MQ/IFS code in flows) confirms.
    - Capture: upstream systems, downstream systems, external interfaces,
@@ -121,7 +123,8 @@ Examples:
    - Output: `02-system-flow.md`
 
 5. **Build View 3 — Program Flow (Aggregate)**
-   - See `references/view-3-program-flow.md`
+   - Use the View 3 section in `references/output-contract.md` and the
+     aggregation rules in `references/synthesis-rules.md`
    - **Primary source: all `flow-<FLOW-SLUG>.md` documents.**
    - Aggregate per-flow summaries; identify cross-flow dependencies and
      shared sub-programs
@@ -130,7 +133,8 @@ Examples:
    - Output: `03-program-flow.md`
 
 6. **Build View 4 — Data Flow (Aggregate)**
-   - See `references/view-4-data-flow.md`
+   - Use the View 4 section in `references/output-contract.md` and the
+     aggregation rules in `references/synthesis-rules.md`
    - **Primary source: every program's Object Dependencies section,
      aggregated.**
    - Compute data lifecycle per object (created / updated / read /
@@ -244,6 +248,12 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- Post-review hardening (2026-05-14):
+  - Replaced nonexistent per-view reference links with existing
+    `references/output-contract.md` and `references/synthesis-rules.md`
+  - Added blocked status values and per-view review checklist detail to
+    canonical templates / output contract
 
 - v0.1.0 (2026-05-14): Initial release
   - 9-step workflow

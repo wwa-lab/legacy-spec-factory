@@ -1,6 +1,6 @@
 # View [N]: [View Name] — [Module Name]
 
-## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | rejected
+## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme | rejected
 
 ## [View-specific sections, per `references/output-contract.md`]
 

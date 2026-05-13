@@ -278,11 +278,11 @@ even if the static review score is higher.
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
-| `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Runtime smoke prompts exist, but three-runtime execution evidence is pending |
+| `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Three-runtime smoke execution has not been recorded |
-| `legacy-ibmi-module-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.0-scorecard.md) | 9.15 | 9.0 | Repo-ready | Runtime smoke pending; output contract and view-reference hardening still needed |
-| `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Runtime smoke pending; schema/template/checker enforceability still needs one pass |
-| `legacy-modernization-orchestrator` | [v0.1.1 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md) | 9.50 for v0.1.1 | 9.0 for current v0.2.0 scope | v0.1.1 field-pilot ready; current expanded scope needs re-smoke | v0.2.0 added flow/module/spec routing and needs refreshed runtime evidence |
+| `legacy-ibmi-module-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.0-scorecard.md) | 9.15 | 9.0 | Repo-ready | Post-review fixes committed; three-runtime smoke and post-smoke re-score pending |
+| `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; three-runtime smoke and post-smoke re-score pending |
+| `legacy-modernization-orchestrator` | [v0.1.1 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md) | 9.50 for v0.1.1 | not yet reviewed for v0.2.0 | v0.1.1 field-pilot ready; current expanded scope needs review | v0.2.0 added flow/module/spec routing and needs refreshed review + runtime evidence |
 
 For public trust, scorecards should show both the score before caps and the
 score after caps. A 9.0 here should usually be read as "repo-ready and
@@ -668,16 +668,18 @@ Spec Factory skill set:
 
 The canonical skills have author/copyright notices and are synced to Codex,
 Claude Code, OpenCode, and `.agents` adapter folders. Current review posture:
-repo-ready at 9.0 across the skill family, with one prior 9.5 field-pilot
-scorecard for `legacy-modernization-orchestrator` v0.1.1. The expanded current
-scope still needs runtime smoke execution and a small hardening pass before the
-whole family should be called field-pilot ready.
+the implemented extraction/synthesis skills are repo-ready at 9.0 after the
+runtime cap; `legacy-modernization-orchestrator` v0.1.1 has a prior 9.5
+field-pilot scorecard, while the expanded v0.2.0 routing scope still needs
+fresh review and smoke evidence before it should be called field-pilot ready.
 
 The next implementation steps are:
 
 1. Run the smoke protocol in Codex, Claude Code, and OpenCode for each core
    skill, then update [docs/runtime-matrix.md](docs/runtime-matrix.md).
-2. Close the remaining hardening items in the module analyzer and spec writer
-   scorecards.
-3. Refresh the scorecards after the smoke runs so field-pilot readiness is
+2. Re-score `legacy-ibmi-module-analyzer` and `legacy-spec-writer` after smoke
+   output, since their post-review hardening has now been committed.
+3. Review `legacy-modernization-orchestrator` v0.2.0 against the expanded
+   routing scope.
+4. Refresh the scorecards after the smoke runs so field-pilot readiness is
    backed by evidence, not just intent.

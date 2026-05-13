@@ -455,10 +455,10 @@ the same commands.
 Use /legacy-ibmi-module-analyzer.
 
 User input:
-I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH),
+I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001),
 approved program analyses for all programs, an approved inventory with the
-CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner).
-Module slug is CARD-AUTH, business name is "Card Authorization". Help me
+AUTH-MODULE scope confirmed, and BAU notes from the Module Owner.
+Module slug is AUTH-MODULE, business name is "Authorization Processing". Help me
 synthesize the four-view module analysis.
 
 Return the module-overview.md and all four views (01-operation-flow.md through
@@ -469,10 +469,10 @@ Return the module-overview.md and all four views (01-operation-flow.md through
 
 The response must include all of the following:
 
-- **Module-overview.md:** MODULE-CARD-AUTH-001 ID, Scope Statement, In-scope Flows list with FLOW-* links, View Index table showing all 4 views with status, at least one CAP-* capability seed, Module Review Checklist with cross-view consistency checks, no blocking TBDs (or only non-blocking TBDs)
+- **Module-overview.md:** MODULE-AUTH-MODULE-001 ID, Scope Statement, In-scope Flows list with FLOW-* links, View Index table showing all 4 views with status, at least one CAP-* capability seed, Module Review Checklist with cross-view consistency checks, no blocking TBDs (or only non-blocking TBDs)
 - **01-operation-flow.md:** Business Scope, Business Actors (ACTOR-*), Business Events (EVENT-*), BAU Rhythm, Manual Intervention Points, Exception Lifecycle, Business Rule Seeds (BR-*), evidence linking to SME or BAU source
 - **02-system-flow.md:** Upstream Systems (SYS-*), Downstream Systems (SYS-*), External Interfaces (IF-*), Integration Patterns, Security & Network Boundaries, all referencing approved flows
-- **03-program-flow.md:** Flow Inventory (all 3 flows), Cross-Flow Dependencies (TXNLOGPF shared file), Shared Sub-Programs (CREDITCHK), Call Topology, evidence from approved program/flow analyses
+- **03-program-flow.md:** Flow Inventory (all 3 flows), Cross-Flow Dependencies (shared file), Shared Sub-Programs, Call Topology, evidence from approved program/flow analyses
 - **04-data-flow.md:** Data Objects (with OBJ-* and Coupling Score), Lifecycle per object, Coupling Hotspots, DB Table Relationships, Cross-Module Dependencies, evidence from program analyses
 - **Status values:** All views marked as `draft` or `approved_with_non_blocking_tbd` (no blocked status; all required evidence present)
 - **All four views present:** No view is marked blocked or missing
@@ -485,9 +485,9 @@ The response must include all of the following:
 Use /legacy-ibmi-module-analyzer.
 
 User input:
-I have approved flow analyses for ONUS-AUTH and MANUAL-AUTH, but NIGHTLY-RECON
+I have approved flow analyses for FLOW-AUTH-001 and FLOW-MANUAL-001, but FLOW-BATCH-001
 has no approved flow analysis yet. Module scope includes all three flows.
-Inventory is approved. SME BAU notes are complete. What should the output look like?
+Inventory is approved. BAU notes are complete. What should the output look like?
 
 Return only:
 - the module-overview.md
@@ -497,9 +497,9 @@ Return only:
 #### Pass Criteria (Negative)
 
 - **Status:** blocked_pending_source (one required flow analysis is missing)
-- **Module-overview.md:** Identifies MODULE-CARD-AUTH-001 and the three flows; shows FLOW-NIGHTLY-RECON marked as MISSING
+- **Module-overview.md:** Identifies MODULE-AUTH-MODULE-001 and the three flows; shows FLOW-BATCH-001 marked as MISSING
 - **Does NOT produce** any of the four views
-- **Creates blocking TBD:** TBD-CARD-AUTH-001: FLOW-NIGHTLY-RECON lacks approved flow-analysis; routes to legacy-ibmi-flow-analyzer
+- **Creates blocking TBD:** TBD-AUTH-MODULE-001: FLOW-BATCH-001 lacks approved flow-analysis; routes to legacy-ibmi-flow-analyzer
 - **View Index:** Shows all 4 views but marks View 1–4 as blocked or incomplete due to missing flow
 - **Refuses to synthesize** views without complete flow and program evidence
 - No files are created or edited
@@ -508,17 +508,17 @@ Return only:
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH), approved program analyses for all programs, an approved inventory with the CARD-AUTH module scope confirmed, and BAU notes from Anna Chen (Module Owner). Module slug is CARD-AUTH, business name is \"Card Authorization\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
 ```
 
 For the negative scenario, substitute the missing-flow-analysis prompt above into

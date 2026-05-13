@@ -14,8 +14,8 @@ document defines the *file format*; that document defines the *intent*.
 # Module: [Business Module Name] (MODULE-<SLUG>-001)
 
 ## Metadata
-- **Module ID:** MODULE-CARD-AUTH-001
-- **Business Name:** Card Authorization
+- **Module ID:** MODULE-AUTH-MODULE-001
+- **Business Name:** Authorization Processing
 - **Scope Statement:** [one paragraph from SME]
 - **Module Owner:** [SME name / role]
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]

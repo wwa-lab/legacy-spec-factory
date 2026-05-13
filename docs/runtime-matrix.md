@@ -7,11 +7,11 @@ Any change to `skills/` must update this matrix in the same PR or commit.
 | Skill | Canonical Version | Codex | Claude Code | OpenCode | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `legacy-ibmi-inventory` | v0.1.0 | synced | synced | synced | Runtime copies created with `scripts/sync-skills.sh`; loading/execution not yet verified. |
-| `legacy-ibmi-program-analyzer` | v0.1.0 | synced | synced | synced | Smoke test prompts added to `docs/runtime-smoke-tests.md` (2026-05-14). All 5 review findings fixed. Ready for smoke test execution in three runtimes. |
+| `legacy-ibmi-program-analyzer` | v0.1.0 | synced | synced | synced | All 5 review findings fixed in `99e27f4`; smoke test prompts added to `docs/runtime-smoke-tests.md`. Ready for smoke test execution in three runtimes. |
 | `legacy-ibmi-flow-analyzer` | v0.1.1 | synced | synced | synced | All 5 v0.1.0 blockers resolved: trigger model clarified, blocked status values added, seed IDs standardized, evidence taxonomy (4 types) added, smoke test prompts added to `docs/runtime-smoke-tests.md` (2026-05-14). Ready for smoke test execution in three runtimes. Expected score 9.6/10, field-pilot ready upon passing smoke tests. |
-| `legacy-ibmi-module-analyzer` | v0.1.0 | synced | synced | synced | Initial release; 9-step workflow producing 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md`; aggregates multiple flows + BAU + SME context; awaiting Codex review. |
-| `legacy-spec-writer` | v0.1.0 | synced | synced | synced | Initial release; Layer 2 platform-agnostic; 11-step workflow producing `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per `schemas/spec.schema.yaml`; rule-extraction protocol with strict anti-hallucination at BR promotion; example: Credit Limit Enforcement; awaiting Codex review. |
-| `legacy-modernization-orchestrator` | v0.2.0 | synced | synced | synced | MVP scope expansion: added stages 3c–3f (flow / module) and routed to new skills (flow-analyzer / module-analyzer / spec-writer all `Implemented v0.1.0`). Smoke test from v0.1.1 covers the routing core; new stages need a fresh smoke test before field-pilot. |
+| `legacy-ibmi-module-analyzer` | v0.1.0 | synced | synced | synced | Reviewed at 9.0 capped. Post-review hardening committed: smoke prompts added, broken view-reference links fixed, blocked statuses/checklists strengthened. Needs three-runtime smoke execution and post-smoke re-score. |
+| `legacy-spec-writer` | v0.1.0 | synced | synced | synced | Reviewed at 9.0 capped. Post-review hardening committed: smoke prompts added, AC/template rule fixed, field evidence status added, spec-review/traceability templates added, skill-local contract check enabled. Needs three-runtime smoke execution and post-smoke re-score. |
+| `legacy-modernization-orchestrator` | v0.2.0 | synced | synced | synced | MVP scope expansion added flow/module/spec routing. v0.1.1 was field-pilot ready; v0.2.0 has not been re-reviewed or re-smoked yet. |
 
 ## Status Values
 
