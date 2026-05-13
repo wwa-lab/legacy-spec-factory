@@ -12,13 +12,17 @@ upstream stage that fits — do not "round up" maturity.
 | 2a | Inventory In Progress | Partial `inventory.yaml` (some objects, no `sme_review.decision`) |
 | 2b | Inventory Blocked | `inventory.yaml.sme_review.decision: blocked`, or `coverage_gaps[].blocking: yes` unresolved |
 | 2c | Inventory Done | `inventory.yaml.sme_review.decision: approved` or `approved_with_non_blocking_tbd`, plus `object-map.md` |
-| 3a | Program Analysis In Progress | `program-analysis.md` for some but not all in-scope programs |
-| 3b | Program Analysis Done | `program-analysis.md` for all in-scope programs |
-| 4a | Static Analysis Partial | One or more of `call-graph.md`, `crud-matrix.md`, `data-dictionary.md`, `screen-map.md` |
-| 4b | Static Analysis Complete | All four Layer 1 static-analysis artifacts present |
-| 5 | Runtime Evidence Mined | `runtime-evidence.jsonl` plus referenced samples in `03_runtime-evidence/` |
-| 6 | Business Rules Drafted | `business-rules.md` (draft) with BR IDs and linked evidence |
-| 7 | Capabilities Mapped | `capability-map.md` grouping rules into capability units |
+| 3a | Program Analysis In Progress | `program-analysis-<OBJ-ID>.md` for some but not all in-scope programs |
+| 3b | Program Analysis Done | `program-analysis-<OBJ-ID>.md` for all in-scope programs |
+| 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
+| 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
+| 3e | Module Analysis In Progress | `02_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
+| 3f | Module Analysis Done | `02_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd) |
+| 4a | Static Analysis Partial | One or more of `call-graph.md`, `crud-matrix.md`, `data-dictionary.md`, `screen-map.md` (optional supplemental artifacts; mostly subsumed by program/flow/module analyses) |
+| 4b | Static Analysis Complete | All four Layer 1 supplemental artifacts present (optional) |
+| 5 | Runtime Evidence Mined | `runtime-evidence.jsonl` plus referenced samples in `03_runtime-evidence/` (deferred from MVP) |
+| 6 | Business Rules Drafted | BR seeds present in module View 1 OR a separate `business-rules.md` (BR IDs + linked evidence); typically subsumed by stage 3f |
+| 7 | Capabilities Mapped | Capability seeds (`CAP-*`) listed in `module-overview.md` OR a separate `capability-map.md`; typically subsumed by stage 3f |
 | 8a | Spec Drafted | `spec.yaml.status: draft` plus `spec.md` |
 | 8b | Spec In Review | `spec.yaml.status: in_review` plus optional `review-report.md` |
 | 8c | Spec Approved | `spec.yaml.status: approved` |

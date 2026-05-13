@@ -147,17 +147,14 @@ for the full table. Common routes:
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
 | Inventory Blocked | Any downstream | **STOP — Inventory Completeness Gate** | N/A (doc) |
-| Inventory Done | Understand program logic | `legacy-ibmi-program-analyzer` | Planned (MVP candidate) |
-| Inventory Done | Map calls | `legacy-ibmi-call-graph-analyzer` | Planned |
-| Inventory Done | Map CRUD usage | `legacy-ibmi-crud-matrix-analyzer` | Planned |
-| Inventory Done | Analyze DDS files/screens/reports | `legacy-ibmi-dds-schema-analyzer` | Planned |
-| Program Analysis Done | Mine runtime evidence | `legacy-ibmi-runtime-evidence-miner` | Planned |
-| Program Analysis + Runtime Evidence | Extract business rules | `legacy-business-rule-miner` | Planned |
-| Business Rules Drafted | Group into capabilities | `legacy-capability-mapper` | Planned |
-| Capabilities Mapped | Produce spec | `legacy-spec-writer` | Planned (MVP candidate) |
-| Spec Drafted | Validate spec | `legacy-spec-reviewer` | Planned |
+| Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** |
+| Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
+| Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** |
+| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** |
+| Module Analysis Done | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.0** |
+| Spec Drafted | Validate spec | `legacy-spec-reviewer` | Future (deferred from MVP) |
 | Spec Reviewed (no blocking findings) | Promote to approved | SME approval — not a skill | Human gate |
-| Spec Approved | Equivalence tests | `legacy-equivalence-test-generator` | Planned |
+| Spec Approved | Equivalence tests | `legacy-equivalence-test-generator` | Future (deferred from MVP) |
 | Equivalence Pack Ready | Forward SDLC handoff | **Forward Handoff Gate** then cross to `wwa-lab/build-agent-skill` | N/A (gate + external chain) |
 
 For any route where the target skill is `Planned` or `Future`, see
@@ -349,12 +346,11 @@ This skill coordinates the rest of the reverse chain:
 
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
-| `legacy-ibmi-inventory` | Implemented (v0.1.0, 9.0) | First call after evidence redaction |
-| `legacy-ibmi-program-analyzer` | Planned (MVP candidate) | Read and explain one program's logic |
-| `legacy-ibmi-call-graph-analyzer` | Planned | Extract call relationships |
-| `legacy-ibmi-crud-matrix-analyzer` | Planned | Map program-to-file CRUD usage |
-| `legacy-ibmi-dds-schema-analyzer` | Planned | Analyze PF/LF/DSPF/PRTF schemas |
-| `legacy-ibmi-runtime-evidence-miner` | Planned | Mine job logs, spool, samples |
+| `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: call graph, file I/O, object deps, error handling |
+| `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** | Per call chain: 7 trigger models; cross-program data flow; commit boundaries |
+| `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
+| `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
 
 ### Layer 1 — Future platforms
 
@@ -366,10 +362,10 @@ contract Layer 2 expects.
 
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
-| `legacy-business-rule-miner` | Planned | Convert analysis + evidence into business rules |
-| `legacy-capability-mapper` | Planned | Group rules into business capabilities |
-| `legacy-spec-writer` | Planned (MVP candidate) | Produce spec.yaml + spec.md |
-| `legacy-spec-reviewer` | Planned | Validate draft spec against gate criteria |
+| `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
+| `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
+| `legacy-spec-writer` | **Implemented v0.1.0** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability |
+| `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
 
 ### Documentation routes (not skills)
@@ -404,6 +400,15 @@ runtime copies.
 
 ## Version History
 
+- v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
+  analysis, module analysis) reflecting the implementation of three new
+  skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and
+  `legacy-spec-writer`. Updated routing-decision-table and stage-identification
+  to mark these skills `Implemented v0.1.0`. Marked subsumed legacy stages
+  (call-graph, CRUD matrix, DSPF schema analyzer; business-rule-miner;
+  capability-mapper) as folded into the new skills. All MVP-required
+  Layer 1/2 skills now implemented; pipeline is e2e-ready for air-gapped
+  pilot delivery.
 - v0.1.1 (2026-05-13): Hardened runtime portability notes by using
   repository-root-relative paths for cross-repository references so synced
   adapter copies do not depend on canonical folder depth. Added a planned-skill

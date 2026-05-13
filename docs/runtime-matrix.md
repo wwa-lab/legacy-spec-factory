@@ -11,7 +11,7 @@ Any change to `skills/` must update this matrix in the same PR or commit.
 | `legacy-ibmi-flow-analyzer` | v0.1.0 | synced | synced | synced | Initial release; 9-step workflow, 7 trigger models (batch/menu/subfile/F-key/trigger/scheduler/API); cross-program data flow + error propagation + commit boundaries; runtime copies created with `scripts/sync-skills.sh`; awaiting Codex review. |
 | `legacy-ibmi-module-analyzer` | v0.1.0 | synced | synced | synced | Initial release; 9-step workflow producing 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md`; aggregates multiple flows + BAU + SME context; awaiting Codex review. |
 | `legacy-spec-writer` | v0.1.0 | synced | synced | synced | Initial release; Layer 2 platform-agnostic; 11-step workflow producing `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per `schemas/spec.schema.yaml`; rule-extraction protocol with strict anti-hallucination at BR promotion; example: Credit Limit Enforcement; awaiting Codex review. |
-| `legacy-modernization-orchestrator` | v0.1.1 | passed | passed | passed | Routing smoke test passed in Codex CLI (`gpt-5.4-mini`), Claude Code (`haiku` with Read-only tool access), and OpenCode (`opencode/minimax-m2.5-free`). Runtime copies remain synced. |
+| `legacy-modernization-orchestrator` | v0.2.0 | synced | synced | synced | MVP scope expansion: added stages 3c–3f (flow / module) and routed to new skills (flow-analyzer / module-analyzer / spec-writer all `Implemented v0.1.0`). Smoke test from v0.1.1 covers the routing core; new stages need a fresh smoke test before field-pilot. |
 
 ## Status Values
 
