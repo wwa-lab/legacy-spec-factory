@@ -14,8 +14,8 @@ document defines the *file format*; that document defines the *intent*.
 # Module: [Business Module Name] (MODULE-<SLUG>-001)
 
 ## Metadata
-- **Module ID:** MODULE-CARD-AUTH-001
-- **Business Name:** Card Authorization
+- **Module ID:** MODULE-AUTH-MODULE-001
+- **Business Name:** Authorization Processing
 - **Scope Statement:** [one paragraph from SME]
 - **Module Owner:** [SME name / role]
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]
@@ -43,7 +43,7 @@ resolves each into one or more `spec.yaml` artifacts.)
 
 | CAP Seed | Suggested By | SME Question |
 | --- | --- | --- |
-| CAP-CARD-AUTH-001 | View 1 + View 3 | Is "On-Us Card Authorization" a distinct capability or part of a broader "Authorization" capability? |
+| CAP-AUTH-MODULE-001 | View 1 + View 3 | Is the primary authorization flow a distinct capability or part of a broader authorization capability? |
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
@@ -72,17 +72,17 @@ resolves each into one or more `spec.yaml` artifacts.)
 ## Business Actors
 | Actor ID | Name / Role | Description | Source |
 | --- | --- | --- | --- |
-| ACTOR-CARD-AUTH-01 | Cardholder | Person making the transaction | SME (Anna Chen) |
-| ACTOR-CARD-AUTH-02 | Merchant | Party requesting authorization | SME |
-| ACTOR-CARD-AUTH-03 | Risk Officer | Manual review of flagged transactions | SME |
-| ACTOR-CARD-AUTH-04 | Operations | Monitors batch jobs | SME |
+| ACTOR-AUTH-MODULE-01 | Primary User | Main system user role | SME |
+| ACTOR-AUTH-MODULE-02 | Secondary User | Supporting user role | SME |
+| ACTOR-AUTH-MODULE-03 | Reviewer | Reviews flagged items | SME |
+| ACTOR-AUTH-MODULE-04 | Operations | Monitors batch execution | SME |
 
 ## Business Events
 | Event ID | Event Name | Trigger | Flow ID | Notes |
 | --- | --- | --- | --- | --- |
-| EVENT-CARD-AUTH-01 | On-us authorization request | Visa API call | FLOW-ONUS-AUTH-001 | sub-second SLA |
-| EVENT-CARD-AUTH-02 | Nightly reconciliation | Scheduler 22:00 | FLOW-NIGHTLY-RECON-001 | cut-off 06:00 next day |
-| EVENT-CARD-AUTH-03 | Manual override (call center) | CSR menu option | FLOW-MANUAL-AUTH-001 | supervisor approval required |
+| EVENT-AUTH-MODULE-01 | Primary event | Entry point event | FLOW-AUTH-001 | sub-second SLA |
+| EVENT-AUTH-MODULE-02 | Batch reconciliation | Scheduler trigger | FLOW-BATCH-001 | cut-off time enforced |
+| EVENT-AUTH-MODULE-03 | Manual intervention | User-initiated event | FLOW-MANUAL-001 | approval required |
 
 ## BAU Rhythm
 | BAU Item | Cadence | Owner | Notes |
@@ -107,8 +107,8 @@ through to resolution. Often a small flowchart.]
 
 | Seed ID | Candidate Rule | Suggested By | SME Question |
 | --- | --- | --- | --- |
-| BR-CARD-AUTH-01 | Credit limit must be respected for every on-us auth | FLOW-ONUS-AUTH SEED-01 | Regulatory or operational? |
-| BR-CARD-AUTH-02 | Decline audit row must persist before response | FLOW-ONUS-AUTH SEED-03 | Hard requirement or best-effort? |
+| BR-AUTH-MODULE-01 | Eligibility threshold must be respected for every primary event | FLOW-AUTH-001 SEED-01 | Regulatory or operational? |
+| BR-AUTH-MODULE-02 | Audit row must persist before response | FLOW-AUTH-001 SEED-03 | Hard requirement or best-effort? |
 | ... | ... | ... | ... |
 
 ## TBDs
@@ -116,7 +116,7 @@ through to resolution. Often a small flowchart.]
 
 | TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CARD-AUTH-001 | pending_source | BAU notes for peak hours | Anna Chen | (awaiting input) | no |
+| TBD-AUTH-MODULE-001 | pending_source | BAU notes for peak hours | Module Owner | (awaiting input) | no |
 
 ## Review Checklist — View 1
 
@@ -148,26 +148,26 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 ## Upstream Systems
 | System ID | Name | Type | Integration Pattern | Flow(s) | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| SYS-CARD-AUTH-01 | Visa | External card network | MQ (mTLS) | FLOW-ONUS-AUTH | EV / SME |
-| SYS-CARD-AUTH-02 | ATM channel | Internal channel | DTAQ (sync) | FLOW-ATM-AUTH | EV / SME |
+| SYS-AUTH-MODULE-01 | External System A | External network partner | MQ (mTLS) | FLOW-AUTH-001 | EV / SME |
+| SYS-AUTH-MODULE-02 | Internal Channel | Internal system channel | DTAQ (sync) | FLOW-MANUAL-001 | EV / SME |
 
 ## Downstream Systems
 | System ID | Name | Type | Integration Pattern | Flow(s) | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| SYS-CARD-AUTH-10 | GL | Internal accounting | File handoff GLPOSTPF | FLOW-NIGHTLY-RECON | EV |
-| SYS-CARD-AUTH-11 | Risk monitoring | Internal | DTAQ async | FLOW-NIGHTLY-RECON | EV |
-| SYS-CARD-AUTH-12 | Compliance reporting | Internal | spool / IFS | FLOW-NIGHTLY-RECON | EV |
+| SYS-AUTH-MODULE-10 | Accounting System | Internal accounting | File handoff | FLOW-BATCH-001 | EV |
+| SYS-AUTH-MODULE-11 | Monitoring System | Internal monitoring | DTAQ async | FLOW-BATCH-001 | EV |
+| SYS-AUTH-MODULE-12 | Reporting System | Internal reporting | spool / IFS | FLOW-BATCH-001 | EV |
 
 ## External Interfaces
 | Interface ID | Counterparty | Direction | Format | SLA | Auth | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| IF-CARD-AUTH-01 | Visa | Bidirectional | ISO 8583 over MQ | sub-second | mTLS + HMAC | SME / spec |
+| IF-AUTH-MODULE-01 | External Partner | Bidirectional | Protocol over MQ | sub-second | mTLS + HMAC | SME / spec |
 
 ## Integration Patterns Summary
 | Pattern | Used By | Async Boundary | Notes |
 | --- | --- | --- | --- |
-| MQ (mTLS) | Visa | Yes (inbound queue) | retries by Visa |
-| File handoff | GL | No (sync batch read) | cut-off enforced |
+| MQ (mTLS) | External Partner | Yes (inbound queue) | retries by partner |
+| File handoff | Accounting System | No (sync batch read) | cut-off enforced |
 | Spool | Compliance | No (manual pickup) | morning review |
 
 ## Security & Network Boundaries
@@ -177,7 +177,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 | TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CARD-AUTH-101 | pending_source | GL system schema contract | David Park | (awaiting integration spec) | yes |
+| TBD-AUTH-MODULE-101 | pending_source | Downstream system schema contract | Integration Owner | (awaiting integration spec) | yes |
 
 ## Review Checklist — View 2
 
@@ -208,21 +208,21 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 ## Flow Inventory
 | Flow ID | Business Event | Trigger Model | Entry Program | Exit Program | Runtime |
 | --- | --- | --- | --- | --- | --- |
-| FLOW-ONUS-AUTH-001 | On-us auth request | API/Remote | CU101A | CU199Z | sync, real-time |
-| FLOW-NIGHTLY-RECON-001 | Nightly recon | Scheduler+Batch | RECONCL | RECONSQL | async, batch |
-| FLOW-MANUAL-AUTH-001 | Manual auth via CSR | Menu | MANAUTH | MANAUTH | sync, interactive |
+| FLOW-AUTH-001 | Primary event | Entry point | PGM-ENTRY | PGM-EXIT | sync, real-time |
+| FLOW-BATCH-001 | Batch processing | Scheduler+Batch | PGM-ORCH | PGM-FINAL | async, batch |
+| FLOW-MANUAL-001 | Manual intervention | Menu | PGM-MANUAL | PGM-MANUAL | sync, interactive |
 
 ## Cross-Flow Dependencies
 | From Flow | To Flow | Mechanism | Reason |
 | --- | --- | --- | --- |
-| FLOW-ONUS-AUTH-001 | FLOW-NIGHTLY-RECON-001 | Shared file TXNLOGPF | online auth writes log; reconciliation reads |
-| FLOW-MANUAL-AUTH-001 | FLOW-NIGHTLY-RECON-001 | Shared file TXNLOGPF | manual auth also writes log |
+| FLOW-AUTH-001 | FLOW-BATCH-001 | Shared file DATA-01 | primary event writes log; batch reads |
+| FLOW-MANUAL-001 | FLOW-BATCH-001 | Shared file DATA-01 | manual event also writes log |
 
 ## Shared Sub-Programs (called by multiple flows)
 | Program | Called By Flows | Role | Notes |
 | --- | --- | --- | --- |
-| CREDITCHK | FLOW-ONUS-AUTH, FLOW-MANUAL-AUTH | Credit check utility | shared validation |
-| TXNLOG | FLOW-ONUS-AUTH, FLOW-MANUAL-AUTH, FLOW-NIGHTLY-RECON | Audit log writer | hot path |
+| PGM-VALIDATE | FLOW-AUTH-001, FLOW-MANUAL-001 | Validation utility | shared validation |
+| PGM-LOGGER | FLOW-AUTH-001, FLOW-MANUAL-001, FLOW-BATCH-001 | Audit log writer | hot path |
 
 ## Overall Call Topology
 [Top-level sequence / ASCII tree showing how flows compose.]
@@ -231,7 +231,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 | TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CARD-AUTH-201 | pending_sme | CREDITCHK scope in MANUAL-AUTH flow | Liu Wei | (awaiting SME confirmation) | no |
+| TBD-AUTH-MODULE-201 | pending_sme | Validation utility scope in manual flow | Application SME | (awaiting SME confirmation) | no |
 
 ## Review Checklist — View 3
 
@@ -264,20 +264,20 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 | Object | Type | Inventory ID | Producer Flows | Consumer Flows | Coupling Score | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| TXNLOGPF | PF | OBJ-CARD-AUTH-050 | FLOW-ONUS-AUTH, FLOW-MANUAL-AUTH | FLOW-NIGHTLY-RECON | 3 (HIGH) | EV |
-| GLPOSTPF | PF | OBJ-CARD-AUTH-060 | FLOW-NIGHTLY-RECON | (external — GL system) | 1 | EV |
-| HSSDTAR002 | *DTAARA | OBJ-CARD-AUTH-070 | FLOW-NIGHTLY-RECON | FLOW-NIGHTLY-RECON | 1 (internal) | EV |
-| CUSTMSTR | PF | OBJ-CARD-AUTH-080 | (external) | FLOW-ONUS-AUTH | 1 | EV |
+| DATA-TXN-LOG | PF | OBJ-AUTH-MODULE-050 | FLOW-AUTH-001, FLOW-MANUAL-001 | FLOW-BATCH-001 | 3 (HIGH) | EV |
+| DATA-POSTING | PF | OBJ-AUTH-MODULE-060 | FLOW-BATCH-001 | (external — posting system) | 1 | EV |
+| DATA-STATE | *DTAARA | OBJ-AUTH-MODULE-070 | FLOW-BATCH-001 | FLOW-BATCH-001 | 1 (internal) | EV |
+| DATA-MASTER | PF | OBJ-AUTH-MODULE-080 | (external) | FLOW-AUTH-001 | 1 | EV |
 
 ## Data Lifecycle
 | Object | Created By | Updated By | Read By | Archived By | Purged By |
 | --- | --- | --- | --- | --- | --- |
-| TXNLOGPF | FLOW-ONUS-AUTH (per transaction) | (none — append-only) | FLOW-NIGHTLY-RECON, FLOW-MANUAL-AUTH | (monthly archive job — out of module) | (yearly purge — out of module) |
+| DATA-TXN-LOG | FLOW-AUTH-001 (per event) | (none — append-only) | FLOW-BATCH-001, FLOW-MANUAL-001 | (monthly archive job — out of module) | (yearly purge — out of module) |
 
 ## Coupling Hotspots (Modernization Risks)
 | Object | Coupling Score | Risk | Mitigation |
 | --- | --- | --- | --- |
-| TXNLOGPF | HIGH (3 flows) | Schema change ripples through all flows | Maintain backward compatibility; version transactions |
+| DATA-TXN-LOG | HIGH (3 flows) | Schema change ripples through all flows | Maintain backward compatibility; version transactions |
 
 ## Critical Data Trails
 [End-to-end paths of important data — e.g., a transaction record from
@@ -290,14 +290,14 @@ PF / LF / SQL tables.]
 ## Cross-Module Data Dependencies
 | Object | Owned By Module | Used By This Module | Mechanism |
 | --- | --- | --- | --- |
-| CUSTMSTR | CUSTOMER-MASTER module | CARD-AUTH (read-only lookup) | Direct CHAIN |
-| GLPOSTPF | (this module produces; GL consumes) | n/a | File handoff |
+| DATA-MASTER | MASTER-DATA module | AUTH-MODULE (read-only lookup) | Direct CHAIN |
+| DATA-POSTING | (this module produces; Accounting consumes) | n/a | File handoff |
 
 ## TBDs
 
 | TBD ID | Category | Title | Required SME | Evidence Ref | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CARD-AUTH-301 | pending_sme | GLPOSTPF archival policy | Maria Lopez | (awaiting data governance) | no |
+| TBD-AUTH-MODULE-301 | pending_sme | DATA-POSTING archival policy | Data Owner | (awaiting data governance) | no |
 
 ## Review Checklist — View 4
 
@@ -354,15 +354,15 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 | Prefix | Artifact | Example |
 |---|---|---|
-| `MODULE-` | the module | `MODULE-CARD-AUTH-001` |
-| `ACTOR-` | business actor (View 1) | `ACTOR-CARD-AUTH-03` |
-| `EVENT-` | business event (View 1) | `EVENT-CARD-AUTH-02` |
-| `SYS-` | upstream / downstream system (View 2) | `SYS-CARD-AUTH-01` |
-| `IF-` | external interface (View 2) | `IF-CARD-AUTH-01` |
-| `BR-` | business-rule seed (View 1) | `BR-CARD-AUTH-01` |
-| `CAP-` | capability seed (overview) | `CAP-CARD-AUTH-001` |
-| `TBD-` | open question | `TBD-CARD-AUTH-005` |
-| `EV-` | evidence | `EV-CARD-AUTH-012` |
+| `MODULE-` | the module | `MODULE-AUTH-MODULE-001` |
+| `ACTOR-` | business actor (View 1) | `ACTOR-AUTH-MODULE-03` |
+| `EVENT-` | business event (View 1) | `EVENT-AUTH-MODULE-02` |
+| `SYS-` | upstream / downstream system (View 2) | `SYS-AUTH-MODULE-01` |
+| `IF-` | external interface (View 2) | `IF-AUTH-MODULE-01` |
+| `BR-` | business-rule seed (View 1) | `BR-AUTH-MODULE-01` |
+| `CAP-` | capability seed (overview) | `CAP-AUTH-MODULE-001` |
+| `TBD-` | open question | `TBD-AUTH-MODULE-005` |
+| `EV-` | evidence | `EV-AUTH-MODULE-012` |
 
 Flow / Node / Edge / Data IDs from flow-analyzer remain valid in View 3 / 4.
 Object IDs (`OBJ-*`) and evidence IDs (`EV-*`) from inventory and

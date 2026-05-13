@@ -249,11 +249,13 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
 
-- Post-review hardening (2026-05-14):
-  - Replaced nonexistent per-view reference links with existing
-    `references/output-contract.md` and `references/synthesis-rules.md`
-  - Added blocked status values and per-view review checklist detail to
-    canonical templates / output contract
+- v0.1.1 (2026-05-14): Post-review hardening
+  - Fixed broken reference links in SKILL.md (nonexistent per-view methodology files)
+  - Added `blocked_pending_source` and `blocked_pending_sme` status values
+  - Added per-view review checklists (View 1–4) to output contract
+  - Strengthened evidence traceability (TBD ID and Evidence Ref columns)
+  - Added positive and negative smoke test prompts to runtime-smoke-tests.md
+  - Ready for smoke testing in Codex CLI, Claude Code, OpenCode
 
 - v0.1.0 (2026-05-14): Initial release
   - 9-step workflow
