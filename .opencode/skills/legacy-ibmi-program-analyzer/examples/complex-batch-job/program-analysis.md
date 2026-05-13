@@ -71,6 +71,31 @@ Main line                    Main flow control
 
 ---
 
+## Object Dependencies
+
+Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
+
+### Uses (forward dependencies)
+
+| Object     | Type    | Version | Description                                   | Inventory ID         | Evidence            |
+| ---        | ---     | ---     | ---                                           | ---                  | ---                 |
+| ORDFILE    | PF      | —       | Pending orders file (sequential read)         | OBJ-ORDER-BATCH-002  | confirmed_from_code |
+| CUSTFILE   | LF      | —       | Customer logical file (declared, unused)      | OBJ-ORDER-BATCH-003  | confirmed_from_code |
+| SHIPFILE   | PF      | —       | Shipping cost lookup table                    | OBJ-ORDER-BATCH-004  | confirmed_from_code |
+| CUSTMSTR   | PF (UF) | —       | Customer master (update mode, locked on CHAIN)| OBJ-ORDER-BATCH-005  | confirmed_from_code |
+| CREDFILE   | PF (DS) | —       | Credit profile DS via EXTNAME (line 94)       | TBD-ORDER-BATCH-008  | confirmed_from_code |
+| UPDTRISK   | *PGM    | —       | External program: update customer risk profile| OBJ-ORDER-BATCH-006  | confirmed_from_code |
+| QSYSOPR    | *MSGQ   | —       | System operator message queue (via SNDPGMMSG) | (system, no OBJ-*)   | confirmed_from_code |
+
+**Inventory gaps:**
+- **TBD-ORDER-BATCH-008:** CREDFILE referenced via EXTNAME in ValidateCredit (line 94) but not yet in inventory; add it.
+
+### Used By (reverse dependencies)
+
+(Not yet populated — depends on `01_inventory/inventory.yaml` `relationships` section, which is out of scope for this single-program analysis.)
+
+---
+
 ## Control Flow
 
 ### Main Entry Point
@@ -196,6 +221,11 @@ Main line                    Main flow control
   - Question: CHAIN uses OrderAmount, but is this a unique key or a range? If range, does CHAIN find closest match or exact match? Is calculation (OrderAmount * 0.0100) correct fallback?
   - Related: [OBJ-ORDER-BATCH-001]
 
+- **TBD-ORDER-BATCH-008:** Add CREDFILE to inventory (inventory gap)
+  - Blocking: pending_source (inventory)
+  - Question: CREDFILE is referenced via EXTNAME data structure in ValidateCredit (line 94) but is not in the current `01_inventory/inventory.yaml`. Inventory skill should add it before this analysis is finalized.
+  - Related: [OBJ-ORDER-BATCH-001]
+
 ### Pending SME Judgment
 - **TBD-ORDER-BATCH-003:** Confirm UPDTRISK return code meanings
   - Blocking: pending_sme_judgment
@@ -234,7 +264,7 @@ Before approval, SME must validate:
 - [X] File I/O matches job design — ORDFILE sequential, CUSTMSTR CHAIN on CustID, SHIPFILE CHAIN on OrderAmount
 - [X] External calls match system interfaces — UPDTRISK called with correct parameters
 - [ ] Error handling aligns with production reliability requirements — **See TBD-ORDER-BATCH-004**
-- [ ] TBDs are non-blocking or properly flagged for follow-up — 7 TBDs; 2 pending source, 3 pending SME, 2 non-blocking
+- [ ] TBDs are non-blocking or properly flagged for follow-up — 8 TBDs; 3 pending source (incl. 1 inventory gap), 3 pending SME, 2 non-blocking
 - [X] No invented subroutines or undocumented file access — All behaviors confirmed from source
 - [X] All evidence links reference existing inventory items — EV-* IDs align with ORDER-BATCH scope
 - [X] Status field is set to draft

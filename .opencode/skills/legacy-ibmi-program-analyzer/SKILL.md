@@ -109,17 +109,30 @@ Examples:
      - **Call site table** (caller, callee, line, call condition such as "in DOWHILE loop" or "only if approved")
      - **Reverse index** (for each subroutine, who calls it)
 
-5. **Document File I/O**
-   - List all physical files (PF) and logical files (LF) accessed by the program
-   - Classify operations per file:
+5. **List Object Dependencies (flat reference inventory)**
+   - Match the shop's `F5-OBJREF TREE` output format: enumerate **every external object** referenced by the program, regardless of how it is used.
+   - Object types to cover:
+     - Files: PF (physical), LF (logical), DSPF (display), PRTF (printer)
+     - Data: \*DTAARA (data area), \*DTAQ (data queue), \*MSGF (message file)
+     - Programs: \*PGM (called program), \*SRVPGM (bound service program)
+     - Source-level: Copybooks / `/COPY` directives, data-structure includes
+   - Capture columns: object name, type, version (if shop tracks one), description, inventory ID (OBJ-\*), evidence
+   - Cross-reference each entry against `01_inventory/inventory.yaml`:
+     - If a matching OBJ-\* exists → link it
+     - If not → create TBD: inventory gap (the inventory missed this object)
+   - This section is the **flat parent list**; deeper per-object analysis happens in steps 6 (File I/O) and 7 (External Calls).
+   - Tag: `confirmed_from_code` (visible in F-spec, D-spec, /COPY, or CALL statement)
+
+6. **Document File I/O**
+   - For each file from step 5 (PF / LF / DSPF / PRTF), classify operations:
      - Read operations: SETLL (set lower limit), READE (read equal), CHAIN (random access)
      - Write operations: WRITE (add new record), UPDATE (modify record), DELETE
      - Note key fields used in each operation (e.g., CHAIN on CUSTID)
-   - Reference file definitions from inventory via evidence ID (EV-*)
+   - Reference file definitions from inventory via evidence ID (EV-\*)
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
    - Create TBD if DDS is missing or key field unclear
 
-6. **Identify External Calls**
+7. **Identify External Calls**
    - List all external program calls:
      - RPGLE: CALL, CALLP (procedure call)
      - CLLE: CALL, CALLPRC
@@ -130,7 +143,7 @@ Examples:
    - Tag: `confirmed_from_code` (source statement visible) or `needs_sme_review` (undocumented)
    - Create TBD if external interface is unknown or network-dependent
 
-7. **Document Error Handling**
+8. **Document Error Handling**
    - List monitored errors:
      - RPGLE: MONITOR / ON-ERROR block, escape messages
      - CLLE: MONMSG (monitor message)
@@ -141,8 +154,8 @@ Examples:
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
    - Create TBD if error handling is unclear or context-dependent
 
-8. **Prepare for SME Review**
-   - Consolidate all TBDs created in steps 2–7 with clear blocking status:
+9. **Prepare for SME Review**
+   - Consolidate all TBDs created in steps 2–8 with clear blocking status:
      - `pending_source` — missing DDS, incomplete source
      - `pending_sme_judgment` — behavior unclear from source alone
      - `non_blocking` — known gaps that don't affect downstream analysis
@@ -200,7 +213,7 @@ No runtime-specific assumptions are embedded in the canonical version.
 ## Version History
 
 - v0.1.0 (2026-05-14): Initial release
-  - 8-step workflow for RPGLE, CLLE, COBOL (with explicit call-graph extraction)
+  - 9-step workflow for RPGLE, CLLE, COBOL (with call-graph extraction and flat object-dependency listing)
   - Entry point extraction, control flow tracing, file I/O documentation
   - External call and error handling detection
   - Evidence tagging and TBD handling

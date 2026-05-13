@@ -66,6 +66,29 @@ Main line                    Main flow control
 
 ---
 
+## Object Dependencies
+
+Source: shop F5-OBJREF TREE tool output | derived-from-code | both (matched)
+
+### Uses (forward dependencies)
+
+| Object        | Type      | Version  | Description                          | Inventory ID         | Evidence            |
+| ---           | ---       | ---      | ---                                  | ---                  | ---                 |
+| [OBJ_NAME]    | PF / LF / DSPF / PRTF / *DTAARA / *DTAQ / *MSGF / *PGM / *SRVPGM / Copybook / PF (DS) | [VERSION or —] | [Description] | OBJ-[SLUG]-[NNN] or TBD-[SLUG]-[NNN] | confirmed_from_code |
+
+**Inventory gaps:**
+- TBD-[SLUG]-[NNN]: object [NAME] referenced by program but not in inventory.yaml
+
+### Used By (reverse dependencies)
+
+From `01_inventory/inventory.yaml` `relationships` section.
+
+| Caller     | Type   | Notes                          | Evidence |
+| ---        | ---    | ---                            | --- |
+| [CALLER]   | *PGM   | [description]                  | from inventory relationships |
+
+---
+
 ## Control Flow
 
 ### Main Entry Point

@@ -13,6 +13,7 @@ Each program analysis follows this markdown structure:
 ## Entry Points & Parameters
 ## Call Graph
 ## Control Flow
+## Object Dependencies
 ## File I/O
 ## External Calls
 ## Error Handling
@@ -222,6 +223,86 @@ If the source has a flow-header comment block (common in IBM i shops), the analy
 - Subroutine flow should be self-contained (independent of caller context)
 - Loops and branches should show all paths (happy path + error paths)
 - External calls should name the called program and parameters
+
+---
+
+## Object Dependencies Section
+
+This section is the **flat reference inventory** — every external object the program touches, in one table. It matches the shop's `F5-OBJREF TREE` tool output so SMEs can compare side-by-side.
+
+**Why this section exists separately from File I/O / External Calls:**
+- Object Dependencies = **what is referenced** (flat list, all types)
+- File I/O = **how files are read/written** (deep dive on PF/LF/DSPF/PRTF only)
+- External Calls = **how programs are invoked** (deep dive on \*PGM / \*SRVPGM only)
+
+An object listed in Object Dependencies that is a file should also appear in File I/O with operation details; if it is a called program, in External Calls. Data areas, copybooks, data structures appear only here.
+
+### Format
+
+```markdown
+## Object Dependencies
+
+Source: shop F5-OBJREF TREE tool output | derived-from-code | both (matched)
+
+### Uses (forward dependencies)
+
+| Object        | Type      | Version  | Description                                  | Inventory ID         | Evidence            |
+| ---           | ---       | ---      | ---                                          | ---                  | ---                 |
+| HSSDTAR002    | *DTAARA   | 01.00.00 | Batch Run Date-Related Parameters Data Area  | OBJ-AUTH-ONUS-014    | confirmed_from_code |
+| HSSDTAR100    | *DTAARA   | —        | (description not in tool output)             | OBJ-AUTH-ONUS-015    | confirmed_from_code |
+| @CU176D       | PF (DS)   | 01.00.00 | @CU176 Program Parameter Data Structure      | OBJ-AUTH-ONUS-016    | confirmed_from_code |
+| ADEALTP       | PF        | 01.00.00 | ATM Deal Number Table                        | OBJ-AUTH-ONUS-017    | confirmed_from_code |
+| AUTHTPDS      | PF        | 25.K.23A | DS for Segment ID AUTHTP IN CCAUSGP/HP       | OBJ-AUTH-ONUS-018    | confirmed_from_code |
+| CC030D        | PF (DS)   | 01.00.00 | CC030 Program Parameter Data Structure       | OBJ-AUTH-ONUS-019    | confirmed_from_code |
+| CC040D        | PF (DS)   | 01.00.00 | CC040 Program Parameter Data Structure       | OBJ-AUTH-ONUS-020    | confirmed_from_code |
+| HCCDTAR001    | Copybook  | —        | (D-spec include)                             | TBD-AUTH-ONUS-NNN    | confirmed_from_code |
+| HCCDTAR115    | Copybook  | —        | (D-spec include)                             | TBD-AUTH-ONUS-NNN    | confirmed_from_code |
+| CHECKEXPOSE   | *PGM      | —        | Credit exposure check (external program)     | OBJ-AUTH-ONUS-030    | confirmed_from_code |
+
+### Used By (reverse dependencies)
+
+Drawn from `01_inventory/inventory.yaml` `relationships` section.
+
+| Caller      | Type   | Notes                              | Evidence                          |
+| ---         | ---    | ---                                | ---                               |
+| ORDENTR     | *PGM   | Calls CU101A on online auth flow   | from inventory relationships      |
+| CU101B      | *PGM   | Calls CU101A after batch staging   | from inventory relationships      |
+```
+
+### Required Columns
+
+| Column | Source / Meaning |
+| --- | --- |
+| Object | Object name as it appears in source code (uppercase, IBM i naming) |
+| Type | `PF`, `LF`, `DSPF`, `PRTF`, `*DTAARA`, `*DTAQ`, `*MSGF`, `*PGM`, `*SRVPGM`, `Copybook`, `PF (DS)` |
+| Version | Shop-tracked version if available (e.g., `01.00.00`, `25.K.23A`); `—` if not tracked |
+| Description | Business description from the shop tool, source comment, or inventory |
+| Inventory ID | Matching `OBJ-*` from `01_inventory/inventory.yaml`; or `TBD-*` if inventory has no entry |
+| Evidence | `confirmed_from_code` (F-spec, D-spec, /COPY, CALL statement) or `needs_sme_review` |
+
+### Object-Type Recognition Hints
+
+- **`H`-prefix** in shop conventions often = **header / D-spec include** (copybook); confirm against `/COPY` directives in source
+- **`@`-prefix** often = **data-structure copybook** (parameter DS); confirm against `D` specs
+- **`HSS`-prefix** in this shop = data areas (`HSSDTAR…` = SSDTAR data area family)
+- **`HCC`-prefix** in this shop = copybooks (`HCCDTAR…` = CCDTAR family copybooks)
+- These conventions are **shop-specific** — verify with the SME and add to a shop-conventions reference rather than hard-coding into the analysis.
+
+### Inventory Cross-Check Rule
+
+For every object in this table:
+- If `01_inventory/inventory.yaml` has a matching `OBJ-*` → use that ID
+- If not → create `TBD-<SLUG>-NNN: inventory gap, object [NAME] used by [PROGRAM] not in inventory`
+  - Blocking: `pending_source` (inventory is incomplete)
+  - This is a signal back to the inventory skill that its scope needs widening.
+
+### Source Comparison Rule
+
+If the shop's `F5-OBJREF TREE` output is provided as input:
+- Reproduce its rows verbatim in the "Uses" table
+- Independently re-derive the list from source code (F-specs, D-specs, /COPY directives, CALL statements)
+- Mark "Source: both (matched)" if identical
+- If shop tool has objects not in code or vice versa → create TBD (tool drift / dead reference / missing source)
 
 ---
 
