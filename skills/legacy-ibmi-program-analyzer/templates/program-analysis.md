@@ -11,7 +11,7 @@
 - **Entry Points:** [List entry point names]
 - **Files Accessed:** [List file names and types]
 - **External Calls:** [List called program/service names]
-- **Status:** draft
+- **Status:** draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 
 ---
 

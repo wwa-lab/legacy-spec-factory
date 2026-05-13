@@ -290,6 +290,81 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the missing-artifact prompt above into
 the same commands.
 
+### `legacy-ibmi-program-analyzer`
+
+#### Scenario (Positive — Simple RPGLE CRUD)
+
+```text
+Use /legacy-ibmi-program-analyzer.
+
+User input:
+I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates
+customer credit limits. Analyze its control flow, file I/O, entry points,
+and external calls.
+
+Provide the analysis in the output contract format.
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- **Metadata section:** Program ID (OBJ-CREDIT-VALIDATION-001), Program Type (RPGLE), entry points list
+- **Entry Points & Parameters:** CreditChk procedure with (CustID, RequestAmount) parameters and return decision code
+- **Control Flow:** CHAIN operation on CREDFILE, IF/ELSE branching on credit limit check
+- **File I/O:** CREDFILE with CHAIN operation; CUSTFILE marked as declared but unused
+- **External Calls:** None (correctly identifies no external CALLs)
+- **Evidence tagging:** All major behaviors tagged with `confirmed_from_code` or evidence IDs
+- **Status:** draft or needs_sme_review (not blocked_pending_source; source is complete)
+- **No TBDs created for complete source sections** (though "confirm CREDFILE DDS field list" may appear as non-blocking pending)
+- No files are created or edited
+
+#### Scenario (Negative — Incomplete Source)
+
+```text
+Use /legacy-ibmi-program-analyzer.
+
+User input:
+I have a COBOL program with incomplete source. The COMPUTE-RATE paragraph has
+a comment saying it calls GET-BASE-RATE, but the CALL statement is not in the
+extract. The LOOKUP-ADJUSTMENT-TABLE paragraph is declared but the body is
+missing. What should the analysis look like?
+
+Analyze this source and show me the correct TBD handling.
+```
+
+#### Pass Criteria (Negative)
+
+- **Status:** blocked_pending_source (source incompleteness blocks analysis)
+- **Does NOT invent** missing procedures, subroutine bodies, or CALL statements
+- **Creates blocking TBDs** for each missing source fragment:
+  - TBD-*: COMPUTE-RATE paragraph incomplete; CALL statement not provided
+  - TBD-*: LOOKUP-ADJUSTMENT-TABLE body missing
+- **Documents what IS visible** (e.g., comment indicates GET-BASE-RATE call but code not shown)
+- **Refuses to guess** procedure behavior without source
+- **Entry Points & Control Flow** sections clearly marked as incomplete
+- No files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, and external calls. Provide the analysis in the output contract format."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, and external calls. Provide the analysis in the output contract format."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, and external calls. Provide the analysis in the output contract format."
+```
+
+For the negative scenario, substitute the incomplete-source prompt above into
+the same commands.
+
 ## Pass Example — `legacy-modernization-orchestrator` v0.1.1
 
 | Runtime | Model | Discovery | Trigger | Outcome |
