@@ -52,7 +52,7 @@ opencode run \
 ```
 
 ```bash
-codex exec -C . -s read-only -a never \
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
   "Use /legacy-modernization-orchestrator. User input: I have redacted RPGLE source, DDS, a spool sample, redacted sample transactions, and an SME contact for a CREDIT-CHECK capability. What should I do next? Return only: current stage, recommended next skill, gate check."
 ```
 
