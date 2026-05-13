@@ -41,7 +41,9 @@ Any of the following caps the score at **9.0**:
 - examples are missing or too generic
 - references are useful but not linked clearly from `SKILL.md`
 - validation steps are described but not enforceable
-- portability has been considered but not tested in all target runtimes
+- portability has been considered but not tested in all target runtimes — see
+  [docs/runtime-smoke-tests.md](runtime-smoke-tests.md) for the reusable
+  protocol that lifts this cap
 - review checklist exists but does not map to measurable outputs
 
 ## Scoring Rubric
