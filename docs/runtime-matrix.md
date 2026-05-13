@@ -7,6 +7,7 @@ Any change to `skills/` must update this matrix in the same PR or commit.
 | Skill | Canonical Version | Codex | Claude Code | OpenCode | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `legacy-ibmi-inventory` | v0.1.0 | synced | synced | synced | Runtime copies created with `scripts/sync-skills.sh`; loading/execution not yet verified. |
+| `legacy-ibmi-program-analyzer` | v0.1.0 | synced | synced | synced | Initial release; runtime copies created with `scripts/sync-skills.sh`; awaiting Codex review for 9.5/10 field-pilot readiness. |
 | `legacy-modernization-orchestrator` | v0.1.1 | passed | passed | passed | Routing smoke test passed in Codex CLI (`gpt-5.4-mini`), Claude Code (`haiku` with Read-only tool access), and OpenCode (`opencode/minimax-m2.5-free`). Runtime copies remain synced. |
 
 ## Status Values
