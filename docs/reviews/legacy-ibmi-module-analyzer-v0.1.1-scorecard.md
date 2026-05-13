@@ -30,16 +30,22 @@
 - Added positive and negative smoke test prompts to `docs/runtime-smoke-tests.md`
 - Ran `scripts/sync-skills.sh --target all --check`; all runtime adapter copies reported `OK`
 - Sanitized output-contract examples to use generic AUTH-MODULE placeholders
-- Verified `docs/runtime-matrix.md` shows all target runtimes as `synced`
+- Ran `./scripts/smoke-test-module-analyzer.sh` on 2026-05-14 with Codex
+  (gpt-5.4-mini), Claude Code (haiku), and OpenCode (minimax-m2.5-free)
+- Verified `docs/runtime-matrix.md` records all target runtimes as `executed`
 - Codex correction pass removed the premature field-pilot-ready claim because
-  smoke execution evidence has not been recorded yet
+  strict three-runtime `passed` evidence has not been recorded yet
+- Manual review found the automated smoke script's `passed` result was too
+  permissive: Claude Code asked for missing upstream evidence instead of
+  producing artifacts, and OpenCode attempted workspace writes with partial
+  output before smoke artifacts were cleaned up
 
 ## Mandatory Stop Conditions
 
 No mandatory 8.0 cap conditions found.
 
-A 9.0 runtime cap still applies for v0.1.1 until three-runtime smoke execution
-evidence is recorded:
+A 9.0 runtime cap still applies for v0.1.1 after the 2026-05-14 smoke run
+because strict three-runtime positive-pass evidence is not yet recorded:
 
 - All v0.1.0 review findings have been addressed
 - Broken links repaired and verified (references now point to existing files)
@@ -47,12 +53,14 @@ evidence is recorded:
 - Per-view checklists fully materialized (not just placeholders)
 - Evidence traceability strengthened with explicit TBD and Evidence Ref fields
 - Smoke test prompts fully specified in `docs/runtime-smoke-tests.md`
-- All three runtimes synced and ready for smoke test execution
+- All three runtimes synced and executed the positive smoke prompt
 - Output-contract examples sanitized to prevent information leakage
 
-**Remaining condition:** three-runtime smoke test execution. Until Codex,
-Claude Code, and OpenCode have recorded `executed` or `passed` evidence, this
-skill is repo-ready but not field-pilot ready.
+**Remaining condition:** strict three-runtime positive smoke pass. Codex,
+Claude Code, and OpenCode have execution evidence, but not all outputs satisfy
+the positive pass criteria (`module-overview.md` plus all four views, no file
+writes, no blocking TBDs for the complete-module scenario). This skill remains
+repo-ready but not field-pilot ready.
 
 ## Weighted Score
 
@@ -81,7 +89,7 @@ Decision: **repo-ready, not field-pilot ready**
 
 | ID | Finding | Resolution | Status |
 | --- | --- | --- | --- |
-| MOD-REV-001 | Runtime smoke prompts and execution evidence missing | Added positive and negative prompts to `docs/runtime-smoke-tests.md` with pass criteria; execution evidence still pending | PARTIAL - prompts fixed, execution pending |
+| MOD-REV-001 | Runtime smoke prompts and execution evidence missing | Added positive and negative prompts to `docs/runtime-smoke-tests.md` with pass criteria; executed positive smoke in all three runtimes on 2026-05-14 | PARTIAL - prompts fixed, execution recorded, strict pass pending |
 | MOD-REV-002 | SKILL.md links nonexistent per-view reference files | Updated SKILL.md to reference only existing `output-contract.md` and `synthesis-rules.md` | FIXED |
 | MOD-REV-003 | Blocked-module status inconsistent | Added `blocked_pending_source` and `blocked_pending_sme` to output contract and view templates | FIXED |
 | MOD-REV-004 | Evidence traceability not enforceable | Added TBD ID, Evidence Ref, and Blocking columns to output contract per-view tables | FIXED |
@@ -122,7 +130,7 @@ Notes:
 
 All three runtime adapters synced and verified with `scripts/sync-skills.sh --target all --check`. No drift detected. Output-contract placeholders are sanitized in all synced copies for security compliance.
 
-**Smoke testing status:** Positive and negative test prompts ready in `docs/runtime-smoke-tests.md`. Three runtimes are at `synced` status only. Smoke test execution must confirm `loaded`, `executed`, and preferably `passed` status before the runtime cap can be lifted.
+**Smoke testing status:** Positive and negative test prompts are present in `docs/runtime-smoke-tests.md`. The 2026-05-14 positive smoke run reached `executed` in Codex, Claude Code, and OpenCode, but manual review did not confirm strict `passed` status in all three runtimes. The runtime cap remains until the smoke script is hardened and a clean three-runtime pass is recorded.
 
 ## Adversarial Pass
 
@@ -147,21 +155,21 @@ All items from v0.1.0's revision prompt have been addressed:
 4. Added required `evidence_ids`, TBD references, and review-status fields to output contract
 5. Added measurable per-view review checklist sections to output contract and template
 6. Ran `scripts/sync-skills.sh --target all` and verified `--check` passes
-7. Smoke protocol ready in three runtimes (execution pending)
+7. Smoke protocol executed in three runtimes (strict pass pending)
 
 ## Next Steps
 
-1. **Run smoke tests** in Codex CLI, Claude Code, and OpenCode using positive case prompt
-2. **Update `docs/runtime-matrix.md`** with runtime status (`loaded`, `executed`, or `passed`) and exact model/date
-3. **Confirm all pass criteria** for positive (4-view synthesis complete, all fields populated, evidence tagged) and negative (blocked status, no partial synthesis)
-4. **Re-score the skill** and lift the runtime cap only if smoke evidence supports it
+1. **Harden the smoke script** so `passed` requires all positive pass criteria, not only a substring match
+2. **Prevent OpenCode smoke writes** by using an explicit no-edit/read-only guard or an isolated disposable workspace
+3. **Rerun smoke tests** in Codex CLI, Claude Code, and OpenCode using the positive and negative prompts
+4. **Re-score the skill** and lift the runtime cap only if clean three-runtime pass evidence supports it
 
 **Expected outcome after successful smoke evidence:** v0.1.1 can be considered
 for field-pilot readiness and a 9.5+ score.
 
 ## Sign-Off
 
-- **Review Status:** Post-revision, repo-ready, awaiting smoke test confirmation
-- **Ready for Smoke Testing:** YES
+- **Review Status:** Post-revision, repo-ready, smoke executed, strict pass pending
+- **Ready for Smoke Testing:** YES - rerun after smoke script hardening
 - **Expected Score Post-Smoke:** 9.5/10 target, subject to actual smoke results
 - **Date Completed:** 2026-05-14
