@@ -29,6 +29,43 @@
 
 ---
 
+## Call Graph
+
+### Tree View
+
+Source: source-level flow header (lines [XX–YY]) | derived-from-code | both (matched)
+
+```text
+Main line                    Main flow control
+|-- [SR_NAME]                [description from header, if present]
+|    |-- [SR_NAME]           [description]
+|         |-- [SR_NAME]      [description]
+|-- [SR_NAME]                [description]
+```
+
+**Evidence:**
+- [EV-[SLUG]-[NNN]: source-level flow header lines XX–YY] (if header present)
+- [EV-[SLUG]-[NNN]: EXSR / CALL / PERFORM statements] (code-derived)
+
+**Header vs. code:** matched | drift detected → see TBD-[SLUG]-[NNN]
+
+### Call Sites
+
+| Caller | Callee | Type | Line | Call Condition | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| [CALLER] | [CALLEE] | EXSR / CALLP / CALL / PERFORM / CALLPRC | [LINE] | always / in loop / only if X / first-time-only | confirmed_from_code |
+
+### Reverse Index
+
+| Subroutine | Called By | Notes |
+| --- | --- | --- |
+| [SR_NAME] | [CALLER] [line] | [hot path / dead code / single callsite / etc.] |
+
+**Orphaned subroutines (declared but never called):**
+- [SR_NAME] → TBD-[SLUG]-[NNN]: confirm whether dead code
+
+---
+
 ## Control Flow
 
 ### Main Entry Point

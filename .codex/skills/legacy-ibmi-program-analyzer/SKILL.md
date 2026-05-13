@@ -89,7 +89,27 @@ Examples:
    - Tag each non-trivial control structure: `confirmed_from_code` or `medium_confidence` if inferred
    - Create TBD for unclear program flow (missing subroutines, undefined labels)
 
-4. **Document File I/O**
+4. **Build Call Graph**
+   - **First, look for a source-level flow header** at the top of the program. Many IBM i shops embed an ASCII tree comment like:
+     ```
+     Main line                Main flow control
+     |-- SR990                First time initialization
+     |-- SR100                Card validation
+     |    |-- SR110           Currency conversion
+     |    |    |-- SR111      Convert transaction amount
+     ```
+     If present, capture it verbatim — it is the program author's documented intent.
+   - **Independently derive a call graph from code** by scanning for EXSR / CALLP / CALL / PERFORM / CALLPRC statements and BEGPR-ENDPR / paragraph definitions.
+   - **Compare header vs. code-derived graph:**
+     - If they match → tag `confirmed_from_code` (with source-level flow header as evidence)
+     - If header exists but code differs → create TBD (comment drift, dead code, or missing subroutine)
+     - If no header exists → use code-derived graph, tag `confirmed_from_code` (from EXSR/CALL/PERFORM statements)
+   - Produce three views (see `references/output-contract.md`):
+     - **Tree view** (matches the IBM i flow-header convention)
+     - **Call site table** (caller, callee, line, call condition such as "in DOWHILE loop" or "only if approved")
+     - **Reverse index** (for each subroutine, who calls it)
+
+5. **Document File I/O**
    - List all physical files (PF) and logical files (LF) accessed by the program
    - Classify operations per file:
      - Read operations: SETLL (set lower limit), READE (read equal), CHAIN (random access)
@@ -99,7 +119,7 @@ Examples:
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
    - Create TBD if DDS is missing or key field unclear
 
-5. **Identify External Calls**
+6. **Identify External Calls**
    - List all external program calls:
      - RPGLE: CALL, CALLP (procedure call)
      - CLLE: CALL, CALLPRC
@@ -110,7 +130,7 @@ Examples:
    - Tag: `confirmed_from_code` (source statement visible) or `needs_sme_review` (undocumented)
    - Create TBD if external interface is unknown or network-dependent
 
-6. **Document Error Handling**
+7. **Document Error Handling**
    - List monitored errors:
      - RPGLE: MONITOR / ON-ERROR block, escape messages
      - CLLE: MONMSG (monitor message)
@@ -121,8 +141,8 @@ Examples:
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
    - Create TBD if error handling is unclear or context-dependent
 
-7. **Prepare for SME Review**
-   - Consolidate all TBDs created in steps 2–6 with clear blocking status:
+8. **Prepare for SME Review**
+   - Consolidate all TBDs created in steps 2–7 with clear blocking status:
      - `pending_source` — missing DDS, incomplete source
      - `pending_sme_judgment` — behavior unclear from source alone
      - `non_blocking` — known gaps that don't affect downstream analysis
@@ -180,7 +200,7 @@ No runtime-specific assumptions are embedded in the canonical version.
 ## Version History
 
 - v0.1.0 (2026-05-14): Initial release
-  - 7-step workflow for RPGLE, CLLE, COBOL
+  - 8-step workflow for RPGLE, CLLE, COBOL (with explicit call-graph extraction)
   - Entry point extraction, control flow tracing, file I/O documentation
   - External call and error handling detection
   - Evidence tagging and TBD handling

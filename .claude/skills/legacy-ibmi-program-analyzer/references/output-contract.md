@@ -11,6 +11,7 @@ Each program analysis follows this markdown structure:
 
 ## Metadata
 ## Entry Points & Parameters
+## Call Graph
 ## Control Flow
 ## File I/O
 ## External Calls
@@ -76,6 +77,102 @@ Each program analysis follows this markdown structure:
 - `confirmed_from_code` — source header or procedure specification documents this
 - `medium_confidence` — inferred from usage but not explicitly declared
 - `needs_sme_review` — behavior visible but interpretation unclear
+
+---
+
+## Call Graph Section
+
+This section captures **which subroutine/procedure calls which** — the structural skeleton of the program, independent of intra-procedure logic.
+
+**Three required views:**
+
+### View 1: Tree View (matches IBM i flow-header convention)
+
+```markdown
+### Tree View
+
+Source: source-level flow header (lines 8–22) | derived-from-code | both (matched)
+
+```text
+Main line                    Main flow control
+|-- SR990                    First time initialization
+|-- SR995                    Re-initialization
+|-- SR100                    Card, account and product preliminary validation
+|    |-- SR110               Convert authorization amount to LCY/billing
+|    |    |-- SR111          Convert transaction amount (LCY/billing)
+|    |    |-- SR112          Convert auth amount (non-ATMP)
+|    |    |-- SR113          Convert auth amount (ATMP)
+|    |-- SR120               Extract track information
+|    |-- SR121               Classify recurring transactions
+|    |-- SR130               Validate CVV/CVC 1
+```
+
+Evidence: [EV-SLUG-NNN: source-level flow header lines 8–22] + [EV-SLUG-NNN: EXSR statements lines 145–890]
+```
+
+**Rules:**
+- If the program has a source-level flow-header comment, reproduce it verbatim (with line numbers).
+- If the code-derived graph matches the header, mark "both (matched)".
+- If they differ, show both trees side-by-side and create a TBD.
+- If no header exists, derive purely from code and mark "derived-from-code".
+
+### View 2: Call Site Table
+
+```markdown
+### Call Sites
+
+| Caller | Callee | Type | Line | Call Condition | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| Main | SR990 | EXSR (internal) | 145 | first-time-only (LR off) | confirmed_from_code |
+| Main | SR100 | EXSR (internal) | 152 | every call | confirmed_from_code |
+| SR100 | SR110 | EXSR (internal) | 320 | always | confirmed_from_code |
+| SR110 | SR111 | EXSR (internal) | 410 | currency = LCY | confirmed_from_code |
+| SR110 | SR112 | EXSR (internal) | 422 | trans_type ≠ ATMP | confirmed_from_code |
+| SR110 | SR113 | EXSR (internal) | 434 | trans_type = ATMP | confirmed_from_code |
+| SR100 | UPDTRISK | CALL (external) | 520 | only if approved | confirmed_from_code |
+```
+
+**Required columns:**
+- **Caller / Callee:** subroutine or program names
+- **Type:** `EXSR (internal)`, `CALLP (internal)`, `CALL (external)`, `PERFORM (internal)`, `CALLPRC (external)`, etc.
+- **Line:** source line of the call site
+- **Call Condition:** when this call happens (`always`, `in DOWHILE loop`, `only if X`, `first-time only`, etc.) — derived from surrounding control flow
+- **Evidence:** evidence strength + EV-* link
+
+### View 3: Reverse Index
+
+```markdown
+### Reverse Index
+
+| Subroutine | Called By | Notes |
+| --- | --- | --- |
+| SR990 | Main [line 145] | dead code after first call (LR-gated) |
+| SR100 | Main [line 152] | hot path: called every invocation |
+| SR110 | SR100 [line 320] | only callsite |
+| SR111 | SR110 [line 410] | LCY branch only |
+| SR112 | SR110 [line 422] | non-ATMP branch |
+| SR113 | SR110 [line 434] | ATMP branch |
+| (no callers) | — | dead subroutine (flag with TBD) |
+```
+
+**Why three views:**
+- **Tree** → matches IBM i convention; SME can compare to source header at a glance.
+- **Call Site Table** → captures *condition* of each call (the thing flow trees can't show).
+- **Reverse Index** → exposes orphaned subroutines (declared but never called → dead code TBD) and hotspots (one subroutine called from many sites).
+
+### Source-Level Flow Header Handling
+
+If the source has a flow-header comment block (common in IBM i shops), the analyzer **must** reproduce it verbatim under "Tree View" and treat it as primary evidence (`confirmed_from_code`, source: flow header).
+
+**Then** independently derive a call graph from code. Compare:
+
+| Header vs. Code | Action |
+| --- | --- |
+| Match exactly | Tag `confirmed_from_code`; cite both sources. |
+| Header has subroutine not in code | TBD: comment drift (likely subroutine renamed/removed) |
+| Code has subroutine not in header | TBD: comment drift (likely subroutine added without updating header) |
+| Header parent-child order differs from code | TBD: comment may reflect old structure |
+| No header present | Derive from code only; note absence. |
 
 ---
 

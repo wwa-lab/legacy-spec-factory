@@ -19,6 +19,7 @@ This guide explains how to assign evidence strength labels to each claim in the 
 - CALL statements or copybook bindings
 - MONITOR blocks or exception handlers
 - Explicit IF/SELECT conditions
+- **Source-level flow-header comments** (common IBM i convention: ASCII tree at top of program documenting the subroutine call hierarchy). When present, this is first-class evidence for the call graph — but always cross-check against actual EXSR/CALL/PERFORM statements; a stale header creates a TBD, not a fact.
 
 **Examples:**
 

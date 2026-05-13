@@ -29,6 +29,48 @@
 
 ---
 
+## Call Graph
+
+### Tree View
+
+Source: derived-from-code (no source-level flow-header comment present in this program)
+
+```text
+Main line                    Main flow control
+|-- ProcessOrders            Iterate ORDFILE; validate, ship-cost, risk-update per order
+|    |-- ValidateCredit      Credit limit check against CUSTMSTR
+|    |-- GetShipCost         Lookup or compute shipping cost
+|    |-- UPDTRISK (external) Update customer risk profile (external program)
+```
+
+**Evidence:**
+- [EV-ORDER-BATCH-002: EXSR / CALLP statements in ProcessOrders body, lines 57–66]
+- No source-level flow header found — recommend adding one (non-blocking).
+
+**Header vs. code:** N/A (no header present) → see TBD-ORDER-BATCH-007
+
+### Call Sites
+
+| Caller | Callee | Type | Line | Call Condition | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| Main | ProcessOrders | CALLP (internal proc) | 28 | always (single call) | confirmed_from_code |
+| ProcessOrders | ValidateCredit | CALLP (internal proc) | 57 | in DOWHILE loop, every iteration | confirmed_from_code |
+| ProcessOrders | GetShipCost | CALLP (internal proc) | 63 | only if `CreditStatus ≠ 'D'` | confirmed_from_code |
+| ProcessOrders | UPDTRISK | CALL (external prog) | 66 | only if credit approved | confirmed_from_code |
+
+### Reverse Index
+
+| Subroutine / Program | Called By | Notes |
+| --- | --- | --- |
+| ProcessOrders | Main [line 28] | Single entry point; main batch loop |
+| ValidateCredit | ProcessOrders [line 57] | Called once per ORDFILE record (hot path) |
+| GetShipCost | ProcessOrders [line 63] | Conditional on credit approval |
+| UPDTRISK (external) | ProcessOrders [line 66] | External program; conditional on approval |
+
+**Orphaned subroutines:** None — every declared procedure has at least one caller.
+
+---
+
 ## Control Flow
 
 ### Main Entry Point
@@ -176,6 +218,11 @@
   - Question: This batch program is submitted via job scheduler. Confirm submission mechanism (SBMJOB command vs. submit program name).
   - Related: [OBJ-ORDER-BATCH-001]
 
+- **TBD-ORDER-BATCH-007:** Add source-level flow-header comment to ORDSUBMIT
+  - Blocking: non_blocking
+  - Question: Per shop convention, programs should carry a `Main flow control` ASCII-tree comment at the top. ORDSUBMIT lacks one. Recommend adding for future maintainability (not required for this analysis).
+  - Related: [OBJ-ORDER-BATCH-001]
+
 ---
 
 ## Review Checklist
@@ -187,7 +234,7 @@ Before approval, SME must validate:
 - [X] File I/O matches job design — ORDFILE sequential, CUSTMSTR CHAIN on CustID, SHIPFILE CHAIN on OrderAmount
 - [X] External calls match system interfaces — UPDTRISK called with correct parameters
 - [ ] Error handling aligns with production reliability requirements — **See TBD-ORDER-BATCH-004**
-- [ ] TBDs are non-blocking or properly flagged for follow-up — 6 TBDs; 2 pending source, 3 pending SME, 1 non-blocking
+- [ ] TBDs are non-blocking or properly flagged for follow-up — 7 TBDs; 2 pending source, 3 pending SME, 2 non-blocking
 - [X] No invented subroutines or undocumented file access — All behaviors confirmed from source
 - [X] All evidence links reference existing inventory items — EV-* IDs align with ORDER-BATCH scope
 - [X] Status field is set to draft
