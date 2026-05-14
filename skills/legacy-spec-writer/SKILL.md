@@ -95,6 +95,100 @@ Examples:
 - `examples/spec-positive/` — one approved capability spec (Credit Limit
   Enforcement, derived from CARD-AUTH module)
 
+## Step Contract
+
+This skill is one step in the Legacy Spec Factory reverse chain. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: approved `02_modules/<MODULE-SLUG>/` (all four views at
+  `approved` or `approved_with_non_blocking_tbd`); approved
+  `flow-<FLOW-SLUG>.md` for every flow the module references; approved
+  `program-analysis-<OBJ-ID>.md` for every program in those flows;
+  approved `01_inventory/inventory.yaml`; one `CAP-*` capability seed
+  from the module overview; named capability-owner SME.
+- **Optional**: target platform hint (Java/Spring, Java/Quarkus,
+  serverless, etc.) — informs `target_platform` and
+  `modernization_decisions`.
+- **Readiness checks**: Inventory Completeness Gate and Evidence Approval
+  Gate passing; no `sensitive: unknown` evidence in scope; SME owner
+  available to approve `BR-*` and `AC-*`.
+- **Stop conditions**: module status below `approved_with_non_blocking_tbd`
+  (route back to `legacy-ibmi-module-analyzer`); selected `CAP-*` has
+  unresolved blocking TBDs in the module; no SME owns the capability;
+  target platform completely unspecified when decisions are required.
+
+### Execution
+
+- **Procedure**: see the Workflow section below (11 ordered steps).
+- **Allowed inference**: lifting `BEH-*` from flow control flow / branch
+  points / error propagation; aggregating evidence from upstream
+  artifacts; mapping legacy data objects to target entities; sketching
+  modernization decisions whose rationale ties back to `BR-*`, `BEH-*`,
+  or platform constraints.
+- **Forbidden assumptions**: inventing business rules beyond upstream
+  seeds + SME confirmation; promoting a "weak" `BR-*` to `approved`
+  without explicit SME approval; generating `AC-*` for unapproved `BR-*`;
+  filling data-model field meanings from field names alone; reading raw
+  IBM i source (this skill consumes upstream analyses only); specifying
+  target architecture without rationale.
+- **TBD handling**: unconfirmed business rule → `BR-*` with
+  `review_status: needs_sme_review` (no `AC-*` generated); platform
+  unspecified → `DEC-*` in `draft` with rationale noting uncertainty;
+  unclear field semantics → entity field carries a TBD on semantics.
+
+### Output
+
+- **Canonical directory**: `03_specs/<CAPABILITY-SLUG>/` containing
+  `spec.yaml`, `spec.md`, `spec-review.md`, `traceability.md`.
+- **Required sections/fields**: `spec_id`, `capability.{id,name,slug,owner}`,
+  `scope`, `evidence[]`, `behaviors[]` (`BEH-*`), `business_rules[]`
+  (`BR-*`), `modernization_decisions[]` (`DEC-*`), `data_model`,
+  `process_flow.steps[]` (`STEP-*`), `inputs[]` (`IN-*`), `outputs[]`
+  (`OUT-*`), `exceptions[]` (`EX-*`), `acceptance_criteria[]` (`AC-*`),
+  optional `test_cases[]` (`TC-*`), `tbds[]` (`TBD-*`).
+- **Required IDs**: mints final `BR-*`, `DEC-*`, `IN-*`, `OUT-*`,
+  `STEP-*`, `AC-*`, `TC-*`, `TBD-*`. Reuses `CAP-*`, `OBJ-*`, `EV-*`,
+  `BEH-*` from upstream. `spec.yaml` must validate against
+  `../../schemas/spec.schema.yaml`.
+- **Handoff status**: `status: draft` → `in_review` → `approved`
+  (capability-owner SME sign-off). Forward Handoff Gate consumes
+  `approved`; `rejected` or `retired` halt forward SDLC.
+
+### Validation
+
+- **Mechanical**: `spec.yaml` validates against
+  `../../schemas/spec.schema.yaml`; every `BEH-*`, `BR-*`, `DEC-*` links
+  to ≥1 `EV-*`; every `BR-*` links to ≥1 `BEH-*`; every `approved`
+  `BR-*` has ≥1 `AC-*`; every `AC-*` carries `validates: [BR-*]`; every
+  TBD has a category and resolver; no `sensitive: unknown` in `evidence[]`.
+- **AI semantic**: each `BR-*` is supported by its linked `BEH-*` and
+  `EV-*` content (not just ID reference); `modernization_decisions`
+  are explicitly separated from `observed_behavior`; no invented Java
+  target details; data-model field semantics never come from field names
+  alone; tier 3/4 backing (comments, wikis, prior specs) does not raise
+  a `BR-*` past `needs_sme_review`.
+- **SME / human approval**: capability-owner SME approves every `BR-*`
+  reaching `approved`, every `AC-*`, every `DEC-*` rationale, the data
+  model, and the transition `in_review` → `approved`. Modernization
+  decisions also need architecture / product authority where target
+  platform is concerned.
+- **Blocking conditions**: any business-critical `BR-*` unapproved; any
+  `approved` `BR-*` missing `AC-*`; any `AC-*` missing
+  `validates: [BR-*]`; any `evidence[]` row with `sensitive: unknown`;
+  any blocking TBD; spec arrives at `build-agent-skill` with silent
+  gaps.
+
+Emit a Step Validation Report (see
+`../legacy-step-contract/templates/step-validation-report.md`) with
+status `pass`, `pass_with_warnings`, or `blocked` when reporting upward
+to the orchestrator. The Forward Handoff Gate
+(`../../docs/forward-sdlc-contract.md`) is the next gate after `pass`.
+
 ## Workflow
 
 1. **Confirm Capability Scope**

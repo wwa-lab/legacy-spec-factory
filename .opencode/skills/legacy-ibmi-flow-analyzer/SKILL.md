@@ -92,6 +92,94 @@ Examples:
 - `examples/menu-flow-positive/` — interactive flow with `*MENU` + DSPF + subfile dispatch
 - `examples/incomplete-flow-negative/` — flow with a missing program-analysis (must route back)
 
+## Step Contract
+
+This skill is one step in the Legacy Spec Factory reverse chain. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: flow definition (entry point + one of seven trigger
+  models); approved `program-analysis-<OBJ-ID>.md` for every program in the
+  chain; approved `01_inventory/inventory.yaml` with `relationships`
+  populated for the involved objects.
+- **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
+  `WRKJOBSCDE` export (scheduler triggers); trigger-program registration
+  (DB triggers); SME notes on BAU rhythm and known error scenarios.
+- **Readiness checks**: Inventory Completeness Gate passing; every node
+  in the chain has an approved program-analysis; trigger model identified
+  unambiguously; the flow represents one business transaction.
+- **Stop conditions**: any node missing an approved program-analysis;
+  inventory `sme_review.decision` is `blocked` or relationships are
+  incomplete; trigger model cannot be identified from the entry point;
+  flow spans multiple business modules.
+
+### Execution
+
+- **Procedure**: see the Workflow section below (9 ordered steps).
+- **Allowed inference**: assembling cross-program call edges from
+  upstream program analyses; classifying call types (CALL / CALLP /
+  CALLPRC / SBMJOB / remote); deriving branch destinations from DSPF
+  option tables; reading scheduler / trigger / API configuration exports
+  as tier-1 evidence.
+- **Forbidden assumptions**: calls not visible in any program-analysis
+  External Calls section; data flow whose parameter semantics require
+  guessing; branch destinations not in DSPF DDS; trigger conditions
+  without configuration export; scheduler frequency without
+  `WRKJOBSCDE`; commit boundaries without code or SME confirmation;
+  business rules (these are seeds, never facts).
+- **TBD handling**: missing program-analysis → `TBD: pending_source`
+  routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
+  `TBD: pending_sme_judgment`; unnamed business event → stop and request
+  the name from SME (do not autogenerate from program names).
+
+### Output
+
+- **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
+- **Required sections**: trigger model & entry point, nodes, edges,
+  cross-program data flow, branch points, UI surfaces (or
+  `N/A — non-interactive`), error propagation & commit boundaries,
+  capability seeds, SME review checklist.
+- **Required IDs**: mints `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`,
+  `SEED-*`, `TBD-*`; reuses `OBJ-*`, `EV-*`, and program-level `BEH-*`
+  from upstream. Flow analysis does not mint `BR-*`; branch points are
+  represented by `NODE-*` / `EDGE-*` entries and capability questions by
+  `SEED-*`.
+- **Handoff status**: `status: draft` → `in_review` → `approved` or
+  `approved_with_non_blocking_tbd`. `blocked_pending_source` and
+  `blocked_pending_sme` halt module-analyzer.
+
+### Validation
+
+- **Mechanical**: every edge traces to evidence type 1, 2, or 3 (source
+  statement, config export, or integration contract); every data exchange
+  traces to a source line; every UI surface traces to a DSPF/PRTF/`*MENU`
+  in inventory; every trigger has evidence type 2 plus SME confirmation
+  of business meaning; all nine sections populated.
+- **AI semantic**: edges match upstream program-analyses (no invented
+  calls); branch destinations match DSPF option tables; error
+  propagation matches each node's program-analysis; commit boundaries
+  are evidenced, not assumed; capability seeds are *questions*, not
+  rule claims.
+- **SME / human approval**: SME confirms trigger model, business event
+  name, node/edge correctness, branch points, UI surfaces (interactive
+  flows), error propagation realism, commit boundaries, and that seeds
+  are reasonable questions. Required when a cross-program rule emerges
+  or when the flow touches money, inventory, compliance, or customer
+  status.
+- **Blocking conditions**: any node lacks an approved program-analysis;
+  any edge has no evidence; trigger model unresolved; business event
+  name unnamed by SME; ambiguous module boundary; SME absence when the
+  flow's risk class requires SME.
+
+Emit a Step Validation Report (see
+`../legacy-step-contract/templates/step-validation-report.md`) with
+status `pass`, `pass_with_warnings`, or `blocked` when reporting upward
+to the orchestrator.
+
 ## Workflow
 
 1. **Identify Trigger Model & Entry Point**
@@ -115,7 +203,7 @@ Examples:
 2. **Enumerate Nodes (Programs in the Chain)**
    - List every program the flow touches, in call order.
    - For each node:
-     - assign `NODE-<SLUG>-<NN>` (sequence-numbered)
+     - assign `NODE-<SLUG>-<NNN>` (sequence-numbered)
      - reference the program's `OBJ-*` (from inventory) and approved
        `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
@@ -126,7 +214,7 @@ Examples:
 
 3. **Trace Edges (Calls Between Nodes)**
    - For every call between two nodes, document an edge:
-     - `EDGE-<SLUG>-<NN>: NODE-A → NODE-B`
+     - `EDGE-<SLUG>-<NNN>: NODE-A → NODE-B`
      - Call type (CALL, CALLP, CALLPRC, EXSR-not-applicable-cross-program,
        SBMJOB, remote-call)
      - Call site (source program + line number) — from the caller's
@@ -144,7 +232,7 @@ Examples:
      - shared file writes/reads (program A writes, program B reads)
      - temporary work files / spool / IFS files
      - signal flags (return codes, indicators, error fields)
-   - Assign `DATA-<SLUG>-<NN>` for each distinct data exchange.
+   - Assign `DATA-<SLUG>-<NNN>` for each distinct data exchange.
    - Tag evidence; cross-reference to source line numbers via EV-\*.
 
 5. **Branch Points & Decision Nodes**
@@ -185,8 +273,9 @@ Examples:
      pointers to the program(s) and field(s) that suggest it.
    - The spec-writer skill will resolve seeds into approved rules; the
      flow analyzer never approves rules itself.
-   - **Note:** `BR-*` IDs are reserved for **branch points** (decision nodes
-     in the flow). Capability seeds use `SEED-*` IDs.
+   - **Note:** flow analysis does not mint `BR-*` IDs. Branch points are
+     represented by `NODE-*` / `EDGE-*` entries; capability seeds use
+     `SEED-*` IDs.
 
 9. **Prepare for SME Review**
    - Consolidate all TBDs grouped by blocking status (`pending_source` /
@@ -296,7 +385,7 @@ No runtime-specific assumptions are embedded in the canonical source.
   - Added smoke test prompts and evidence taxonomy
   - Clarified trigger model rules: Scheduler + SBMJOB is one trigger (not composite)
   - Added blocked status values (blocked_pending_source, blocked_pending_sme) with routing rules
-  - Standardized capability seed IDs on SEED-* (not BR-*, which are reserved for branch points)
+  - Standardized capability seed IDs on SEED-* and clarified that flow analysis does not mint BR-* IDs
   - Added evidence taxonomy: 4 types (source statement, IBM i config, integration contract, SME confirmation)
   - Updated anti-hallucination rules to allow config and contract evidence, not just source code
   - All 5 review blockers (FLOW-REV-001 to FLOW-REV-005) resolved

@@ -62,6 +62,78 @@ Examples:
 - `examples/redacted-customer-credit-check/`
 - `examples/missing-artifact-negative-case/`
 
+## Step Contract
+
+This skill is one step in the Legacy Spec Factory reverse chain. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: redacted evidence bundle (source members, DDS, DB2 metadata,
+  job/scheduler notes, screen/spool/report samples), capability scope
+  (name + slug + libraries + collection date), assigned SME owner.
+- **Optional**: prior shop inventory spreadsheets, wiki references, vendor
+  docs (treat as tier 3/4 hints, never as ground truth).
+- **Readiness checks**: Redaction Gate has cleared each evidence item; no
+  `sensitive: unknown`; capability slug stable; SME owner named.
+- **Stop conditions**: raw production evidence is present without redaction;
+  capability is "the whole application" (require a narrower slice); no SME
+  owner assigned; ground-truth tier 1 source listings (`WRKOBJ` /
+  `DSPOBJD` / source-member listings) are not available.
+
+### Execution
+
+- **Procedure**: see the Workflow section below (7 ordered steps).
+- **Allowed inference**: cross-referencing a referenced object against the
+  inventory; classifying object types from DDS/source headers; assigning
+  evidence IDs.
+- **Forbidden assumptions**: inventing libraries, programs, files, fields,
+  jobs, reports, or calls; inferring business rules from inventory alone;
+  treating source comments or prior spreadsheets as truth without tier-1
+  verification.
+- **TBD handling**: use `TBD-<SLUG>-<NNN>`. Distinguish `coverage_gaps`
+  (artifact missing — a developer can fix) from `open_questions` (only an
+  SME can answer) per `references/output-contract.md`.
+
+### Output
+
+- **Canonical artifacts**: `01_inventory/inventory.yaml`,
+  `01_inventory/object-map.md`,
+  `01_inventory/inventory-review-checklist.md`.
+- **Required fields/sections**: capability metadata, evidence ledger, object
+  inventory, relationship map, `coverage_gaps`, `open_questions`,
+  `sme_review`.
+- **Required IDs**: `OBJ-*` for every object; `EV-*` for every evidence
+  item; `TBD-*` for every gap or open question. No `BR-*`, `BEH-*`, or
+  `DEC-*` minted here.
+- **Handoff status**: `sme_review.decision` must be `approved` or
+  `approved_with_non_blocking_tbd` before downstream skills run; `blocked`
+  halts the chain.
+
+### Validation
+
+- **Mechanical**: every object has `id`, `evidence_ids`, and a non-`unknown`
+  sensitivity; every relationship resolves to two `OBJ-*`; every TBD
+  carries a category; required files exist.
+- **AI semantic**: object scope matches the capability slug; no inferred
+  business rules sneaking into `notes`; comments/spreadsheets cited as
+  hints, not as ground truth; PRTF/DSPF/PF/LF/job/subroutine gaps surfaced
+  as TBDs rather than smoothed over.
+- **SME / human approval**: SME records `sme_review.decision`, signed-off
+  object coverage, hidden-dependency confirmation, report/spool
+  confirmation, sensitivity confirmation.
+- **Blocking conditions**: any object lacks an ID or evidence link; any
+  `sensitive: unknown` remains; SME marks `decision: blocked`; any
+  `coverage_gaps` entry with `blocking: yes` is unresolved.
+
+Emit a Step Validation Report (see
+`../legacy-step-contract/templates/step-validation-report.md`) with status
+`pass`, `pass_with_warnings`, or `blocked` when reporting upward to the
+orchestrator.
+
 ## Workflow
 
 1. **Define capability scope**

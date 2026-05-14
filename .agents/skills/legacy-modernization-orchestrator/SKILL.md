@@ -264,6 +264,105 @@ obvious route, one short paragraph may be enough.
 - **Manual fallback (if skill is planned):** <what to do until the skill exists; pointer to references/manual-fallback.md>
 ```
 
+## Step Contract
+
+The orchestrator is one step in the Legacy Spec Factory reverse chain — its
+step produces a **routing decision**, not a business artifact. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: a description of what the user currently has (the
+  candidate stage) and what they want to reach (the desired outcome).
+  At minimum: artifact name(s) and observed status; or, when no artifact
+  exists yet, the legacy evidence the user is starting from.
+- **Optional**: SME availability, target platform hint, urgency, scope
+  preference (one capability vs. whole module).
+- **Readiness checks**: artifact filenames and statuses can be cited
+  verbatim from the user's repo or notes (not paraphrased); evidence
+  sensitivity is known or explicitly flagged `unknown`.
+- **Stop conditions**: stage cannot be classified even conservatively
+  (request a concrete artifact); user wants an unsafe downstream skip
+  (refuse and route to the missing prerequisite); evidence sensitivity
+  is `unknown` and the user is asking to invoke a Layer 1 skill (Redaction
+  Gate blocks).
+
+### Execution
+
+- **Procedure**: see the Core Process section above (Steps 1–6).
+- **Allowed inference**: conservatively classifying the current stage
+  from the artifact's status field; reading the four hard gates from
+  the artifact's own evidence (not from user assertion); choosing the
+  earliest sufficient next skill.
+- **Forbidden assumptions**: inferring that a `Planned` / `Future`
+  skill exists; claiming a gate has passed without checking the relevant
+  fields; collapsing evidence / behavior / rule / decision into one
+  bucket; "rounding up" a partial artifact's maturity; skipping an SME
+  reminder to make the user happier.
+- **TBD handling**: when the stage is genuinely ambiguous, report it as
+  ambiguous and request a specific artifact rather than guessing; when a
+  gate-blocker exists, surface the specific unresolved item IDs and
+  refuse to route further downstream.
+
+### Output
+
+- **Canonical artifact**: a routing decision rendered in the **Output
+  Structure** template above (Workflow Decision + Routing Notes + Next
+  Step). The orchestrator does not produce inventory, program analyses,
+  flows, modules, specs, or reviews.
+- **Required sections**: current stage, desired outcome, recommended next
+  skill (with implementation status), why, stage-skip safety, gate-check
+  result, minimum input needed next, route confidence, next artifact
+  expected, invoke / produce / save reminder / SME reminder / manual
+  fallback (if next skill is planned).
+- **Required IDs**: no new ID minting. Cites existing IDs from upstream
+  artifacts when surfacing blockers (`TBD-*`, `EV-*`, `BR-*`, etc.).
+- **Handoff status**: the decision either hands off to a downstream
+  skill (when input is sufficient and the skill is implemented), returns
+  a manual fallback (when the skill is planned), or returns a blocking
+  finding (when a gate fails). The orchestrator does not retain state
+  between turns — every routing decision restates its premise.
+
+### Validation
+
+- **Mechanical**: every routing field present (current stage, desired
+  outcome, recommended next skill + status, why, stage-skip safe?, gate
+  check, minimum input, route confidence, next artifact, invoke / produce
+  / save / SME / manual fallback); cited skill names exist in the chain;
+  cited gates exist in `references/gates.md`.
+- **AI semantic**: recommended next skill is the **earliest sufficient**
+  stage (no upstream over-routing, no unsafe downstream jump); gate state
+  reflects the artifact's actual fields rather than a confident summary;
+  implementation status is honest (`Implemented` vs `Planned` /
+  `Future`); SME reminder included whenever SME is required.
+- **SME / human approval**: not required for the routing decision itself,
+  but the orchestrator must **flag** every SME control point the
+  downstream skill will hit and refuse to advise skipping it.
+- **Blocking conditions**: any of the four hard gates fails (Redaction
+  Gate, Inventory Completeness Gate, Evidence Approval Gate, Forward
+  Handoff Gate); recommended skill status is `Planned` / `Future` and no
+  manual fallback is provided; stage cannot be classified even
+  conservatively; user-asserted artifact maturity contradicts the
+  artifact's own status field.
+
+When asked for a compact result by another agent (e.g., a parent
+orchestrator or `legacy-step-contract`), emit:
+
+```
+status: pass | pass_with_warnings | blocked
+step_id: STEP-ROUTING-<NNN>
+blocking_items: [<gate or TBD IDs>]
+warnings: [<non-blocking items>]
+sme_decision: not_required
+downstream_next_step: <skill-name | doc-path | none>
+remediation_step: <skill-name | doc-path | none>
+```
+
+The fuller routing prose stays in the Output Structure template above.
+
 ## Core Rules
 
 ### Router-Only Rule

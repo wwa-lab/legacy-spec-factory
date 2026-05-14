@@ -87,6 +87,92 @@ Examples:
 - `examples/module-positive/` — complete CARD-AUTH module with all 4 views
 - `examples/incomplete-module-negative/` — module with missing flow / SME gap
 
+## Step Contract
+
+This skill is one step in the Legacy Spec Factory reverse chain. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: module definition (slug + business name + scope statement
+  + list of in-scope flows); approved `flow-<FLOW-SLUG>.md` for every
+  in-scope flow; approved `program-analysis-<OBJ-ID>.md` for every
+  program referenced by those flows; approved
+  `01_inventory/inventory.yaml`; BAU notes from SME covering operational
+  rhythm and manual procedures.
+- **Optional**: architecture diagrams (View 2), data lineage docs
+  (View 4), regulatory references.
+- **Readiness checks**: every in-scope flow is `approved` or
+  `approved_with_non_blocking_tbd`; SME has confirmed the module's
+  business name and boundary; BAU notes are present (View 1 requires
+  SME input that code alone cannot supply).
+- **Stop conditions**: any in-scope flow lacks an approved analysis;
+  module boundary is ambiguous (which module owns flow X); no SME has
+  confirmed module identity; BAU notes are absent.
+
+### Execution
+
+- **Procedure**: see the Workflow section below (9 ordered steps).
+- **Allowed inference**: aggregating across approved flow/program/
+  inventory artifacts; cross-view consistency checking; computing data
+  lifecycle and coupling score from existing Object Dependency data.
+- **Forbidden assumptions**: inventing business actors, upstream /
+  downstream systems, BAU rhythm, regulatory requirements, manual
+  intervention procedures, cross-module dependencies, or business rules
+  (these remain seeds). Tier-2 SME claims that contradict tier-1 code
+  become TBDs, not overrides.
+- **TBD handling**: missing flow analysis → `TBD: pending_source`
+  routing to `legacy-ibmi-flow-analyzer`; business context absent from
+  BAU notes → `TBD: pending_sme_judgment`; ambiguous module boundary
+  → `TBD: pending_sme_judgment`; incomplete data lifecycle →
+  `TBD: pending_sme` (archive/purge ownership).
+
+### Output
+
+- **Canonical directory**: `02_modules/<MODULE-SLUG>/` containing
+  `module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
+  `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
+- **Required sections**: 4-view index with per-view status, top blocking
+  TBDs, module-level capability seeds, per-view review checklists.
+- **Required IDs**: mints `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`,
+  module-level `BR-*` **seeds**, module-level `CAP-*` **seeds**, and
+  `TBD-*`. Reuses `OBJ-*`, `EV-*`, `FLOW-*`, `NODE-*`, `EDGE-*`,
+  `DATA-*`. Final promotion of `BR-*` happens in `legacy-spec-writer`.
+- **Handoff status**: each view independently `draft` → `in_review` →
+  `approved` or `approved_with_non_blocking_tbd`. Module is approved
+  only when **all four views** are at least
+  `approved_with_non_blocking_tbd`. `blocked_pending_source` /
+  `blocked_pending_sme` halt spec-writer.
+
+### Validation
+
+- **Mechanical**: all four views plus overview present; every claim
+  traces to source artifact or named SME note; every cross-view
+  reference resolves; every TBD carries a category and ID; capability
+  seeds carry IDs.
+- **AI semantic**: cross-flow synthesis matches the flow analyses (no
+  new IBM i facts introduced); cross-view consistency holds (every View 1
+  actor appears in View 3 or is tagged manual; every View 2 system
+  appears in View 3; every View 4 data object traces to a flow); seeds
+  are questions, not approved rules; tier-2 claims contradicting tier-1
+  are surfaced as TBDs.
+- **SME / human approval**: View 1 by business owner, View 2 by
+  integration architect, View 3 by dev lead, View 4 by data analyst.
+  All four sign-offs are required to promote the module past
+  `approved_with_non_blocking_tbd` for spec-writer consumption.
+- **Blocking conditions**: any view lacks an SME sign-off; any
+  cross-view inconsistency unresolved; any in-scope flow missing or
+  unapproved; any capability seed contradicts the underlying flows;
+  BAU notes still absent.
+
+Emit a Step Validation Report (see
+`../legacy-step-contract/templates/step-validation-report.md`) with
+status `pass`, `pass_with_warnings`, or `blocked` when reporting upward
+to the orchestrator.
+
 ## Workflow
 
 1. **Confirm Module Scope**

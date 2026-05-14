@@ -62,6 +62,82 @@ Examples:
 - `examples/complex-batch-job/` — multi-subroutine batch job, moderate complexity
 - `examples/incomplete-source-negative/` — negative case: missing source, TBD handling
 
+## Step Contract
+
+This skill is one step in the Legacy Spec Factory reverse chain. It conforms
+to the canonical Step Contract shape — see
+`../legacy-step-contract/SKILL.md` and
+`../legacy-step-contract/references/step-contract.md` for the full
+field-level rules. The summary below is normative for this skill.
+
+### Input
+
+- **Required**: one RPGLE / CLLE / COBOL source program; the program's
+  `OBJ-*` ID located in an `approved` (or
+  `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
+- **Optional**: DDS copybook source (DSPF, PRTF, PF, LF) for files the
+  program touches; SME notes on entry points, quirks, or runtime behavior.
+- **Readiness checks**: Inventory Completeness Gate passing; program is
+  not marked `blocked` in inventory; source is current production (tier 1)
+  rather than archival; evidence is redacted.
+- **Stop conditions**: source missing or incomplete; program marked
+  `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted
+  production data present.
+
+### Execution
+
+- **Procedure**: see the Workflow section below (9 ordered steps).
+- **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
+  file I/O from F-spec and I/O statements; error paths from MONITOR/
+  MONMSG/ON-ERROR; pattern-based labeling tagged `strongly_inferred` or
+  `medium_confidence` with explicit notes.
+- **Forbidden assumptions**: inventing subroutines, file access beyond
+  what I/O statements show, business meaning from field names, external
+  call parameters absent from source or copybooks, error codes not
+  explicitly caught or returned; reading non-redacted evidence.
+- **TBD handling**: missing DDS → `TBD: pending_source`; undefined
+  subroutine reference → `TBD: pending_source`; unclear error path →
+  `TBD: pending_sme_judgment`; non-blocking gaps tagged `non_blocking`.
+
+### Output
+
+- **Canonical artifact**: `program-analysis-<OBJ-ID>.md` (one per program).
+- **Required sections**: entry points & parameters, control flow, call
+  graph (tree + call-site table + reverse index), object dependencies,
+  file I/O, external calls, error handling, TBD ledger, SME review
+  checklist.
+- **Required IDs**: reuses `OBJ-*` and `EV-*` from inventory; mints
+  program-local `BEH-*`, `EX-*`, and `TBD-*`. Does not mint `BR-*`,
+  `CAP-*`, `DEC-*`.
+- **Handoff status**: `status: draft` until SME review; `approved` or
+  `approved_with_non_blocking_tbd` is required before
+  `legacy-ibmi-flow-analyzer` runs against the chain that includes this
+  program.
+
+### Validation
+
+- **Mechanical**: every non-trivial behavior has ≥1 `EV-*` link; every
+  call/object reference resolves against inventory; every TBD has a
+  blocking-status tag; required sections all present.
+- **AI semantic**: behaviors are consistent with the linked source lines;
+  no invented subroutines, fields, files, or error codes; evidence
+  strength not overstated (no `weakly_inferred` posing as
+  `confirmed_from_code`); flow header (if present) reconciled against
+  code-derived call graph.
+- **SME / human approval**: SME signs entry points, parameter contracts,
+  file I/O semantics, external interface contracts, and error handling
+  realism. Required when the program affects money, inventory,
+  compliance, or customer status; recommended otherwise.
+- **Blocking conditions**: any `BEH-*` without evidence; any invented
+  IBM i fact; any unresolved `pending_source` TBD on a section that is
+  load-bearing for the next flow analysis; SME absence when SME is
+  required by the program's risk class.
+
+Emit a Step Validation Report (see
+`../legacy-step-contract/templates/step-validation-report.md`) with
+status `pass`, `pass_with_warnings`, or `blocked` when reporting upward
+to the orchestrator.
+
 ## Workflow
 
 1. **Select Program & Verify Inventory**
