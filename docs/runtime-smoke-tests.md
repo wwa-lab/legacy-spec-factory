@@ -610,6 +610,194 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the incomplete-upstream-analysis prompt above into
 the same commands.
 
+### `legacy-step-contract`
+
+#### Scenario (Positive — Review A Filled Step Contract)
+
+```text
+Use /legacy-step-contract.
+
+User input:
+Review the filled Step Contract example at
+skills/legacy-step-contract/examples/inventory-pass/step-contract-block.md.
+Return only:
+- whether the INPUT, EXECUTION, OUTPUT, and VALIDATION sections are present
+- compact validation result status
+- downstream_next_step
+- remediation_step
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- identifies all four sections: INPUT, EXECUTION, OUTPUT, VALIDATION
+- reports status as `pass`
+- reports `downstream_next_step: legacy-ibmi-program-analyzer`
+- reports `remediation_step: none`
+- does not invent IBM i objects or business rules
+- does not edit files
+
+#### Scenario (Negative — Missing SME Owner)
+
+```text
+Use /legacy-step-contract.
+
+User input:
+I am authoring a Step Contract for inventory. The redaction gate is clear and
+the evidence scope has EV-CREDIT-CHECK-001, but sme_required is yes and
+sme_owner is blank. Can the inventory step execute?
+
+Return only:
+- status
+- blocking category
+- required remediation_step
+```
+
+#### Pass Criteria (Negative)
+
+- reports status as `blocked`
+- classifies the blocker under `sme_questions` or equivalent SME-owner missing category
+- says the step must not execute until an SME owner is assigned
+- does not route downstream to program analysis
+- does not edit files
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-step-contract. User input: Review the filled Step Contract example at skills/legacy-step-contract/examples/inventory-pass/step-contract-block.md. Return only: whether the INPUT, EXECUTION, OUTPUT, and VALIDATION sections are present; compact validation result status; downstream_next_step; remediation_step."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-step-contract. User input: Review the filled Step Contract example at skills/legacy-step-contract/examples/inventory-pass/step-contract-block.md. Return only: whether the INPUT, EXECUTION, OUTPUT, and VALIDATION sections are present; compact validation result status; downstream_next_step; remediation_step."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-step-contract. User input: Review the filled Step Contract example at skills/legacy-step-contract/examples/inventory-pass/step-contract-block.md. Return only: whether the INPUT, EXECUTION, OUTPUT, and VALIDATION sections are present; compact validation result status; downstream_next_step; remediation_step."
+```
+
+For the negative scenario, substitute the missing-SME-owner prompt above into
+the same commands.
+
+### `legacy-step-validator`
+
+#### Scenario (Positive — Validate Pass Example)
+
+```text
+Use /legacy-step-validator.
+
+User input:
+Validate the example package at
+skills/legacy-step-validator/examples/pass/step-validation-report.md.
+Return only:
+- detected step_type
+- status
+- blocking_items
+- downstream_next_step
+- remediation_step
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- detects or reports step type as `inventory`
+- reports status as `pass`
+- reports `blocking_items: []`
+- reports `downstream_next_step: legacy-ibmi-program-analyzer`
+- reports `remediation_step: none`
+- does not approve any new SME decision beyond the recorded example
+- does not edit files
+
+#### Scenario (Negative — Validate Blocked Example)
+
+```text
+Use /legacy-step-validator.
+
+User input:
+Validate the blocked example package at
+skills/legacy-step-validator/examples/blocked/.
+Return only:
+- detected step_type
+- status
+- blocking_items
+- downstream_next_step
+- remediation_step
+```
+
+#### Pass Criteria (Negative)
+
+- detects or reports step type as `module`
+- reports status as `blocked`
+- lists exactly four blocking findings:
+  - `FIND-CARD-AUTH-001`
+  - `FIND-CARD-AUTH-002`
+  - `FIND-CARD-AUTH-003`
+  - `FIND-CARD-AUTH-004`
+- reports `downstream_next_step: none`
+- reports `remediation_step: legacy-ibmi-flow-analyzer`
+- does not edit files
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-step-validator. User input: Validate the example package at skills/legacy-step-validator/examples/pass/step-validation-report.md. Return only: detected step_type; status; blocking_items; downstream_next_step; remediation_step."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-step-validator. User input: Validate the example package at skills/legacy-step-validator/examples/pass/step-validation-report.md. Return only: detected step_type; status; blocking_items; downstream_next_step; remediation_step."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-step-validator. User input: Validate the example package at skills/legacy-step-validator/examples/pass/step-validation-report.md. Return only: detected step_type; status; blocking_items; downstream_next_step; remediation_step."
+```
+
+For the negative scenario, substitute the blocked-example prompt above into the
+same commands.
+
+## Pass Example — `legacy-step-contract` v0.1.1
+
+| Runtime | Model | Discovery | Trigger | Outcome |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | loaded | positive and negative scenarios executed | passed |
+| Claude Code | `haiku` (Read-only tools) | loaded | positive and negative scenarios executed | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | loaded | positive and negative scenarios executed | passed |
+
+Positive smoke confirmed all four sections were present and returned
+`status: pass`, `downstream_next_step: legacy-ibmi-program-analyzer`, and
+`remediation_step: none`.
+
+Negative smoke confirmed `sme_required: yes` with empty `sme_owner` blocks
+execution and requires SME owner assignment before inventory can run.
+
+Recorded in `docs/runtime-matrix.md`. A refreshed scorecard is still required
+before claiming field-pilot readiness.
+
+## Pass Example — `legacy-step-validator` v0.1.1
+
+| Runtime | Model | Discovery | Trigger | Outcome |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | loaded | positive and negative scenarios executed | passed |
+| Claude Code | `haiku` (Read-only tools) | loaded | positive and negative scenarios executed | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | loaded | positive and negative scenarios executed | passed |
+
+Positive smoke confirmed inventory pass output with no blocking findings and
+`downstream_next_step: legacy-ibmi-program-analyzer`.
+
+Negative smoke confirmed module blocked output with exactly four blocking
+findings (`FIND-CARD-AUTH-001` through `FIND-CARD-AUTH-004`),
+`downstream_next_step: none`, and
+`remediation_step: legacy-ibmi-flow-analyzer`.
+
+Recorded in `docs/runtime-matrix.md`. A refreshed scorecard is still required
+before claiming field-pilot readiness.
+
 ## Pass Example — `legacy-modernization-orchestrator` v0.1.1
 
 | Runtime | Model | Discovery | Trigger | Outcome |

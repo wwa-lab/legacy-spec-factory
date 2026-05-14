@@ -47,7 +47,7 @@
 
 ### FLOW-REV-004: Seed ID Standardization
 - ✅ Updated `SKILL.md` step 8 from "Extract `BR-*` candidates" to "Extract `SEED-*` candidates"
-- ✅ Added clarifying note: "`BR-*` IDs are reserved for branch points; capability seeds use `SEED-*`"
+- ✅ Added clarifying note: flow analysis does not mint `BR-*`; branch points use `NODE-*` / `EDGE-*`, and capability seeds use `SEED-*`
 - ✅ Verified `examples/batch-job-positive/flow.md` uses SEED-NIGHTLY-RECON-* correctly
 - **Status:** Resolved
 

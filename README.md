@@ -282,7 +282,9 @@ even if the static review score is higher.
 | `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Three-runtime smoke execution has not been recorded |
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
 | `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; three-runtime smoke and post-smoke re-score pending |
-| `legacy-modernization-orchestrator` | [v0.1.1 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md) | 9.50 for v0.1.1 | not yet reviewed for v0.2.0 | v0.1.1 field-pilot ready; current expanded scope needs review | v0.2.0 added flow/module/spec routing and needs refreshed review + runtime evidence |
+| `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.06 | 9.0 | Repo-ready | v0.2.0 added flow/module/spec routing; active examples/fallback refs are stale and three-runtime smoke is pending |
+| `legacy-step-contract` | [v0.1.0 scorecard](docs/reviews/legacy-step-contract-v0.1.0-scorecard.md) | 9.09 before v0.1.1 fixes | re-score pending | Repo-ready; smoke passed | v0.1.1 added worked example and passed three-runtime smoke; refreshed scorecard still needed before field-pilot readiness |
+| `legacy-step-validator` | [v0.1.0 scorecard](docs/reviews/legacy-step-validator-v0.1.0-scorecard.md) | 9.28 before v0.1.1 fixes | re-score pending | Repo-ready; smoke passed | v0.1.1 fixed compact-result findings and passed three-runtime smoke; refreshed scorecard still needed before field-pilot readiness |
 
 For public trust, scorecards should show both the score before caps and the
 score after caps. A 9.0 here should usually be read as "repo-ready and
@@ -378,12 +380,438 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.1.1 field-pilot ready; v0.2.0 pending review |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.2.0 repo-ready (9.0 capped; examples/fallback refs + smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
 | `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
+| `legacy-step-contract` | Define the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract for every reverse-chain step | Step Contract block and validation templates | v0.1.1 smoke passed; re-score pending |
+| `legacy-step-validator` | Validate completed step artifacts against the Step Contract | `06_quality/step-validation-report.md`, `blocking-findings.yaml` | v0.1.1 smoke passed; re-score pending |
+| `legacy-knowledge-hub-builder` | Publish SME-reviewed analysis outputs into an LLM Wiki / knowledge hub for browsing, retrieval, impact analysis, and downstream agent context packs | `05_knowledge_hub/` or a separate LLM Wiki repo | Proposed |
+
+## SME-Reviewed Knowledge Publishing Model
+
+Legacy Spec Factory should separate three responsibilities that are often mixed
+together:
+
+1. extracting candidate knowledge from legacy code
+2. reviewing and accepting that knowledge with an RPG / IBM i SME
+3. publishing accepted knowledge into a wiki that people and agents can use
+
+The operating model is:
+
+```text
+Legacy Code Repo
+  -> skills analyze source and evidence
+  -> draft analysis artifacts
+
+Analysis Output Repo
+  -> stores only skill outputs
+  -> junior engineer + agent iterate on a feature branch
+  -> RPG SME reviews the PR
+  -> main branch becomes the accepted analysis fact layer
+
+LLM Wiki Repo
+  -> generated only from Analysis Output Repo main
+  -> people browse it
+  -> LLMs retrieve from it
+  -> downstream agents receive focused context packs from it
+```
+
+Core rule:
+
+```text
+Draft output is not organizational knowledge.
+SME-merged output on main is the trusted fact layer.
+The LLM Wiki is a derived read model, not the source of truth.
+```
+
+If the wiki conflicts with `inventory.yaml`, `program-analysis.md`, `flow.md`,
+module analysis, or `spec.yaml`, treat the upstream analysis artifact as
+authoritative and regenerate or fix the wiki.
+
+### Repo 1: Legacy Code Repo
+
+The legacy code repo contains the raw or redacted IBM i system materials:
+
+```text
+src/
+  RPGLE / CLLE / COBOL members
+  DDS PF / LF / DSPF / PRTF members
+evidence/
+  redacted job logs
+  redacted spool samples
+  redacted transaction samples
+  DB2 metadata extracts
+```
+
+Use this repo to run the extraction and synthesis skills:
+
+- `legacy-ibmi-inventory`
+- `legacy-ibmi-program-analyzer`
+- `legacy-ibmi-flow-analyzer`
+- `legacy-ibmi-module-analyzer`
+- `legacy-spec-writer`
+
+The legacy code repo is not the long-term home for generated review artifacts
+unless the team explicitly chooses a single-repo pilot. For the recommended
+workflow, generated skill outputs are copied or committed into the Analysis
+Output Repo.
+
+### Repo 2: Analysis Output Repo
+
+The Analysis Output Repo stores only Legacy Spec Factory outputs. It should not
+store raw production evidence or private runtime data.
+
+Recommended repo names:
+
+```text
+<system-slug>-legacy-analysis
+<domain-slug>-legacy-analysis
+<portfolio-slug>-legacy-analysis
+```
+
+Examples:
+
+```text
+card-auth-legacy-analysis
+order-entry-legacy-analysis
+ibmi-modernization-legacy-analysis
+```
+
+Recommended repo settings:
+
+- Visibility: private or internal.
+- Default branch: `main`.
+- Branch naming: `analysis/<CAP-SLUG>-<short-topic>`.
+- Protect `main`; require PR review before merge.
+- Require at least one RPG / IBM i SME approval for analysis artifacts that
+  claim accepted behavior, business rules, or spec readiness.
+- Prefer `CODEOWNERS` for high-risk paths such as `01_inventory/`,
+  `02_programs/`, `03_flows/`, `04_modules/`, `05_specs/`, and
+  `knowledge-hub.manifest.yaml`.
+- Do not allow raw production evidence, secrets, customer data, or unredacted
+  job logs / spool samples.
+- Keep draft work on feature branches. Treat only `main` as the accepted
+  analysis fact layer.
+- Tag important SME-approved baselines, for example
+  `baseline-CREDIT-CHECK-2026-05-14`.
+
+Recommended directory structure:
+
+```text
+README.md
+knowledge-hub.manifest.yaml
+
+00_project/
+  scope.md
+  source-system.md
+  sme-roster.md
+  decision-log.md
+
+01_inventory/
+  <CAP-SLUG>/
+    inventory.yaml
+    object-map.md
+    inventory-review-checklist.md
+
+02_programs/
+  <CAP-SLUG>/
+    <PROGRAM>/
+      program-analysis.md
+
+03_flows/
+  <CAP-SLUG>/
+    <FLOW-SLUG>/
+      flow.md
+
+04_modules/
+  <MODULE-SLUG>/
+    01-operation-flow.md
+    02-system-flow.md
+    03-program-flow.md
+    04-data-flow.md
+    module-overview.md
+
+05_specs/
+  <CAP-SLUG>/
+    spec.yaml
+    spec.md
+    traceability.md
+    spec-review.md
+
+06_review/
+  <CAP-SLUG>/
+    sme-review-notes.md
+    approval-record.md
+    unresolved-findings.md
+
+99_archive/
+  retired/
+```
+
+Branch and review workflow:
+
+1. A junior engineer and agent create a feature branch.
+2. They run the relevant skills and iterate through conversation until the
+   first draft is ready for review.
+3. They open a PR containing only generated or curated analysis outputs.
+4. The RPG / IBM i SME reviews object coverage, evidence, call chains, file
+   I/O, business rules, TBDs, and spec readiness.
+5. The SME requests changes or approves.
+6. After merge, the `main` branch is the accepted analysis fact layer.
+
+The PR can include a temporary knowledge-hub preview to help review, but that
+preview must not be treated as trusted organizational knowledge until the
+underlying analysis outputs are merged.
+
+The repo root `README.md` should state:
+
+- which legacy system or business domain this analysis covers
+- which source repo and evidence bundle it was derived from
+- who the RPG / IBM i SME reviewers are
+- which branch is authoritative
+- where the published LLM Wiki lives
+
+### Repo 3: LLM Wiki Repo
+
+The LLM Wiki Repo contains a generated knowledge hub built from the Analysis
+Output Repo `main` branch. It is optimized for browsing, search, LLM retrieval,
+impact analysis, and downstream agent handoff.
+
+Recommended repo names:
+
+```text
+<system-slug>-llm-wiki
+<system-slug>-knowledge-hub
+<portfolio-slug>-legacy-knowledge-hub
+```
+
+Examples:
+
+```text
+card-auth-llm-wiki
+order-entry-knowledge-hub
+ibmi-modernization-legacy-knowledge-hub
+```
+
+Recommended repo settings:
+
+- Visibility: private or internal.
+- Default branch: `main`.
+- Branch naming for generated updates:
+  `publish/<analysis-source-commit-short-sha>`.
+- Write access: limited to knowledge publishers or repo maintainers.
+- Read access: available to SMEs, architects, developers, testers, and agents
+  that need approved modernization context.
+- Protect `main`; use PR review if the wiki is consumed by downstream agents.
+- Record the Analysis Output Repo name, branch, and source commit in generated
+  metadata.
+- Do not edit generated facts directly. Fix factual errors upstream in the
+  Analysis Output Repo, then republish.
+- Allow manual commentary only in explicitly marked manual-note sections or
+  dedicated `manual-notes/` pages.
+
+Recommended directory structure:
+
+```text
+README.md
+index.md
+.wiki-publish.yaml
+
+sources/
+  source-lock.json
+  publish-history.md
+
+capabilities/
+  CAP-<CAP-SLUG>-001.md
+
+objects/
+  OBJ-<CAP-SLUG>-NNN-<NAME>.md
+
+programs/
+  OBJ-<CAP-SLUG>-NNN-<PROGRAM>.md
+
+files/
+  OBJ-<CAP-SLUG>-NNN-<FILE>.md
+
+jobs/
+  OBJ-<CAP-SLUG>-NNN-<JOB>.md
+
+rules/
+  BR-<CAP-SLUG>-NNN.md
+
+flows/
+  FLOW-<CAP-SLUG>-<FLOW-SLUG>.md
+
+evidence/
+  EV-<CAP-SLUG>-NNN.md
+
+questions/
+  TBD-<CAP-SLUG>-NNN.md
+
+decisions/
+  DEC-<CAP-SLUG>-NNN.md
+
+indexes/
+  object-index.md
+  program-index.md
+  file-index.md
+  rule-index.md
+  evidence-index.md
+  review-status-index.md
+  impact-index.md
+  open-question-index.md
+
+llm/
+  manifest.json
+  chunks.jsonl
+  backlinks.jsonl
+  context-packs/
+    CAP-<CAP-SLUG>-001.json
+
+quality/
+  publish-report.md
+  broken-link-report.md
+  orphan-evidence-report.md
+
+manual-notes/
+  <CAP-SLUG>.md
+```
+
+The repo root `README.md` should state:
+
+- this repo is generated from the Analysis Output Repo `main` branch
+- the latest source commit and publish date
+- how to ask an agent questions against the wiki
+- how to request a correction
+- which sections are generated and which sections may contain manual notes
+
+Each generated page should carry machine-readable frontmatter:
+
+```yaml
+id: BR-<CAP-SLUG>-001
+type: business_rule
+title: "<short title>"
+review_status: approved
+source_repo: "<analysis-output-repo>"
+source_ref: main
+source_commit: "<commit-sha>"
+source_artifacts:
+  - 05_specs/<CAP-SLUG>/spec.yaml
+evidence_ids:
+  - EV-<CAP-SLUG>-001
+related_objects:
+  - OBJ-<CAP-SLUG>-001
+```
+
+The wiki may preserve explicitly marked manual notes, but generated sections
+should be reproducible from the Analysis Output Repo. If a human discovers an
+error in the wiki, the fix should usually be made upstream in the analysis
+artifact, then republished.
+
+### Knowledge Hub Manifest
+
+The Analysis Output Repo should include `knowledge-hub.manifest.yaml` so the
+publisher does not have to guess which artifacts belong together.
+
+Example:
+
+```yaml
+schema_version: "0.1"
+source_type: legacy-spec-factory-analysis
+
+capabilities:
+  - id: CAP-CREDIT-CHECK-001
+    slug: CREDIT-CHECK
+    inventory: 01_inventory/CREDIT-CHECK/inventory.yaml
+    programs:
+      - 02_programs/CREDIT-CHECK/CREDCHK/program-analysis.md
+      - 02_programs/CREDIT-CHECK/CRDAUTH/program-analysis.md
+    flows:
+      - 03_flows/CREDIT-CHECK/credit-check-auth/flow.md
+    modules:
+      - 04_modules/credit-check/
+    specs:
+      - 05_specs/CREDIT-CHECK/spec.yaml
+
+publish:
+  mode: approved-main-only
+  target: llm-wiki
+  preserve_manual_notes: true
+```
+
+The manifest is the machine-readable entry point. The wiki `index.md` is a
+generated human-facing result, not the control file.
+
+### Manual Publish Workflow
+
+If the company does not use GitHub Actions or another CI runner, publishing can
+be an explicit agent-assisted operation.
+
+After the SME merges the Analysis Output Repo PR:
+
+1. Open Codex, Claude Code, or OpenCode with access to both repos.
+2. Ask the agent to run `legacy-knowledge-hub-builder` in publish mode.
+3. Point it at:
+   - `source_repo`: the Analysis Output Repo
+   - `source_ref`: `main`
+   - `manifest`: `knowledge-hub.manifest.yaml`
+   - `target_repo`: the LLM Wiki Repo
+4. The agent validates that the source is `main`, reads the manifest, generates
+   or updates the wiki, records the source commit, and creates a wiki change.
+5. The wiki change can be reviewed through a normal PR or committed directly,
+   depending on the team's governance model.
+
+Example prompt:
+
+```text
+Use legacy-knowledge-hub-builder in publish mode.
+Read /path/to/analysis-output-repo on main.
+Use knowledge-hub.manifest.yaml as the source index.
+Publish the LLM Wiki into /path/to/llm-wiki-repo.
+Generate index.md, capability/object/rule/evidence pages, indexes,
+llm/chunks.jsonl, llm/backlinks.jsonl, and capability context packs.
+Record the source commit in the generated metadata.
+```
+
+### Preview vs Publish
+
+`legacy-knowledge-hub-builder` should support two modes:
+
+| Mode | Source | Purpose | Trust Level |
+| --- | --- | --- | --- |
+| `preview` | Analysis Output Repo feature branch / PR | Help the RPG SME review changed objects, rules, evidence, weak spots, and TBDs | Review aid only |
+| `publish` | Analysis Output Repo `main` after SME merge | Generate the official LLM Wiki / knowledge hub | Trusted derived read model |
+
+Preview mode can produce a temporary `index.md`, review dashboard, and quality
+summary for a PR. Publish mode should consume only `main` unless the project
+owner explicitly authorizes another source ref.
+
+### How the LLM Wiki Is Used
+
+The published wiki supports five main workflows:
+
+- **Human browsing:** SMEs, architects, developers, and testers can navigate
+  capabilities, objects, programs, rules, evidence, open questions, and review
+  status without reading every generated analysis document.
+- **LLM question answering:** agents can retrieve focused pages and chunks to
+  answer questions such as "Which rules depend on CUSTMSTR?" or "What evidence
+  supports BR-CREDIT-CHECK-004?"
+- **Impact analysis:** indexes and backlinks show which flows, rules,
+  acceptance criteria, and tests may be affected by changing a program, file,
+  report, or business rule.
+- **Review management:** status indexes expose `needs_sme_review`, weak
+  evidence, missing evidence, contradictory evidence, orphan evidence, and
+  blocking TBDs.
+- **Downstream agent handoff:** `llm/context-packs/*.json` gives forward SDLC
+  agents a small, approved, traceable context bundle for one capability instead
+  of forcing them to read the whole analysis repo.
+
+This makes the knowledge hub the main consumption surface, while keeping
+`spec.yaml`, `inventory.yaml`, and the reviewed analysis artifacts as the
+authoritative sources.
 
 ## Artifact Chain
 
@@ -671,9 +1099,9 @@ Spec Factory skill set:
 The canonical skills have author/copyright notices and are synced to Codex,
 Claude Code, OpenCode, and `.agents` adapter folders. Current review posture:
 the implemented extraction/synthesis skills are repo-ready at 9.0 after the
-runtime cap; `legacy-modernization-orchestrator` v0.1.1 has a prior 9.5
-field-pilot scorecard, while the expanded v0.2.0 routing scope still needs
-fresh review and smoke evidence before it should be called field-pilot ready.
+runtime cap; `legacy-modernization-orchestrator` v0.2.0 has been statically
+re-reviewed at 9.0, with field-pilot readiness blocked on refreshed examples,
+fallback references, and expanded smoke evidence.
 
 The next implementation steps are:
 
@@ -681,7 +1109,7 @@ The next implementation steps are:
    skill, then update [docs/runtime-matrix.md](docs/runtime-matrix.md).
 2. Re-score `legacy-ibmi-module-analyzer` and `legacy-spec-writer` after smoke
    output, since their post-review hardening has now been committed.
-3. Review `legacy-modernization-orchestrator` v0.2.0 against the expanded
-   routing scope.
+3. Revise `legacy-modernization-orchestrator` v0.2.0 examples/fallback
+   references, then smoke-test the expanded routing scope.
 4. Refresh the scorecards after the smoke runs so field-pilot readiness is
    backed by evidence, not just intent.

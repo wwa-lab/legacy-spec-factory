@@ -30,12 +30,22 @@ AC-CREDIT-CHECK-002
 | `BR` | Business rule | `BR-CREDIT-CHECK-004` |
 | `DEC` | Modernization decision | `DEC-CREDIT-CHECK-002` |
 | `STEP` | Process step | `STEP-CREDIT-CHECK-001` |
+| `FLOW` | End-to-end business transaction flow | `FLOW-CREDIT-CHECK-001` |
+| `NODE` | Program or system node inside a flow | `NODE-CREDIT-CHECK-001` |
+| `EDGE` | Call, dispatch, or handoff between flow nodes | `EDGE-CREDIT-CHECK-001` |
+| `DATA` | Cross-program or cross-step data exchange | `DATA-CREDIT-CHECK-001` |
+| `SEED` | Candidate rule or capability question awaiting SME review | `SEED-CREDIT-CHECK-001` |
+| `MODULE` | Business module synthesized from related flows | `MODULE-CREDIT-CHECK-001` |
+| `VIEW` | Module analysis view | `VIEW-CREDIT-CHECK-001` |
+| `ACTOR` | Human or organizational actor in a module view | `ACTOR-CREDIT-CHECK-001` |
+| `SYS` | External system, integration partner, or subsystem in a module view | `SYS-CREDIT-CHECK-001` |
 | `IN` | Input contract item | `IN-CREDIT-CHECK-001` |
 | `OUT` | Output contract item | `OUT-CREDIT-CHECK-001` |
 | `EX` | Exception or error behavior | `EX-CREDIT-CHECK-001` |
 | `TBD` | Open question or unresolved ambiguity | `TBD-CREDIT-CHECK-005` |
 | `AC` | Acceptance criterion | `AC-CREDIT-CHECK-003` |
 | `TC` | Test case, including golden master cases | `TC-CREDIT-CHECK-007` |
+| `FIND` | Validation or review finding | `FIND-CREDIT-CHECK-001` |
 
 ## Capability Slug
 
@@ -61,6 +71,10 @@ PGM123
 TEMP-FIX
 RPG-MIGRATION
 ```
+
+Governance-only steps that run before a capability slug exists may use a
+reserved workflow slug, such as `STEP-ROUTING-001`. Once a business capability
+is known, use the capability slug instead.
 
 ## Scope and Uniqueness
 
