@@ -283,6 +283,7 @@ even if the static review score is higher.
 | `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Claude Code passed; Codex and OpenCode smoke execution still pending |
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
 | `legacy-brd-writer` | [v0.1.1 scorecard](docs/reviews/legacy-brd-writer-v0.1.1-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime smoke passed in a disposable synced workspace; remaining work is optional contradictory-evidence example coverage |
+| `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
 | `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; Claude Code passed; Codex/OpenCode smoke and post-smoke re-score pending |
 | `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
 | `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
@@ -390,7 +391,7 @@ explicitly decides to vendor or mirror them.
 | 11 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
 | 12 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
 | 13 | `legacy-sme-review-facilitator` | Governance | Proposed | Generate SME review package and decision-log workflow |
-| 14 | `legacy-brd-to-sdd-handoff` | Bridge | Proposed | Generate early; connect approved BRD to SDD inputs, including Atlas-compatible handoff packages |
+| 14 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
 | 15 | `legacy-traceability-packager` | Governance / bridge | Proposed | Generate traceability matrix across evidence, BRD, SDD, tests, and code |
 | 16 | `legacy-runtime-matrix-tester` | Governance | Proposed | Generate runtime smoke orchestration for Codex, Claude Code, and OpenCode |
 | 17 | `legacy-golden-master-test-planner` | Verification | Proposed | Generate old-vs-new equivalence test planning workflow |
@@ -450,6 +451,7 @@ contracts remain platform-agnostic from day one.
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
 | `legacy-brd-writer` | Produce an evidence-backed BRD from approved module analysis while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | Field-pilot ready (v0.1.1, 9.56) |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
+| `legacy-brd-to-sdd-handoff` | Validate an approved BRD and approved spec, then package the Atlas SDD handoff without inventing design or implementation decisions | `06_sdd_handoffs/<CAPABILITY-SLUG>/sdd-handoff.yaml`, `sdd-handoff.md`, `atlas-context-pack.json`, `handoff-review.md`, `traceability.md` | Field-pilot ready (v0.1.0, 9.63) |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
 | `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
 | `legacy-step-contract` | Define the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract for every reverse-chain step | Step Contract block and validation templates | Field-pilot ready (v0.1.1, 9.52) |
@@ -1175,15 +1177,16 @@ Spec Factory skill set:
 - `skills/legacy-ibmi-module-analyzer`
 - `skills/legacy-brd-writer`
 - `skills/legacy-spec-writer`
+- `skills/legacy-brd-to-sdd-handoff`
 - `skills/legacy-step-contract`
 - `skills/legacy-step-validator`
 
 The canonical skills have author/copyright notices and are synced to Codex,
 Claude Code, OpenCode, and `.agents` adapter folders. Current review posture:
-`legacy-brd-writer`, `legacy-step-contract`, and `legacy-step-validator` are
-field-pilot ready after three-runtime smoke passes; the remaining
-extraction/synthesis skills and orchestrator remain repo-ready at 9.0 after the
-runtime cap until the remaining smoke evidence is recorded.
+`legacy-brd-writer`, `legacy-brd-to-sdd-handoff`, `legacy-step-contract`, and
+`legacy-step-validator` are field-pilot ready after three-runtime smoke passes;
+the remaining extraction/synthesis skills and orchestrator remain repo-ready at
+9.0 after the runtime cap until the remaining smoke evidence is recorded.
 
 The next implementation steps are:
 

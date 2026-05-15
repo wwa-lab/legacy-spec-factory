@@ -29,7 +29,7 @@ Every skill must pass in all three runtimes before lifting the cap:
 | Runtime | Discovery Path | Reference Invocation |
 | --- | --- | --- |
 | Codex (CLI) | `.codex/skills/<name>/SKILL.md` | `codex exec -C . -s read-only --ephemeral -m <model>` |
-| Claude Code | `.claude/skills/<name>/SKILL.md` | `claude -p --model <model> --permission-mode dontAsk --tools Read` |
+| Claude Code | `.claude/skills/<name>/SKILL.md` | `claude -p "<prompt>" --model <model> --permission-mode dontAsk --tools Read` |
 | OpenCode | `.opencode/skills/<name>/SKILL.md` (or `.agents/skills/...`) | `opencode run -m <model>` |
 
 Use the same project root for all three so adapter folders are picked up
@@ -797,6 +797,101 @@ opencode run -m opencode/minimax-m2.5-free \
 
 For the negative scenario, substitute the incomplete-upstream-analysis prompt above into
 the same commands.
+
+### `legacy-brd-to-sdd-handoff`
+
+#### Scenario (Positive — Approved BRD And Spec)
+
+```text
+Use /legacy-brd-to-sdd-handoff.
+
+User input:
+The CREDIT-CHECK capability has approved BRD and spec packages, no unresolved
+blocking TBDs, all approved BR-* have approved AC-*, evidence manifest
+package_state is approved_for_inventory with all referenced EV-* resolved and
+approved, and the capability owner John Smith is available to sign off on the
+handoff.
+
+Return only:
+- detected skill
+- status
+- required output files
+- evidence gate result
+- signoff requirement
+
+Do not create or edit files.
+```
+
+#### Pass Criteria (Positive)
+
+The response must include all of the following:
+
+- detected skill is `legacy-brd-to-sdd-handoff`
+- status is `approved`, `pass`, or `approved_with_non_blocking_tbd` /
+  `pass_with_warnings` only when the response explicitly carries a
+  non-blocking TBD forward
+- required output files are exactly `sdd-handoff.yaml`, `sdd-handoff.md`,
+  `atlas-context-pack.json`, `handoff-review.md`, and `traceability.md`
+- evidence gate is reported as passed against the evidence-intake manifest
+  contract
+- signoff requirement names a responsible SME / owner and requires name, role,
+  and ISO date
+- no files are created or edited
+
+#### Scenario (Negative — Missing Spec)
+
+```text
+Use /legacy-brd-to-sdd-handoff.
+
+Contract-only no-write smoke test. Do not inspect or rely on the actual
+workspace filesystem. Report the files the skill contract would emit, not
+actual created files.
+
+User input:
+The CUST-ONBOARD capability has an approved BRD with SME sign-off, but
+05_specs/CUST-ONBOARD/spec.yaml does not exist. A stakeholder asks to package
+the BRD for Atlas anyway.
+
+Return exactly these labels, one per line:
+- detected skill
+- status
+- blocking finding
+- would_write_files
+- would_not_write_files
+- next skill
+```
+
+#### Pass Criteria (Negative)
+
+- status is `blocked`
+- blocking finding identifies the missing approved `spec.yaml`
+- next skill is `legacy-spec-writer`
+- `would_write_files` contains only `handoff-review.md` and
+  `blocking-finding.yaml`
+- `would_not_write_files` contains `sdd-handoff.yaml`, `sdd-handoff.md`,
+  `atlas-context-pack.json`, and `traceability.md`
+- refuses to package the BRD directly for Atlas
+- no files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-brd-to-sdd-handoff. User input: The CREDIT-CHECK capability has approved BRD and spec packages, no unresolved blocking TBDs, all approved BR-* have approved AC-*, evidence manifest package_state is approved_for_inventory with all referenced EV-* resolved and approved, and the capability owner John Smith is available to sign off on the handoff. Return only: detected skill; status; required output files; evidence gate result; signoff requirement. Do not create or edit files."
+```
+
+```bash
+claude -p "Use /legacy-brd-to-sdd-handoff. User input: The CREDIT-CHECK capability has approved BRD and spec packages, no unresolved blocking TBDs, all approved BR-* have approved AC-*, evidence manifest package_state is approved_for_inventory with all referenced EV-* resolved and approved, and the capability owner John Smith is available to sign off on the handoff. Return only: detected skill; status; required output files; evidence gate result; signoff requirement. Do not create or edit files." \
+  --model haiku --permission-mode dontAsk --tools Read
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-brd-to-sdd-handoff. User input: The CREDIT-CHECK capability has approved BRD and spec packages, no unresolved blocking TBDs, all approved BR-* have approved AC-*, evidence manifest package_state is approved_for_inventory with all referenced EV-* resolved and approved, and the capability owner John Smith is available to sign off on the handoff. Return only: detected skill; status; required output files; evidence gate result; signoff requirement. Do not create or edit files."
+```
+
+For the negative scenario, substitute the missing-spec contract-only prompt
+above into the same commands.
 
 ### `legacy-step-contract`
 
