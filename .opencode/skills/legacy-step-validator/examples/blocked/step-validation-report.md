@@ -19,7 +19,7 @@ for documentation only.
 - **validator_skill:** `legacy-step-validator` v0.1.0
 - **step_type:** `module`
 - **step_id:** `STEP-CARD-AUTH-002`
-- **package_path:** `02_modules/CARD-AUTH/`
+- **package_path:** `04_modules/CARD-AUTH/`
 - **executed_by:** agent (Claude Code)
 - **executed_at:** 2026-05-14 14:42 UTC
 - **upstream_contract:** `../legacy-step-contract/references/step-contract.md`
@@ -106,7 +106,7 @@ SME readiness verdict: **not_ready**
 
 | Finding ID | Severity | Layer | Points to | Resolver | Recommended action |
 | --- | --- | --- | --- | --- | --- |
-| FIND-CARD-AUTH-001 | blocking | mechanical | `02_modules/CARD-AUTH/03-program-flow.md`; `FLOW-CHARGEBACK-001` | runner | Route `FLOW-CHARGEBACK-001` back to `legacy-ibmi-flow-analyzer` and either remove it from this module's scope or wait until it is `approved`. |
+| FIND-CARD-AUTH-001 | blocking | mechanical | `04_modules/CARD-AUTH/03-program-flow.md`; `FLOW-CHARGEBACK-001` | runner | Route `FLOW-CHARGEBACK-001` back to `legacy-ibmi-flow-analyzer` and either remove it from this module's scope or wait until it is `approved`. |
 
 ### 2. Execution traceability
 
@@ -136,7 +136,7 @@ SME readiness verdict: **not_ready**
 
 | Finding ID | Severity | Layer | Points to | Resolver | Recommended action |
 | --- | --- | --- | --- | --- | --- |
-| FIND-CARD-AUTH-003 | blocking | sme_readiness | `02_modules/CARD-AUTH/04-data-flow.md` | sme | Either record SME role, date, and IDs approved, or revert `status` to `in_review`. |
+| FIND-CARD-AUTH-003 | blocking | sme_readiness | `04_modules/CARD-AUTH/04-data-flow.md` | sme | Either record SME role, date, and IDs approved, or revert `status` to `in_review`. |
 
 ### 7. Downstream handoff readiness
 
@@ -169,7 +169,7 @@ unresolved_items:
   - id: TBD-CARD-AUTH-007
     category: contradictory_evidence
     points_to:
-      - 02_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/02-system-flow.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     blocks_current_step: yes

@@ -31,8 +31,8 @@ only — split if you find yourself wanting two.
 | `01_inventory/inventory.yaml` + `01_inventory/object-map.md` | inventory |
 | Single `program-analysis-<OBJ-ID>.md` (with control flow, file I/O, call graph sections) | program analysis |
 | Single `flow-<FLOW-SLUG>.md` (with trigger model, nodes, edges, data flow sections) | flow analysis |
-| `02_modules/<MODULE-SLUG>/module-overview.md` + four `0N-*.md` view files | module analysis |
-| `03_specs/<CAPABILITY-SLUG>/spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` | spec writing |
+| `04_modules/<MODULE-SLUG>/module-overview.md` + four `0N-*.md` view files | module analysis |
+| `05_specs/<CAPABILITY-SLUG>/spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` | spec writing |
 | Handoff bundle citing approved `spec.yaml`, `traceability-matrix.md`, golden master samples | forward SDLC handoff |
 
 If two fingerprints match the same package, request clarification. If
@@ -189,7 +189,7 @@ Flow is ready for module analysis when:
 
 ## Module analysis step
 
-Detected when `02_modules/<MODULE-SLUG>/` contains `module-overview.md`
+Detected when `04_modules/<MODULE-SLUG>/` contains `module-overview.md`
 plus four `0N-*.md` view files.
 
 ### Mechanical
@@ -229,7 +229,7 @@ Module is ready for spec writing when **all four views** are at least
 
 ## Spec writing step
 
-Detected when `03_specs/<CAPABILITY-SLUG>/spec.yaml` + `spec.md` +
+Detected when `05_specs/<CAPABILITY-SLUG>/spec.yaml` + `spec.md` +
 `spec-review.md` + `traceability.md` are present.
 
 ### Mechanical

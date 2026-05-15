@@ -27,8 +27,8 @@ steps:
 - inventory (`01_inventory/`)
 - program analysis (`program-analysis-<OBJ-ID>.md`)
 - flow analysis (`flow-<FLOW-SLUG>.md`)
-- module analysis (`02_modules/<MODULE-SLUG>/`)
-- spec writing (`03_specs/<CAPABILITY-SLUG>/`)
+- module analysis (`04_modules/<MODULE-SLUG>/`)
+- spec writing (`05_specs/<CAPABILITY-SLUG>/`)
 - forward SDLC handoff (`docs/forward-sdlc-contract.md`)
 
 Spec-review-as-its-own-step is intentionally out of scope until
@@ -98,8 +98,8 @@ You must not:
 Accept:
 
 - **Step package path** — directory or file the validator is reviewing.
-  Examples: `01_inventory/`, `02_modules/CARD-AUTH/`,
-  `03_specs/CREDIT-LIMIT/`, a single `flow-ONUS-AUTH.md`, a single
+  Examples: `01_inventory/`, `04_modules/CARD-AUTH/`,
+  `05_specs/CREDIT-LIMIT/`, a single `flow-ONUS-AUTH.md`, a single
   `program-analysis-OBJ-CREDIT-CHECK-003.md`.
 - **Step type hint** (optional) — when the path is ambiguous, the user
   can declare `inventory | program | flow | module | spec | handoff`.

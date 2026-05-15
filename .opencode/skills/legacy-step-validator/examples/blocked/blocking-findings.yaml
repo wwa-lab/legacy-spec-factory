@@ -13,7 +13,7 @@ report:
   validator_version: 0.1.0
   step_type: module
   step_id: STEP-CARD-AUTH-002
-  package_path: 02_modules/CARD-AUTH/
+  package_path: 04_modules/CARD-AUTH/
   executed_at: 2026-05-14 14:42 UTC
 
 compact_result:
@@ -35,7 +35,7 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 02_modules/CARD-AUTH/03-program-flow.md
+      - 04_modules/CARD-AUTH/03-program-flow.md
       - FLOW-CHARGEBACK-001
     resolver: runner
     recommended_action: Route FLOW-CHARGEBACK-001 back to legacy-ibmi-flow-analyzer or remove it from this module's scope.
@@ -48,9 +48,9 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 02_modules/CARD-AUTH/01-operation-flow.md
+      - 04_modules/CARD-AUTH/01-operation-flow.md
       - ACTOR-CARD-AUTH-003
-      - 02_modules/CARD-AUTH/03-program-flow.md
+      - 04_modules/CARD-AUTH/03-program-flow.md
     resolver: runner
     recommended_action: Add a View 3 entry node for Settlement Operator or tag the actor as manual.
     referenced_check: "Module semantic: every View 1 actor appears in View 3 (or is tagged manual)"
@@ -62,7 +62,7 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 02_modules/CARD-AUTH/04-data-flow.md
+      - 04_modules/CARD-AUTH/04-data-flow.md
     resolver: sme
     recommended_action: Record SME role, date, and IDs approved or revert status to in_review.
     referenced_check: "Module SME readiness: SME approval recorded for any view claiming approved"
@@ -74,7 +74,7 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 02_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/02-system-flow.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     recommended_action: Surface the IFS drop path contradiction as TBD-CARD-AUTH-007 and route it to SME.
@@ -85,7 +85,7 @@ unresolved_items:
   - id: TBD-CARD-AUTH-007
     category: contradictory_evidence
     points_to:
-      - 02_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/02-system-flow.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     blocks_current_step: yes

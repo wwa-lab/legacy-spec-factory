@@ -56,10 +56,10 @@ Stop and require clarification if:
 
 ## Output Contract
 
-Produce a directory `02_modules/<MODULE-SLUG>/`:
+Produce a directory `04_modules/<MODULE-SLUG>/`:
 
 ```
-02_modules/<MODULE-SLUG>/
+04_modules/<MODULE-SLUG>/
 ├── module-overview.md          ← summary, 4-view index, blocking TBDs, sign-off
 ├── 01-operation-flow.md        ← View 1: Business view + BAU
 ├── 02-system-flow.md           ← View 2: Integration view
@@ -132,7 +132,7 @@ field-level rules. The summary below is normative for this skill.
 
 ### Output
 
-- **Canonical directory**: `02_modules/<MODULE-SLUG>/` containing
+- **Canonical directory**: `04_modules/<MODULE-SLUG>/` containing
   `module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
   `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
 - **Required sections**: 4-view index with per-view status, top blocking

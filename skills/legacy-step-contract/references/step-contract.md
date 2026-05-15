@@ -65,6 +65,7 @@ creating a new one.
 
 | Step | Allowed to Mint | Reused From Upstream |
 | --- | --- | --- |
+| Evidence intake | `EV-*`, `TBD-*`, `STEP-*` | — |
 | Inventory | `OBJ-*`, `EV-*`, `TBD-*`, `STEP-*` | — |
 | Program analysis | `BEH-*` (program-local), `EX-*` (program-local), `TBD-*`, `STEP-*` | `OBJ-*`, `EV-*` |
 | Flow analysis | `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `SEED-*`, `TBD-*` | `OBJ-*`, `EV-*`, program-level `BEH-*` |
@@ -104,7 +105,7 @@ must use the artifact's own enum, not a generic one.
 | `inventory.yaml` | `sme_review.decision` | `pending`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `program-analysis.md` | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `flow-<SLUG>.md` | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
-| `02_modules/<MODULE-SLUG>/` views | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
+| `04_modules/<MODULE-SLUG>/` views | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `spec.yaml` | `status` | `draft`, `in_review`, `approved`, `rejected`, `retired` |
 | `review-report.md` | `decision` | `pass`, `pass_with_warnings`, `blocked` (this skill's compact result) |
 | Per-claim review | `review_status` | `draft`, `needs_sme_review`, `approved`, `rejected`, `retired` |
@@ -295,7 +296,7 @@ authoritative procedure.
   inventory
 - EXECUTION: module-analyzer 4-view synthesis per
   `docs/module-analysis-model.md`
-- OUTPUT: `02_modules/<MODULE-SLUG>/` with the four views plus overview
+- OUTPUT: `04_modules/<MODULE-SLUG>/` with the four views plus overview
 - VALIDATION:
   - mechanical: all four views present; capability seeds carry IDs
   - semantic: cross-flow synthesis matches the flow analyses; no new IBM i
@@ -307,7 +308,7 @@ authoritative procedure.
 - INPUT: approved module + flow + program + inventory; one `CAP-*`; SME
   owner of the capability
 - EXECUTION: spec-writer workflow
-- OUTPUT: `03_specs/<CAPABILITY-SLUG>/spec.yaml`, `spec.md`,
+- OUTPUT: `05_specs/<CAPABILITY-SLUG>/spec.yaml`, `spec.md`,
   `spec-review.md`, `traceability.md`
 - VALIDATION:
   - mechanical: `spec.yaml` validates against `schemas/spec.schema.yaml`;

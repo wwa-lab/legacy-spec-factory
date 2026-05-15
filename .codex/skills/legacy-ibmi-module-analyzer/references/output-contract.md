@@ -1,7 +1,7 @@
 # Output Contract: Module Analysis
 
 This document defines the precise file shape and required fields for each
-of the six artifacts in `02_modules/<MODULE-SLUG>/`.
+of the six artifacts in `04_modules/<MODULE-SLUG>/`.
 
 The canonical model is in `../../../docs/module-analysis-model.md`. This
 document defines the *file format*; that document defines the *intent*.

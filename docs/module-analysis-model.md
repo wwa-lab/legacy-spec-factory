@@ -134,7 +134,7 @@ data object, and flow has a stable ID, and cross-references use those IDs.
 A module analysis produces a directory:
 
 ```
-02_modules/<MODULE-SLUG>/
+04_modules/<MODULE-SLUG>/
 ├── module-overview.md          ← summary, 4-view index, blocking TBDs
 ├── 01-operation-flow.md        ← View 1: Business view
 ├── 02-system-flow.md           ← View 2: Integration view

@@ -36,7 +36,7 @@ Seeds" section).
 
 Accept:
 
-- **Approved module analysis** (`02_modules/<MODULE-SLUG>/` with all four
+- **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four
   views at `approved` or `approved_with_non_blocking_tbd`)
 - **All approved flow analyses** referenced by that module
 - **All approved program analyses** referenced by those flows
@@ -61,10 +61,10 @@ Stop and require clarification if:
 
 ## Output Contract
 
-Produce a directory `03_specs/<CAPABILITY-SLUG>/`:
+Produce a directory `05_specs/<CAPABILITY-SLUG>/`:
 
 ```
-03_specs/<CAPABILITY-SLUG>/
+05_specs/<CAPABILITY-SLUG>/
 ├── spec.yaml              ← canonical machine-readable contract (schemas/spec.schema.yaml)
 ├── spec.md                ← human-readable rendering of the same content
 ├── spec-review.md         ← SME review checklist and sign-off page
@@ -105,7 +105,7 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: approved `02_modules/<MODULE-SLUG>/` (all four views at
+- **Required**: approved `04_modules/<MODULE-SLUG>/` (all four views at
   `approved` or `approved_with_non_blocking_tbd`); approved
   `flow-<FLOW-SLUG>.md` for every flow the module references; approved
   `program-analysis-<OBJ-ID>.md` for every program in those flows;
@@ -143,7 +143,7 @@ field-level rules. The summary below is normative for this skill.
 
 ### Output
 
-- **Canonical directory**: `03_specs/<CAPABILITY-SLUG>/` containing
+- **Canonical directory**: `05_specs/<CAPABILITY-SLUG>/` containing
   `spec.yaml`, `spec.md`, `spec-review.md`, `traceability.md`.
 - **Required sections/fields**: `spec_id`, `capability.{id,name,slug,owner}`,
   `scope`, `evidence[]`, `behaviors[]` (`BEH-*`), `business_rules[]`
