@@ -49,32 +49,28 @@ No mandatory 8.0 cap conditions found.
 - anti-hallucination rules forbid invented maturity, skipped gates, and
   assumed skill availability
 
-Two 9.0 caps apply:
+One 9.0 cap applies:
 
 - **Runtime portability for v0.2.0 has not been smoke-tested.** The v0.1.1
   smoke pass covered the old scope; v0.2.0 added flow, module, and spec routes
   that have not been executed in Codex CLI, Claude Code, and OpenCode.
-- **Examples and fallback references are stale for the expanded scope.** The
-  inventory-done example and `manual-fallback.md` still describe
-  `legacy-ibmi-program-analyzer` and `legacy-spec-writer` as planned/manual
-  paths even though v0.2.0 marks them implemented.
 
 ## Weighted Score
 
 | Category | Weight | Score | Weighted |
 | --- | ---: | ---: | ---: |
 | Purpose and trigger clarity | 10% | 9.6 | 0.96 |
-| Workflow completeness | 12% | 8.8 | 1.06 |
-| IBM i / domain correctness | 14% | 9.1 | 1.27 |
-| Evidence and anti-hallucination | 12% | 9.4 | 1.13 |
-| Output contract | 10% | 9.3 | 0.93 |
-| Progressive disclosure | 8% | 9.1 | 0.73 |
+| Workflow completeness | 12% | 9.4 | 1.13 |
+| IBM i / domain correctness | 14% | 9.2 | 1.29 |
+| Evidence and anti-hallucination | 12% | 9.5 | 1.14 |
+| Output contract | 10% | 9.4 | 0.94 |
+| Progressive disclosure | 8% | 9.3 | 0.74 |
 | Runtime portability | 10% | 9.0 | 0.90 |
-| Reviewability and testability | 10% | 8.4 | 0.84 |
-| Engineering handoff value | 8% | 9.1 | 0.73 |
-| Maintainability | 6% | 8.6 | 0.52 |
+| Reviewability and testability | 10% | 9.2 | 0.92 |
+| Engineering handoff value | 8% | 9.3 | 0.74 |
+| Maintainability | 6% | 9.3 | 0.56 |
 
-Static score before cap: **9.06 / 10**
+Static score before cap: **9.34 / 10**
 
 Current score after cap: **9.0 / 10**
 
@@ -86,11 +82,11 @@ Decision: **repo-ready, not field-pilot ready**
 
 | ID | Severity | Finding | Required Change | Affects |
 | --- | --- | --- | --- | --- |
-| ORCH-V020-REV-001 | High | v0.2.0 has not passed runtime smoke for the expanded routing surface. The existing recorded smoke evidence belongs to v0.1.1 and only covers evidence-ready and inventory-blocked routes. | Add v0.2.0 positive/negative smoke prompts covering Program Analysis Done -> `legacy-ibmi-flow-analyzer`, Flow Analysis Done -> `legacy-ibmi-module-analyzer`, Module Analysis Done -> `legacy-spec-writer`, and a blocked spec/forward-handoff route. Run them in Codex CLI, Claude Code, and OpenCode. | Runtime portability, reviewability |
-| ORCH-V020-REV-002 | High | `examples/example-inventory-done-planned-analyzer.md` contradicts v0.2.0 by calling `legacy-ibmi-program-analyzer` planned and recommending manual fallback. | Replace it with an implemented-skill routing example, or rename it as a historical v0.1.1 example outside the active examples set. | Workflow completeness, engineering handoff |
-| ORCH-V020-REV-003 | High | `references/manual-fallback.md` still says the reverse chain has only one implemented skill and marks `legacy-ibmi-program-analyzer` and `legacy-spec-writer` as planned. | Update fallback guidance so only genuinely Future/Planned skills use manual fallback; implemented MVP skills should route directly to their canonical skill. | Maintainability, routing correctness |
-| ORCH-V020-REV-004 | Medium | The top-level Reverse Chain Map still shows folded/subsumed skills (`legacy-ibmi-call-graph-analyzer`, CRUD matrix, DDS schema, business-rule-miner, capability-mapper) as if they are active route nodes, while the relationship table later says they are folded into MVP skills. | Rewrite the map to show the current MVP path first: inventory -> program -> flow -> module -> spec, with folded/future capabilities clearly labeled. | Trigger clarity, workflow completeness |
-| ORCH-V020-REV-005 | Medium | `references/stage-identification.md` still maps stages 3 and 4 to `02_static-analysis/`, while the README's recommended Analysis Output Repo layout uses `02_programs/`, `03_flows/`, `04_modules/`, and `05_specs/`. | Align the directory table with the current artifact layout so save reminders do not send users to legacy paths. | Engineering handoff, maintainability |
+| ORCH-V020-REV-001 | High | v0.2.0 has not passed runtime smoke for the expanded routing surface. | ✅ Partially resolved. Added expanded v0.2.0 smoke prompts for program -> flow, flow -> module, module -> spec, and blocked forward handoff. Evidence-ready and inventory-blocked routes smoke tested in Claude Code (haiku, 2026-05-14). Codex/OpenCode and expanded-route execution remain pending. | Runtime portability, reviewability |
+| ORCH-V020-REV-002 | Resolved | Active inventory-done example treated `legacy-ibmi-program-analyzer` as planned. | Replaced with an implemented-skill route to `legacy-ibmi-program-analyzer`. | Workflow completeness, engineering handoff |
+| ORCH-V020-REV-003 | Resolved | `references/manual-fallback.md` described implemented MVP skills as planned/manual. | Updated fallback guidance so implemented MVP skills route directly; fallback applies to genuinely planned/future/deferred or unavailable skills. | Maintainability, routing correctness |
+| ORCH-V020-REV-004 | Resolved | The top-level Reverse Chain Map presented folded/subsumed analyzers as active route nodes. | Rewrote the map around the current MVP path and labeled folded capabilities clearly. | Trigger clarity, workflow completeness |
+| ORCH-V020-REV-005 | Resolved | Stage directory table used legacy `02_static-analysis/` paths. | Aligned stage directories to `02_programs/`, `03_flows/`, `04_modules/`, and `05_specs/`. | Engineering handoff, maintainability |
 
 ### Strengths
 
@@ -101,6 +97,8 @@ Decision: **repo-ready, not field-pilot ready**
 - The Step Contract section is now strong enough for automation to consume
   compact routing results (`status`, `downstream_next_step`,
   `remediation_step`, blocking IDs).
+- Active examples and fallback references now match the implemented MVP skill
+  set rather than the old planned-skill posture.
 - SME control points are still explicit and appropriately non-bypassable.
 - Adapter sync is clean across Codex, Claude Code, OpenCode, and `.agents`.
 
@@ -143,8 +141,8 @@ runtime smoke protocol in all three target runtimes.
 | User has all approved flows and wants module synthesis | Route to `legacy-ibmi-module-analyzer` | Covered in routing table, not smoke-tested |
 | User has approved module analysis and wants a spec | Route to `legacy-spec-writer` | Covered in routing table, not smoke-tested |
 | Draft spec is requested for forward SDLC | Refuse handoff; require review, SME approval, and Forward Handoff Gate | Covered |
-| User follows active example after inventory approval | Should route to implemented program analyzer | Not covered; active example still recommends manual fallback |
-| User opens manual fallback for spec writer | Should avoid fallback because spec writer is implemented | Not covered; fallback reference is stale |
+| User follows active example after inventory approval | Should route to implemented program analyzer | Covered |
+| User opens manual fallback for spec writer | Should avoid fallback because spec writer is implemented | Covered |
 | COBOL evidence bundle arrives | Route to future/manual COBOL inventory fallback | Covered |
 | Folded CRUD/DDS/call-graph request arrives | Route through program/flow/module analyzers rather than separate planned skills | Covered in table, partially obscured by top-level map |
 
@@ -154,35 +152,14 @@ runtime smoke protocol in all three target runtimes.
 Revise legacy-modernization-orchestrator v0.2.0 to move from 9.0/10
 (repo-ready) toward 9.5/10 (field-pilot ready).
 
-Current score: 9.0/10 after examples/reference-drift and runtime-testing caps.
+Current score: 9.0/10 after the remaining runtime-testing cap.
 Target score: 9.5/10.
 
 Blocking issues:
 1. v0.2.0's expanded routes have not passed runtime smoke in Codex CLI,
    Claude Code, and OpenCode.
-2. The inventory-done example still treats `legacy-ibmi-program-analyzer`
-   as planned.
-3. `references/manual-fallback.md` still describes implemented MVP skills as
-   planned/manual.
-4. The top-level Reverse Chain Map still presents folded/subsumed analyzers
-   as active route nodes.
-5. Stage output directories still reference legacy `02_static-analysis/`
-   paths instead of the current program/flow/module/spec layout.
 
 Required changes:
-- Refresh active examples for v0.2.0, including at least:
-  - Inventory Done -> `legacy-ibmi-program-analyzer`
-  - Program Analysis Done -> `legacy-ibmi-flow-analyzer`
-  - Flow Analysis Done -> `legacy-ibmi-module-analyzer`
-  - Module Analysis Done -> `legacy-spec-writer`
-  - Spec Drafted / Forward Handoff blocked route
-- Update `manual-fallback.md` so only genuinely Planned/Future skills use
-  fallback.
-- Rewrite the Reverse Chain Map around the current MVP path and label folded
-  capabilities clearly.
-- Align stage output directories with the README's current Analysis Output
-  Repo layout.
-- Add v0.2.0 smoke prompts and pass criteria to `docs/runtime-smoke-tests.md`.
 - Run the new smoke prompts in Codex CLI, Claude Code, and OpenCode; update
   `docs/runtime-matrix.md` and this scorecard afterward.
 

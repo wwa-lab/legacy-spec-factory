@@ -191,6 +191,109 @@ Return only:
 - routes back to inventory resume or SME waiver path
 - Inventory Completeness Gate is reported as blocked
 
+#### Scenario (Positive — Program Analysis Done)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have approved program analyses for all programs in the NIGHTLY-RECON scope:
+RECONCL, RECON01R, RECON02R, and RECONSQL. Inventory is approved with no
+blocking coverage gaps. I need to understand the complete scheduler-submitted
+business transaction end-to-end. What should I run next?
+
+Return only:
+- current stage
+- recommended next skill
+- gate check
+- next artifact expected
+```
+
+#### Pass Criteria (Positive — Program Analysis Done)
+
+- current stage is `Program Analysis Done` or equivalent Stage 3b wording
+- recommended next skill is `legacy-ibmi-flow-analyzer`
+- Inventory Completeness Gate is reported as passed
+- next artifact expected is a `flow-<FLOW-SLUG>.md` / `flow.md` style artifact
+- no files are created or edited
+
+#### Scenario (Positive — Flow Analysis Done)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have approved flow analyses for AUTH-ONUS, AUTH-BATCH, and AUTH-MANUAL.
+All referenced program analyses are approved, inventory is approved, and the
+module owner has provided BAU notes for the CARD-AUTH module. I want to
+synthesize the business module. What should I run next?
+
+Return only:
+- current stage
+- recommended next skill
+- gate check
+- next artifact expected
+```
+
+#### Pass Criteria (Positive — Flow Analysis Done)
+
+- current stage is `Flow Analysis Done` or equivalent Stage 3d wording
+- recommended next skill is `legacy-ibmi-module-analyzer`
+- Inventory Completeness Gate is reported as passed
+- next artifact expected mentions `module-overview.md` or the four module views
+- no files are created or edited
+
+#### Scenario (Positive — Module Analysis Done)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have an approved CARD-AUTH module analysis with all four views approved,
+approved flow analyses, approved program analyses, approved inventory, and a
+capability seed CAP-CREDIT-LIMIT-ENFORCEMENT. I need a modernization-ready
+spec package. What should I run next?
+
+Return only:
+- current stage
+- recommended next skill
+- gate check
+- next artifact expected
+```
+
+#### Pass Criteria (Positive — Module Analysis Done)
+
+- current stage is `Module Analysis Done` or equivalent Stage 3f wording
+- recommended next skill is `legacy-spec-writer`
+- gate check names the Evidence Approval Gate or says it is ready to check
+- next artifact expected mentions `spec.yaml` and `spec.md`
+- no files are created or edited
+
+#### Scenario (Negative — Forward Handoff Blocked)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have spec.yaml for CAP-CREDIT-LIMIT-ENFORCEMENT, but status is in_review.
+One critical BR still has review_status: needs_sme_review, and one blocking
+open question remains. Can I hand this to build-agent-skill now?
+
+Return only:
+- current stage
+- gate status
+- next skill (or "stop")
+```
+
+#### Pass Criteria (Negative — Forward Handoff Blocked)
+
+- refuses forward SDLC handoff
+- reports Forward Handoff Gate as blocked
+- cites the unapproved critical BR and blocking open question
+- routes back to `legacy-spec-writer`, `legacy-spec-reviewer` manual fallback,
+  or SME approval/remediation rather than `build-agent-skill`
+- no files are created or edited
+
 #### Reference Commands
 
 Run from the repository root. Add model or auth flags required by your
@@ -213,6 +316,91 @@ opencode run -m opencode/minimax-m2.5-free \
 
 For the negative scenario, substitute the inventory-blocked prompt above
 into the same `codex exec` / `claude -p` / `opencode run` commands.
+
+### `legacy-ibmi-evidence-intake`
+
+#### Scenario (Positive — Redacted Evidence Manifest)
+
+```text
+Use /legacy-ibmi-evidence-intake.
+
+User input:
+I have redacted RPGLE source CREDITCHK, redacted DDS CUSTPF, and a redacted
+spool sample for capability CREDIT-CHECK. Data owner export approval is
+recorded. Redaction owner approval is recorded with date 2026-05-15. SME
+approval by Credit Operations is recorded with date 2026-05-16.
+Help me prepare the evidence manifest.
+
+Return only:
+- required output files
+- whether downstream inventory may run
+- compact status
+
+Do not create or edit files.
+```
+
+#### Pass Criteria (Positive)
+
+- lists `evidence-manifest.yaml`, `redaction-log.md`, and
+  `evidence-intake-review-checklist.md`
+- reports that downstream inventory may run only after redaction owner and SME
+  approval are recorded
+- returns `status: pass` or `pass_with_warnings` only if approvals are named
+- does not inspect or quote raw unredacted evidence
+- no files are created or edited
+
+#### Scenario (Negative — Unknown Sensitivity)
+
+```text
+Use /legacy-ibmi-evidence-intake.
+
+User input:
+I have a transaction sample for CREDIT-CHECK, but sensitivity is unknown and
+no redaction owner has reviewed it yet. Can I give this to inventory now?
+
+Return only:
+- status
+- blocking reason
+- remediation_step
+
+Do not create or edit files.
+```
+
+#### Pass Criteria (Negative)
+
+- reports status as `blocked`
+- states that unknown sensitivity blocks inventory
+- routes remediation to redaction owner / evidence-intake rework
+- does not inspect, summarize, or quote raw transaction content
+- no files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-ibmi-evidence-intake. User input: I have redacted RPGLE source CREDITCHK, redacted DDS CUSTPF, and a redacted spool sample for capability CREDIT-CHECK. Data owner export approval is recorded. Redaction owner approval is recorded with date 2026-05-15. SME approval by Credit Operations is recorded with date 2026-05-16. Help me prepare the evidence manifest. Return only: required output files; whether downstream inventory may run; compact status. Do not create or edit files."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-ibmi-evidence-intake. User input: I have redacted RPGLE source CREDITCHK, redacted DDS CUSTPF, and a redacted spool sample for capability CREDIT-CHECK. Data owner export approval is recorded. Redaction owner approval is recorded with date 2026-05-15. SME approval by Credit Operations is recorded with date 2026-05-16. Help me prepare the evidence manifest. Return only: required output files; whether downstream inventory may run; compact status. Do not create or edit files."
+```
+
+OpenCode does not expose a read-only flag in `opencode run --help`. Run OpenCode
+smoke in a disposable copy or worktree, then verify the real repository stayed
+clean. Example:
+
+```bash
+tmpdir="$(mktemp -d /tmp/lsf-evidence-intake-smoke.XXXXXX)"
+rsync -a --delete --exclude .git ./ "$tmpdir/"
+opencode run --dir "$tmpdir" -m opencode/minimax-m2.5-free \
+  "Use /legacy-ibmi-evidence-intake. User input: I have redacted RPGLE source CREDITCHK, redacted DDS CUSTPF, and a redacted spool sample for capability CREDIT-CHECK. Data owner export approval is recorded. Redaction owner approval is recorded with date 2026-05-15. SME approval by Credit Operations is recorded with date 2026-05-16. Help me prepare the evidence manifest. Return only: required output files; whether downstream inventory may run; compact status. Do not create or edit files."
+rm -rf "$tmpdir"
+git status --short
+```
+
+For the negative scenario, substitute the unknown-sensitivity prompt above into
+the same `codex exec` / `claude -p` commands and the disposable OpenCode command.
 
 ### `legacy-ibmi-inventory`
 
@@ -776,8 +964,9 @@ Positive smoke confirmed all four sections were present and returned
 Negative smoke confirmed `sme_required: yes` with empty `sme_owner` blocks
 execution and requires SME owner assignment before inventory can run.
 
-Recorded in `docs/runtime-matrix.md`. A refreshed scorecard is still required
-before claiming field-pilot readiness.
+Recorded in `docs/runtime-matrix.md`. The refreshed v0.1.1 scorecard is
+recorded at
+`docs/reviews/legacy-step-contract-v0.1.1-scorecard.md`.
 
 ## Pass Example — `legacy-step-validator` v0.1.1
 
@@ -795,8 +984,9 @@ findings (`FIND-CARD-AUTH-001` through `FIND-CARD-AUTH-004`),
 `downstream_next_step: none`, and
 `remediation_step: legacy-ibmi-flow-analyzer`.
 
-Recorded in `docs/runtime-matrix.md`. A refreshed scorecard is still required
-before claiming field-pilot readiness.
+Recorded in `docs/runtime-matrix.md`. The refreshed v0.1.1 scorecard is
+recorded at
+`docs/reviews/legacy-step-validator-v0.1.1-scorecard.md`.
 
 ## Pass Example — `legacy-modernization-orchestrator` v0.1.1
 

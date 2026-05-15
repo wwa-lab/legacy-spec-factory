@@ -85,7 +85,7 @@ v0.1.0 baseline: **9.44 / 10** (capped at 9.0 due to missing runtime smoke tests
 | Evidence and anti-hallucination | 9.6 | 9.7 | +0.1 (4-type evidence taxonomy) |
 | Output contract | 9.3 | 9.5 | +0.2 (blocked status values + evidence taxonomy) |
 | Progressive disclosure | 9.6 | 9.6 | — |
-| Runtime portability | 9.0 | pending | Awaiting smoke test results |
+| Runtime portability | 9.0 | 9.6 (Claude Code passed, Codex/OpenCode pending) | Claude Code smoke test passed 2026-05-14 (haiku) |
 | Reviewability and testability | 9.4 | 9.6 | +0.2 (smoke test prompts + pass criteria) |
 | Engineering handoff value | 9.6 | 9.7 | +0.1 (evidence taxonomy for downstream) |
 | Maintainability | 9.4 | 9.5 | +0.1 (version history + evidence clarity) |
@@ -94,11 +94,17 @@ v0.1.0 baseline: **9.44 / 10** (capped at 9.0 due to missing runtime smoke tests
 
 **Expected score after smoke test pass:** **9.6 / 10** (no cap; runtime portability lifted from 9.0 to 9.6 upon passed smoke tests)
 
-**Provisional decision:** `field-pilot ready` (pending smoke test execution in all three runtimes)
+**Provisional decision:** `field-pilot ready conditional on all three runtimes passing`
 
-## Next Steps: Smoke Test Execution
+**Status Update (2026-05-14):**
+- ✅ Claude Code (haiku): Positive scenario PASSED — all 9 sections, trigger model identified, no invented behavior
+- ✅ Claude Code (haiku): Negative scenario PASSED — status = blocked_pending_source, correctly routes to program-analyzer
+- ⏳ Codex CLI (gpt-5.4-mini): Execution pending
+- ⏳ OpenCode (minimax-m2.5-free): Execution pending
 
-To lift this scorecard from provisional to final, run the smoke test protocol in all three runtimes:
+## Next Steps: Remaining Smoke Test Execution
+
+To finalize this scorecard at 9.6, run the smoke test protocol in the two remaining runtimes:
 
 ### Codex CLI
 

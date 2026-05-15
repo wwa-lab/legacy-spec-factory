@@ -33,11 +33,11 @@
 - Parsed `skills/legacy-spec-writer/templates/spec.yaml`,
   `skills/legacy-spec-writer/examples/spec-positive/spec.yaml`,
   `templates/spec.yaml`, and `schemas/spec.schema.yaml` as YAML; all parsed.
-- Checked `docs/runtime-matrix.md`; `legacy-spec-writer` is still `synced` in
-  Codex, Claude Code, and OpenCode, not `loaded`, `executed`, or `passed`.
-- Checked `docs/runtime-smoke-tests.md`; positive and negative
-  `legacy-spec-writer` smoke prompts now exist. Execution results in Codex CLI,
-  Claude Code, and OpenCode are still pending.
+- Checked `docs/runtime-matrix.md`; `legacy-spec-writer` is `passed` in Claude Code
+  (haiku, 2026-05-14), `synced` in Codex and OpenCode pending execution.
+- Checked `docs/runtime-smoke-tests.md`; positive and negative `legacy-spec-writer`
+  smoke prompts exist and have been executed in Claude Code with passing results
+  (2026-05-14). Execution results in Codex CLI and OpenCode are still pending.
 - Ran `python3 scripts/check-spec-contract.py legacy-spec-writer`; the
   skill-local template now aligns with the schema.
 
@@ -45,14 +45,17 @@
 
 No mandatory 8.0 cap conditions found.
 
-A 9.0 cap applies under the review gate:
+A 9.0 cap applied pending runtime portability evidence. Status:
 
-- portability has been considered and adapter drift has been checked, but the
-  skill has not been loaded or executed in Codex CLI, Claude Code, and OpenCode
-- the runtime-smoke-test prompt set exists, but no three-runtime pass evidence
-  has been recorded yet
-- schema/template/checker hardening has been committed, but the skill has not
-  yet been re-scored from runtime smoke output
+- ✅ Smoke test positive scenario (all upstream analyses approved, 8 programs)
+  passed in Claude Code (haiku, 2026-05-14)
+- ✅ Smoke test negative scenario (missing/draft flow analysis) passed in Claude Code
+  (haiku, 2026-05-14)
+- ⏳ Codex (gpt-5.4-mini) smoke execution pending
+- ⏳ OpenCode (minimax-m2.5-free) smoke execution pending
+
+Field-pilot readiness is conditional on all three runtimes passing. Score remains
+capped at 9.0 until Codex and OpenCode execution results are recorded.
 
 ## Weighted Score
 
@@ -81,7 +84,7 @@ Decision: **repo-ready, not field-pilot ready**
 
 | ID | Severity | Finding | Required Change | Affects |
 | --- | --- | --- | --- | --- |
-| SPEC-REV-001 | High | Runtime portability is structurally clean but not tested. | Smoke prompts and pass criteria now exist in `docs/runtime-smoke-tests.md`; run the protocol in Codex CLI, Claude Code, and OpenCode, then update `docs/runtime-matrix.md` and this scorecard. | Runtime portability, reviewability |
+| SPEC-REV-001 | High | Runtime portability is structurally clean but not tested. | ✅ Partially resolved. Smoke test passed in Claude Code (haiku, 2026-05-14). Codex and OpenCode execution pending to lift cap to 9.5. See `docs/runtime-matrix.md` entry. | Runtime portability, reviewability |
 | SPEC-REV-002 | High | The skill-local template generated an AC for a BR marked `needs_sme_review`. | ✅ Resolved. `skills/legacy-spec-writer/templates/spec.yaml` now defaults to `acceptance_criteria: []` with comments allowing ACs only for approved BRs. | Evidence integrity, anti-hallucination |
 | SPEC-REV-003 | High | The forward-handoff data-model evidence gate was not represented in schema/template fields. | ✅ Resolved. `schemas/spec.schema.yaml`, the skill-local template, and the positive example now include field-level `evidence_strength` and `review_status`. | Output contract, downstream automation |
 | SPEC-REV-004 | Medium | Required outputs `spec-review.md` and `traceability.md` lacked templates. | ✅ Resolved. Canonical templates now exist and are linked from `SKILL.md`. | Reviewability, SME governance |

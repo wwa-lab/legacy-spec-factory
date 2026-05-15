@@ -277,14 +277,15 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
+| `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.0 | Repo-ready | Hardened examples and references are ready; three-runtime smoke execution pending |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
-| `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Three-runtime smoke execution has not been recorded |
+| `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Claude Code passed; Codex and OpenCode smoke execution still pending |
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
-| `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; three-runtime smoke and post-smoke re-score pending |
-| `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.06 | 9.0 | Repo-ready | v0.2.0 added flow/module/spec routing; active examples/fallback refs are stale and three-runtime smoke is pending |
-| `legacy-step-contract` | [v0.1.0 scorecard](docs/reviews/legacy-step-contract-v0.1.0-scorecard.md) | 9.09 before v0.1.1 fixes | re-score pending | Repo-ready; smoke passed | v0.1.1 added worked example and passed three-runtime smoke; refreshed scorecard still needed before field-pilot readiness |
-| `legacy-step-validator` | [v0.1.0 scorecard](docs/reviews/legacy-step-validator-v0.1.0-scorecard.md) | 9.28 before v0.1.1 fixes | re-score pending | Repo-ready; smoke passed | v0.1.1 fixed compact-result findings and passed three-runtime smoke; refreshed scorecard still needed before field-pilot readiness |
+| `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; Claude Code passed; Codex/OpenCode smoke and post-smoke re-score pending |
+| `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
+| `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
+| `legacy-step-validator` | [v0.1.1 scorecard](docs/reviews/legacy-step-validator-v0.1.1-scorecard.md) | 9.53 | 9.53 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional checklist-ID / re-validation-ID cleanup |
 
 For public trust, scorecards should show both the score before caps and the
 score after caps. A 9.0 here should usually be read as "repo-ready and
@@ -353,14 +354,78 @@ The `legacy-` prefix distinguishes this reverse chain from the forward chain
 at [`wwa-lab/build-agent-skill`](https://github.com/wwa-lab/build-agent-skill),
 which uses `ibm-i-*`.
 
+### Full Skill Roadmap And Placeholders
+
+The full roadmap has two major halves:
+
+```text
+Legacy Spec Factory
+  old system -> evidence-backed BRD -> approved SDD handoff
+
+Atlas Engineering Delivery Hub
+  approved BRD -> SDD artifacts -> code / test / deploy
+```
+
+The table below is the naming and review placeholder map. Rows marked
+`Proposed` are not accepted skills yet; Claude Code should create the canonical
+folder under `skills/<skill-name>/`, add examples/templates/references, and
+then produce a scorecard under `docs/reviews/` before the skill is used.
+Rows marked `Atlas reference` are downstream Atlas Engineering Delivery Hub
+skills and should not be reimplemented in this repository unless the project
+explicitly decides to vendor or mirror them.
+
+| # | Skill | Chain | Status | Review / next action |
+| ---: | --- | --- | --- | --- |
+| 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.0 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
+| 2 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
+| 3 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 4 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 5 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Provisional field-pilot candidate after remaining smoke tests |
+| 6 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 7 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready; review long-term boundary with `legacy-brd-writer` |
+| 8 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
+| 9 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
+| 10 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
+| 11 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
+| 12 | `legacy-brd-writer` | Legacy BRD factory | Proposed | Generate early; define the BRD contract and split from `legacy-spec-writer` |
+| 13 | `legacy-sme-review-facilitator` | Governance | Proposed | Generate SME review package and decision-log workflow |
+| 14 | `legacy-brd-to-sdd-handoff` | Bridge | Proposed | Generate early; connect approved BRD to SDD inputs, including Atlas-compatible handoff packages |
+| 15 | `legacy-traceability-packager` | Governance / bridge | Proposed | Generate traceability matrix across evidence, BRD, SDD, tests, and code |
+| 16 | `legacy-runtime-matrix-tester` | Governance | Proposed | Generate runtime smoke orchestration for Codex, Claude Code, and OpenCode |
+| 17 | `legacy-golden-master-test-planner` | Verification | Proposed | Generate old-vs-new equivalence test planning workflow |
+| 18 | `legacy-modernization-decision-writer` | Governance / BRD | Optional proposed | Fold into SME review first; split out if decision records grow large |
+| 19 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
+| 20 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
+| 21 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
+| 22 | `architecture-to-design` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates design, data model, data flow, API guide |
+| 23 | `design-to-tasks` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; turns design into task breakdown |
+| 24 | `tasks-to-implementation` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; greenfield / brownfield / migration implementation |
+| 25 | `tasks-to-code` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; incremental code work from task docs |
+| 26 | `review-doc-quality` | Atlas review | Atlas reference | Downstream Atlas quality gate for SDD documents |
+| 27 | `review-code-against-design` | Atlas review | Atlas reference | Downstream Atlas quality gate for code-vs-design alignment |
+| 28 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
+| 29 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
+
+Recommended Claude Code generation order for new repository-owned skills:
+
+1. `legacy-brd-writer`
+2. `legacy-brd-to-sdd-handoff`
+3. `legacy-ibmi-data-model-analyzer`
+4. `legacy-ibmi-screen-report-analyzer`
+5. `legacy-sme-review-facilitator`
+6. `legacy-traceability-packager`
+7. `legacy-runtime-matrix-tester`
+8. `legacy-golden-master-test-planner`
+
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
+| `legacy-ibmi-evidence-intake` | Register evidence, assign `EV-*` IDs, govern redaction, and produce an approved evidence manifest before inventory | `evidence/manifest.yaml`, `redaction-log.md` | Repo-ready (9.0 capped; smoke pending) |
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs | `flow-<FLOW-SLUG>.md` | Repo-ready (9.0 capped; smoke pending for provisional 9.6) |
-| `legacy-ibmi-module-analyzer` | Synthesize related flows into the 4-view module model | `02_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
+| `legacy-ibmi-module-analyzer` | Synthesize related flows into the 4-view module model | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
 | `legacy-ibmi-crud-matrix-analyzer` | Map programs to physical/logical files and DB2 operations | `crud-matrix.md` | Folded into program/module analyzer for MVP |
 | `legacy-ibmi-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Folded into inventory/program analyzer for MVP |
@@ -380,14 +445,14 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.2.0 repo-ready (9.0 capped; examples/fallback refs + smoke pending) |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.2.0 repo-ready (9.0 capped; expanded-route smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
 | `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
-| `legacy-step-contract` | Define the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract for every reverse-chain step | Step Contract block and validation templates | v0.1.1 smoke passed; re-score pending |
-| `legacy-step-validator` | Validate completed step artifacts against the Step Contract | `06_quality/step-validation-report.md`, `blocking-findings.yaml` | v0.1.1 smoke passed; re-score pending |
+| `legacy-step-contract` | Define the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract for every reverse-chain step | Step Contract block and validation templates | Field-pilot ready (v0.1.1, 9.52) |
+| `legacy-step-validator` | Validate completed step artifacts against the Step Contract | `06_quality/step-validation-report.md`, `blocking-findings.yaml` | Field-pilot ready (v0.1.1, 9.53) |
 | `legacy-knowledge-hub-builder` | Publish SME-reviewed analysis outputs into an LLM Wiki / knowledge hub for browsing, retrieval, impact analysis, and downstream agent context packs | `05_knowledge_hub/` or a separate LLM Wiki repo | Proposed |
 
 ## SME-Reviewed Knowledge Publishing Model
@@ -821,23 +886,23 @@ authoritative sources.
   object-map.md
   inventory-review-checklist.md
 
-02_static-analysis/
-  call-graph.md
-  crud-matrix.md
-  data-dictionary.md
-  screen-map.md
-  program-analysis.md
+02_programs/
+  <CAP-SLUG>/
+    <PROGRAM>/
+      program-analysis.md
 
-03_runtime-evidence/
-  runtime-evidence.jsonl
-  sample-transactions/
-  spool-samples/
-  job-log-samples/
+03_flows/
+  <CAP-SLUG>/
+    <FLOW-SLUG>/
+      flow.md
 
-04_business-understanding/
-  business-rules.md
-  capability-map.md
-  open-questions.md
+04_modules/
+  <MODULE-SLUG>/
+    module-overview.md
+    01-operation-flow.md
+    02-system-flow.md
+    03-program-flow.md
+    04-data-flow.md
 
 05_specs/
   spec.yaml
@@ -850,7 +915,18 @@ authoritative sources.
   acceptance-tests.feature
   review-report.md
 
-07_forward-sdlc/
+07_runtime-evidence/
+  runtime-evidence.jsonl
+  sample-transactions/
+  spool-samples/
+  job-log-samples/
+
+08_business-understanding/
+  business-rules.md
+  capability-map.md
+  open-questions.md
+
+09_forward-sdlc/
   java-service-plan.md
   api-contracts/
   migration-plan.md
@@ -1090,26 +1166,30 @@ ID conventions, data safety guidance, runtime sync script, and the core Legacy
 Spec Factory skill set:
 
 - `skills/legacy-modernization-orchestrator`
+- `skills/legacy-ibmi-evidence-intake`
 - `skills/legacy-ibmi-inventory`
 - `skills/legacy-ibmi-program-analyzer`
 - `skills/legacy-ibmi-flow-analyzer`
 - `skills/legacy-ibmi-module-analyzer`
 - `skills/legacy-spec-writer`
+- `skills/legacy-step-contract`
+- `skills/legacy-step-validator`
 
 The canonical skills have author/copyright notices and are synced to Codex,
 Claude Code, OpenCode, and `.agents` adapter folders. Current review posture:
-the implemented extraction/synthesis skills are repo-ready at 9.0 after the
-runtime cap; `legacy-modernization-orchestrator` v0.2.0 has been statically
-re-reviewed at 9.0, with field-pilot readiness blocked on refreshed examples,
-fallback references, and expanded smoke evidence.
+`legacy-step-contract` and `legacy-step-validator` are field-pilot ready after
+three-runtime smoke passes; the extraction/synthesis skills and orchestrator
+remain repo-ready at 9.0 after the runtime cap until the remaining smoke
+evidence is recorded.
 
 The next implementation steps are:
 
 1. Run the smoke protocol in Codex, Claude Code, and OpenCode for each core
    skill, then update [docs/runtime-matrix.md](docs/runtime-matrix.md).
-2. Re-score `legacy-ibmi-module-analyzer` and `legacy-spec-writer` after smoke
-   output, since their post-review hardening has now been committed.
-3. Revise `legacy-modernization-orchestrator` v0.2.0 examples/fallback
-   references, then smoke-test the expanded routing scope.
+2. Re-score `legacy-ibmi-evidence-intake`, `legacy-ibmi-module-analyzer`, and
+   `legacy-spec-writer` after smoke output, since their post-review hardening
+   has now been committed.
+3. Smoke-test the expanded `legacy-modernization-orchestrator` v0.2.0 routing
+   scope in Codex CLI, Claude Code, and OpenCode.
 4. Refresh the scorecards after the smoke runs so field-pilot readiness is
    backed by evidence, not just intent.
