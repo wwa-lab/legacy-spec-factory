@@ -1,66 +1,71 @@
 # Manual Fallback Reference
 
-The reverse chain has 11 skills but only one is implemented today. The
-orchestrator must still be useful — it should tell users what to do manually
-until each planned skill exists.
+The MVP reverse chain now has implemented skills for the core IBM i path:
+
+- `legacy-ibmi-inventory`
+- `legacy-ibmi-program-analyzer`
+- `legacy-ibmi-flow-analyzer`
+- `legacy-ibmi-module-analyzer`
+- `legacy-spec-writer`
+
+Use this fallback reference only when the recommended route is genuinely
+planned, future, deferred from MVP, or unavailable in the local runtime. Do not
+send users to manual fallback for implemented MVP skills unless the runtime
+cannot load that skill and the user explicitly accepts a manual workaround.
 
 ## Principle
 
-For every planned skill, produce the **same artifact shape** the implemented
-version would produce, following:
+For every planned or unavailable skill, produce the **same artifact shape** the
+implemented version would produce, following:
 
 - the artifact's defined output contract (see the README artifact chain)
 - the schema in `schemas/spec.schema.yaml` for any spec-shaped output
 - the ID conventions in `docs/id-conventions.md`
 - the taxonomy in `docs/evidence-and-knowledge-taxonomy.md`
 
-This way, downstream skills (when implemented) can consume the manually
-produced artifact without rework.
+This way, downstream skills can consume the manually produced artifact without
+rework once the missing skill or runtime becomes available.
 
 ## Per-Skill Fallback
 
-### `legacy-ibmi-program-analyzer` (Planned)
+### Implemented MVP Skills
 
-**Goal:** explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, data flow.
+Do not use manual fallback in normal routing for:
 
-**Manual workflow:**
+- `legacy-ibmi-inventory`
+- `legacy-ibmi-program-analyzer`
+- `legacy-ibmi-flow-analyzer`
+- `legacy-ibmi-module-analyzer`
+- `legacy-spec-writer`
+
+Route directly to the implemented skill. If an air-gapped runtime cannot load
+one of these skills, follow that skill's `SKILL.md`, templates, and examples
+verbatim and record the workaround in the review notes.
+
+### Folded Supplemental Analysis (manual only when explicitly requested)
+
+The former standalone call-graph, CRUD matrix, DDS/schema, business-rule, and
+capability-mapping tasks are folded into the MVP analyzers. Only use these
+manual workflows when a user specifically asks for the standalone supplemental
+view.
+
+#### Call Graph View
 
 1. For each in-scope program, read the source with the team
-2. Produce `program-analysis-<program-id>.md` containing:
-   - entry points and parameters
-   - main control flow (subroutines, jumps, indicators)
-   - file I/O (`SETLL`, `READE`, `CHAIN`, etc.) with key fields
-   - external calls
-   - error handling paths
-   - linked evidence IDs (`EV-*`) for each non-trivial behavior
-3. Tag each behavior with `evidence_strength` from the taxonomy
-4. Create `TBD-*` IDs for anything unclear, do not guess
-
-**Quality bar:** an SME reading the document should be able to predict what
-the program does without re-reading the source.
-
-### `legacy-ibmi-call-graph-analyzer` (Planned)
-
-**Manual workflow:**
-
-1. Extract a list of all `CALL` / `CALLP` / `SBMJOB` from each program
-2. Build a graph (Mermaid or simple table) showing program → program edges
-3. Tag each edge with confidence and evidence
-4. Mark unresolved calls (target program not in inventory) as
+2. Extract a list of all `CALL` / `CALLP` / `SBMJOB` from each program
+3. Build a graph (Mermaid or simple table) showing program → program edges
+4. Tag each edge with confidence and evidence
+5. Mark unresolved calls (target program not in inventory) as
    `TBD-<SLUG>-<NNN>` and update the inventory's `coverage_gaps`
 
-### `legacy-ibmi-crud-matrix-analyzer` (Planned)
-
-**Manual workflow:**
+#### CRUD Matrix View
 
 1. For each program, list each file with the access kind: `reads | writes |
    updates | deletes`
 2. Produce a markdown table: rows = programs, columns = files, cells = CRUD
 3. Tag each row with evidence IDs
 
-### `legacy-ibmi-dds-schema-analyzer` (Planned)
-
-**Manual workflow:**
+#### DDS / Screen Schema View
 
 1. Read each `PF`, `LF`, `DSPF`, `PRTF` source
 2. Produce `data-dictionary.md` (PF/LF fields with type, length, decimals,
@@ -79,7 +84,7 @@ the program does without re-reading the source.
    observed_in_runtime`, `linked_objects: [OBJ-*]`
 3. Reference these from program-analysis or business-rules artifacts
 
-### `legacy-business-rule-miner` (Planned)
+### Business Rule Notes (folded into module/spec writer)
 
 **Manual workflow:**
 
@@ -93,7 +98,7 @@ the program does without re-reading the source.
    - `confidence` and `review_status: needs_sme_review`
 3. Reject anything that cannot be tied to evidence
 
-### `legacy-capability-mapper` (Planned)
+### Capability Notes (folded into module/spec writer)
 
 **Manual workflow:**
 
@@ -102,15 +107,6 @@ the program does without re-reading the source.
    `BR-*` IDs and its `CAP-<SLUG>-<NNN>` ID
 3. Capabilities do not have to align with program boundaries — that is the
    point
-
-### `legacy-spec-writer` (Planned, MVP candidate)
-
-**Manual workflow:**
-
-1. Use `templates/spec.yaml` as the starting point
-2. Fill every field defined in `schemas/spec.schema.yaml`
-3. Render a `spec.md` view from the same content for human review
-4. Set `status: draft` until reviewer pass
 
 ### `legacy-spec-reviewer` (Planned)
 

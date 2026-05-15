@@ -1,4 +1,4 @@
-# Example Routing: Inventory Done -> Planned Analyzer Manual Fallback
+# Example Routing: Inventory Done -> Program Analyzer
 
 ## User Input
 
@@ -14,10 +14,11 @@
 
 - **Current Stage:** Inventory Done (Stage 2c)
 - **Desired Outcome:** Program Analysis
-- **Recommended Next Skill:** `legacy-ibmi-program-analyzer` (status: planned)
+- **Recommended Next Skill:** `legacy-ibmi-program-analyzer` (status: Implemented v0.1.0)
 - **Why:** Inventory has passed the completeness gate, so the next safest
-  step is program-level analysis for ORDENTR. The analyzer skill is not
-  implemented yet, so use the manual fallback and keep the output shape stable.
+  step is program-level analysis for ORDENTR. The implemented analyzer
+  produces the source-backed behavior, file I/O, call, and error-handling
+  record consumed by flow analysis.
 
 ## Routing Notes
 
@@ -31,23 +32,23 @@
   IDs, and SME owner for ambiguous branches.
 - **Route confidence:** High.
 - **Next artifact expected:**
-  `02_static-analysis/program-analysis-ORDENTR.md`.
+  `02_programs/CREDIT-CHECK/ORDENTR/program-analysis.md`.
 
 ## Next Step
 
-- **Invoke:** Manual fallback for `legacy-ibmi-program-analyzer` from
-  `references/manual-fallback.md`.
+- **Invoke:** `legacy-ibmi-program-analyzer`
 - **Produce:** `program-analysis-ORDENTR.md` with entry points, parameters,
   control flow, file I/O, external calls, error handling, evidence IDs, and
   `TBD-*` IDs for unclear behavior.
-- **Save reminder:** Save the analysis under `02_static-analysis/`; it will be
-  consumed later by `legacy-business-rule-miner`.
+- **Save reminder:** Save the analysis under
+  `02_programs/CREDIT-CHECK/ORDENTR/`; it will be consumed later by
+  `legacy-ibmi-flow-analyzer`.
 - **SME reminder:** Ask the SME to validate any branch affecting money,
   inventory, compliance, customer status, or posting before treating it as a
   confirmed rule.
-- **Manual fallback:** Read ORDENTR with the team, tag each non-trivial
-  behavior with evidence strength from `docs/evidence-and-knowledge-taxonomy.md`,
-  and do not infer missing business intent without SME review.
+- **Manual fallback:** Not needed — `legacy-ibmi-program-analyzer` is
+  implemented. Use fallback only if the runtime cannot load the skill and the
+  user explicitly accepts a manual workaround.
 ```
 
 ## Expected Manual Artifact Skeleton

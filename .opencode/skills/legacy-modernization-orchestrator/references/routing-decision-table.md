@@ -15,7 +15,7 @@ Skill statuses:
 
 | Current Stage | Desired Outcome | Route To | Skill Status | Note |
 | --- | --- | --- | --- | --- |
-| 0 — Evidence Intake | Any | `docs/data-collection-and-redaction.md` | Doc-only | **Redaction Gate first.** No skill may consume unredacted evidence. |
+| 0 — Evidence Intake | Any | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 | Register metadata, assign `EV-*` IDs, govern redaction, and produce the manifest. The agent must not inspect unredacted sensitive content. |
 | 1 — Evidence Ready (IBM i) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented | First call after redaction |
 | 1 — Evidence Ready (COBOL) | Start reverse engineering | `legacy-cobol-inventory` | Future | Use manual fallback; produce `inventory.yaml` following the same schema as the IBM i family |
 | 2a — Inventory In Progress | Continue inventory | `legacy-ibmi-inventory` | Implemented | Keep iterating; do not exit until SME decision is recorded |
@@ -30,7 +30,7 @@ Skill statuses:
 | 3e — Module Analysis In Progress | Continue | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** | All four views must reach `approved` or `approved_with_non_blocking_tbd` |
 | 3f — Module Analysis Done | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.0** | One spec per `CAP-*` seed from `module-overview.md` |
 | 4 — Static Analysis | (optional supplemental artifacts) | n/a | Optional | Subsumed by program/flow/module analyses; no separate skill needed for MVP |
-| 5 — Runtime Evidence Mined | Augment specs | `legacy-spec-writer` (rerun) | Future | Improves `evidence_strength` on weak rules |
+| 5 — Runtime Evidence Mined | Augment specs | `legacy-spec-writer` (rerun) | **Implemented v0.1.0** | Runtime evidence miner is future, but once evidence exists the spec writer can consume it to improve `evidence_strength` |
 | 6 — Business Rules Drafted | (subsumed) | (BR seeds live in module View 1; spec-writer formalizes) | n/a | Stage retained for backward compatibility |
 | 7 — Capabilities Mapped | (subsumed) | (CAP seeds live in module-overview; spec-writer produces one spec per CAP) | n/a | Stage retained for backward compatibility |
 | 8a — Spec Drafted | Validate | `legacy-spec-reviewer` | Future (deferred from MVP) | Until implemented, use spec-writer's `spec-review.md` + SME |

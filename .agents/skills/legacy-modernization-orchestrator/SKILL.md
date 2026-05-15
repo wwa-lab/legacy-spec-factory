@@ -28,28 +28,32 @@ through the chain.
 
 ```
 Raw Legacy Evidence (IBM i source, DDS, DB2, job log, spool, screen, SME notes)
+   ↓ legacy-ibmi-evidence-intake
+Evidence Manifest + Redaction Log + Redacted Evidence Bundle
    ↓ REDACTION GATE (docs/data-collection-and-redaction.md)
-Redacted Evidence Bundle
    ↓
-[Layer 1 — Platform-Specific Extraction]
-   ├─ legacy-ibmi-inventory ─────────► inventory.yaml + object-map.md
-   │                                         ↓ INVENTORY GATE
-   ├─ legacy-ibmi-program-analyzer ─► program-analysis.md
-   ├─ legacy-ibmi-call-graph-analyzer
-   ├─ legacy-ibmi-crud-matrix-analyzer
-   ├─ legacy-ibmi-dds-schema-analyzer
-   └─ legacy-ibmi-runtime-evidence-miner ─► runtime-evidence.jsonl
+[Layer 1 — IBM i Extraction]
+   legacy-ibmi-inventory ───────────► inventory.yaml + object-map.md
+        ↓ INVENTORY GATE
+   legacy-ibmi-program-analyzer ────► program-analysis.md
+        ↓
+   legacy-ibmi-flow-analyzer ───────► flow.md
+        ↓
+   legacy-ibmi-module-analyzer ─────► 4-view module analysis
    ↓
 [Layer 2 — Platform-Agnostic Synthesis]
-   ├─ legacy-business-rule-miner ────► business-rules.md
-   ├─ legacy-capability-mapper ──────► capability-map.md
-   ├─ legacy-spec-writer ────────────► spec.yaml + spec.md (draft)
-   │                                         ↓ EVIDENCE APPROVAL GATE
-   ├─ legacy-spec-reviewer ──────────► review-report.md
-   │                                         ↓ SME APPROVAL
-   └─ legacy-equivalence-test-generator ──► golden-master tests
-   ↓ FORWARD HANDOFF GATE (docs/forward-sdlc-contract.md)
+   legacy-spec-writer ──────────────► spec.yaml + spec.md + traceability.md
+        ↓ EVIDENCE APPROVAL / SME APPROVAL
+   legacy-spec-reviewer ────────────► review-report.md (future/manual)
+        ↓
+   legacy-equivalence-test-generator ► golden-master tests (planned)
+        ↓ FORWARD HANDOFF GATE (docs/forward-sdlc-contract.md)
 Forward SDLC (wwa-lab/build-agent-skill: ibm-i-program-spec, code-generator, …)
+
+Folded MVP capabilities: call graph, CRUD matrix, DDS/screen schema extraction,
+business-rule mining, and capability mapping are produced inside the program,
+flow, module, and spec-writer artifacts rather than routed as separate active
+skills.
 ```
 
 Future Layer 1 families (`legacy-cobol-*`, `legacy-mainframe-*`) feed the same
@@ -143,7 +147,7 @@ for the full table. Common routes:
 
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
-| Evidence Intake (unredacted) | Any downstream | **STOP — Redaction Gate** | N/A (doc) |
+| Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
 | Inventory Blocked | Any downstream | **STOP — Inventory Completeness Gate** | N/A (doc) |
