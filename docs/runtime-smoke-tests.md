@@ -1100,6 +1100,105 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the dangling-AC-reference prompt above
 into the same commands.
 
+### `legacy-sme-review-facilitator`
+
+#### Scenario (Positive — Completed SME Review)
+
+```text
+Use /legacy-sme-review-facilitator.
+
+No-write smoke test. Do not create or edit files. Use only the scenario text
+below and the skill contract.
+
+Positive scenario:
+capability_slug CREDIT-CHECK exactly. Artifact 05_brds/CREDIT-CHECK/brd.md is
+approved_with_non_blocking_tbd. SME owner Jane Doe, Credit Operations Lead, is
+available on 2026-05-16. Evidence manifest explicitly lists
+EV-CREDIT-CHECK-015 sensitivity internal redaction_status not_required,
+EV-CREDIT-CHECK-008 sensitivity internal redaction_status not_required,
+EV-CREDIT-CHECK-012 sensitivity internal redaction_status not_required, and
+EV-CREDIT-CHECK-018 sensitivity internal redaction_status not_required.
+
+Review items:
+- BEH-CREDIT-CHECK-001 should be confirmed
+- BR-CREDIT-CHECK-003 should be rejected because interest compounds daily only
+  above the configured balance threshold
+- TBD-CREDIT-CHECK-004 should be deferred to Operations by 2026-05-23
+
+Return only:
+- skill_invoked
+- status
+- output_directory
+- files_to_emit
+- decisions
+- follow_up_routing
+- no_write_confirmation
+```
+
+#### Pass Criteria (Positive)
+
+- invokes `legacy-sme-review-facilitator`
+- returns completed / pass / ready status
+- preserves the capability slug exactly in
+  `07_sme_reviews/CREDIT-CHECK/review-v1/` or an equivalent review slug under
+  `07_sme_reviews/CREDIT-CHECK/`
+- lists exactly the completed-review files: `review-session.md`,
+  `question-pack.md`, `sme-decision-log.yaml`, `sme-signoff.md`, and
+  `follow-up-findings.yaml`
+- records decisions for `BEH-CREDIT-CHECK-001` as `confirmed`,
+  `BR-CREDIT-CHECK-003` as `rejected`, and `TBD-CREDIT-CHECK-004` as
+  `deferred`
+- routes the rule revision to `legacy-spec-writer`
+- routes the deferred TBD to Operations with target date `2026-05-23`
+- confirms no files were created or edited
+
+#### Scenario (Negative — Missing SME And Unknown Evidence)
+
+```text
+Use /legacy-sme-review-facilitator.
+
+No-write smoke test. Do not create or edit files. Use only the scenario text
+below and the skill contract.
+
+Negative scenario:
+capability_slug ORDER-ENTRY exactly. Artifact 05_brds/ORDER-ENTRY/brd.md is
+approved_with_non_blocking_tbd, but no named SME owner is assigned. Evidence
+manifest lists EV-ORDER-ENTRY-001 sensitivity unknown redaction_status unknown
+and EV-ORDER-ENTRY-002 sensitivity internal redaction_status unknown. A
+stakeholder asks to proceed and generate the decision log anyway.
+
+Return only:
+- skill_invoked
+- status
+- output_directory
+- files_to_emit
+- files_not_to_emit
+- blockers
+- remediation_routes
+- no_write_confirmation
+```
+
+#### Pass Criteria (Negative)
+
+- invokes `legacy-sme-review-facilitator`
+- status is `blocked`
+- preserves `ORDER-ENTRY` exactly in the reported review directory
+- `files_to_emit` contains only `review-session.md` and
+  `blocked-findings.yaml`
+- `files_not_to_emit` contains `question-pack.md`, `sme-decision-log.yaml`,
+  `sme-signoff.md`, and `follow-up-findings.yaml`
+- blockers include missing named SME owner, `EV-ORDER-ENTRY-001` unknown
+  sensitivity/redaction status, and `EV-ORDER-ENTRY-002` unknown redaction
+  status
+- remediation routes include SME owner assignment and
+  `legacy-ibmi-evidence-intake`
+- refuses the stakeholder request to generate a decision log anyway
+- confirms no files were created or edited
+
+For reference commands, use the same Codex, Claude Code, and OpenCode command
+shapes shown above, replacing the prompt with the positive or negative scenario
+here.
+
 ### `legacy-step-contract`
 
 #### Scenario (Positive — Review A Filled Step Contract)
@@ -1490,6 +1589,103 @@ Return only:
 Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard remains repo-ready,
 not field-pilot ready, pending SME/domain validation with real redacted
 screen/report evidence.
+
+## Pass Example - `legacy-golden-master-test-planner` v0.1.0
+
+### Positive Approved Plan Scenario
+
+```text
+Use /legacy-golden-master-test-planner.
+
+Read the project skill if needed. Do not create or edit files.
+
+User input:
+Approved spec package: 05_specs/CREDIT-LIMIT/spec.yaml, status approved.
+Approved business rules: BR-CREDIT-LIMIT-001 approves an order when amount is
+within available credit; BR-CREDIT-LIMIT-002 rejects an order when amount
+exceeds available credit. Approved acceptance criteria: AC-CREDIT-LIMIT-001
+validates BR-CREDIT-LIMIT-001 happy path; AC-CREDIT-LIMIT-002 validates
+BR-CREDIT-LIMIT-002 rejection path; AC-CREDIT-LIMIT-003 validates exact-limit
+boundary behavior. Runtime evidence is redacted and approved:
+EV-CREDIT-LIMIT-001 input valid-order sample, EV-CREDIT-LIMIT-002 observed
+approved output, EV-CREDIT-LIMIT-003 input rejected-order sample,
+EV-CREDIT-LIMIT-004 observed CREDIT_LIMIT_EXCEEDED output, EV-CREDIT-LIMIT-005
+input exact-limit boundary sample, EV-CREDIT-LIMIT-006 observed approved
+boundary output. Evidence manifest and redaction log say all samples are
+redacted and no sensitivity is unknown. Capability-owner SME Jane Smith, test
+data owner Raj Patel, and forward SDLC test owner Maya Chen have approved the
+selected cases.
+
+Return only:
+- status
+- files that would be produced
+- TC list with validates and evidence refs
+- coverage result
+- gate/check result
+- no-write confirmation
+```
+
+### Positive Pass Criteria
+
+- invokes `legacy-golden-master-test-planner`
+- returns `approved` or equivalent pass status
+- lists exactly the five `06_quality/CREDIT-LIMIT/` files:
+  `golden-master-tests.yaml`, `golden-master-tests.md`,
+  `equivalence-coverage.md`, `sample-data-manifest.md`, and
+  `test-plan-review.md`
+- emits `TC-CREDIT-LIMIT-001`, `TC-CREDIT-LIMIT-002`, and
+  `TC-CREDIT-LIMIT-003`
+- each `TC-*` cites both input and expected-output `EV-*`
+- reports full BR/AC coverage and no blocking gaps
+- confirms no files were created or edited
+
+### Negative Missing Expected-Output Scenario
+
+```text
+Use /legacy-golden-master-test-planner.
+
+Read the project skill if needed. Do not create or edit files.
+
+User input:
+Approved spec package: 05_specs/CREDIT-LIMIT/spec.yaml, status approved.
+Approved business rule BR-CREDIT-LIMIT-003 requires rejecting an order when the
+customer is missing. Approved acceptance criterion AC-CREDIT-LIMIT-004
+validates the missing-customer rejection path. The only available evidence is
+EV-CREDIT-LIMIT-007, a redacted input sample with a missing customer ID. There
+is no job log, spool output, response file, screen output, DB snapshot, or
+other observed legacy expected-output evidence for this path. Evidence
+sensitivity for EV-CREDIT-LIMIT-007 is no, and the redaction log is approved.
+SME Jane Smith asks whether the planner can create a golden master case anyway
+based on the approved AC.
+
+Return only:
+- status
+- files that would be produced
+- TC list, if any
+- blocking findings
+- downstream next step
+- no-write confirmation
+```
+
+### Negative Pass Criteria
+
+- invokes `legacy-golden-master-test-planner`
+- returns `blocked`
+- lists only `06_quality/CREDIT-LIMIT/test-plan-review.md` and
+  `06_quality/CREDIT-LIMIT/blocking-findings.yaml` as blocked-run outputs
+- mints no `TC-*`
+- explicitly refuses to infer expected output from `AC-CREDIT-LIMIT-004`
+- routes to runtime evidence collection / `legacy-ibmi-evidence-intake`
+- confirms no files were created or edited
+
+| Runtime | Model | Discovery | Trigger | Outcome |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | loaded | positive and negative no-write scenarios executed | passed |
+| Claude Code | `haiku` (Read-only tools) | loaded | positive and negative no-write scenarios executed | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | loaded | positive and negative no-write scenarios executed | passed |
+
+Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard is recorded at
+`docs/reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md`.
 
 ## Pass Example - `legacy-runtime-matrix-tester` v0.1.0
 
