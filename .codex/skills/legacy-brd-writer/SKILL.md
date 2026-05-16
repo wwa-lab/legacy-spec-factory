@@ -145,6 +145,10 @@ Follow:
   `TBD-*`, etc.)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for knowledge-type /
   evidence-strength distinction
+  - Use only these evidence strength values in evidence records:
+    `confirmed_from_code`, `observed_in_runtime`, `confirmed_by_sme`,
+    `strongly_inferred`, `weakly_inferred`, `needs_sme_review`,
+    `contradictory`, `missing`
 - `../../docs/data-collection-and-redaction.md` for evidence sensitivity
   checks
 
@@ -298,6 +302,9 @@ decision.
    - Cross-check against flow / program analyses
    - Keep each BR-* at status `needs_sme_review` (do NOT promote to `approved`);
      that is spec-writer's job
+   - Reuse upstream `BR-*` seeds only. If BRD review reveals a candidate rule
+     with no upstream `BR-*`, record a `TBD-*` for module/spec review instead
+     of minting a new `BR-*`
    - Each BR must:
      - Reference ≥1 `BEH-*` it abstracts
      - Reference ≥1 `EV-*` that supports it
@@ -306,7 +313,7 @@ decision.
 5. **Surface Open Questions (TBD-*)**
    - Contradictory evidence → `TBD-*` with category `contradictory_evidence`
    - Missing context → `TBD-*` with category `sme_questions`
-   - Ambiguous scope → `TBD-*` with category `sme_judgment`
+   - Ambiguous scope → `TBD-*` with category `sme_questions`
    - Each TBD must name a resolver and indicate whether it blocks spec-writing
 
 6. **Build Traceability**
@@ -415,6 +422,14 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.1 (2026-05-16): Runtime smoke test hardening
+  - Clarified BRD writer reuses upstream `BR-*` seeds only; new candidate
+    rules become `TBD-*` for module/spec review
+  - Normalized ambiguous-scope TBDs to `sme_questions`
+  - Pinned the allowed evidence-strength enum in the core instructions
+  - Passed smoke tests in Codex CLI (gpt-5.4-mini), Claude Code (haiku), and
+    OpenCode (minimax-m2.5-free)
 
 - v0.1.0 (2026-05-15): Initial BRD Writer skill
   - 7-step workflow producing brd.md + brd-review.md + traceability.md
