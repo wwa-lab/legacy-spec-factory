@@ -33,10 +33,44 @@ Skill statuses:
 | 5 — Runtime Evidence Mined | Augment specs | `legacy-spec-writer` (rerun) | **Implemented v0.1.0** | Runtime evidence miner is future, but once evidence exists the spec writer can consume it to improve `evidence_strength` |
 | 6 — Business Rules Drafted | (subsumed) | (BR seeds live in module View 1; spec-writer formalizes) | n/a | Stage retained for backward compatibility |
 | 7 — Capabilities Mapped | (subsumed) | (CAP seeds live in module-overview; spec-writer produces one spec per CAP) | n/a | Stage retained for backward compatibility |
+| 8a — Spec Drafted | Expand modernization decisions (optional) | `legacy-modernization-decision-writer` | **Implemented v0.1.0** | Optional governance skill. Use when decisions are complex, cross-cutting, or need explicit architecture approval. Produces `05_decisions/` package; reconciles back to `spec.yaml`. |
 | 8a — Spec Drafted | Validate | `legacy-spec-reviewer` | Future (deferred from MVP) | Until implemented, use spec-writer's `spec-review.md` + SME |
 | 8b — Spec In Review | Promote to approved | (SME sign-off) | Doc-only | Update `spec.yaml.status: approved` once SME signs; not a skill |
 | 8c — Spec Approved | Generate equivalence tests | `legacy-equivalence-test-generator` | Planned | Produces golden-master test pack |
 | 9 — Equivalence Pack Ready | Hand off to forward SDLC | `docs/forward-sdlc-contract.md` then `ibm-i-program-spec` / `ibm-i-code-generator` / etc. | External | **Forward Handoff Gate first.** Cross to `wwa-lab/build-agent-skill` only after gate passes |
+
+## Optional Detours
+
+### Modernization Decision Expansion (After Spec Draft)
+
+When routing from "Spec Drafted" to approval, consider whether the spec's
+`modernization_decisions[]` should be expanded into a separate decision package.
+
+**Trigger the optional `legacy-modernization-decision-writer` if**:
+
+- Spec has 3+ `DEC-*` records
+- Decisions are cross-cutting (affect multiple capabilities)
+- Decisions are high-risk or require explicit architecture/product approval
+- Spec review identifies unresolved platform, data, API, compatibility, or
+  error-handling questions
+- Decision authority (architecture owner) is separate from SME authority
+
+**Skip `legacy-modernization-decision-writer` if**:
+
+- Simple decisions that fit inline in `spec.yaml`
+- All required SME and architecture/product approvals are already captured in
+  the spec review package
+- Forward SDLC handoff is not blocked by unresolved decisions
+
+When using the decision-writer:
+
+1. Feed it the draft `spec.yaml` + module/flow/program analyses
+2. Decision-writer produces `05_decisions/<CAP-SLUG>/` package
+3. Once approved, decision-writer reconciles approved `DEC-*` back to
+   `spec.yaml`
+4. Resume normal spec approval workflow
+
+---
 
 ## Special Routes
 

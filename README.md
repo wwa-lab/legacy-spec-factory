@@ -286,6 +286,7 @@ even if the static review score is higher.
 | `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
 | `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; Claude Code passed; Codex/OpenCode smoke and post-smoke re-score pending |
 | `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
+| `legacy-modernization-decision-writer` | [v0.1.0 scorecard](docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional field-style decision package coverage |
 | `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
 | `legacy-step-validator` | [v0.1.1 scorecard](docs/reviews/legacy-step-validator-v0.1.1-scorecard.md) | 9.53 | 9.53 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional checklist-ID / re-validation-ID cleanup |
 
@@ -395,7 +396,7 @@ explicitly decides to vendor or mirror them.
 | 15 | `legacy-traceability-packager` | Governance / bridge | Proposed | Generate traceability matrix across evidence, BRD, SDD, tests, and code |
 | 16 | `legacy-runtime-matrix-tester` | Governance | Proposed | Generate runtime smoke orchestration for Codex, Claude Code, and OpenCode |
 | 17 | `legacy-golden-master-test-planner` | Verification | Proposed | Generate old-vs-new equivalence test planning workflow |
-| 18 | `legacy-modernization-decision-writer` | Governance / BRD | Optional proposed | Fold into SME review first; split out if decision records grow large |
+| 18 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 19 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
 | 20 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
 | 21 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
@@ -451,6 +452,7 @@ contracts remain platform-agnostic from day one.
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
 | `legacy-brd-writer` | Produce an evidence-backed BRD from approved module analysis while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | Field-pilot ready (v0.1.1, 9.56) |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
+| `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
 | `legacy-brd-to-sdd-handoff` | Validate an approved BRD and approved spec, then package the Atlas SDD handoff without inventing design or implementation decisions | `06_sdd_handoffs/<CAPABILITY-SLUG>/sdd-handoff.yaml`, `sdd-handoff.md`, `atlas-context-pack.json`, `handoff-review.md`, `traceability.md` | Field-pilot ready (v0.1.0, 9.63) |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
 | `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |

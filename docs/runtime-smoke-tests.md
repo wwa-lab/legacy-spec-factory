@@ -1248,6 +1248,135 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the blocked-example prompt above into the
 same commands.
 
+### `legacy-modernization-decision-writer`
+
+#### Scenario (Positive — Approved Decision Package)
+
+```text
+Use /legacy-modernization-decision-writer. Runtime smoke test.
+You may read only the legacy-modernization-decision-writer skill contract and
+templates if needed; do not inspect or rely on actual spec/evidence artifact
+files, and do not write files.
+
+User input:
+in_review spec SPEC-ORDERS-001 for CAP-ORDERS-001 has approved BR-ORDERS-004
+supported by EV-ORDERS-016 confirmed_by_sme, approved BEH-ORDERS-007 supported
+by EV-ORDERS-015 confirmed_from_code, and draft DEC-ORDERS-001 category
+async_boundary: use async event-driven fulfillment. Target platform constraint:
+AWS SQS/SNS approved by ARCH-2026-05-16. Alternatives: sync batch, async queue,
+hybrid. No blocking TBDs; sensitivity resolved; SME Jane Smith, architecture
+owner Bob Jones, and product owner Alice Chen have approved.
+
+Return only these labels, one per line:
+- detected skill
+- status
+- required output files
+- DEC review_status
+- pending approvals
+- reconciliation target
+- forbidden outputs
+- no-write confirmation
+
+For required output files, use the canonical four-file
+05_decisions/<CAPABILITY-SLUG>/ package from the skill contract, with
+capability slug ORDERS.
+```
+
+#### Pass Criteria (Positive)
+
+- detects `legacy-modernization-decision-writer`
+- reports a pass/approved outcome for the decision package
+- returns exactly the canonical four-file package:
+  - `05_decisions/ORDERS/modernization-decisions.yaml`
+  - `05_decisions/ORDERS/decisions/DEC-ORDERS-001.md`
+  - `05_decisions/ORDERS/decision-review.md`
+  - `05_decisions/ORDERS/traceability.md`
+- reports `DEC review_status: approved`
+- reports no pending approvals
+- reconciles back to `spec.yaml.modernization_decisions[]`
+- forbids implementation architecture/design, task breakdown, code, test cases,
+  and new acceptance criteria
+- creates or edits no files
+
+#### Scenario (Negative — Invented Platform Decision)
+
+```text
+Use /legacy-modernization-decision-writer. Runtime smoke test.
+Do not ask clarifying questions. You may read only the decision-writer skill
+contract and templates if needed. Do not inspect actual spec or evidence
+artifact files. Do not write files.
+
+User input:
+draft spec SPEC-ORDER-DATA-001 for CAP-ORDER-DATA-001 contains
+DEC-ORDER-DATA-001 category data: use PostgreSQL and Kafka because modern.
+The DEC references missing BR-ORDER-DATA-099, has no BEH link, no EV link,
+target_platform_constraints is empty, evidence sensitivity is unknown,
+architecture owner and product owner are not assigned, and blocking
+TBD-ORDER-DATA-015 about customer deduplication is unresolved. A stakeholder
+asks to mark the DEC approved and proceed.
+
+Return exactly these labels, one per line:
+- detected skill
+- status
+- blocking findings
+- DEC review_status
+- TBD handling
+- remediation route
+- forbidden outputs
+- no-write confirmation
+```
+
+#### Pass Criteria (Negative)
+
+- detects `legacy-modernization-decision-writer`
+- reports status as blocked or stop/validation failed
+- blocks missing BR/BEH/EV grounding, unknown sensitivity, empty target platform
+  constraints, missing architecture/product authority, and the unresolved
+  blocking TBD
+- keeps `DEC review_status` as `draft` or otherwise not approved
+- requires `TBD-ORDER-DATA-015` to be resolved before approval
+- routes remediation back to `legacy-spec-writer` or equivalent spec/evidence
+  repair before rerunning decision approval
+- forbids fake approval, invented PostgreSQL/Kafka rationale, new BR/BEH/EV/AC
+  minting, design/SDD artifacts, tasks, code, and tests
+- creates or edits no files
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "<positive or negative prompt above>"
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "<positive or negative prompt above>"
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "<positive or negative prompt above>"
+```
+
+#### Runtime Result (2026-05-16)
+
+| Runtime | Model | Discovery | Trigger | Outcome |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | loaded | positive and negative no-write scenarios executed | passed |
+| Claude Code | `haiku` (Read-only tools) | loaded | positive and negative no-write scenarios executed | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | loaded | positive and negative no-write scenarios executed | passed |
+
+Positive smoke confirmed the canonical `05_decisions/ORDERS/` package,
+approved DEC status, no pending approvals, reconciliation to
+`spec.yaml.modernization_decisions[]`, and no forbidden outputs.
+
+Negative smoke confirmed invented PostgreSQL/Kafka decisions are blocked when
+BR/BEH/EV grounding, evidence sensitivity, decision authority, and blocking TBD
+resolution are missing.
+
+Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard is recorded at
+`docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md`.
+
 ## Pass Example — `legacy-step-contract` v0.1.1
 
 | Runtime | Model | Discovery | Trigger | Outcome |

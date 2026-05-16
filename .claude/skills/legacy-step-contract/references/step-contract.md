@@ -71,6 +71,7 @@ creating a new one.
 | Flow analysis | `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `SEED-*`, `TBD-*` | `OBJ-*`, `EV-*`, program-level `BEH-*` |
 | Module analysis | `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`, `BR-*` (seeds only — promotion happens in spec-writer), `CAP-*` (seeds only), `TBD-*` | `OBJ-*`, `EV-*`, `BEH-*`, `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*` |
 | Spec writing | `BR-*` (final), `DEC-*`, `STEP-*`, `IN-*`, `OUT-*`, `AC-*`, `TC-*`, `TBD-*` | `OBJ-*`, `EV-*`, `BEH-*`, `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `CAP-*` |
+| Modernization decision writing (optional) | `DEC-*`, `TBD-*`, `STEP-*` | `CAP-*`, `BR-*`, `BEH-*`, `EV-*`, `OBJ-*`, `FLOW-*`, `AC-*`, existing `DEC-*` |
 | Spec review | none — only review status changes | all of the above |
 | Forward SDLC handoff | none — handoff is read-only on the spec | all of the above |
 | Step validation | `FIND-*`, `TBD-*` (validation report only; owning artifacts must adopt unresolved items before promotion) | all of the above |
@@ -107,6 +108,7 @@ must use the artifact's own enum, not a generic one.
 | `flow-<SLUG>.md` | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `04_modules/<MODULE-SLUG>/` views | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `spec.yaml` | `status` | `draft`, `in_review`, `approved`, `rejected`, `retired` |
+| `05_decisions/<CAPABILITY-SLUG>/modernization-decisions.yaml` | `status` | `draft`, `in_review`, `approved`, `rejected`, `retired` |
 | `review-report.md` | `decision` | `pass`, `pass_with_warnings`, `blocked` (this skill's compact result) |
 | Per-claim review | `review_status` | `draft`, `needs_sme_review`, `approved`, `rejected`, `retired` |
 
