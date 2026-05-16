@@ -23,6 +23,7 @@ Walk the files in pipeline order — each one consumes the previous:
 | 1 → 2c | [`01_inventory/inventory.yaml`](01_inventory/inventory.yaml) | How `OBJ-*` IDs map to source members and evidence |
 | 1 → 2c | [`01_inventory/object-map.md`](01_inventory/object-map.md) | Human-readable companion to the inventory |
 | 2c → 3b | [`02_programs/PRICE-CALC/PRICECALC/program-analysis.md`](02_programs/PRICE-CALC/PRICECALC/program-analysis.md) | Per-program control flow, I/O, calls, error handling with evidence-citing rows |
+| 3b (supplemental) | [`02_programs/PRICE-CALC/programs-batch-digest.md`](02_programs/PRICE-CALC/programs-batch-digest.md) | SME-facing one-page scan grouped by criticality; reduces 50-file review to one |
 | 3b → 3d | [`03_flows/PRICE-CALC/flow-calculate-price.md`](03_flows/PRICE-CALC/flow-calculate-price.md) | End-to-end transaction with trigger context, sequence, capability seeds |
 | 3d → 3f | [`04_modules/PRICE-CALC/module-overview.md`](04_modules/PRICE-CALC/module-overview.md) | 4-view synthesis + capability + rule seeds (`BR-*`, `CAP-*`) |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/spec.yaml`](05_specs/CAP-PRICE-CALCULATION/spec.yaml) | Machine-readable contract for forward SDLC |

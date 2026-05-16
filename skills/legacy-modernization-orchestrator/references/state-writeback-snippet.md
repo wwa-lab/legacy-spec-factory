@@ -153,13 +153,15 @@ If your skill's view of the artifact disagrees with `workflow-state.yaml`
 | `legacy-brd-to-sdd-handoff` | `10 Forward Handoff Ready` | `09_forward-sdlc/<CAP-*>/handoff-bundle.yaml` |
 | `legacy-golden-master-test-planner` | `9 Equivalence Pack Ready` | `06_quality/<CAP-*>/golden-master-tests.md` |
 | `legacy-ibmi-runtime-evidence-miner` | `5 Runtime Evidence Mined` | `07_runtime-evidence/runtime-evidence.jsonl` |
+| `legacy-ibmi-batch-digest` | (does not advance stage; supplemental) | `02_programs/<MODULE>/programs-batch-digest.md` |
 
 Skills not in this table (`legacy-step-validator`,
 `legacy-traceability-packager`, `legacy-sme-review-facilitator`,
 `legacy-runtime-matrix-tester`, `legacy-step-contract`,
 `legacy-ibmi-screen-report-analyzer`,
 `legacy-ibmi-data-model-analyzer`,
-`legacy-modernization-decision-writer`, `legacy-brd-writer`) are
+`legacy-modernization-decision-writer`, `legacy-brd-writer`) — plus
+`legacy-ibmi-batch-digest` which IS in the table but is also history-only — are
 governance / supplemental: **append `history[]` only, do not advance
 `stage_id`**. Some may make scoped edits to `capabilities[<CAP-*>].blocking.*`
 (e.g. `legacy-sme-review-facilitator` updates `sme_pending`,

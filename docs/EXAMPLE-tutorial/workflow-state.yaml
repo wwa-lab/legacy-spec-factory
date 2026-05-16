@@ -52,6 +52,12 @@ history:
     stage_after: "3b Program Analysis Done"
     artifact: 02_programs/PRICE-CALC/PRICECALC/program-analysis.md
     note: "analyzed PRICECALC"
+  - at: 2026-05-16T11:45:00Z
+    skill: legacy-ibmi-batch-digest
+    capability_id: null
+    stage_after: "3b Program Analysis Done"
+    artifact: 02_programs/PRICE-CALC/programs-batch-digest.md
+    note: "digest for PRICE-CALC — critical/1, standard/0, low_risk/0, not-analyzed/0"
   - at: 2026-05-16T13:00:00Z
     skill: legacy-ibmi-flow-analyzer
     capability_id: null

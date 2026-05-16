@@ -869,6 +869,23 @@ runtime copies.
 
 ## Version History
 
+- v0.11.0 (2026-05-16): SME-bandwidth strategy completion. Three skills
+  now collaborate to drop typical SME review load 70-80%:
+  (1) `legacy-ibmi-inventory` v0.2 adds `criticality` (critical /
+  standard / low_risk) + single-batched SME confirmation;
+  (2) `legacy-ibmi-runtime-evidence-miner` v0.2 adds Rule Auto-Validation
+  (promote `inferred_business_rule` to `auto_validated_spot_check_only`
+  when ≥ N runtime samples corroborate; never auto-validate critical
+  money/posting/compliance);
+  (3) NEW skill `legacy-ibmi-batch-digest` aggregates per-module
+  program analyses into a single SME-facing scan page grouped by
+  criticality with one-line roles, top-3 pending decisions, TBD counts,
+  and SME signoff stub — replaces "open N files" friction with "scan
+  one page". `legacy-sme-review-facilitator` updated with Three-Bucket
+  Review Routing (Full review / Spot-check / Batch confirm). Spec
+  schema extended with `auto_validated_spot_check_only` review_status
+  and `auto_validation` audit block. EXAMPLE-tutorial demonstrates all
+  three strategies end-to-end.
 - v0.10.0 (2026-05-16): Tier 3 polish. Added `PROGRESS` line (12th) to
   the Quick Card showing visual `[●●●○○○○○○○] 3/10 <milestone>` mapping
   from `stage_id` to a 10-step pipeline view. Same progress bar

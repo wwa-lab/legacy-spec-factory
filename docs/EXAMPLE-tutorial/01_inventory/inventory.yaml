@@ -21,6 +21,9 @@ objects:
       - external: "Order Entry program ORDENTR (out of scope for this PPCR)"
     calls:
       - OBJ-PRICE-CALC-PRICEFL
+    criticality: critical
+    criticality_reason: "Result feeds directly into invoiced line price (money path)"
+    criticality_confirmed_by_sme: true
 
   - id: OBJ-PRICE-CALC-PRICEFL
     type: file
@@ -41,7 +44,14 @@ sme_review:
   decision: approved
   at: 2026-05-16
   by: "Jane Doe"
+  criticality_confirmed_at: 2026-05-16
+  criticality_summary:
+    critical: 1
+    standard: 0
+    low_risk: 0
   notes: |
     Confirmed PRICECALC + PRICEFL are the only in-scope objects for this
     PPCR. The promotion stacking logic is hard-coded in PRICECALC source
     (no separate promotion table) — see EV-SME-001 walkthrough.
+    PRICECALC classified as `critical` since its output is the invoiced
+    line price.

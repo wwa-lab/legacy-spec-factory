@@ -182,6 +182,53 @@ orchestrator.
    - sensitivity is not `unknown`
    - PRTF, DSPF, PF/LF, job, and deep subroutine gaps are called out
 
+## Program Criticality Classification
+
+Every program object in `inventory.yaml` MUST carry a `criticality` field
+with one of `critical | standard | low_risk`. This drives SME review
+routing downstream — without it, every program gets equal review
+intensity and the SME bandwidth bottleneck cannot be relieved.
+
+Apply the heuristic in
+[`references/criticality-classifier.md`](references/criticality-classifier.md).
+Default to `standard` when the heuristic does not match a `critical` or
+`low_risk` pattern.
+
+Schema addition to each `objects[]` entry of type `program`:
+
+```yaml
+- id: OBJ-<MODULE>-<NAME>
+  type: program
+  # ... existing fields ...
+  criticality: critical | standard | low_risk
+  criticality_reason: <one-line why, e.g. "writes ARMAST" or "read-only display program">
+  criticality_confirmed_by_sme: false   # flipped to true after SME signoff
+```
+
+**SME confirmation is a single batched step**, not per-program:
+
+1. Inventory skill auto-classifies all programs using the heuristic.
+2. Inventory skill emits a per-bucket count summary to the SME
+   (see `criticality-classifier.md` → "SME confirmation"):
+   ```
+   critical:  12 programs   (need deep SME review)
+   standard:  21 programs   (spot-check sample)
+   low_risk:  14 programs   (batch confirm)
+   ```
+3. SME confirms the partitioning OR names specific programs to reclassify
+   with reasons.
+4. After SME signoff, set `criticality_confirmed_by_sme: true` on every
+   reclassified entry, and record the confirmation moment in
+   `inventory.yaml.sme_review.criticality_confirmed_at: <ISO date>`.
+
+Until step 4 completes, downstream skills MUST treat every program as
+`standard` (the conservative default) to prevent under-reviewing a
+mis-classified `critical` program.
+
+**Anti-pattern:** do NOT use criticality to skip program analysis for
+`low_risk` programs. The analysis is still produced at full depth — only
+the SME review effort downstream is dialed down.
+
 ## Workflow State Write-Back
 
 At the end of an inventory run, update `<project-root>/workflow-state.yaml`
@@ -262,5 +309,11 @@ Use `../../scripts/sync-skills.sh` to create or check runtime copies.
 
 ## Version History
 
+- v0.2.0 (2026-05-16): Added program criticality classification
+  (`critical | standard | low_risk` with `criticality_reason`) and the
+  single-batched SME confirmation workflow. Drives downstream review
+  routing in `legacy-sme-review-facilitator` so 200-program modules no
+  longer require 200 separate SME reviews. Heuristic + anti-patterns
+  documented in `references/criticality-classifier.md`.
 - v0.1.0 (2026-05-13): Initial reference implementation for the Legacy Spec
   Factory review gate.

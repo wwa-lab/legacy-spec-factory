@@ -656,6 +656,55 @@ Before releasing review artifacts:
 2. Required evidence has not been redacted
 3. Prerequisite approval gates (from upstream skills) are not yet complete
 
+## Three-Bucket Review Routing (criticality + auto-validation)
+
+To prevent SME bandwidth from being the chain's bottleneck, this skill
+partitions every batch of pending reviews into three buckets and dials
+the SME's per-item effort to match risk + evidence corroboration.
+
+The two upstream signals that drive routing:
+
+- **`inventory.yaml.objects[].criticality`** (from `legacy-ibmi-inventory`)
+  — `critical | standard | low_risk`, SME-confirmed once during inventory
+- **`spec.yaml.rules[].review_status`** (from `legacy-ibmi-runtime-evidence-miner`)
+  — `auto_validated_spot_check_only` set when ≥ N runtime samples
+  corroborate an `inferred_business_rule`
+
+Partition every rule in `capabilities[<CAP-*>].blocking.sme_pending`:
+
+| Bucket | Routing rule | SME effort |
+| --- | --- | --- |
+| **Full review** | rule owned by a `critical` program OR runtime corroboration failed OR rule is a `modernization_decision` | per-rule decision |
+| **Spot-check sample** | rule is `auto_validated_spot_check_only` AND owning program is `standard` | sample 10-20% of bucket; if all pass, batch-approve the rest |
+| **Batch confirm** | rule is `auto_validated_spot_check_only` AND owning program is `low_risk` | single signoff on the whole bucket |
+
+Render the partition explicitly in the email + checklist so the SME sees
+the workload up front:
+
+```
+You have 47 inferred rules to confirm for CAP-ORDER-PRICING:
+
+  ▸ FULL REVIEW (critical):  8 rules — please decide each
+  ▸ SPOT-CHECK (standard):  28 rules — pick 6 to verify; if all pass we batch-approve
+  ▸ BATCH CONFIRM (low_risk): 11 rules — single signoff if the spot-check passes
+
+Estimated time: 60–90 minutes
+   (vs. 5+ hours if every rule were reviewed individually)
+```
+
+Hard rules:
+
+- The `Full review` bucket is **never empty by default**. If your
+  partition lands every rule in spot-check/batch, double-check the
+  criticality classification — something is probably mislabeled.
+- A rule flagged `runtime_conflict_with_inference` ALWAYS goes to Full
+  review, regardless of criticality.
+- A `modernization_decision` (`DEC-*`) ALWAYS goes to Full review AND
+  requires target-platform authority approval, not just SME.
+- Auto-validation is a bandwidth saver, NOT a safety bypass. Even when
+  every rule auto-validates, the SME's spot-check must run before
+  `spec.yaml.status` can advance to `8c Spec Approved`.
+
 ## SME Communication Package
 
 For every review session, this skill can emit a **two-file communication

@@ -27,6 +27,10 @@ Optional companions (run in parallel when applicable):
 - `legacy-ibmi-runtime-evidence-miner` — strengthen evidence with job logs
 - `legacy-ibmi-screen-report-analyzer` — for DSPF / PRTF / subfile programs
 - `legacy-ibmi-data-model-analyzer` — for domain data model
+- `legacy-ibmi-batch-digest` — **run after ≥ 5 programs are analyzed** to
+  produce a single SME-facing scan page (`02_programs/<MODULE>/programs-batch-digest.md`)
+  grouped by criticality. Cuts SME bandwidth dramatically for medium /
+  large modules. Re-run any time new analyses land.
 
 ## Produce
 

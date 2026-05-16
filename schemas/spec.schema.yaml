@@ -65,7 +65,7 @@ spec:
       evidence_ids:
         - "EV-<SLUG>-<NNN>"
       confidence: "high | medium | low"
-      review_status: "draft | needs_sme_review | approved | rejected | retired"
+      review_status: "draft | needs_sme_review | auto_validated_spot_check_only | approved | rejected | retired"
   business_rules:
     - id: "BR-<SLUG>-<NNN>"
       knowledge_type: "inferred_business_rule"
@@ -73,7 +73,18 @@ spec:
       evidence_ids:
         - "EV-<SLUG>-<NNN>"
       confidence: "high | medium | low"
-      review_status: "draft | needs_sme_review | approved | rejected | retired"
+      review_status: "draft | needs_sme_review | auto_validated_spot_check_only | approved | rejected | retired"
+      # auto_validated_spot_check_only is set by legacy-ibmi-runtime-evidence-miner
+      # when ≥ N runtime samples corroborate the rule; SME spot-checks the
+      # bucket instead of confirming each entry. See
+      # skills/legacy-ibmi-runtime-evidence-miner/references/rule-auto-validation-protocol.md
+      auto_validation:
+        matched_records: 0
+        runtime_evidence_ids:
+          - "EV-RUN-<NNN>"
+        validated_at: "YYYY-MM-DD"
+        validated_by: "legacy-ibmi-runtime-evidence-miner"
+        protocol_version: 1
       linked_behaviors:
         - "BEH-<SLUG>-<NNN>"
   modernization_decisions:

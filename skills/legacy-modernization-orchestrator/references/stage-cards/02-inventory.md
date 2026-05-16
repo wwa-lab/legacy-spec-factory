@@ -31,6 +31,11 @@ Depends on inventory status:
 - **Artifact:** updated `01_inventory/inventory.yaml` + `object-map.md`
 - **Save under:** `01_inventory/` *(relative to your `project.root`, e.g.
   `docs/XXX260004-demo/01_inventory/inventory.yaml`)*
+- **Required field on every program:** `criticality: critical | standard | low_risk`
+  with `criticality_reason`. SME confirms the partition ONCE during this
+  stage (batched, not per-program). See
+  [`skills/legacy-ibmi-inventory/references/criticality-classifier.md`](../../../legacy-ibmi-inventory/references/criticality-classifier.md)
+  — this is what lets the SME bandwidth scale to 200-program modules.
 - **Consumed by:** `legacy-ibmi-program-analyzer`,
   `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`
 

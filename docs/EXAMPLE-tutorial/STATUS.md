@@ -25,7 +25,7 @@
 
 _No open blockers._
 
-## Recent Activity (last 8)
+## Recent Activity (last 9)
 
 | When | Skill | Capability | Stage After | Note |
 | --- | --- | --- | --- | --- |
@@ -34,6 +34,7 @@ _No open blockers._
 | 2026-05-16T15:00:00+00:00 | legacy-spec-writer | CAP-PRICE-CALCULATION | 8a Spec Drafted | draft spec — 2 rules, 1 TBD |
 | 2026-05-16T14:00:00+00:00 | legacy-ibmi-module-analyzer | CAP-PRICE-CALCULATION | 3f Module Analysis Done | 4-view synthesis — 2 BR seeds, 1 CAP seed (CAP-PRICE-CALCULATION) |
 | 2026-05-16T13:00:00+00:00 | legacy-ibmi-flow-analyzer | — | 3d Flow Analysis Done | synthesized flow-calculate-price |
+| 2026-05-16T11:45:00+00:00 | legacy-ibmi-batch-digest | — | 3b Program Analysis Done | digest for PRICE-CALC — critical/1, standard/0, low_risk/0, not-analyzed/0 |
 | 2026-05-16T11:30:00+00:00 | legacy-ibmi-program-analyzer | — | 3b Program Analysis Done | analyzed PRICECALC |
 | 2026-05-16T10:15:00+00:00 | legacy-ibmi-inventory | — | 2c Inventory Done | inventory — 1 program, 1 file, SME approved |
 | 2026-05-16T09:00:00+00:00 | legacy-ibmi-evidence-intake | — | 1 Evidence Ready | intake — 3 items registered, all redacted, SME approved |
