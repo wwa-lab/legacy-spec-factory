@@ -893,6 +893,108 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the missing-spec contract-only prompt
 above into the same commands.
 
+### `legacy-traceability-packager`
+
+#### Scenario (Positive — Clean Traceability Package)
+
+```text
+Use /legacy-traceability-packager.
+
+Contract-only no-write smoke test. Do not inspect or rely on the actual
+workspace filesystem. Report the files the skill contract would emit, not
+actual created files.
+
+User input:
+The CREDIT-CHECK capability has an approved spec.yaml, approved upstream
+inventory/program/flow/module analyses, an approved BRD, and an approved
+evidence manifest. All referenced EV-* resolve in the manifest, no evidence
+has sensitivity unknown, every approved BR-* has EV-*, BEH-*, and AC-* links,
+every AC-* validates an approved BR-*, every TC-* validates an AC-* or BR-*,
+no orphan evidence exists, no open TBD exists, and the capability owner John
+Smith is available to sign off on the traceability package.
+
+Return exactly these labels, one per line:
+- detected skill
+- status
+- would_write_files
+- would_not_write_files
+- key gates
+- signoff requirement
+```
+
+#### Pass Criteria (Positive)
+
+- detected skill is `legacy-traceability-packager`
+- status is `pass`
+- `would_write_files` contains exactly `traceability-package.yaml`,
+  `traceability-package.md`, `coverage-audit.md`, and
+  `traceability-review.md`
+- `would_not_write_files` contains `blocking-findings.yaml`
+- key gates include evidence manifest resolved / sensitivity passed,
+  BR closure passed, AC validation passed, no dangling IDs, and no open TBDs
+- signoff requirement names the capability-owner SME and requires name, role,
+  and ISO date
+- no files are created or edited
+
+#### Scenario (Negative — Dangling AC Reference)
+
+```text
+Use /legacy-traceability-packager.
+
+Contract-only no-write smoke test. Do not inspect or rely on the actual
+workspace filesystem. Report the files the skill contract would emit, not
+actual created files.
+
+User input:
+The ORDER-ENTRY capability has approved upstream artifacts and an approved
+spec.yaml, but AC-ORDER-ENTRY-004.validates references BR-ORDER-ENTRY-007.
+BR-ORDER-ENTRY-007 is not defined in spec.yaml.business_rules[]. A stakeholder
+asks the packager to create the missing BR and continue.
+
+Return exactly these labels, one per line:
+- detected skill
+- status
+- blocking finding
+- forbidden action
+- would_write_files
+- would_not_write_files
+- next skill
+```
+
+#### Pass Criteria (Negative)
+
+- detected skill is `legacy-traceability-packager`
+- status is `blocked`
+- blocking finding is `BR-DANGLING-IN-AC`
+- forbidden action says the packager must not mint `BR-ORDER-ENTRY-007` or
+  rewrite `AC-ORDER-ENTRY-004`
+- `would_write_files` contains only `traceability-review.md` and
+  `blocking-findings.yaml`
+- `would_not_write_files` contains `traceability-package.yaml`,
+  `traceability-package.md`, and `coverage-audit.md`
+- next skill is `legacy-spec-writer`
+- no files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-traceability-packager. Contract-only no-write smoke test. Do not inspect or rely on the actual workspace filesystem. Report the files the skill contract would emit, not actual created files. User input: The CREDIT-CHECK capability has an approved spec.yaml, approved upstream inventory/program/flow/module analyses, an approved BRD, and an approved evidence manifest. All referenced EV-* resolve in the manifest, no evidence has sensitivity unknown, every approved BR-* has EV-*, BEH-*, and AC-* links, every AC-* validates an approved BR-*, every TC-* validates an AC-* or BR-*, no orphan evidence exists, no open TBD exists, and the capability owner John Smith is available to sign off on the traceability package. Return exactly these labels, one per line: detected skill; status; would_write_files; would_not_write_files; key gates; signoff requirement."
+```
+
+```bash
+claude -p "Use /legacy-traceability-packager. Contract-only no-write smoke test. Do not inspect or rely on the actual workspace filesystem. Report the files the skill contract would emit, not actual created files. User input: The CREDIT-CHECK capability has an approved spec.yaml, approved upstream inventory/program/flow/module analyses, an approved BRD, and an approved evidence manifest. All referenced EV-* resolve in the manifest, no evidence has sensitivity unknown, every approved BR-* has EV-*, BEH-*, and AC-* links, every AC-* validates an approved BR-*, every TC-* validates an AC-* or BR-*, no orphan evidence exists, no open TBD exists, and the capability owner John Smith is available to sign off on the traceability package. Return exactly these labels, one per line: detected skill; status; would_write_files; would_not_write_files; key gates; signoff requirement." \
+  --model haiku --permission-mode dontAsk --tools Read
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-traceability-packager. Contract-only no-write smoke test. Do not inspect or rely on the actual workspace filesystem. Report the files the skill contract would emit, not actual created files. User input: The CREDIT-CHECK capability has an approved spec.yaml, approved upstream inventory/program/flow/module analyses, an approved BRD, and an approved evidence manifest. All referenced EV-* resolve in the manifest, no evidence has sensitivity unknown, every approved BR-* has EV-*, BEH-*, and AC-* links, every AC-* validates an approved BR-*, every TC-* validates an AC-* or BR-*, no orphan evidence exists, no open TBD exists, and the capability owner John Smith is available to sign off on the traceability package. Return exactly these labels, one per line: detected skill; status; would_write_files; would_not_write_files; key gates; signoff requirement."
+```
+
+For the negative scenario, substitute the dangling-AC-reference prompt above
+into the same commands.
+
 ### `legacy-step-contract`
 
 #### Scenario (Positive — Review A Filled Step Contract)

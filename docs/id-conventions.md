@@ -25,6 +25,8 @@ AC-CREDIT-CHECK-002
 | --- | --- | --- |
 | `CAP` | Business capability | `CAP-CREDIT-CHECK-001` |
 | `BRD` | Business Requirements Document | `BRD-CREDIT-CHECK-001` |
+| `SPEC` | Capability specification package | `SPEC-CREDIT-CHECK-001` |
+| `PKG` | Governance or traceability package | `PKG-CREDIT-CHECK-001` |
 | `OBJ` | Legacy object, file, program, job, screen, or report | `OBJ-CREDIT-CHECK-003` |
 | `EV` | Evidence item | `EV-CREDIT-CHECK-012` |
 | `BEH` | Observed behavior | `BEH-CREDIT-CHECK-006` |
