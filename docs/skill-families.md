@@ -193,18 +193,19 @@ A canonical "first slice" run, in order:
 1.  orchestrator                   → "stage: scope; next: evidence-intake"
 2.  evidence-intake (gate)         → evidence/manifest.yaml approved
 3.  inventory                      → 01_inventory/ approved by SME
-4.  program-analyzer × N           → program-analysis-*.md per OBJ-*
-5.  flow-analyzer × M              → flow-*.md per FLOW-*
-6.  data-model-analyzer × K        → 03_data_models/ per DATA-*
-7.  screen-report-analyzer × J     → screen-report-analysis-*.md per OBJ-*
-8.  module-analyzer × P            → 04_modules/<MODULE-SLUG>/ per MODULE-*
-9.  brd-writer                     → 05_brds/<CAPABILITY-SLUG>/
-10. sme-review-facilitator         → 07_sme_reviews/<CAPABILITY-SLUG>/
-11. spec-writer                    → 05_specs/<CAPABILITY-SLUG>/
-12. decision-writer (optional)     → 05_decisions/<CAPABILITY-SLUG>/ (per DEC)
-13. golden-master-test-planner     → 06_quality/<CAPABILITY-SLUG>/
-14. traceability-packager          → 06_traceability_packages/
-15. brd-to-sdd-handoff             → 06_sdd_handoffs/<CAPABILITY-SLUG>/
+4.  runtime-evidence-miner         → 07_runtime-evidence/runtime-evidence.jsonl (optional where logs/spool exist)
+5.  program-analyzer × N           → program-analysis-*.md per OBJ-*
+6.  flow-analyzer × M              → flow-*.md per FLOW-*
+7.  data-model-analyzer × K        → 03_data_models/ per DATA-*
+8.  screen-report-analyzer × J     → screen-report-analysis-*.md per OBJ-*
+9.  module-analyzer × P            → 04_modules/<MODULE-SLUG>/ per MODULE-*
+10. brd-writer                     → 05_brds/<CAPABILITY-SLUG>/
+11. sme-review-facilitator         → 07_sme_reviews/<CAPABILITY-SLUG>/
+12. spec-writer                    → 05_specs/<CAPABILITY-SLUG>/
+13. decision-writer (optional)     → 05_decisions/<CAPABILITY-SLUG>/ (per DEC)
+14. golden-master-test-planner     → 06_quality/<CAPABILITY-SLUG>/
+15. traceability-packager          → 06_traceability_packages/
+16. brd-to-sdd-handoff             → 06_sdd_handoffs/<CAPABILITY-SLUG>/
                                      → Atlas (external)
 ```
 

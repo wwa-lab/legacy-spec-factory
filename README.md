@@ -362,7 +362,7 @@ all agree.
 
 ## Target Skill Family
 
-**See [`docs/skill-families.md`](docs/skill-families.md) for how the 18 skills
+**See [`docs/skill-families.md`](docs/skill-families.md) for how the 19 skills
 group into 6 families, which order they fire in, and which pairs were
 intentionally kept separate.**
 
@@ -411,40 +411,41 @@ explicitly decides to vendor or mirror them.
 | 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.0 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
 | 2 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
 | 3 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
-| 3.5 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | New v0.1.0 | Field-pilot ready; optional next step is integration smoke with program/flow/module analyzers for runtime_hints/bau_notes |
-| 4 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
-| 5 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Provisional field-pilot candidate after remaining smoke tests |
-| 6 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
-| 7 | `legacy-brd-writer` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.1, 9.56); emits the BRD review package before spec writing |
-| 8 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready; consume approved BRD/module inputs and finish remaining smoke |
-| 9 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
-| 10 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
-| 11 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
-| 12 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
-| 13 | `legacy-sme-review-facilitator` | Governance | Existing | Field-pilot ready (v0.1.0, 9.55); prepares SME review packages and records decision logs |
-| 14 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
-| 15 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
-| 16 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
-| 17 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
-| 18 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
-| 19 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
-| 20 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
-| 21 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
-| 22 | `architecture-to-design` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates design, data model, data flow, API guide |
-| 23 | `design-to-tasks` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; turns design into task breakdown |
-| 24 | `tasks-to-implementation` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; greenfield / brownfield / migration implementation |
-| 25 | `tasks-to-code` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; incremental code work from task docs |
-| 26 | `review-doc-quality` | Atlas review | Atlas reference | Downstream Atlas quality gate for SDD documents |
-| 27 | `review-code-against-design` | Atlas review | Atlas reference | Downstream Atlas quality gate for code-vs-design alignment |
-| 28 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
-| 29 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
+| 4 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
+| 5 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 6 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Provisional field-pilot candidate after remaining smoke tests |
+| 7 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 8 | `legacy-brd-writer` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.1, 9.56); emits the BRD review package before spec writing |
+| 9 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready; consume approved BRD/module inputs and finish remaining smoke |
+| 10 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
+| 11 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
+| 12 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
+| 13 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
+| 14 | `legacy-sme-review-facilitator` | Governance | Existing | Field-pilot ready (v0.1.0, 9.55); prepares SME review packages and records decision logs |
+| 15 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
+| 16 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
+| 17 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
+| 18 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
+| 19 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
+| 20 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
+| 21 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
+| 22 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
+| 23 | `architecture-to-design` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates design, data model, data flow, API guide |
+| 24 | `design-to-tasks` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; turns design into task breakdown |
+| 25 | `tasks-to-implementation` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; greenfield / brownfield / migration implementation |
+| 26 | `tasks-to-code` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; incremental code work from task docs |
+| 27 | `review-doc-quality` | Atlas review | Atlas reference | Downstream Atlas quality gate for SDD documents |
+| 28 | `review-code-against-design` | Atlas review | Atlas reference | Downstream Atlas quality gate for code-vs-design alignment |
+| 29 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
+| 30 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
 
 No repository-owned skill in the current BRD + SDD handoff roadmap remains only
 as a placeholder. The remaining work is validation and scorecard hardening:
 
-1. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
-2. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
-3. `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
+1. `legacy-ibmi-runtime-evidence-miner` — optionally run integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes`.
+2. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
+3. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
+4. `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
 
 Governance/Infrastructure skills (already implemented):
 - `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
@@ -455,7 +456,7 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-ibmi-evidence-intake` | Register evidence, assign `EV-*` IDs, govern redaction, and produce an approved evidence manifest before inventory | `evidence/manifest.yaml`, `redaction-log.md` | Repo-ready (9.0 capped; smoke pending) |
+| `legacy-ibmi-evidence-intake` | Register evidence, assign `EV-*` IDs, govern redaction, and produce an approved evidence manifest before inventory | `evidence/manifest.yaml`, `redaction-log.md` | Repo-ready (v0.1.0, 9.16; three-runtime smoke passed) |
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs | `flow-<FLOW-SLUG>.md` | Repo-ready (9.0 capped; smoke pending for provisional 9.6) |

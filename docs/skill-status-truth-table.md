@@ -54,8 +54,8 @@ Last regenerated: 2026-05-16
 
 | Decision | Count |
 | --- | ---: |
-| `field-pilot ready` (all three runtimes `passed`) | 9 |
-| `repo-ready` (runtime cap or partial coverage) | 10 |
+| `field-pilot ready` (all three runtimes `passed`) | 10 |
+| `repo-ready` (runtime cap or partial coverage) | 9 |
 
 **19 skills total** in canonical source; **9 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
