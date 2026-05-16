@@ -267,6 +267,41 @@ to the orchestrator. The Forward Handoff Gate
     - Generate `spec-review.md` checklist
     - The capability owner SME approves; the spec is then `status: approved`
 
+## Workflow State Write-Back
+
+At the end of a spec-writing run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces (mirrors `spec.yaml.status`):**
+
+- `8c Spec Approved` when `spec.yaml.status: approved` AND every rule has
+  `acceptance_criteria` AND no rule with
+  `knowledge_type: inferred_business_rule` is at
+  `review_status: needs_sme_review` AND no blocking `TBD-*` remains
+- `8b Spec In Review` when `spec.yaml.status: in_review`
+- `8a Spec Drafted` when `spec.yaml.status: draft`
+
+**Last artifact path pattern:** `05_specs/<CAP-*>/spec.yaml`
+(sibling: `spec.md`, `traceability.md`, optional `review-report.md`)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id
+   (matching `spec.yaml.status`), `spec.yaml` path, `last_skill:
+   legacy-spec-writer`, and blocking IDs (`tbds`, `sme_pending` for any
+   `inferred_business_rule` not yet confirmed, `gates: ["evidence_approval"]`
+   if any rule still has unlinked evidence).
+2. Append one `history[]` entry with `note` summarizing the spec event
+   (e.g. `"draft saved"`, `"promoted to in_review"`, `"SME approved"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. The `8c → 8b` transition (e.g. SME later rescinds
+approval) is a **rollback** — surface to the orchestrator and request the
+Rollback Protocol rather than silently lowering `stage_id`.
+
 ## Anti-Hallucination Rules
 
 This is the layer where business rules become formal — the temptation to

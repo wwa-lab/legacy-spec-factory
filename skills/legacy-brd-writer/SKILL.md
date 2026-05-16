@@ -330,6 +330,38 @@ decision.
      notes confirm it for later spec promotion
    - If SME finds issues, mark `status: blocked` with specific findings
 
+## Workflow State Write-Back (history only — supplemental)
+
+This is a supplemental Layer 1.5 skill. It produces a business-facing BRD
+between module analysis and spec writing, but does NOT advance the linear
+`stage_id` (BRD is parallel to the technical spec, not a stage on its
+path). It does NOT mutate `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-brd-writer
+    capability_id: <CAP-* from current_focus>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to brd.md, e.g. 08_business-understanding/<CAP-*>/brd.md>
+    note: "BRD authored for <CAP-*> — status: draft | in_review | approved"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if BRD authoring surfaces inferred business
+rules or open gaps not already in `capabilities[<CAP-*>].blocking.*`, you
+MAY append them to `blocking.sme_pending` (rule IDs) or `blocking.tbds`.
+You MUST NOT change `stage_id`, `last_artifact`, or `last_skill` — the
+linear stage owner remains `legacy-ibmi-module-analyzer` or
+`legacy-spec-writer`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Anti-Hallucination Rules
 
 The BRD is the first **business-facing** artifact. The temptation to "smooth out"

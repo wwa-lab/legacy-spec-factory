@@ -1,5 +1,9 @@
 # Legacy Spec Factory
 
+**New here?** Start with [QUICKSTART.md](QUICKSTART.md) (10-minute
+walkthrough) or study [docs/EXAMPLE-tutorial/](docs/EXAMPLE-tutorial/) (a
+fully-populated minimal project — every artifact in the chain).
+
 Legacy Spec Factory is an end-to-end modernization pipeline for turning IBM i
 (AS/400) legacy system behavior into evidence-backed, reviewable, and
 implementation-ready specifications.
@@ -11,17 +15,15 @@ as the source of truth for AI-native SDLC on the new cloud platform.
 
 ## Visual Overview
 
-### Legacy Spec Factory x Atlas Delivery Hub
-
 ![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview.png)
+
+### Skill Family Poster
+
+![Legacy Spec Factory skill family poster](docs/assets/legacy-spec-factory-skill-family-poster.svg)
 
 ### Repository Overview
 
 ![Legacy Spec Factory repository overview](docs/assets/legacy-spec-factory-repo-overview.png)
-
-### Skill Overview
-
-![Legacy Spec Factory skill overview](docs/assets/legacy-spec-factory-skill-overview.png)
 
 ```text
 IBM i / AS/400 Evidence
@@ -352,6 +354,22 @@ The reviewer checks these evidence sources:
   [templates/spec.yaml](templates/spec.yaml),
   [skills/legacy-spec-writer/templates/spec.yaml](skills/legacy-spec-writer/templates/spec.yaml),
   and [scripts/check-spec-contract.py](scripts/check-spec-contract.py)
+- **Multi-user collaboration:** [docs/collaboration.md](docs/collaboration.md) —
+  ownership patterns, per-section merge rules for `workflow-state.yaml`,
+  and a `.gitattributes` recipe
+- **Workflow state contract:** [docs/workflow-state-contract.md](docs/workflow-state-contract.md),
+  [skills/legacy-modernization-orchestrator/templates/workflow-state.yaml](skills/legacy-modernization-orchestrator/templates/workflow-state.yaml),
+  and [scripts/check-workflow-state.py](scripts/check-workflow-state.py) —
+  validate `workflow-state.yaml` against the cross-skill resume contract
+- **Project status tooling:**
+  - [scripts/generate-status.py](scripts/generate-status.py) —
+    emit human-readable `docs/<project>/STATUS.md` from the project's
+    `workflow-state.yaml`. Re-run after every orchestrator turn (the
+    orchestrator does this automatically at Step 8.5).
+  - [scripts/list-projects.py](scripts/list-projects.py) —
+    scan `docs/*/workflow-state.yaml` in the current repo and print a
+    table of all projects, their current focus, and open blocker counts.
+    Supports `--markdown` and `--json` output.
 - **Review records:** concrete scorecards under [docs/reviews](docs/reviews)
   rather than informal claims in prose
 

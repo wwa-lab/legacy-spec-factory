@@ -441,6 +441,42 @@ This skill conforms to the Step Contract shape. See
 - Organized redacted evidence files
 - Intake summary (markdown)
 
+## Workflow State Write-Back
+
+At the end of an intake run, update `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `1 Evidence Ready` when every item has `sensitivity ∈ {no, redacted}` AND
+  SME approval is recorded
+- `0 Evidence Intake` (no advancement) if any item still has
+  `sensitivity: unknown` or lacks a redaction record
+
+**Last artifact path pattern:** `evidence/redacted/evidence-manifest.yaml`
+
+**Capability scoping:** Evidence intake typically runs **before** a `CAP-*`
+is scoped (capability seeds only emerge during module analysis). Two cases:
+
+- If `current_focus.capability_id` is set, write the `capabilities[]` entry
+  for that CAP-* with `stage_id: "1 Evidence Ready"` and your manifest path.
+- If `current_focus.capability_id` is `null`, **append `history[]` only**
+  with `capability_id: null` — do not invent a CAP-*. The orchestrator will
+  scope a capability later.
+
+**Writes per run:**
+
+1. (When CAP-* is scoped) Overwrite `capabilities[<CAP-*>]` with stage id,
+   artifact path, `last_skill: legacy-ibmi-evidence-intake`, and blocking
+   IDs (any unredacted evidence remains a `gates: ["redaction"]` blocker).
+2. Append one `history[]` entry — always.
+3. Overwrite `project.last_updated_at` / `project.last_updated_by` — always.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. Redaction Gate failure is recorded in `blocking.gates`,
+not silently — the orchestrator refuses to advance until that list is empty.
+
 ## Adversarial Cases
 
 ### Incomplete Evidence

@@ -297,6 +297,37 @@ to the orchestrator.
      - SME has signed off on the trigger model + business event name +
        capability seeds
 
+## Workflow State Write-Back
+
+At the end of a flow-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3d Flow Analysis Done` when **every** business transaction the SME lists
+  for this module has an approved `flow-*.md`
+- `3c Flow Analysis In Progress` when one or more in-scope flows are still
+  draft, blocked, or missing
+
+**Last artifact path pattern:**
+`03_flows/<MODULE-SLUG>/flow-<FLOW-SLUG>.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id, the
+   path of the flow you just saved, `last_skill: legacy-ibmi-flow-analyzer`,
+   and blocking IDs (`tbds`, `sme_pending` for trigger context / commit
+   boundary questions).
+2. Append one `history[]` entry with `note` naming the flow
+   (e.g. `"analyzed flow-submit-order"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same flow is allowed; a re-run that
+would lower `stage_id` requires the orchestrator's Rollback Protocol.
+
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md`. Every

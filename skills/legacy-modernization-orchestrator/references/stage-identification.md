@@ -54,7 +54,11 @@ When only forward chain artifacts exist:
 
 ## Stage to Output Directory
 
-| Stage | Lives Under |
+All paths below are **relative to `project.root`** (default
+`docs/<project-name>/`). For a project named `XXX260004-demo`, stage 2
+artifacts live at `docs/XXX260004-demo/01_inventory/`.
+
+| Stage | Lives Under (relative to project.root) |
 | --- | --- |
 | 1 | `evidence/redacted/` (raw never committed) |
 | 2 | `01_inventory/` |
@@ -68,5 +72,7 @@ When only forward chain artifacts exist:
 | 9 | `06_quality/` |
 | 10 | `09_forward-sdlc/` (handoff manifest) |
 
-See the repository `README.md#artifact-chain` section for the full directory
-layout.
+Subdirectories are created on demand by the writing skill — do NOT
+pre-create empty stage folders. See `docs/workflow-state-contract.md` for
+the full project-root resolution rules and `README.md#artifact-chain` for
+the layout diagram.

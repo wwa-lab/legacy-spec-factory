@@ -358,6 +358,37 @@ For each `DEC-*` record:
    external forward SDLC chain consumes approved DEC records from `spec.yaml`
    plus decision package context when supplied
 
+## Workflow State Write-Back (history only)
+
+This is a governance skill — it formalizes large / risky `DEC-*`
+modernization decisions into standalone records. It does NOT advance
+`capabilities[].stage_id` (decisions can be authored at any stage from
+BRD onward) and does NOT mutate `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-modernization-decision-writer
+    capability_id: <CAP-* from current_focus, or null if cross-capability>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to the DEC-* record, e.g. 08_business-understanding/decisions/DEC-001.md>
+    note: "authored DEC-<NNN> — <one-line decision>: status <draft | proposed | approved>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the decision is `proposed` but lacks
+target-platform authority approval (required by the Forward Handoff
+Gate), append `"forward_handoff"` to
+`capabilities[<CAP-*>].blocking.gates`. You MUST NOT change `stage_id`,
+`last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Anti-Hallucination Boundaries
 
 See `references/anti-hallucination.md` for the exhaustive list. Core rules:

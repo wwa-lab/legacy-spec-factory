@@ -182,6 +182,38 @@ orchestrator.
    - sensitivity is not `unknown`
    - PRTF, DSPF, PF/LF, job, and deep subroutine gaps are called out
 
+## Workflow State Write-Back
+
+At the end of an inventory run, update `<project-root>/workflow-state.yaml`
+per [`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `2c Inventory Done` when `inventory.yaml.sme_review.decision ∈ {approved,
+  approved_with_non_blocking_tbd}` AND no `coverage_gaps[].blocking: yes`
+  remains
+- `2b Inventory Blocked` when `sme_review.decision: blocked` OR any
+  blocking `coverage_gaps[]` is unresolved
+- `2a Inventory In Progress` when the inventory is partial and `sme_review`
+  is absent
+
+**Last artifact path pattern:** `01_inventory/inventory.yaml`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` (or the entry keyed
+   by module slug if no CAP-* yet) with stage id, artifact path,
+   `last_skill: legacy-ibmi-inventory`, and blocking IDs (`tbds`,
+   `sme_pending`, `gates: ["inventory_completeness"]` if 2b).
+2. Append one `history[]` entry with the run's outcome and SME decision.
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. If you re-run inventory on a capability already at a
+later stage, do not lower `stage_id` — surface and ask the orchestrator
+to run the Rollback Protocol.
+
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md`. The

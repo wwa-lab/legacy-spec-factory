@@ -329,6 +329,37 @@ SME / human approval:
    - Do not silently edit an already approved spec unless the user explicitly
      asks and the repository workflow allows reopening the spec for review.
 
+## Workflow State Write-Back
+
+At the end of a test-planning run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `9 Equivalence Pack Ready` when the test plan covers every approved rule
+  in `spec.yaml` with `TC-*` cases, sample-data references, and
+  expected-output references — and every reference resolves
+- No advancement (stays at `8c Spec Approved`) when coverage gaps remain;
+  record blockers in `blocking.gates: ["forward_handoff"]` plus the
+  uncovered rule IDs in `blocking.sme_pending`
+
+**Last artifact path pattern:** `06_quality/<CAP-*>/golden-master-tests.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id, the
+   test-plan path, `last_skill: legacy-golden-master-test-planner`, and
+   blocking IDs (uncovered rule IDs / missing samples).
+2. Append one `history[]` entry with `note` summarizing coverage
+   (e.g. `"golden-master plan covers 12 of 12 approved rules"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same capability is allowed; a re-run
+that would lower `stage_id` requires the orchestrator's Rollback Protocol.
+
 ## Completion Checklist
 
 Before calling the work done, confirm:

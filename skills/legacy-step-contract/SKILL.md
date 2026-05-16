@@ -317,6 +317,31 @@ remediation_step: <skill-name | doc-path | none>
 
 Anything more verbose belongs in the full Step Validation Report.
 
+## Workflow State Write-Back (history only)
+
+This is a meta / contract skill — it defines the INPUT → EXECUTION →
+OUTPUT → VALIDATION contract that other skills follow. It rarely runs
+standalone. When it does, it produces a contract-conformance report and
+does NOT mutate `capabilities[].stage_id` or `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-step-contract
+    capability_id: <CAP-* from current_focus, or null>
+    stage_after: <UNCHANGED stage_id, or null>
+    artifact: <path to the conformance report, or null>
+    note: "contract conformance check — <step-id>: pass | warnings | blocked"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Anti-Hallucination Rules
 
 - Do not invent IBM i object names, field names, program names, job names, or

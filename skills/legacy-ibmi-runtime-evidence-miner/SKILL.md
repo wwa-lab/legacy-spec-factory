@@ -321,6 +321,46 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 
 ---
 
+## Workflow State Write-Back
+
+At the end of a mining run, update `<project-root>/workflow-state.yaml`
+per [`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `5 Runtime Evidence Mined` when `runtime-evidence.jsonl` is complete and
+  every record links back to an `OBJ-*` from inventory and an `EV-*` from
+  the approved evidence manifest
+- No advancement when any record has unresolved redaction or missing
+  inventory mapping; record blockers in `blocking.gates: ["redaction"]` or
+  `blocking.tbds`
+
+**Last artifact path pattern:** `07_runtime-evidence/runtime-evidence.jsonl`
+(plus referenced sample files under `07_runtime-evidence/samples/`)
+
+**Capability scoping:** Runtime mining typically runs per-module rather
+than per-capability. Two cases:
+
+- If `current_focus.capability_id` is set, overwrite that
+  `capabilities[]` entry's `stage_id` and `last_artifact`.
+- If `current_focus` is module-scoped only (no `CAP-*` yet), append
+  `history[]` only with `capability_id: null` and the module slug in
+  `note`. Do not invent a `CAP-*`.
+
+**Writes per run:**
+
+1. (When CAP-* is scoped) Overwrite `capabilities[<CAP-*>]` with stage id,
+   the JSONL path, `last_skill: legacy-ibmi-runtime-evidence-miner`, and
+   blocking IDs.
+2. Append one `history[]` entry with the run's record count and any
+   redaction findings.
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. Stage `5` is parallel to the linear program/flow/module
+chain — re-running this skill does NOT regress those stages.
+
 ## SME Review Questions
 
 After mining is complete, present SME with these questions before approving output:

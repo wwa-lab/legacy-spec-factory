@@ -252,6 +252,35 @@ to the orchestrator.
    - Mark analysis as `draft` (ready for review)
    - Gate: Analysis artifact is ready when every field, key, and access path has an `EV-*` link; every relationship candidate is marked candidate (not fact) unless SME-approved; all TBDs are explicitly tagged with blocking status
 
+## Workflow State Write-Back (history only — supplemental)
+
+This is a supplemental Layer 1 skill. It produces a data dictionary,
+access paths, CRUD matrix, and SME checklist that strengthen module and
+spec analysis, but does NOT advance the main linear stage. It does NOT
+mutate `capabilities[].stage_id` or `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-ibmi-data-model-analyzer
+    capability_id: <CAP-* from current_focus, or null if module-scoped>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to the data-model package, e.g. 04_modules/<MODULE>/data-model/dictionary.md>
+    note: "data model analyzed for <MODULE-SLUG> — <N> entities, <M> access paths"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the analysis uncovers new TBDs or evidence
+gaps, you MAY append to `capabilities[<CAP-*>].blocking.tbds`. You MUST
+NOT change `stage_id`, `last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Anti-Hallucination Rules
 
 **DDS and DB2 are ground truth for structure.** When approved program analyses

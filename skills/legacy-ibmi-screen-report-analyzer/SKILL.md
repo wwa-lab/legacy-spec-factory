@@ -202,6 +202,35 @@ to the orchestrator.
    - Provide a checklist for SME review covering field validation realism, subfile behavior, function key mapping, report structure, and overall presentation flow
    - Mark handoff status as `draft`, `needs_sme_review`, `approved`, or `approved_with_non_blocking_tbd`
 
+## Workflow State Write-Back (history only — supplemental)
+
+This is a supplemental Layer 1 skill. It analyzes DSPF / PRTF / subfile /
+menu artifacts that strengthen evidence for downstream program / flow /
+module analysis, but does NOT advance the main linear stage. It does NOT
+mutate `capabilities[].stage_id` or `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-ibmi-screen-report-analyzer
+    capability_id: <CAP-* from current_focus, or null if module-scoped>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to the screen/report analysis, e.g. 02_programs/<MODULE>/<OBJ>/screen-report-analysis.md>
+    note: "analyzed <DSPF | PRTF | menu | subfile> for <OBJ-*>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the analysis uncovers new TBDs or evidence
+gaps, you MAY append to `capabilities[<CAP-*>].blocking.tbds`. You MUST
+NOT change `stage_id`, `last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Review Checklist
 
 - [ ] All fields in the screen/report layout have names, roles, and types consistent with DDS or runtime evidence

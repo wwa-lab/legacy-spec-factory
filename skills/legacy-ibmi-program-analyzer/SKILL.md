@@ -245,6 +245,37 @@ to the orchestrator.
    - Mark analysis as `draft` (ready for review)
    - Gate: Analysis artifact is ready when every non-TBD behavior has an evidence_strength of `confirmed_from_code`, `strongly_inferred`, or `medium_confidence` (the latter two only when an SME review note is attached)
 
+## Workflow State Write-Back
+
+At the end of a program-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3b Program Analysis Done` when **every** in-scope program in
+  `inventory.yaml` has an approved `program-analysis.md`
+- `3a Program Analysis In Progress` when one or more in-scope programs
+  still lack an analysis
+
+**Last artifact path pattern:**
+`02_programs/<MODULE-SLUG>/<OBJ-PROGRAM>/program-analysis.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id,
+   the path of the analysis you just saved, `last_skill:
+   legacy-ibmi-program-analyzer`, and blocking IDs (`tbds`, `sme_pending`
+   for any money / inventory / compliance branch awaiting SME).
+2. Append one `history[]` entry with `note` naming the program analyzed
+   (e.g. `"analyzed ORDENTR"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same program is allowed; a re-run that
+would lower `stage_id` requires the orchestrator's Rollback Protocol.
+
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md` for

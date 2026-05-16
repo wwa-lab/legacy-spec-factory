@@ -255,6 +255,44 @@ to the orchestrator.
    - Module is approved only when **all four views** are at least
      `approved_with_non_blocking_tbd`
 
+## Workflow State Write-Back
+
+At the end of a module-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3f Module Analysis Done` when all 4 views (Operation / System / Program
+  / Data) and `module-overview.md` are approved, capability seeds (`CAP-*`)
+  are listed in the overview, and View 1 business rule seeds (`BR-*`)
+  carry `evidence_id` + `knowledge_type`
+- `3e Module Analysis In Progress` when one or more views are still draft
+  or any required section is missing
+
+**Last artifact path pattern:**
+`04_modules/<MODULE-SLUG>/module-overview.md` (with sibling view files)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` (or, for each
+   `CAP-*` seeded in `module-overview.md` if the orchestrator scoped the
+   module rather than a single capability) with stage id, overview path,
+   `last_skill: legacy-ibmi-module-analyzer`, and blocking IDs (`tbds`,
+   `sme_pending` for every `inferred_business_rule`).
+2. Append one `history[]` entry with `note` naming the module
+   (e.g. `"synthesized CREDIT-CHECK 4 views"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+If this module yields multiple `CAP-*` seeds and the orchestrator scoped
+the entire module (not a single capability), write one `capabilities[]`
+entry per seed at the same `stage_id: "3f Module Analysis Done"`. Do not
+silently collapse them into one entry.
+
+Never touch `current_focus`, other capabilities' entries beyond your
+module's seeds, or past `history[]` rows.
+
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md`.
