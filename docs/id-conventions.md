@@ -33,6 +33,8 @@ AC-CREDIT-CHECK-002
 | `BR` | Business rule | `BR-CREDIT-CHECK-004` |
 | `DEC` | Modernization decision | `DEC-CREDIT-CHECK-002` |
 | `STEP` | Process step | `STEP-CREDIT-CHECK-001` |
+| `REVIEW` | SME review session | `REVIEW-CREDIT-CHECK-001` |
+| `FOLLOWUP` | SME review follow-up package | `FOLLOWUP-CREDIT-CHECK-001` |
 | `FLOW` | End-to-end business transaction flow | `FLOW-CREDIT-CHECK-001` |
 | `NODE` | Program or system node inside a flow | `NODE-CREDIT-CHECK-001` |
 | `EDGE` | Call, dispatch, or handoff between flow nodes | `EDGE-CREDIT-CHECK-001` |
