@@ -24,6 +24,11 @@ This skill is the **entry point** for users who are new to Legacy Spec
 Factory, who do not know which skill to call next, or who want a guided path
 through the chain.
 
+For the full grouping of all 18 skills into 6 families (routing, Layer 1
+extraction, Layer 2 synthesis, bridge/handoff, governance, verification),
+see [`docs/skill-families.md`](../../docs/skill-families.md). That document
+also records which skill pairs were intentionally **not** merged and why.
+
 ## Reverse Chain Map
 
 ```

@@ -361,6 +361,10 @@ all agree.
 
 ## Target Skill Family
 
+**See [`docs/skill-families.md`](docs/skill-families.md) for how the 18 skills
+group into 6 families, which order they fire in, and which pairs were
+intentionally kept separate.**
+
 The skill family is split into two layers:
 
 - **Layer 1 — Platform-specific extraction.** Each Layer 1 skill targets one
