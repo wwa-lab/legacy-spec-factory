@@ -108,7 +108,7 @@ For at least one business module in the pilot library:
 
 ## Deferred From MVP
 
-- full runtime evidence miner (`legacy-runtime-evidence-miner`)
+- expanded runtime mining for transaction samples beyond job logs and spool files
 - full equivalence test generator (`legacy-equivalence-tester`)
 - automated Java / cloud code generation (handed off to `build-agent-skill`)
 - complete parser coverage for all IBM i source dialects (RPG II, RPG III,

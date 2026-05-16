@@ -17,7 +17,7 @@ This document defines the scoring rules for assigning `confidence` values (high/
 **Definition**: The observation is repeatable, consistent, and unambiguous across multiple independent runs.
 
 **Criteria**:
-1. **Frequency**: Observed in 3+ independent runs/logs (or 3+ occurrences in a single comprehensive log)
+1. **Frequency**: Observed in 3+ independent runs/logs. For repeatable event observations such as `error_pattern` or `lock_contention`, 3+ occurrences in one complete log can support high confidence for that event only; do not use same-log repetition to claim high confidence for `call_sequence`, `timing_observation`, `batch_window`, or `report_structure`.
 2. **Consistency**:
    - For deterministic observations (call sequences, report structure): Pattern is 100% identical
    - For timing/frequency observations: Within ±10% variance (e.g., 90–110 seconds out of 100 second average)
@@ -34,7 +34,7 @@ with identical sequence and consistent timing"
 - ✅ Call sequence: "MAIN → VALIDATE → CALC" in all 5 runs → **high**
 - ✅ Batch window: Start time 01:00–01:03 (±3 min), duration 85–92 min (±3.5%) across 5 runs → **high**
 - ✅ Report structure: Identical field positions in 3 different spool files → **high**
-- ❌ Single job run showing call sequence → **low** (not high, even if clear)
+- ✅ Single job run showing a complete, unambiguous call sequence → **medium** (not high)
 - ❌ Batch window: 1st run 01:00–02:30, 2nd run 01:30–03:30 (high variance) → **medium** (not high)
 
 ---
@@ -62,6 +62,7 @@ Expected BAU for credit processing flow."
 - ✅ Call sequence: "MAIN → VALIDATE → CALC" in 2 runs, no variance → **medium**
 - ✅ Error pattern: "FILE LOCKED on CUSTFILE; retry succeeds" observed 2 times → **medium**
 - ✅ Batch window: 01:00–02:30 (both runs within ±5 min) from 2 runs → **medium**
+- ✅ Complete, unambiguous call sequence in a single run → **medium** (clear but limited evidence)
 - ❌ Timing observation: Single run showing 150ms execution time → **low** (timing needs multiple runs)
 - ❌ Call sequence with variance: "MAIN → VALIDATE → CALC" in run 1, "MAIN → CALC → VALIDATE" in run 2 → **low** (contradictory)
 

@@ -405,6 +405,116 @@ git status --short
 For the negative scenario, substitute the unknown-sensitivity prompt above into
 the same `codex exec` / `claude -p` commands and the disposable OpenCode command.
 
+### `legacy-ibmi-runtime-evidence-miner`
+
+#### Scenario (Positive — Approved Runtime Evidence)
+
+```text
+Use /legacy-ibmi-runtime-evidence-miner.
+
+Contract-only no-write smoke test. Do not create or edit files.
+
+User input:
+The CREDIT-CHECK evidence manifest is approved_for_inventory. It contains
+EV-CREDIT-CHECK-015 with type job_log, redaction_status approved, and
+EV-CREDIT-CHECK-020 with type spool_or_report, redaction_status approved.
+Inventory maps CREDITCHK to OBJ-CREDIT-CHECK-001, VALIDATECREDIT to
+OBJ-CREDIT-CHECK-003, CALCFEE to OBJ-CREDIT-CHECK-005, UPDATEACCOUNT to
+OBJ-CREDIT-CHECK-007, CUSTFILE to OBJ-CREDIT-CHECK-009, and CREDITRPT to
+OBJ-CREDIT-CHECK-015. The job log shows one complete run with CALL
+VALIDATECREDIT at 01:00:30, CALL CALCFEE at 01:02:35, CALL UPDATEACCOUNT at
+01:02:40, CPF5003 on CUSTFILE at 01:02:41, RETRY after 2 seconds at
+01:02:43, UPDATEACCOUNT completed successfully, and job end at 02:30:15.
+The spool sample has a report title, column header, three detail rows, page
+total, and grand total. This is one run only; do not call the batch window
+nightly, typical, scheduled, or BAU.
+
+Return only:
+- detected skill
+- status (`pass` or `pass_with_warnings`)
+- would_emit_files (list filenames)
+- observation_types
+- confidence_distribution (high/medium/low counts)
+- gate_result
+- no_write_confirmation
+```
+
+#### Pass Criteria (Positive)
+
+- detected skill is `legacy-ibmi-runtime-evidence-miner`
+- status is `pass` or `pass_with_warnings`
+- would emit `runtime-evidence.jsonl` and `mining-checklist.md`
+- includes observation types for `call_sequence`, `error_pattern`,
+  `batch_window` or `timing_observation`, and `report_structure`
+- does not assign high confidence to any observation from the single run
+- does not call the batch window nightly, typical, scheduled, or BAU from the
+  single run
+- references `EV-CREDIT-CHECK-*` and `OBJ-CREDIT-CHECK-*` traceability
+- uses manifest-compatible artifact types such as `job_log` and
+  `spool_or_report`
+- all observations remain `sme_review_status: draft`
+- no files are created or edited
+
+#### Scenario (Negative — Unapproved Confidential Runtime Evidence)
+
+```text
+Use /legacy-ibmi-runtime-evidence-miner.
+
+Contract-only no-write smoke test. Do not create or edit files.
+
+User input:
+I have a CREDIT-CHECK job log with customer account values in it. The evidence
+manifest still has package_state: draft. EV-CREDIT-CHECK-015 is type job_log,
+sensitivity confidential, and redaction_status pending. Inventory exists, but
+the redaction owner has not approved this log. Please mine the runtime evidence
+anyway so we can keep moving.
+
+Return only:
+- detected skill
+- status
+- blocking_reason
+- remediation_step
+- would_emit_files
+- no_write_confirmation
+```
+
+#### Pass Criteria (Negative)
+
+- detected skill is `legacy-ibmi-runtime-evidence-miner`
+- status is `blocked`
+- blocking reason cites unapproved manifest and/or pending redaction for
+  confidential runtime evidence
+- remediation routes back to `legacy-ibmi-evidence-intake` / redaction owner
+  approval before mining
+- would not emit `runtime-evidence.jsonl`
+- does not quote, summarize, or process raw confidential log content
+- no files are created or edited
+
+#### Reference Commands
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-ibmi-runtime-evidence-miner. Contract-only no-write smoke test. Do not create or edit files. User input: The CREDIT-CHECK evidence manifest is approved_for_inventory. It contains EV-CREDIT-CHECK-015 with type job_log, redaction_status approved, and EV-CREDIT-CHECK-020 with type spool_or_report, redaction_status approved. Inventory maps CREDITCHK to OBJ-CREDIT-CHECK-001, VALIDATECREDIT to OBJ-CREDIT-CHECK-003, CALCFEE to OBJ-CREDIT-CHECK-005, UPDATEACCOUNT to OBJ-CREDIT-CHECK-007, CUSTFILE to OBJ-CREDIT-CHECK-009, and CREDITRPT to OBJ-CREDIT-CHECK-015. The job log shows one complete run with CALL VALIDATECREDIT at 01:00:30, CALL CALCFEE at 01:02:35, CALL UPDATEACCOUNT at 01:02:40, CPF5003 on CUSTFILE at 01:02:41, RETRY after 2 seconds at 01:02:43, UPDATEACCOUNT completed successfully, and job end at 02:30:15. The spool sample has a report title, column header, three detail rows, page total, and grand total. This is one run only; do not call the batch window nightly, typical, scheduled, or BAU. Return only: detected skill; status (pass or pass_with_warnings); would_emit_files (list filenames); observation_types; confidence_distribution (high/medium/low counts); gate_result; no_write_confirmation."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-ibmi-runtime-evidence-miner. Contract-only no-write smoke test. Do not create or edit files. User input: The CREDIT-CHECK evidence manifest is approved_for_inventory. It contains EV-CREDIT-CHECK-015 with type job_log, redaction_status approved, and EV-CREDIT-CHECK-020 with type spool_or_report, redaction_status approved. Inventory maps CREDITCHK to OBJ-CREDIT-CHECK-001, VALIDATECREDIT to OBJ-CREDIT-CHECK-003, CALCFEE to OBJ-CREDIT-CHECK-005, UPDATEACCOUNT to OBJ-CREDIT-CHECK-007, CUSTFILE to OBJ-CREDIT-CHECK-009, and CREDITRPT to OBJ-CREDIT-CHECK-015. The job log shows one complete run with CALL VALIDATECREDIT at 01:00:30, CALL CALCFEE at 01:02:35, CALL UPDATEACCOUNT at 01:02:40, CPF5003 on CUSTFILE at 01:02:41, RETRY after 2 seconds at 01:02:43, UPDATEACCOUNT completed successfully, and job end at 02:30:15. The spool sample has a report title, column header, three detail rows, page total, and grand total. This is one run only; do not call the batch window nightly, typical, scheduled, or BAU. Return only: detected skill; status (pass or pass_with_warnings); would_emit_files (list filenames); observation_types; confidence_distribution (high/medium/low counts); gate_result; no_write_confirmation."
+```
+
+OpenCode does not expose a read-only flag in `opencode run --help`. Run OpenCode
+smoke in a disposable copy or worktree, then verify the real repository stayed
+clean.
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-ibmi-runtime-evidence-miner. Contract-only no-write smoke test. Do not create or edit files. User input: The CREDIT-CHECK evidence manifest is approved_for_inventory. It contains EV-CREDIT-CHECK-015 with type job_log, redaction_status approved, and EV-CREDIT-CHECK-020 with type spool_or_report, redaction_status approved. Inventory maps CREDITCHK to OBJ-CREDIT-CHECK-001, VALIDATECREDIT to OBJ-CREDIT-CHECK-003, CALCFEE to OBJ-CREDIT-CHECK-005, UPDATEACCOUNT to OBJ-CREDIT-CHECK-007, CUSTFILE to OBJ-CREDIT-CHECK-009, and CREDITRPT to OBJ-CREDIT-CHECK-015. The job log shows one complete run with CALL VALIDATECREDIT at 01:00:30, CALL CALCFEE at 01:02:35, CALL UPDATEACCOUNT at 01:02:40, CPF5003 on CUSTFILE at 01:02:41, RETRY after 2 seconds at 01:02:43, UPDATEACCOUNT completed successfully, and job end at 02:30:15. The spool sample has a report title, column header, three detail rows, page total, and grand total. This is one run only; do not call the batch window nightly, typical, scheduled, or BAU. Return only: detected skill; status (pass or pass_with_warnings); would_emit_files (list filenames); observation_types; confidence_distribution (high/medium/low counts); gate_result; no_write_confirmation."
+```
+
+For the negative scenario, substitute the unapproved-confidential-evidence
+prompt above into the same `codex exec` / `claude -p` commands and the
+disposable OpenCode command.
+
 ### `legacy-ibmi-inventory`
 
 #### Scenario (Positive — Redacted Bundle)

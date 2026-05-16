@@ -32,7 +32,7 @@ Each line in `runtime-evidence.jsonl` must conform to this schema:
   "confidence": "high",
   "confidence_justification": "Observed in 5 independent job runs with identical sequence",
   "related_object_ids": ["OBJ-CREDIT-CHECK-001", "OBJ-CREDIT-CHECK-003", "OBJ-CREDIT-CHECK-005"],
-  "source_artifact_type": "joblog",
+  "source_artifact_type": "job_log",
   "source_artifact_name": "EV-CREDIT-CHECK-015",
   "sme_review_status": "draft",
   "reviewed_by": null,
@@ -60,7 +60,7 @@ Each line in `runtime-evidence.jsonl` must conform to this schema:
 | `supporting_detail` | object | Raw extraction details (log lines, field values, timestamps). See below. |
 | `confidence` | string | One of: `"high"`, `"medium"`, `"low"`. See mining-confidence-rules.md. |
 | `related_object_ids` | array | List of OBJ-* IDs (programs, files, tables) involved in this observation. Example: `["OBJ-CREDIT-CHECK-001", "OBJ-CREDIT-CHECK-003"]` |
-| `source_artifact_type` | string | One of: `"joblog"`, `"spool_or_report"`, `"transaction_sample"` (phase 2). |
+| `source_artifact_type` | string | One of: `"job_log"`, `"spool_or_report"`, `"transaction_sample"` (phase 2). |
 | `source_artifact_name` | string | Name/path of the source artifact. Usually the evidence_id. Example: `"EV-CREDIT-CHECK-015"` |
 | `sme_review_status` | string | One of: `"draft"`, `"needs_sme_review"`, `"approved"`, `"rejected"`. Initially `"draft"`. |
 | `created_date` | string | ISO 8601 timestamp (UTC) when observation was created. Example: `"2026-05-16T10:30:00Z"` |
@@ -147,7 +147,7 @@ Each observation must satisfy:
   "confidence": "high",
   "confidence_justification": "Observed in 5 independent job runs (2026-05-10 through 2026-05-15) with identical sequence",
   "related_object_ids": ["OBJ-CREDIT-CHECK-001", "OBJ-CREDIT-CHECK-003", "OBJ-CREDIT-CHECK-005", "OBJ-CREDIT-CHECK-007"],
-  "source_artifact_type": "joblog",
+  "source_artifact_type": "job_log",
   "source_artifact_name": "EV-CREDIT-CHECK-015",
   "sme_review_status": "draft",
   "reviewed_by": null,
@@ -180,7 +180,7 @@ Each observation must satisfy:
   "confidence": "high",
   "confidence_justification": "Observed in 3 independent runs; consistent pattern: LOCK → 2-second wait → retry succeeds",
   "related_object_ids": ["OBJ-CREDIT-CHECK-007"],
-  "source_artifact_type": "joblog",
+  "source_artifact_type": "job_log",
   "source_artifact_name": "EV-CREDIT-CHECK-015",
   "sme_review_status": "draft",
   "reviewed_by": null,
@@ -217,7 +217,7 @@ Each observation must satisfy:
   "confidence": "high",
   "confidence_justification": "Observed in 5 consecutive nightly runs; consistent start window (01:00–01:03) and duration (85–92 minutes)",
   "related_object_ids": ["OBJ-CREDIT-CHECK-001"],
-  "source_artifact_type": "joblog",
+  "source_artifact_type": "job_log",
   "source_artifact_name": "EV-CREDIT-CHECK-015",
   "sme_review_status": "draft",
   "reviewed_by": null,

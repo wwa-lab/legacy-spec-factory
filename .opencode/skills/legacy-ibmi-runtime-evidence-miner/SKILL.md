@@ -1,3 +1,8 @@
+---
+name: legacy-ibmi-runtime-evidence-miner
+description: "Extract structured `observed_in_runtime` evidence from approved IBM i job logs and spool/report files into `runtime-evidence.jsonl`. Use after `legacy-ibmi-evidence-intake` has approved the evidence manifest and `legacy-ibmi-inventory` can map runtime artifacts to `OBJ-*` IDs. Blocks on missing approval, unredacted confidential evidence, or missing inventory mappings; never infers business rules or modernization decisions from runtime logs."
+---
+
 <!--
 Legacy Spec Factory
 Copyright 2026 Leo L Zhang
@@ -12,7 +17,7 @@ Retain this notice in substantial copies or derived versions.
 # Legacy IBM i Runtime Evidence Miner
 
 **Version**: 0.1.0  
-**Status**: Repository-ready (v0.1.0)  
+**Status**: Field-pilot ready (v0.1.0)
 **Author**: Leo L Zhang  
 **Last Updated**: 2026-05-16
 
@@ -127,6 +132,7 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
      - I/O contention patterns (FILE LOCKED, RECORD LOCKED frequency)
    - Confidence scoring: High if 3+ runs; medium if 2 runs; low if single run or timing is variable
    - Note: Timing is inherently variable; never claim high confidence from one run
+   - Frequency rule: A single run may support "observed once at <time range>" only. Do not call a batch window "nightly", "typical", "scheduled", or "BAU" unless multiple runs, scheduler evidence, or SME approval explicitly support that frequency.
 
 6. **Extract Structure from Spool Files**
    - Input: Printer output / spool files (PRTF output)
@@ -149,6 +155,7 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
      - Mark observations that contradict across runs as TBDs for SME review
      - Create `contradictory` evidence records (per evidence taxonomy)
    - Rule: Never claim high confidence from a single run
+   - Rule: Do not promote one observed runtime occurrence into a recurring operational rhythm. Carry the recurrence question to SME review or `pending_source` instead.
 
 8. **Generate `runtime-evidence.jsonl`**
    - Input: Consolidated observations from step 7
@@ -190,9 +197,14 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
   - `legacy-ibmi-module-analyzer` (View 1 Operation Flow context)
   - SME review process
 
+**Review Artifact: `mining-checklist.md`**
+- Required whenever runtime mining proceeds beyond readiness checks
+- Captures SME review questions, confidence distribution, unresolved TBDs,
+  and sign-off prompts from Step 9
+
 **Secondary Artifacts (Optional)**
 - `mining-report.md` — Human-readable summary of mining results
-- `mining-checklist-completed.md` — SME review checklist + sign-off
+- `mining-checklist-completed.md` — SME review checklist + sign-off after SME review
 
 **Observation Types** (see observation-taxonomy.md for full definitions)
 - `call_sequence` — CALL/CALLP statements extracted from job logs
@@ -351,19 +363,17 @@ After mining is complete, present SME with these questions before approving outp
 
 ## Field-Pilot Readiness
 
-**v0.1.0 Status**: Repository-ready (9.0 expected after smoke tests)
+**v0.1.0 Status**: Field-pilot ready (9.57)
 
-**Smoke Test Plan**:
-1. **Positive path**: Batch job example → extract call sequences, errors, timing → verify JSONL matches expected output
-2. **Negative path**: Incomplete/corrupted job log → verify graceful degradation, low confidence, TBD creation
-3. **Integration path**: Feed JSONL into program-analyzer as runtime_hints → verify downstream consumption works
+**Smoke Test Evidence**:
+1. **Positive path**: Approved job log + spool evidence produced the expected `runtime-evidence.jsonl` / `mining-checklist.md` contract shape in Codex CLI, Claude Code, and OpenCode.
+2. **Negative path**: Draft confidential job log with pending redaction blocked in all three runtimes before mining.
+3. **Single-run guard**: Smoke confirmed one runtime occurrence stays below high confidence and is not promoted to nightly, typical, scheduled, or BAU rhythm.
 
-**Phase 2 (Post-MVP)**:
-- Teach program-analyzer to consume runtime_hints parameter
-- Teach flow-analyzer to consume bau_notes parameter
-- Teach module-analyzer to ground View 1 in runtime observations
-- Run three-runtime smoke tests (Codex, Claude Code, OpenCode)
-- Target 9.5+ score for field-pilot readiness
+**Optional integration follow-up**:
+- Verify program-analyzer consumes `runtime_hints` from `runtime-evidence.jsonl`
+- Verify flow-analyzer consumes `bau_notes`
+- Verify module-analyzer grounds View 1 in runtime observations
 
 ---
 
@@ -432,5 +442,13 @@ Use `scripts/sync-skills.sh --target all` to keep them synchronized.
 **License**: Apache License 2.0
 
 This skill is part of the Legacy Spec Factory project. See LICENSE and NOTICE files in the project root for full terms.
+
+**Version History**:
+
+- v0.1.0 (2026-05-16): Initial runtime evidence miner. Frontmatter,
+  confidence rules, `job_log` artifact typing, single-run frequency guard,
+  and `mining-checklist.md` output contract validated by positive and
+  negative no-write smoke in Codex CLI (`gpt-5.4-mini`), Claude Code
+  (`haiku`), and OpenCode (`opencode/minimax-m2.5-free`).
 
 **Maintenance**: Update version number and this section when the skill is revised.

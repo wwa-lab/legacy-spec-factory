@@ -27,7 +27,7 @@ Program Flow 逐字段梳理计算取信逻辑错误
 | **Step 1: 数据字典搭建** | 建立完整的数据模型、字段定义、客户/内部视图 | `legacy-ibmi-evidence-intake` (evidence gate)<br>`legacy-ibmi-inventory` (程序/文件列表)<br>`legacy-ibmi-data-model-analyzer` (数据字典 + 关系) | `evidence/manifest.yaml`<br>`01_inventory/inventory.yaml`<br>`03_data_models/<DATA-SLUG>/` | ✅ 已实现<br>可选smoke测试 |
 | **Step 2: Program Flow逐字段梳理** | 对每个程序的计算逻辑、取信规则、变量流进行详细分析 | `legacy-ibmi-program-analyzer` (单程序深度分析)<br>`legacy-ibmi-screen-report-analyzer` (屏幕/报表逻辑) | `02_programs/<CAP>/program-analysis-<OBJ-ID>.md`<br>`03_screen_reports/<OBJECT-SLUG>/` | ✅ 已实现<br>repo-ready (9.0) |
 | **Step 3: 还原全系统业务流程** | 通过视图 + 字典 + 算法还原业务流程全貌 | `legacy-ibmi-flow-analyzer` (事务流跨程序分析)<br>`legacy-ibmi-module-analyzer` (4视图综合分析) | `03_flows/<CAP>/flow-<FLOW-SLUG>.md`<br>`04_modules/<MODULE-SLUG>/` (Operation/System/Program/Data 4视图) | ✅ 已实现<br>repo-ready (9.0-9.6) |
-| **Step 4: 数据实测 + 经验整合** | 基于运行时证据、SME经验、代码验证进行清理 | `legacy-ibmi-flow-analyzer` (runtime evidence)<br>`legacy-ibmi-module-analyzer` (synthesize views)<br>`legacy-sme-review-facilitator` (SME确认) | Flow + Module分析中的`evidence_tags`<br>TBD和假设列表 | ✅ 部分实现<br>需要runtime-evidence-miner |
+| **Step 4: 数据实测 + 经验整合** | 基于运行时证据、SME经验、代码验证进行清理 | `legacy-ibmi-runtime-evidence-miner` (job log/spool evidence)<br>`legacy-ibmi-flow-analyzer` (runtime evidence)<br>`legacy-ibmi-module-analyzer` (synthesize views)<br>`legacy-sme-review-facilitator` (SME确认) | `runtime-evidence.jsonl`<br>Flow + Module分析中的`evidence_tags`<br>TBD和假设列表 | ✅ 已实现<br>runtime miner field-pilot ready |
 | **Step 5: 2-3轮螺旋迭代** | 已知推未知，未知反噯已知，循环验证 | `legacy-modernization-orchestrator` (routing)<br>`legacy-sme-review-facilitator` (决策记录)<br>`legacy-step-validator` (质量检查) | 迭代的版本控制<br>决策日志<br>验证报告 | ✅ 已实现<br>routing + governance |
 | **Step 6: 三方SME评审定稿** | 业务SME + 运营SME + IT SME联合评审 | `legacy-sme-review-facilitator` (评审包准备)<br>`legacy-brd-writer` (BRD文档)<br>`legacy-spec-writer` (Spec定稿) | `07_sme_reviews/<CAP>/<REVIEW>/`<br>`05_brds/<CAPABILITY>/brd.md`<br>`05_specs/<CAPABILITY>/spec.yaml` | ✅ 已实现<br>field-pilot ready (9.55-9.63) |
 | **Step 7: 标准统一固化，落地使用** | 标准化、冻结spec、交付给下游系统 | `legacy-traceability-packager` (追踪)<br>`legacy-brd-to-sdd-handoff` (交付)<br>`legacy-golden-master-test-planner` (等价性测试) | `06_traceability_packages/`<br>`06_sdd_handoffs/<CAP>/`<br>`06_quality/<CAP>/golden-master-tests.yaml` | ✅ 已实现<br>field-pilot ready (9.51-9.59) |
@@ -62,7 +62,7 @@ Program Flow 逐字段梳理计算取信逻辑错误
   
 **输出**: `02_programs/<CAP>/program-analysis-<OBJ-ID>.md`
 
-**限制**: 当前依赖代码注释和人工审阅，计划未来实现 `legacy-ibmi-runtime-evidence-miner` 获取运行时证据。
+**限制**: 程序分析仍以源码为主；运行时证据可通过 `legacy-ibmi-runtime-evidence-miner` 补充，但需要用户先提供已审批、已脱敏的 job log / spool evidence。
 
 ---
 
@@ -98,8 +98,9 @@ Program Flow 逐字段梳理计算取信逻辑错误
   
 - `legacy-sme-review-facilitator` → 记录SME决策，标记冗余和遗留技术债
 - `legacy-ibmi-evidence-intake` → 敏感数据脱敏后保存证据
+- `legacy-ibmi-runtime-evidence-miner` → 从已审批的 job logs / spool files 提取 `observed_in_runtime` JSONL 证据
 
-**限制**: 需要用户提供实际运行时日志和样本数据（当前plan中的 `legacy-ibmi-runtime-evidence-miner` 可自动提取）
+**限制**: 仍需要用户提供实际运行时日志和样本数据；runtime miner 只处理 evidence-intake 已批准且已脱敏的证据。
 
 ---
 
@@ -178,20 +179,20 @@ Program Flow 逐字段梳理计算取信逻辑错误
 
 | 维度 | 覆盖度 | 状态 | 备注 |
 |-----|-------|------|-----|
-| **Step 1: 数据字典** | 95% | ✅ 已实现 | 差一个runtime-evidence-miner |
+| **Step 1: 数据字典** | 95% | ✅ 已实现 | runtime evidence 可作为补充输入 |
 | **Step 2: 程序分析** | 90% | ✅ 已实现 | 需要smoke测试完成 |
 | **Step 3: 流程还原** | 85% | ✅ 已实现 | module-analyzer需完成smoke和strict-pass |
-| **Step 4: 实测+整合** | 70% | ⚠️ 部分 | 缺runtime-evidence-miner，需用户提供样本 |
+| **Step 4: 实测+整合** | 85% | ✅ 已实现 | runtime-evidence-miner 已实现；仍需用户提供已脱敏样本 |
 | **Step 5: 螺旋迭代** | 95% | ✅ 已实现 | orchestrator v0.2.0 + step-validator |
 | **Step 6: 三方评审** | 95% | ✅ 已实现 | sme-review-facilitator, brd-writer, spec-writer都field-pilot ready |
 | **Step 7: 交付落地** | 100% | ✅ 已实现 | handoff, traceability, golden-master-tester都field-pilot ready |
-| **总体** | **89%** | ✅ **MVP+ ready** | 缺少runtime evidence miner，其他完整 |
+| **总体** | **92%** | ✅ **MVP+ ready** | runtime evidence miner 已补齐；剩余是集成smoke和更多字段场景 |
 
 ---
 
 ## 未来优化点 (Planned but not MVP)
 
-1. **`legacy-ibmi-runtime-evidence-miner`** → 自动从job logs、spool、transaction samples提取运行时证据
+1. **Runtime evidence integration smoke** → 验证 program/flow/module analyzer 对 `runtime-evidence.jsonl` 的消费链路
 2. **`legacy-equivalence-test-generator`** → 从golden master test plan生成可执行的old-vs-new对标测试
 3. **Cross-module spec synthesis** → 多个模块的规范聚合
 

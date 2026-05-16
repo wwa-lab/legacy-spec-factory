@@ -47,7 +47,7 @@ This example demonstrates successful mining from a typical IBM i batch job log a
   - Line 58: `CALL UPDATEACCOUNT` (01:02:40, with retry at 01:02:43)
 - Extracted sequence: VALIDATECREDIT → CALCFEE → UPDATEACCOUNT
 - Timestamps extracted: 01:00:30 → 01:02:35 → 01:02:40
-- **Observation RTE-CREDIT-CHECK-001** created with high confidence (clear sequence)
+- **Observation RTE-CREDIT-CHECK-001** created with medium confidence (complete and unambiguous, but one run)
 
 ### Step 4: Extract Error Patterns from Job Logs
 ✅ **PASS**
@@ -57,7 +57,7 @@ This example demonstrates successful mining from a typical IBM i batch job log a
 - Context: During UPDATEACCOUNT call
 - Recovery: Line 87 "RETRY after 2 seconds"
 - Outcome: Line 93 "UPDATEACCOUNT completed successfully"
-- **Observation RTE-CREDIT-CHECK-002** created with high confidence
+- **Observation RTE-CREDIT-CHECK-002** created with medium confidence (clear recovery, but one occurrence)
 
 ### Step 5: Extract Timing & Rhythm Observations
 ✅ **PASS**
@@ -68,7 +68,8 @@ This example demonstrates successful mining from a typical IBM i batch job log a
   - VALIDATECREDIT: 01:00:30 (start)
   - CALCFEE: 01:02:35 (start)
   - UPDATEACCOUNT: 01:02:40 (start), 01:02:43 (retry)
-- **Observation RTE-CREDIT-CHECK-005** created for VALIDATECREDIT timing (~2 min, extrapolated)
+- **Observation RTE-CREDIT-CHECK-003** created with low confidence for the one observed batch window
+- **Observation RTE-CREDIT-CHECK-005** created with low confidence for the observed interval between VALIDATECREDIT and the next logged call
 
 ### Step 6: Extract Structure from Spool Files
 ✅ **PASS**
@@ -82,13 +83,13 @@ This example demonstrates successful mining from a typical IBM i batch job log a
   - Status: columns 21–25
   - Amount: columns 27–35
 - Footer: Line 12 (Page Total), Line 14 (Grand Total), Line 15 (Date/Time)
-- **Observation RTE-CREDIT-CHECK-004** created with high confidence (clear structure)
+- **Observation RTE-CREDIT-CHECK-004** created with low confidence (clear structure from one spool file)
 
 ### Step 7: Correlate Multiple Runs
 ✅ **PASS**
-- Single run available but structure is unambiguous
-- Call sequence is clear and repeatable
-- Error pattern is documented (CPF5003 with consistent recovery)
+- Single run available; confidence stays below high for all observations
+- Call sequence is clear, but repeatability is not yet proven
+- Error pattern is documented (CPF5003 with recovery in this run)
 - All observations align with expected BAU behavior
 
 ### Step 8: Generate runtime-evidence.jsonl
@@ -98,7 +99,7 @@ This example demonstrates successful mining from a typical IBM i batch job log a
 - All required fields present
 - observation_id format: RTE-CREDIT-CHECK-NNN
 - evidence_id back-references: EV-CREDIT-CHECK-015 and EV-CREDIT-CHECK-020
-- confidence: high (justified by evidence)
+- confidence values assigned per evidence volume (no high-confidence claims from one run)
 - supporting_detail includes source line numbers, extracted values, timestamps
 
 ### Step 9: Prepare for SME Review
@@ -108,7 +109,7 @@ This example demonstrates successful mining from a typical IBM i batch job log a
   - Call sequence validates expected flow
   - Error handling (CPF5003 retry) is documented
   - Timing shows batch completes in 90+ minutes
-  - Report structure consistent and extractable
+  - Report structure extractable from the supplied spool sample
 - No contradictions identified
 - No unidentified programs/files in logs
 - Ready for SME review and sign-off
@@ -120,11 +121,11 @@ This example demonstrates successful mining from a typical IBM i batch job log a
 ### runtime-evidence.jsonl
 Located: [This directory]
 Contains: 5 observations
-- RTE-CREDIT-CHECK-001: call_sequence (high confidence)
-- RTE-CREDIT-CHECK-002: error_pattern (high confidence)
-- RTE-CREDIT-CHECK-003: batch_window (medium confidence - single run)
-- RTE-CREDIT-CHECK-004: report_structure (high confidence)
-- RTE-CREDIT-CHECK-005: timing_observation (medium confidence - single run)
+- RTE-CREDIT-CHECK-001: call_sequence (medium confidence - complete single run)
+- RTE-CREDIT-CHECK-002: error_pattern (medium confidence - one occurrence with recovery)
+- RTE-CREDIT-CHECK-003: batch_window (low confidence - single run)
+- RTE-CREDIT-CHECK-004: report_structure (low confidence - one spool file)
+- RTE-CREDIT-CHECK-005: timing_observation (low confidence - single run)
 
 ### mining-checklist.md (filled)
 Located: review-notes.md (example SME response)
@@ -134,11 +135,11 @@ Status: Ready for SME review
 
 ## Key Insights from This Mining Run
 
-1. **Call sequence is rock-solid** — Identical flow from MAIN → VALIDATE → CALC → UPDATE in all sections
-2. **Error handling is graceful** — FILE LOCKED triggers automatic 2-second retry, which succeeds
-3. **Batch window is consistent** — 90+ minutes from 01:00 to 02:30 is the expected BAU
-4. **Report structure is fixed** — Same field positions and layout across all runs
-5. **Performance is stable** — No significant variance observed
+1. **Call sequence is clear** — The supplied log shows MAIN → VALIDATE → CALC → UPDATE
+2. **Error handling is visible** — FILE LOCKED triggers a logged 2-second retry, which succeeds in this run
+3. **Batch window is observed once** — The supplied log runs from 01:00 to 02:30; SME or more logs must confirm the normal schedule
+4. **Report structure is extractable** — Field positions and totals are visible in the supplied spool sample
+5. **Performance remains a draft observation** — One run is not enough to establish variance
 
 ---
 
@@ -146,11 +147,11 @@ Status: Ready for SME review
 
 | Observation | Confidence | Runs/Occurrences | Justification |
 |---|---|---|---|
-| call_sequence | high | 1 (clear and unambiguous) | Pattern is explicit in logs; matches expected program structure |
-| error_pattern | high | 1 occurrence (repeated in other runs) | Error code, recovery, and success are all logged |
-| batch_window | medium | 1 run | Single night observed; pattern assumed nightly but needs confirmation across 5+ nights |
-| report_structure | high | 1 report | Field positions and layout are clear and consistent across multiple report pages |
-| timing_observation | medium | 1 run | Timing data present but single run; variance unknown |
+| call_sequence | medium | 1 complete run | Pattern is explicit in logs; repeatability still needs more runs |
+| error_pattern | medium | 1 occurrence with recovery | Error code, recovery, and success are all logged once |
+| batch_window | low | 1 run | Single night observed; cannot claim normal schedule without more runs or SME confirmation |
+| report_structure | low | 1 report | Field positions and layout are clear, but only one spool file is supplied |
+| timing_observation | low | 1 run | Timing data present but variance is unknown |
 
 ---
 

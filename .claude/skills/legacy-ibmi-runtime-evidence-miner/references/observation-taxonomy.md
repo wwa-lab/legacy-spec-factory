@@ -20,7 +20,7 @@ This document defines the types of observations that can be extracted from IBM i
 **Confidence scoring**:
 - **High**: Identical sequence in 3+ independent runs
 - **Medium**: Sequence in 1–2 runs; unambiguous
-- **Low**: Single run or ambiguous call sequences (e.g., CALL not logged clearly)
+- **Low**: Partial, truncated, contradictory, or ambiguous call sequences (e.g., CALL not logged clearly)
 
 **Example statement**:
 "CREDITCHK main program calls VALIDATECREDIT, then CALCFEE, then UPDATEACCOUNT in sequence"
@@ -155,8 +155,8 @@ This document defines the types of observations that can be extracted from IBM i
 
 **Confidence scoring**:
 - **High**: Same structure in 3+ independent spool files
-- **Medium**: Same structure in 1–2 spool files
-- **Low**: Structure varies across runs
+- **Medium**: Same structure in 2 independent spool files
+- **Low**: Single spool file, missing sections, or structure varies across runs
 
 **Example statement**:
 "CREDITRPT report has header (lines 1–3), detail sections (lines 4–N), and footer with grand totals (lines 195–200)"

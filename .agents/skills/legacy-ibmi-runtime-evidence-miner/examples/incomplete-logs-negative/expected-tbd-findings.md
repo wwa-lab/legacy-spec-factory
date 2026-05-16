@@ -9,7 +9,7 @@ This example demonstrates graceful handling of a truncated job log. The log ends
 ### RTE-NNN-001: call_sequence
 **Status**: PARTIAL
 - **Statement**: "CREDITCHK calls VALIDATECREDIT, then CALCFEE, then UPDATEACCOUNT (partial flow observed)"
-- **Confidence**: medium (calls observed but recovery/completion unknown)
+- **Confidence**: low (calls observed but recovery/completion unknown)
 - **Supporting Detail**:
   - Call chain: VALIDATECREDIT → CALCFEE → UPDATEACCOUNT (start only)
   - Timestamps: 01:00:30 → 01:02:35 → 01:02:40
@@ -89,7 +89,7 @@ All observations from incomplete logs should be downgraded:
 
 | Observation Type | Normal High Confidence | Incomplete Log Confidence |
 |---|---|---|
-| call_sequence | 3+ runs, identical | ↓ medium: sequence partial, completion unknown |
+| call_sequence | 3+ runs, identical | ↓ low: sequence partial, completion unknown |
 | error_pattern | 3+ occurrences with consistent recovery | ↓ low: error observed, recovery unknown |
 | timing_observation | 3+ runs, ±10% variance | ↓ low: single run, inference-based |
 | batch_window | 3+ nights, consistent timing | ❌ not available: no completion timestamp |

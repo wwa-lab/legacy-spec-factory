@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 18 skills. They are not equally connected — some are
+Legacy Spec Factory has 19 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -15,12 +15,12 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Layer 1 — IBM i extraction | 7 | Once per legacy capability slice |
+| Layer 1 — IBM i extraction | 8 | Once per legacy capability slice |
 | Layer 2 — synthesis | 3 | After Layer 1 produces evidence |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 4 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **18** | |
+| **Total** | **19** | |
 
 ---
 
@@ -52,6 +52,7 @@ truth (tier 1), SME knowledge is tier 2/3, prior wikis are tier 4.
 | --- | --- | --- | --- |
 | [`legacy-ibmi-evidence-intake`](../skills/legacy-ibmi-evidence-intake/SKILL.md) | raw evidence bundles | `evidence/manifest.yaml`, `redaction-log.md` | **First** — gates everything else |
 | [`legacy-ibmi-inventory`](../skills/legacy-ibmi-inventory/SKILL.md) | approved evidence + source listings | `01_inventory/inventory.yaml`, object map | After intake |
+| [`legacy-ibmi-runtime-evidence-miner`](../skills/legacy-ibmi-runtime-evidence-miner/SKILL.md) | approved job logs / spool files + inventory mappings | `runtime-evidence.jsonl`, mining checklist | After intake + inventory; parallel evidence enrichment |
 | [`legacy-ibmi-program-analyzer`](../skills/legacy-ibmi-program-analyzer/SKILL.md) | one program (RPGLE/CLLE/COBOL) | `program-analysis-<OBJ-ID>.md` | Once per program in inventory |
 | [`legacy-ibmi-flow-analyzer`](../skills/legacy-ibmi-flow-analyzer/SKILL.md) | multiple program-analyses for one transaction | `flow-<FLOW-SLUG>.md` | After per-program analysis is done |
 | [`legacy-ibmi-module-analyzer`](../skills/legacy-ibmi-module-analyzer/SKILL.md) | related flows | `04_modules/<MODULE-SLUG>/` (4-view) | After flows for a capability are done |
@@ -63,6 +64,7 @@ truth (tier 1), SME knowledge is tier 2/3, prior wikis are tier 4.
 ```
 evidence-intake (gate)
   ├─ inventory
+  │    ├─ runtime-evidence-miner (optional but recommended where logs/spool exist)
   │    ├─ program-analyzer (per program)
   │    │    └─ flow-analyzer (per transaction flow)
   │    │         └─ module-analyzer (per capability module)
@@ -180,8 +182,6 @@ implementation. The test plan becomes the equivalence-test contract.
 
 - `legacy-equivalence-test-generator` — generate executable tests from the
   test plan
-- `legacy-ibmi-runtime-evidence-miner` — mine job logs / spool / transaction
-  samples for runtime evidence (currently the weakest part of Layer 1)
 
 ---
 
