@@ -297,6 +297,7 @@ even if the static review score is higher.
 | --- | --- | ---: | ---: | --- | --- |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
+| `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.0 expected | 9.0 | Repo-ready | Example positive/negative cases complete; three-runtime smoke tests pending |
 | `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Claude Code passed; Codex and OpenCode smoke execution still pending |
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
@@ -410,6 +411,7 @@ explicitly decides to vendor or mirror them.
 | 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.0 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
 | 2 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
 | 3 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 3.5 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | New v0.1.0 | Repo-ready; run three-runtime smoke tests; integrate with program/flow/module analyzers for optional runtime_hints/bau_notes |
 | 4 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
 | 5 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Provisional field-pilot candidate after remaining smoke tests |
 | 6 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
@@ -463,7 +465,7 @@ Governance/Infrastructure skills (already implemented):
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
 | `legacy-ibmi-crud-matrix-analyzer` | Map programs to physical/logical files and DB2 operations | `crud-matrix.md` | Folded into program/module analyzer for MVP |
 | `legacy-ibmi-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Superseded by `legacy-ibmi-data-model-analyzer` and `legacy-ibmi-screen-report-analyzer` |
-| `legacy-ibmi-runtime-evidence-miner` | Mine job logs, spool files, transaction samples, and test data | `runtime-evidence.jsonl` | Planned |
+| `legacy-ibmi-runtime-evidence-miner` | Mine job logs, spool files, transaction samples, and test data | `runtime-evidence.jsonl` | Repo-ready (v0.1.0, 9.0 expected; three-runtime smoke tests pending) |
 
 ### Layer 1 — Other platforms (`legacy-<platform>-*`)
 
