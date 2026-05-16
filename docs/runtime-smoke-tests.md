@@ -1299,6 +1299,66 @@ Recorded in `docs/runtime-matrix.md`. Scorecard moved from v0.1.0 (9.0 cap)
 to v0.1.1 (9.5, field-pilot ready) at
 [docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md](reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md).
 
+## Pass Example — `legacy-ibmi-screen-report-analyzer` v0.1.0
+
+### Positive DSPF Scenario
+
+```text
+Use /legacy-ibmi-screen-report-analyzer.
+
+User input:
+I have an approved inventory object OBJ-ORDER-ENTRY-003 for ORDERENT DSPF.
+Evidence:
+- EV-ORDER-ENTRY-012: DSPF source at
+  skills/legacy-ibmi-screen-report-analyzer/examples/interactive-subfile-positive/input-dspf.txt,
+  sensitivity safe.
+- EV-ORDER-ENTRY-013: redacted screen capture sequence described by the
+  example analysis.
+- EV-ORDER-ENTRY-014: safe job log excerpt described by the example analysis.
+Inventory is approved_with_non_blocking_tbd and evidence is redacted. No SME
+sign-off evidence is included.
+
+Analyze the screen/report artifact as a no-write smoke test. Do not create or
+edit files. For artifact filename, return the canonical output artifact
+filename from the skill output contract, not the input evidence filename.
+
+Return only:
+- skill invoked
+- canonical artifact filename
+- surface type
+- output sections present
+- evidence/redaction gates
+- allowed ID namespaces
+- forbidden ID namespaces
+- at least three TBD or SEED items
+- handoff status
+```
+
+### Pass Criteria
+
+- invokes `legacy-ibmi-screen-report-analyzer`
+- returns `screen-report-analysis-OBJ-ORDER-ENTRY-003.md`
+- classifies the surface as DSPF / interactive screen with subfile
+- lists required output sections from the screen/report analysis contract
+- reports evidence/redaction gates as passing and SME sign-off as absent/open
+- allows `OBJ-*`, `EV-*`, `BEH-*`, `IN-*`, `OUT-*`, `DATA-*`, `SEED-*`,
+  and `TBD-*`
+- forbids `BR-*`, `CAP-*`, `DEC-*`, and Java implementation IDs
+- surfaces at least three `TBD-*` or `SEED-*` items instead of inventing
+  program behavior
+- keeps handoff status `draft` or `needs_sme_review`, not `approved`
+- creates or edits no files
+
+| Runtime | Model | Discovery | Trigger | Outcome |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | loaded | positive DSPF no-write scenario executed | passed |
+| Claude Code | `haiku` (Read-only tools) | loaded | positive DSPF no-write scenario executed | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | loaded | positive DSPF no-write scenario executed | passed |
+
+Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard remains repo-ready,
+not field-pilot ready, pending SME/domain validation with real redacted
+screen/report evidence.
+
 ## Adding A New Skill
 
 When a new skill is added:

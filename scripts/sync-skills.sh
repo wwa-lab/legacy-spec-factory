@@ -7,7 +7,7 @@ SOURCE_DIR="$ROOT/skills"
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/sync-skills.sh [--target all|claude|opencode|agents|codex] [--check]
+  scripts/sync-skills.sh [--target all|claude|opencode|agents|codex] [--skill name] [--check]
 
 Copies canonical skills from skills/<name>/ into runtime adapter folders.
 Adapter-only files named *.adapter.md or placed under runtime-overrides/ are
@@ -21,12 +21,14 @@ Targets:
   all       all targets
 
 Options:
+  --skill   sync or check one skill directory by name
   --check   report drift without copying
 USAGE
 }
 
 target="all"
 check="no"
+skill_filter=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +39,10 @@ while [[ $# -gt 0 ]]; do
     --check)
       check="yes"
       shift
+      ;;
+    --skill)
+      skill_filter="${2:-}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -75,7 +81,15 @@ case "$target" in
 esac
 
 shopt -s nullglob
-skill_dirs=("$SOURCE_DIR"/*)
+if [[ -n "$skill_filter" ]]; then
+  if [[ ! -d "$SOURCE_DIR/$skill_filter" ]]; then
+    echo "No such skill: $skill_filter" >&2
+    exit 1
+  fi
+  skill_dirs=("$SOURCE_DIR/$skill_filter")
+else
+  skill_dirs=("$SOURCE_DIR"/*)
+fi
 
 if [[ ${#skill_dirs[@]} -eq 0 ]]; then
   echo "No skills found under $SOURCE_DIR"
