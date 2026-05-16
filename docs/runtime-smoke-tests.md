@@ -635,6 +635,108 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the missing-program-analysis prompt above into
 the same commands.
 
+### `legacy-ibmi-data-model-analyzer`
+
+#### Scenario (Positive - Customer Master PF/LF)
+
+```text
+Use /legacy-ibmi-data-model-analyzer.
+
+User input:
+Analyze the CUSTOMER-MASTER data domain. Inventory is approved and includes
+OBJ-CUSTOMER-MASTER-001 (PF CUSTOMER), OBJ-CUSTOMER-MASTER-002 (LF CUSTACT),
+OBJ-CUSTOMER-MASTER-003 (PGM CUSTINQ with approved analysis), and
+OBJ-CUSTOMER-MASTER-004 (PGM CUSTMAINT with approved analysis).
+
+DDS evidence EV-CUSTOMER-MASTER-001:
+UNIQUE; record CUSTREC; fields CUSTNO 10A COLHDG('Customer Number'),
+CUSTNAME 30A, ACTIVE_FLAG 1A, CREATED_DATE 8S 0; key line K CUSTNO.
+
+DDS evidence EV-CUSTOMER-MASTER-002:
+record CUSTACT PFILE(CUSTOMER); fields CUSTNO, CUSTNAME, ACTIVE_FLAG; key
+line K CUSTNO; select line S ACTIVE_FLAG *EQ 'Y'.
+
+Approved program-analysis summaries:
+- CUSTINQ reads CUSTACT by CUSTNO using CHAIN.
+- CUSTMAINT reads CUSTOMER by CUSTNO, writes new CUSTOMER records, and updates
+  CUSTNAME and ACTIVE_FLAG.
+- No delete, archive, or purge behavior is present.
+
+SME note: ACTIVE_FLAG values Y and N are confirmed. Retention policy is not
+approved.
+
+Return only:
+- status
+- expected artifact directory and six artifact filenames
+- DATA-* IDs minted
+- key/access-path findings
+- CRUD/lifecycle summary
+- TBD ledger
+- handoff readiness
+
+Do not write files.
+```
+
+#### Pass Criteria (Positive)
+
+- invokes `legacy-ibmi-data-model-analyzer`
+- reports artifact directory `03_data_models/CUSTOMER-MASTER/`
+- lists all six files: `data-model-overview.md`, `data-dictionary.md`,
+  `relationship-map.md`, `access-paths.md`, `crud-lifecycle-matrix.md`,
+  `data-model-review-checklist.md`
+- mints or references `DATA-CUSTOMER-MASTER-001`
+- reuses `OBJ-CUSTOMER-MASTER-*` and `EV-CUSTOMER-MASTER-*`
+- treats CUSTOMER as a unique keyed access path because DDS has `UNIQUE` plus
+  `K CUSTNO`
+- treats CUSTACT as an LF/access path, not a stored table
+- reports CRUD from approved program summaries: CUSTINQ read, CUSTMAINT read /
+  create / update, no delete/archive/purge found
+- records retention as `TBD-CUSTOMER-MASTER-*` with
+  `pending_business_decision`
+- does not invent a target schema, Java, migration code, unrelated `BR-*`,
+  `CAP-*`, `DEC-*`, `AC-*`, or `FK-*` IDs
+- no files are created or edited
+
+#### Scenario (Negative - Missing DDS And Mutating Program Analysis)
+
+```text
+Use /legacy-ibmi-data-model-analyzer.
+
+User input:
+Analyze ORDER-DATA. Inventory is approved and includes OBJ-ORDER-DATA-001:
+PF ORDER. Program ORDPOST appears to update ORDER, but there is no approved
+program-analysis-OBJ-ORDPOST-001.md. DDS for ORDER is missing; only a partial
+DSPFFD excerpt lists fields ORDERNO, CUSTNO, STATUS, and ORDDATE. CUSTOMER has
+a CUSTNO field in another approved domain. Can we infer ORDERNO as the primary
+key and ORDER.CUSTNO as a customer foreign key so downstream work can proceed?
+
+Return only:
+- status
+- stop conditions
+- TBD ledger
+- forbidden inferences
+- remediation route
+
+Do not write files.
+```
+
+#### Pass Criteria (Negative)
+
+- reports `blocked` or equivalent blocked status
+- creates or names `TBD-ORDER-DATA-*` items for missing DDS/current metadata
+  and missing approved mutating program analysis
+- refuses to infer `ORDERNO` as primary key from partial DSPFFD or field name
+- refuses to infer `ORDER.CUSTNO -> CUSTOMER.CUSTNO` as a confirmed
+  relationship from name matching alone
+- routes to source/metadata recovery and `legacy-ibmi-program-analyzer` for the
+  mutating program before CRUD/lifecycle approval
+- does not produce approved data model artifacts
+- no files are created or edited
+
+For reference commands, use the same Codex, Claude Code, and OpenCode command
+shapes shown above, replacing the prompt with the positive or negative scenario
+here.
+
 ### `legacy-ibmi-module-analyzer`
 
 #### Scenario (Positive — Complete Module)
