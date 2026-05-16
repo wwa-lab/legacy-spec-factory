@@ -47,14 +47,25 @@ Calls, Error Handling, Open Questions (TBD-*). Every row cites an
 
 ## Gate before advancing
 
-- **Name:** (none specific to this stage) — advancement is gated by
-  **coverage**: every in-scope program from inventory must have an
-  approved `program-analysis.md` before flow analysis is complete
-- **Check:** count of `program-analysis.md` files == count of in-scope
-  programs in `inventory.yaml`
-- **Blocks if:** any in-scope program is missing analysis OR any analysis
-  has `review_status: needs_sme_review` for a money / inventory /
-  compliance / customer-status branch
+- **Name:** Program analysis coverage + triggered companions
+- **Check:**
+  1. count of `program-analysis.md` files == count of in-scope programs
+     in `inventory.yaml`
+  2. IF `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
+     → every triggered DSPF / PRTF / menu has an approved
+     `screen-report-analysis.md` under
+     `02_programs/<MODULE>/screens/`
+  3. IF `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+     → `04_modules/<MODULE>/data-model/dictionary.md` exists at
+     `review_status: approved` or `approved_with_non_blocking_tbd`
+- **Blocks if:** any of (1), (2), (3) fail; OR any analysis has
+  `review_status: needs_sme_review` for a money / inventory / compliance
+  / customer-status branch
+
+The conditional gates (2) and (3) are MECHANICALLY enforced by the
+orchestrator — once inventory declares the trigger, the optional skills
+become required. Trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../../../legacy-ibmi-inventory/references/downstream-triggers.md).
 
 ## SME action
 

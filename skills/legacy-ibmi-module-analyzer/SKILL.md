@@ -43,11 +43,27 @@ Accept:
   exception handling, business context not in code
 - **Optional:** architecture diagrams (for System Flow), data lineage
   documents, regulatory references
+- **Conditionally required from triggers:**
+  - When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
+    → approved `screen-report-analysis.md` for every triggered DSPF /
+    PRTF / menu. View 1 (Operation Flow) consumes these as primary
+    sources for screen-driven rules; absence means missing 40% of
+    user-facing decisions.
+  - When `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+    → approved `04_modules/<MODULE-SLUG>/data-model/dictionary.md`. View
+    4 (Data Flow) populates from this dictionary verbatim instead of
+    re-deriving entities from per-program File I/O tables.
+
+Trigger rules and override protocol live in
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
 
 Stop and require clarification if:
 
 - Any in-scope flow lacks an approved `flow-<FLOW-SLUG>.md` → route to
   `legacy-ibmi-flow-analyzer`
+- A trigger is `required: true` but the corresponding artifact is missing
+  → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
+  or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
 - Module boundary is ambiguous (does flow X belong here or in another
   module?) → SME-only decision
 - No SME has confirmed the business name and scope of the module

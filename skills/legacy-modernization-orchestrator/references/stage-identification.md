@@ -13,7 +13,7 @@ upstream stage that fits — do not "round up" maturity.
 | 2b | Inventory Blocked | `inventory.yaml.sme_review.decision: blocked`, or `coverage_gaps[].blocking: yes` unresolved |
 | 2c | Inventory Done | `inventory.yaml.sme_review.decision: approved` or `approved_with_non_blocking_tbd`, plus `object-map.md` |
 | 3a | Program Analysis In Progress | `program-analysis-<OBJ-ID>.md` for some but not all in-scope programs |
-| 3b | Program Analysis Done | `program-analysis-<OBJ-ID>.md` for all in-scope programs |
+| 3b | Program Analysis Done | `program-analysis-<OBJ-ID>.md` for all in-scope programs **AND** all triggered companion artifacts (`screen-report-analysis.md` per triggered DSPF/PRTF/menu; `04_modules/<MODULE>/data-model/dictionary.md` if data-model trigger fires). Triggers declared in `inventory.yaml.sme_review.downstream_required`; see `skills/legacy-ibmi-inventory/references/downstream-triggers.md`. |
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |

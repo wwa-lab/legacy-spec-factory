@@ -49,9 +49,21 @@ sme_review:
     critical: 1
     standard: 0
     low_risk: 0
+  downstream_required:
+    screen_report_analyzer:
+      required: false
+      reason: "No DSPF / PRTF / menu objects — PRICECALC is a callable subroutine with no UI surface"
+      triggered_by_objects: []
+    data_model_analyzer:
+      required: false
+      reason: "Only 1 file (PRICEFL); below 3-file threshold and no FK-like relations"
+      triggered_by_objects: []
   notes: |
     Confirmed PRICECALC + PRICEFL are the only in-scope objects for this
     PPCR. The promotion stacking logic is hard-coded in PRICECALC source
     (no separate promotion table) — see EV-SME-001 walkthrough.
     PRICECALC classified as `critical` since its output is the invoiced
     line price.
+    Both downstream triggers are correctly NOT met for this tiny
+    example; a real module with DSPF + multiple files would set them
+    `required: true`.

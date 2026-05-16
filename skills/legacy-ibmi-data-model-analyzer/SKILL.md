@@ -25,6 +25,38 @@ skill does not infer business rules from field names, invent field meanings or
 keys, or design target schemas. It produces evidence-backed data structure
 analysis ready for SME validation and downstream spec generation.
 
+## Pipeline Position — Conditionally Required
+
+This skill is **mandatory** (not optional) when
+`inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`.
+Inventory auto-detects the trigger when:
+
+- the module touches ≥ 3 physical/logical files
+- two files share a key field (foreign-key-like relation)
+- any program writes to ≥ 2 master files (compound transactional update)
+
+SME confirms during the same single batched signoff as criticality. Full
+trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
+
+When triggered, the orchestrator's `3b Program Analysis Done` gate
+refuses to advance until
+`04_modules/<MODULE-SLUG>/data-model/dictionary.md` exists at
+`review_status: approved` or `approved_with_non_blocking_tbd`.
+
+Downstream consumers when this output exists:
+
+- `legacy-ibmi-module-analyzer` View 4 (Data Flow) — populates from the
+  dictionary instead of re-deriving from program-analysis rows
+- `legacy-spec-writer` populates `spec.yaml.data_model.entities` directly
+  from `dictionary.md`, preserving cross-program invariants
+- `legacy-golden-master-test-planner` consumes the dictionary for
+  test data shapes
+
+For tiny modules (≤ 2 files, no FK-like relations), the trigger is NOT
+met (`required: false`); spec-writer derives entities from inventory
+directly without this skill's overhead.
+
 ## Inputs
 
 Accept:
@@ -353,6 +385,14 @@ No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
 
+- v0.2.0 (2026-05-16): Promoted from "optional supplemental" to
+  "conditionally required". When `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+  (auto-detected when module touches ≥ 3 files OR shared key fields OR
+  compound master-file writes), this skill becomes a mechanically
+  enforced prerequisite for `3b Program Analysis Done`. `legacy-spec-writer`
+  now populates `spec.yaml.data_model.entities` verbatim from this
+  skill's `dictionary.md` instead of re-deriving across program-analysis
+  rows, preserving cross-program transactional invariants.
 - v0.1.0 (2026-05-16): Initial release
   - 9-step workflow for DDS physical/logical files, DB2 for i, and SQL DDL
   - Record format and field extraction with evidence tagging

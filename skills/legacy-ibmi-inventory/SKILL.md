@@ -229,6 +229,65 @@ mis-classified `critical` program.
 `low_risk` programs. The analysis is still produced at full depth — only
 the SME review effort downstream is dialed down.
 
+## Downstream Skill Triggers (DSPF + Data Model)
+
+Two supplemental Layer 1 skills are **optional for tiny modules but
+mandatory once inventory contents trigger them**. Without this trigger
+mechanism, screen-derived business rules and shared data-model
+invariants slip through into ad-hoc program-analysis prose.
+
+Detect during inventory; SME confirms in the same single batched signoff
+as criticality.
+
+### Auto-detect rules (apply during inventory)
+
+Set `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true` when ANY of:
+
+- inventory has an object with `subtype ∈ {dspf, display_file, menu}`
+- inventory has `subtype: prtf` AND the report carries business
+  decisions (totals lines, conditional rows) — not pure output
+
+Set `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true` when ANY of:
+
+- count(objects with `subtype ∈ {pf, physical_file, lf, logical_file, sql_table, table}`) ≥ 3
+- two files share a key field name (foreign-key-like relation)
+- any program writes to ≥ 2 master files (compound transactional update)
+
+Full rule set, examples, and overrides documented in
+[`references/downstream-triggers.md`](references/downstream-triggers.md).
+
+### Inventory output additions
+
+Append the trigger block to `inventory.yaml`:
+
+```yaml
+sme_review:
+  decision: approved
+  criticality_summary: { critical: N, standard: M, low_risk: K }
+  downstream_required:
+    screen_report_analyzer:
+      required: true | false
+      reason: <one line — why detected or why N/A>
+      triggered_by_objects: [OBJ-*, ...]    # objects that triggered the detection
+    data_model_analyzer:
+      required: true | false
+      reason: <one line>
+      triggered_by_objects: [OBJ-*, ...]
+```
+
+If SME overrides an auto-detection (e.g. a DSPF exists but is dead
+code), record `override_reason` + `override_by` + `override_at` per the
+schema in `downstream-triggers.md`.
+
+### Why this matters
+
+Once `downstream_required.<skill>.required: true` is committed in
+`inventory.yaml`, the orchestrator's `3b Program Analysis Done` gate
+will refuse to advance until the triggered artifact (`screen-report-analysis.md`
+under `02_programs/<MODULE>/screens/`, or `04_modules/<MODULE>/data-model/dictionary.md`)
+is also produced and approved. The trigger turns optional skills into
+**mechanically enforced prerequisites** when their inputs are present.
+
 ## Workflow State Write-Back
 
 At the end of an inventory run, update `<project-root>/workflow-state.yaml`
@@ -309,6 +368,15 @@ Use `../../scripts/sync-skills.sh` to create or check runtime copies.
 
 ## Version History
 
+- v0.3.0 (2026-05-16): Added `downstream_required` block to
+  `sme_review`. Inventory now auto-detects when
+  `legacy-ibmi-screen-report-analyzer` and
+  `legacy-ibmi-data-model-analyzer` should be MANDATORY (not optional)
+  for this module, declares the requirement in inventory.yaml, and SME
+  confirms in the same batched signoff. Orchestrator's `3b Program
+  Analysis Done` gate now mechanically enforces these triggers — turning
+  optional supplemental skills into prerequisites when their inputs are
+  present. Trigger rules in `references/downstream-triggers.md`.
 - v0.2.0 (2026-05-16): Added program criticality classification
   (`critical | standard | low_risk` with `criticality_reason`) and the
   single-batched SME confirmation workflow. Drives downstream review

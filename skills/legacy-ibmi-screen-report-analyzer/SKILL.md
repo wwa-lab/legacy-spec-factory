@@ -20,6 +20,26 @@ Retain this notice in substantial copies or derived versions.
 
 Create a detailed analysis of IBM i display files (DSPF), printer files (PRTF), menu definitions, subfile behavior, function keys, indicators, field-level presentation logic, report layouts, report sections, and related runtime evidence. This skill does not generate modernization code or infer business rules from presentation alone. It produces evidence-backed analysis of the presentation layer ready for SME validation and downstream capability modeling.
 
+## Pipeline Position — Conditionally Required
+
+This skill is **mandatory** (not optional) when
+`inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`.
+The inventory skill auto-detects this trigger from DSPF / PRTF / menu
+objects; the SME confirms during the same single batched signoff that
+confirms criticality. Full trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
+
+Once triggered, the orchestrator's `3b Program Analysis Done` gate
+refuses to advance until every triggered DSPF/PRTF/menu has an approved
+`screen-report-analysis.md`. Without this enforcement, ~40% of real
+screen-driven business rules (F-key bindings, conditional field
+attributes, subfile control semantics) slip through into ad-hoc
+`program-analysis.md` prose.
+
+For tiny modules with no display files, the skill is correctly skipped
+(`downstream_required.screen_report_analyzer.required: false`) and adds
+no overhead.
+
 ## Inputs
 
 Accept any combination of:
@@ -264,6 +284,12 @@ provided evidence.
 
 ## Version History
 
+- v0.2.0 (2026-05-16): Promoted from "optional supplemental" to
+  "conditionally required". When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`,
+  this skill becomes a mechanically enforced prerequisite for `3b
+  Program Analysis Done` — no more screen-driven rules slipping into
+  ad-hoc program-analysis prose. Inventory auto-detects DSPF / PRTF /
+  menu objects and SME confirms in the batched inventory signoff.
 - v0.1.0 (2026-05-16): Initial screen/report analyzer. Positive no-write
   smoke test passed in Codex CLI (`gpt-5.4-mini`), Claude Code (`haiku`), and
   OpenCode (`opencode/minimax-m2.5-free`); artifact remains repo-ready pending

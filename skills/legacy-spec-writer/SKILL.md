@@ -47,6 +47,21 @@ Accept:
   serverless, etc. Used to inform `target_platform` and `modernization_decisions`
 - **SME availability** — capability owner who will approve `business_rules`,
   `acceptance_criteria`, and resolve open `TBD-*`
+- **Conditionally required from inventory triggers:**
+  - When `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+    → approved `04_modules/<MODULE-SLUG>/data-model/dictionary.md`.
+    `spec.yaml.data_model.entities` MUST be populated by reading this
+    dictionary verbatim (entities, fields, types, relationships).
+    Do NOT re-derive entities by recomputing across `program-analysis.md`
+    File I/O rows — cross-program invariants get lost that way.
+  - When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
+    → the approved `screen-report-analysis.md` artifacts contribute to
+    the UI-driven `behaviors` and `business_rules` of the spec (already
+    surfaced via View 1 of the module analyzer, but spec-writer should
+    cite them as evidence_ids in the spec's UI-facing rules).
+
+Trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
 
 Stop and require clarification if:
 

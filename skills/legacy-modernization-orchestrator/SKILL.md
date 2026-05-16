@@ -869,6 +869,21 @@ runtime copies.
 
 ## Version History
 
+- v0.12.0 (2026-05-16): Closed two linear-chain gaps.
+  `legacy-ibmi-screen-report-analyzer` and
+  `legacy-ibmi-data-model-analyzer` graduate from optional supplemental
+  to **conditionally required** via a new mechanism: inventory's
+  `sme_review.downstream_required` block. Inventory auto-detects DSPF /
+  PRTF / menu objects (→ screen-report-analyzer required) and ≥ 3 files
+  with FK-like relations or compound master writes (→
+  data-model-analyzer required); SME confirms in the same batched
+  signoff as criticality. Orchestrator's `3b Program Analysis Done`
+  gate now mechanically enforces these triggers. Module-analyzer
+  Inputs + spec-writer Inputs declare the conditional dependency;
+  spec-writer populates `data_model.entities` verbatim from
+  `dictionary.md` when triggered, preserving cross-program invariants.
+  Trigger rules, override protocol, and anti-patterns in
+  `skills/legacy-ibmi-inventory/references/downstream-triggers.md`.
 - v0.11.0 (2026-05-16): SME-bandwidth strategy completion. Three skills
   now collaborate to drop typical SME review load 70-80%:
   (1) `legacy-ibmi-inventory` v0.2 adds `criticality` (critical /
