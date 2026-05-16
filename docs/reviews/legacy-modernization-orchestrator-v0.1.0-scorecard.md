@@ -1,3 +1,12 @@
+---
+skill: legacy-modernization-orchestrator
+scorecard_version: v0.1.0
+static_score: 9.23
+decision: repo-ready
+status: superseded
+superseded_by: v0.2.0
+---
+
 # Skill Review Scorecard: legacy-modernization-orchestrator v0.1.0
 
 ## Metadata

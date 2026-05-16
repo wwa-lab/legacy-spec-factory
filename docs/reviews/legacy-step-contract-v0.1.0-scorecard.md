@@ -1,3 +1,12 @@
+---
+skill: legacy-step-contract
+scorecard_version: v0.1.0
+static_score: 9.09
+decision: repo-ready
+status: superseded
+superseded_by: v0.1.1
+---
+
 # Skill Review Scorecard: legacy-step-contract v0.1.0
 
 ## Metadata

@@ -1,3 +1,17 @@
+---
+skill: legacy-ibmi-module-analyzer
+scorecard_version: v0.1.1
+static_score: 9.27
+decision: repo-ready
+status: current
+last_verified: 2026-05-14
+runtimes_tested:
+  codex: { status: executed, model: gpt-5.4-mini, date: 2026-05-14 }
+  claude_code: { status: executed, model: haiku, date: 2026-05-14 }
+  opencode: { status: executed, model: minimax-m2.5-free, date: 2026-05-14 }
+evidence_source: docs/runtime-matrix.md
+---
+
 # Skill Review Scorecard: legacy-ibmi-module-analyzer v0.1.1
 
 ## Metadata

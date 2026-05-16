@@ -1,3 +1,12 @@
+---
+skill: legacy-ibmi-flow-analyzer
+scorecard_version: v0.1.0
+static_score: 9.44
+decision: repo-ready
+status: superseded
+superseded_by: v0.1.1
+---
+
 # Skill Review Scorecard: legacy-ibmi-flow-analyzer v0.1.0
 
 ## Metadata

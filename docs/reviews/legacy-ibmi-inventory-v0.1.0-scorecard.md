@@ -1,3 +1,17 @@
+---
+skill: legacy-ibmi-inventory
+scorecard_version: v0.1.0
+static_score: 9.35
+decision: repo-ready
+status: current
+last_verified: not-yet-tested
+runtimes_tested:
+  codex: { status: synced, model: gpt-5.4-mini, date: null }
+  claude_code: { status: synced, model: haiku, date: null }
+  opencode: { status: synced, model: minimax-m2.5-free, date: null }
+evidence_source: docs/runtime-matrix.md
+---
+
 # Skill Review Scorecard: legacy-ibmi-inventory v0.1.0
 
 ## Metadata

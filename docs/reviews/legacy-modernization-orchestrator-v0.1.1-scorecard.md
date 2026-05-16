@@ -1,3 +1,12 @@
+---
+skill: legacy-modernization-orchestrator
+scorecard_version: v0.1.1
+static_score: 9.5
+decision: field-pilot ready
+status: superseded
+superseded_by: v0.2.0
+---
+
 # Skill Review Scorecard: legacy-modernization-orchestrator v0.1.1
 
 ## Metadata

@@ -1,3 +1,17 @@
+---
+skill: legacy-step-contract
+scorecard_version: v0.1.1
+static_score: 9.52
+decision: field-pilot ready
+status: current
+last_verified: 2026-05-14
+runtimes_tested:
+  codex: { status: passed, model: gpt-5.4-mini, date: 2026-05-14 }
+  claude_code: { status: passed, model: haiku, date: 2026-05-14 }
+  opencode: { status: passed, model: minimax-m2.5-free, date: 2026-05-14 }
+evidence_source: docs/runtime-matrix.md
+---
+
 # Skill Review Scorecard: legacy-step-contract v0.1.1
 
 ## Metadata

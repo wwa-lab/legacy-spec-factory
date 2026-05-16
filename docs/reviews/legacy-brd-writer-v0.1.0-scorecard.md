@@ -1,3 +1,12 @@
+---
+skill: legacy-brd-writer
+scorecard_version: v0.1.0
+static_score: 9.0
+decision: unknown
+status: superseded
+superseded_by: v0.1.1
+---
+
 # Skill Review Scorecard: legacy-brd-writer v0.1.0
 
 ## Metadata

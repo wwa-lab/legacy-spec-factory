@@ -1,36 +1,84 @@
 # Runtime Matrix
 
-Track where each canonical skill has been synced and tested.
+Track where each canonical skill has been synced and tested across Codex,
+Claude Code, and OpenCode.
+
+**Single source of truth**: [`docs/skill-status-truth-table.md`](skill-status-truth-table.md).
+This file is the runtime-status view of that table. Run
+`scripts/verify-skill-claims.py` to confirm they agree.
 
 Any change to `skills/` must update this matrix in the same PR or commit.
 
-| Skill | Canonical Version | Codex | Claude Code | OpenCode | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `legacy-brd-to-sdd-handoff` | v0.1.0 | passed | passed | passed | Positive and negative no-write smoke passed on 2026-05-16. Codex CLI (gpt-5.4-mini, read-only ephemeral), Claude Code (haiku, Read-only tools), and OpenCode (minimax-m2.5-free) all invoked `/legacy-brd-to-sdd-handoff`. Positive smoke returned the five required package files, evidence gate pass, and named sign-off requirement. Negative smoke refused a missing `spec.yaml`, routed back to `legacy-spec-writer`, and reported only blocked-run artifacts (`handoff-review.md`, `blocking-finding.yaml`) as writable. No `05_specs/` or `06_sdd_handoffs/` files were created. |
-| `legacy-modernization-decision-writer` | v0.1.0 | passed | passed | passed | Positive and negative no-write smoke passed on 2026-05-16. Codex CLI (gpt-5.4-mini, read-only ephemeral), Claude Code (haiku, Read-only tools), and OpenCode (minimax-m2.5-free) all invoked `/legacy-modernization-decision-writer`. Positive smoke returned the canonical `05_decisions/ORDERS/` four-file package, approved DEC, no pending approvals, reconciliation to `spec.yaml.modernization_decisions[]`, and no forbidden outputs. Negative smoke blocked an invented PostgreSQL/Kafka DEC with missing BR/BEH/EV grounding, unknown sensitivity, missing architecture/product authority, unresolved blocking TBD, and no file writes. Codex emitted unrelated skill-load/plugin-cache warnings, but the requested skill loaded and executed. |
-| `legacy-traceability-packager` | v0.1.1 | passed | passed | passed | Positive and negative contract-only no-write smoke passed on 2026-05-16. Codex CLI (gpt-5.4-mini, read-only ephemeral), Claude Code (haiku, Read-only tools), and OpenCode (minimax-m2.5-free) all invoked `/legacy-traceability-packager`. Positive smoke returned `pass` with exactly `traceability-package.yaml`, `traceability-package.md`, `coverage-audit.md`, and `traceability-review.md`; `blocking-findings.yaml` stayed non-writable. Negative smoke blocked dangling `AC-ORDER-ENTRY-004 -> BR-ORDER-ENTRY-007`, refused to create the missing `BR-*`, wrote only `traceability-review.md` and `blocking-findings.yaml`, and routed to `legacy-spec-writer`. No `06_traceability_packages/` files were created. |
-| `legacy-runtime-matrix-tester` | v0.1.0 | passed | passed | passed | Positive and negative no-write smoke passed on 2026-05-16. Codex CLI (gpt-5.4-mini, read-only ephemeral), Claude Code (haiku, Read-only tools), and OpenCode (opencode/minimax-m2.5-free) all invoked `/legacy-runtime-matrix-tester`. Positive smoke returned the six-cell matrix row with lowercase statuses, `field-pilot ready` scorecard decision, scorecard path, and no-write confirmation. Negative smoke refused a false Claude Code `passed`, kept the unavailable synced adapter at `synced`, marked the smoke run `blocked`, and blocked field pilot until auth is fixed. Codex logged unrelated home-skill/plugin warnings, but the tester loaded and executed. See docs/reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md. |
-| `legacy-brd-writer` | v0.1.1 | passed | passed | passed | Smoke tests passed on 2026-05-16 in a disposable synced workspace to avoid touching dirty adapter directories in the main worktree. Codex CLI (gpt-5.4-mini, read-only ephemeral), Claude Code (haiku, Read-only tools), and OpenCode (minimax-m2.5-free) all invoked `/legacy-brd-writer`, returned `05_brds/CREDIT-LIMIT/` with `brd.md`, `brd-review.md`, and `traceability.md`, preserved `BR-*` as `needs_sme_review`, refused new `BR-*` minting, used repository evidence-strength names, and confirmed no writes. |
-| `legacy-ibmi-evidence-intake` | v0.1.0 | passed | passed | passed | Full positive and negative smoke rerun on 2026-05-15. Codex CLI (gpt-5.4-mini, read-only ephemeral) passed both scenarios without file writes. OpenCode (minimax-m2.5-free) passed both scenarios in disposable copies without writing `evidence/` to the real repository. Claude Code (haiku) initially hung in the default Codex execution sandbox; debug logs showed EPERM on Claude config/telemetry writes. Rerun with Claude auth/config/network access passed: positive returned `pass_with_warnings` with inventory allowed, negative blocked unknown-sensitivity evidence. |
-| `legacy-ibmi-inventory` | v0.1.0 | synced | synced | synced | Runtime copies created with `scripts/sync-skills.sh`; loading/execution not yet verified. |
-| `legacy-ibmi-program-analyzer` | v0.1.0 | synced | synced | synced | All 5 review findings fixed in `99e27f4`; smoke test prompts added to `docs/runtime-smoke-tests.md`. Ready for smoke test execution in three runtimes. |
-| `legacy-ibmi-data-model-analyzer` | v0.1.0 | passed | synced | passed | Positive and negative no-write smoke executed on 2026-05-16. Codex CLI (gpt-5.4-mini, read-only ephemeral) and OpenCode (minimax-m2.5-free) both invoked `/legacy-ibmi-data-model-analyzer`, returned `03_data_models/CUSTOMER-MASTER/`, the six required artifact filenames, `DATA-CUSTOMER-MASTER-001`, correct PF/LF access-path handling, CRUD/lifecycle summary, retention TBDs, and blocked missing-DDS/missing-program-analysis scenarios without creating `03_data_models/`. Claude Code could not run because the local CLI is not logged in (`Not logged in - Please run /login`), so field-pilot readiness remains blocked. Codex also logged unrelated invalid YAML in `legacy-golden-master-test-planner`, but the data-model analyzer loaded and executed. |
-| `legacy-ibmi-screen-report-analyzer` | v0.1.0 | passed | passed | passed | Positive no-write DSPF smoke passed on 2026-05-16. Codex CLI (`gpt-5.4-mini`, read-only ephemeral), Claude Code (`haiku`, Read-only tools), and OpenCode (`opencode/minimax-m2.5-free`) all invoked `/legacy-ibmi-screen-report-analyzer`, returned canonical artifact `screen-report-analysis-OBJ-ORDER-ENTRY-003.md`, kept `BR-*` / `CAP-*` / `DEC-*` forbidden, reported `TBD-*` / `SEED-*`, and kept handoff non-approved (`draft` or `needs_sme_review`) because no SME sign-off evidence was provided. Codex emitted unrelated skill-load warnings for other broken skills, but this skill loaded and executed. |
-| `legacy-ibmi-flow-analyzer` | v0.1.1 | synced | passed | synced | Positive (scheduler batch flow with 4 programs) and negative (missing program-analysis) scenarios passed on 2026-05-14 (Claude Code/haiku). Both scenarios correctly handled input validation, blocking TBDs, and routing decisions. Codex and OpenCode smoke execution still needed. |
-| `legacy-ibmi-module-analyzer` | v0.1.1 | executed | executed | executed | Automated smoke script executed 2026-05-14 with Codex (gpt-5.4-mini), Claude Code (haiku), and OpenCode (minimax-m2.5-free). Script reported all `passed`, but strict manual review records `executed`: Codex produced a four-view scaffold with source caveats/blocking TBDs, Claude requested missing upstream evidence instead of producing artifacts, and OpenCode attempted workspace writes with partial output. Field-pilot pass remains pending; see `docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md`. |
-| `legacy-spec-writer` | v0.1.0 | synced | passed | synced | Positive (all upstream analyses approved, 8 programs) and negative (missing/draft flow analysis) scenarios passed on 2026-05-14 (Claude Code/haiku). Both scenarios correctly identified blocking conditions and refused to produce incomplete specs. Codex and OpenCode smoke execution still needed. |
-| `legacy-modernization-orchestrator` | v0.2.0 | synced | passed | synced | Evidence-ready and inventory-blocked scenarios passed on 2026-05-14 (Claude Code/haiku). Expanded v0.2.0 prompts now cover program -> flow, flow -> module, module -> spec, and blocked forward handoff; Codex/OpenCode and expanded-route execution still needed. |
-| `legacy-step-contract` | v0.1.1 | passed | passed | passed | Positive and negative smoke tests passed on 2026-05-14 (Codex/gpt-5.4-mini, Claude Code/haiku, OpenCode/minimax-m2.5-free). Refreshed v0.1.1 scorecard records field-pilot readiness at 9.52. |
-| `legacy-step-validator` | v0.1.1 | passed | passed | passed | Positive and negative smoke tests passed on 2026-05-14 (Codex/gpt-5.4-mini, Claude Code/haiku, OpenCode/minimax-m2.5-free). Refreshed v0.1.1 scorecard records field-pilot readiness at 9.53. |
+## Schema
+
+| Column | Meaning |
+| --- | --- |
+| Skill | Canonical skill name |
+| Version | Canonical version under test |
+| Codex / Claude Code / OpenCode | Status enum: `not tested`, `synced`, `loaded`, `executed`, `passed`, `failed` |
+| Evidence | Path to current scorecard with smoke-test record |
+| Last Verified | Most recent date the runtime status was confirmed |
+| Notes | Free-text outcome summary |
 
 ## Status Values
 
-- `not tested`
-- `synced`
-- `loaded`
-- `executed`
-- `passed`
-- `failed`
+| Status | Meaning |
+| --- | --- |
+| `not tested` | adapter sync not yet attempted |
+| `synced` | adapter folder exists, content matches canonical |
+| `loaded` | runtime discovered the skill but did not complete the scenario |
+| `executed` | runtime completed the scenario with the right shape |
+| `passed` | runtime completed the scenario and met every pass criterion |
+| `failed` | runtime could not discover the skill or violated a hard gate |
 
-No skill should be marked field-pilot ready until the target runtimes for that
-pilot are at least `loaded`, and preferably `executed` or `passed`.
+A skill is **field-pilot ready** only when all three runtimes are at `passed`
+AND the scorecard records sign-off. Any non-`passed` row caps the published
+score at 9.0.
+
+## Models Used
+
+| Runtime | Model |
+| --- | --- |
+| Codex CLI | `gpt-5.4-mini` (read-only ephemeral) |
+| Claude Code | `haiku` (Read-only tools) |
+| OpenCode | `minimax-m2.5-free` |
+
+## Matrix
+
+| Skill | Version | Codex | Claude Code | OpenCode | Evidence | Last Verified | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `legacy-modernization-orchestrator` | v0.2.0 | synced | passed | synced | [scorecard](reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 2026-05-14 | Evidence-ready and inventory-blocked scenarios passed in Claude Code. Codex/OpenCode and expanded-route execution still needed. |
+| `legacy-ibmi-evidence-intake` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 2026-05-15 | Full positive and negative smoke rerun. Claude Code initially hung in default Codex sandbox (EPERM on Claude config); rerun with auth/config/network access passed. |
+| `legacy-ibmi-inventory` | v0.1.0 | synced | synced | synced | [scorecard](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | not-yet-tested | Runtime copies created with `scripts/sync-skills.sh`; loading/execution not yet verified. |
+| `legacy-ibmi-program-analyzer` | v0.1.0 | synced | synced | synced | [scorecard](reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | not-yet-tested | All 5 review findings fixed in `99e27f4`; smoke prompts added to `runtime-smoke-tests.md`. Ready for execution. |
+| `legacy-ibmi-data-model-analyzer` | v0.1.0 | passed | synced | passed | [scorecard](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 2026-05-16 | Codex and OpenCode passed positive/negative no-write smoke. Claude Code blocked by `Not logged in - Please run /login`; field-pilot remains blocked. |
+| `legacy-ibmi-screen-report-analyzer` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 2026-05-16 | Positive no-write DSPF smoke passed in all three runtimes. Returned canonical artifact `screen-report-analysis-OBJ-ORDER-ENTRY-003.md`; kept `BR-*`/`CAP-*`/`DEC-*` forbidden; handoff non-approved (no SME sign-off evidence). |
+| `legacy-ibmi-flow-analyzer` | v0.1.1 | synced | passed | synced | [scorecard](reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 2026-05-14 | Positive (4-program scheduler batch) and negative (missing program-analysis) passed in Claude Code. Codex and OpenCode still needed. |
+| `legacy-ibmi-module-analyzer` | v0.1.1 | executed | executed | executed | [scorecard](reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 2026-05-14 | Automated smoke script reported all `passed`, but strict manual review records `executed`. Field-pilot pass remains pending. |
+| `legacy-brd-writer` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-brd-writer-v0.1.1-scorecard.md) | 2026-05-16 | Smoke passed in disposable synced workspace. All three runtimes returned `05_brds/CREDIT-LIMIT/` artifacts, preserved `BR-*` as `needs_sme_review`, refused new `BR-*` minting. |
+| `legacy-spec-writer` | v0.1.0 | synced | passed | synced | [scorecard](reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 2026-05-14 | Positive (8 programs, all upstream approved) and negative (missing/draft flow analysis) passed in Claude Code. Codex/OpenCode still needed. |
+| `legacy-modernization-decision-writer` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 2026-05-16 | Positive returned canonical `05_decisions/ORDERS/` four-file package, approved DEC. Negative blocked invented PostgreSQL/Kafka DEC with missing BR/BEH/EV grounding. |
+| `legacy-sme-review-facilitator` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-sme-review-facilitator-v0.1.0-scorecard.md) | 2026-05-16 | Positive preserved `CREDIT-CHECK` review. Negative blocked `ORDER-ENTRY` for missing SME owner + unknown sensitivity. |
+| `legacy-brd-to-sdd-handoff` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 2026-05-16 | Positive returned five required package files. Negative refused missing `spec.yaml`, routed to `legacy-spec-writer`. |
+| `legacy-traceability-packager` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-traceability-packager-v0.1.1-scorecard.md) | 2026-05-16 | Positive returned `pass` with the four required files. Negative blocked dangling `AC-* -> BR-*`, refused to mint missing `BR-*`. |
+| `legacy-runtime-matrix-tester` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) | 2026-05-16 | Positive returned six-cell matrix row with lowercase statuses, `field-pilot ready` decision. Negative refused false `passed`, kept unavailable adapter at `synced`. |
+| `legacy-golden-master-test-planner` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 2026-05-16 | Positive returned five `06_quality/CREDIT-LIMIT/` files with `TC-*` IDs. Negative blocked missing-customer rejection without observed expected-output evidence. |
+| `legacy-step-contract` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-step-contract-v0.1.1-scorecard.md) | 2026-05-14 | Positive and negative smoke passed across all three runtimes. Scorecard 9.52. |
+| `legacy-step-validator` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-step-validator-v0.1.1-scorecard.md) | 2026-05-14 | Positive and negative smoke passed across all three runtimes. Scorecard 9.53. |
+
+## Verification
+
+Run:
+
+```bash
+python3 scripts/verify-skill-claims.py
+```
+
+The script checks that:
+
+1. Every row has a current scorecard with frontmatter
+2. The runtime status in this table matches the scorecard `runtimes_tested:`
+3. The truth table (`docs/skill-status-truth-table.md`) agrees with this matrix
+4. README's "Current Skill Scores" table also agrees
+
+The script exits non-zero if drift is detected.

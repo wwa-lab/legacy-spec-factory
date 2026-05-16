@@ -1,3 +1,17 @@
+---
+skill: legacy-ibmi-evidence-intake
+scorecard_version: v0.1.0
+static_score: 9.16
+decision: repo-ready
+status: current
+last_verified: 2026-05-15
+runtimes_tested:
+  codex: { status: passed, model: gpt-5.4-mini, date: 2026-05-15 }
+  claude_code: { status: passed, model: haiku, date: 2026-05-15 }
+  opencode: { status: passed, model: minimax-m2.5-free, date: 2026-05-15 }
+evidence_source: docs/runtime-matrix.md
+---
+
 # Skill Review Scorecard: legacy-ibmi-evidence-intake v0.1.0
 
 ## Metadata

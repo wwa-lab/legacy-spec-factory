@@ -1,3 +1,12 @@
+---
+skill: legacy-ibmi-module-analyzer
+scorecard_version: v0.1.0
+static_score: 9.15
+decision: repo-ready
+status: superseded
+superseded_by: v0.1.1
+---
+
 # Skill Review Scorecard: legacy-ibmi-module-analyzer v0.1.0
 
 ## Metadata

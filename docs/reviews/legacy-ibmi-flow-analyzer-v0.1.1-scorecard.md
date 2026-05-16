@@ -1,3 +1,18 @@
+---
+skill: legacy-ibmi-flow-analyzer
+scorecard_version: v0.1.1
+static_score: 9.61
+decision: repo-ready
+decision_note: "Scorecard body rates as provisional field-pilot; runtime cap still applies until Codex and OpenCode smoke pass. See runtimes_tested below."
+status: current
+last_verified: 2026-05-14
+runtimes_tested:
+  codex: { status: synced, model: gpt-5.4-mini, date: null }
+  claude_code: { status: passed, model: haiku, date: 2026-05-14 }
+  opencode: { status: synced, model: minimax-m2.5-free, date: null }
+evidence_source: docs/runtime-matrix.md
+---
+
 # Skill Review Scorecard: legacy-ibmi-flow-analyzer v0.1.1
 
 ## Metadata

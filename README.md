@@ -9,6 +9,20 @@ The goal is to recover the business intent hidden inside the legacy system,
 produce a trusted `spec.yaml` / `spec.md` pair, and then use that spec package
 as the source of truth for AI-native SDLC on the new cloud platform.
 
+## Visual Overview
+
+### Legacy Spec Factory x Atlas Delivery Hub
+
+![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview.png)
+
+### Repository Overview
+
+![Legacy Spec Factory repository overview](docs/assets/legacy-spec-factory-repo-overview.png)
+
+### Skill Overview
+
+![Legacy Spec Factory skill overview](docs/assets/legacy-spec-factory-skill-overview.png)
+
 ```text
 IBM i / AS/400 Evidence
   RPGLE / CLLE / COBOL / DDS / DB2 / jobs / screens / reports / logs
@@ -270,6 +284,10 @@ field pilot unless the gap is explicitly accepted by the project owner.
 
 ### Current Skill Scores
 
+**Single source of truth**: [`docs/skill-status-truth-table.md`](docs/skill-status-truth-table.md).
+The table below is the README view of that table. Run
+`python3 scripts/verify-skill-claims.py` to confirm they agree.
+
 The scores below are the current repository-facing quality signal. They are
 deliberately conservative: the review gate caps a skill at **9.0** when it has
 not yet passed the runtime smoke protocol in Codex, Claude Code, and OpenCode,
@@ -277,16 +295,22 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
-| `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.0 | Repo-ready | Hardened examples and references are ready; three-runtime smoke execution pending |
+| `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.1.1 provisional scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) | 9.61 expected | 9.0 | Repo-ready; provisional field-pilot after smoke | Claude Code passed; Codex and OpenCode smoke execution still pending |
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
+| `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
+| `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
 | `legacy-brd-writer` | [v0.1.1 scorecard](docs/reviews/legacy-brd-writer-v0.1.1-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime smoke passed in a disposable synced workspace; remaining work is optional contradictory-evidence example coverage |
 | `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
 | `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; Claude Code passed; Codex/OpenCode smoke and post-smoke re-score pending |
 | `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
 | `legacy-modernization-decision-writer` | [v0.1.0 scorecard](docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional field-style decision package coverage |
+| `legacy-sme-review-facilitator` | [v0.1.0 scorecard](docs/reviews/legacy-sme-review-facilitator-v0.1.0-scorecard.md) | 9.55 | 9.55 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional DSPF/PRTF SME review example coverage |
+| `legacy-traceability-packager` | [v0.1.1 scorecard](docs/reviews/legacy-traceability-packager-v0.1.1-scorecard.md) | 9.51 | 9.51 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
+| `legacy-runtime-matrix-tester` | [v0.1.0 scorecard](docs/reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
+| `legacy-golden-master-test-planner` | [v0.1.0 scorecard](docs/reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 9.59 | 9.59 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
 | `legacy-step-validator` | [v0.1.1 scorecard](docs/reviews/legacy-step-validator-v0.1.1-scorecard.md) | 9.53 | 9.53 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional checklist-ID / re-validation-ID cleanup |
 
@@ -389,13 +413,13 @@ explicitly decides to vendor or mirror them.
 | 8 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready; consume approved BRD/module inputs and finish remaining smoke |
 | 9 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
 | 10 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
-| 11 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
-| 12 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Proposed | Generate skill, examples, templates, and v0.1.0 scorecard |
-| 13 | `legacy-sme-review-facilitator` | Governance | Proposed | Generate SME review package and decision-log workflow |
+| 11 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
+| 12 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
+| 13 | `legacy-sme-review-facilitator` | Governance | Existing | Field-pilot ready (v0.1.0, 9.55); prepares SME review packages and records decision logs |
 | 14 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
-| 15 | `legacy-traceability-packager` | Governance / bridge | Proposed | Generate traceability matrix across evidence, BRD, SDD, tests, and code |
+| 15 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
 | 16 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
-| 17 | `legacy-golden-master-test-planner` | Verification | Proposed | Generate old-vs-new equivalence test planning workflow |
+| 17 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
 | 18 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 19 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
 | 20 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
@@ -409,15 +433,17 @@ explicitly decides to vendor or mirror them.
 | 28 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
 | 29 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
 
-Recommended Claude Code generation order for new repository-owned skills:
+No repository-owned skill in the current BRD + SDD handoff roadmap remains only
+as a placeholder. The remaining work is validation and scorecard hardening:
 
-1. `legacy-brd-to-sdd-handoff`
-2. `legacy-ibmi-data-model-analyzer`
-3. `legacy-ibmi-screen-report-analyzer`
-4. `legacy-sme-review-facilitator`
-5. `legacy-traceability-packager`
-6. `legacy-runtime-matrix-tester`
-7. `legacy-golden-master-test-planner`
+1. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
+2. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
+3. `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
+
+Governance/Infrastructure skills (already implemented):
+- `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
+- `legacy-step-contract` ✓ Field-pilot ready
+- `legacy-step-validator` ✓ Field-pilot ready
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
@@ -428,9 +454,11 @@ Recommended Claude Code generation order for new repository-owned skills:
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs | `flow-<FLOW-SLUG>.md` | Repo-ready (9.0 capped; smoke pending for provisional 9.6) |
 | `legacy-ibmi-module-analyzer` | Synthesize related flows into the 4-view module model | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
+| `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
+| `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
 | `legacy-ibmi-crud-matrix-analyzer` | Map programs to physical/logical files and DB2 operations | `crud-matrix.md` | Folded into program/module analyzer for MVP |
-| `legacy-ibmi-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Folded into inventory/program analyzer for MVP |
+| `legacy-ibmi-dds-schema-analyzer` | Analyze PF, LF, DSPF, PRTF definitions and field semantics | `data-dictionary.md`, `screen-map.md` | Superseded by `legacy-ibmi-data-model-analyzer` and `legacy-ibmi-screen-report-analyzer` |
 | `legacy-ibmi-runtime-evidence-miner` | Mine job logs, spool files, transaction samples, and test data | `runtime-evidence.jsonl` | Planned |
 
 ### Layer 1 — Other platforms (`legacy-<platform>-*`)
@@ -453,9 +481,13 @@ contracts remain platform-agnostic from day one.
 | `legacy-brd-writer` | Produce an evidence-backed BRD from approved module analysis while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | Field-pilot ready (v0.1.1, 9.56) |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
+| `legacy-sme-review-facilitator` | Prepare SME review sessions, record decision logs, capture sign-off, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/` | Field-pilot ready (v0.1.0, 9.55) |
 | `legacy-brd-to-sdd-handoff` | Validate an approved BRD and approved spec, then package the Atlas SDD handoff without inventing design or implementation decisions | `06_sdd_handoffs/<CAPABILITY-SLUG>/sdd-handoff.yaml`, `sdd-handoff.md`, `atlas-context-pack.json`, `handoff-review.md`, `traceability.md` | Field-pilot ready (v0.1.0, 9.63) |
+| `legacy-traceability-packager` | Package and audit cross-artifact traceability from evidence through BRD, spec, acceptance criteria, tests, and SDD handoff | `06_traceability_packages/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.1, 9.51) |
+| `legacy-runtime-matrix-tester` | Generate and validate runtime smoke evidence, runtime-matrix rows, and scorecard readiness decisions across Codex, Claude Code, and OpenCode | runtime matrix update plan and scorecard evidence | Field-pilot ready (v0.1.0, 9.56) |
+| `legacy-golden-master-test-planner` | Plan old-vs-new equivalence tests from approved observed behavior, rules, acceptance criteria, and runtime evidence | `06_quality/<CAPABILITY-SLUG>/golden-master-tests.yaml`, `golden-master-tests.md` | Field-pilot ready (v0.1.0, 9.59) |
 | `legacy-spec-reviewer` | Validate traceability, completeness, ambiguity, and testability | `review-report.md` | Planned |
-| `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Planned |
+| `legacy-equivalence-test-generator` | Generate old-vs-new comparison tests from observed behavior | golden master test pack | Superseded by `legacy-golden-master-test-planner` for the current roadmap |
 | `legacy-step-contract` | Define the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract for every reverse-chain step | Step Contract block and validation templates | Field-pilot ready (v0.1.1, 9.52) |
 | `legacy-step-validator` | Validate completed step artifacts against the Step Contract | `06_quality/step-validation-report.md`, `blocking-findings.yaml` | Field-pilot ready (v0.1.1, 9.53) |
 | `legacy-knowledge-hub-builder` | Publish SME-reviewed analysis outputs into an LLM Wiki / knowledge hub for browsing, retrieval, impact analysis, and downstream agent context packs | `05_knowledge_hub/` or a separate LLM Wiki repo | Proposed |
