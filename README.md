@@ -394,7 +394,7 @@ explicitly decides to vendor or mirror them.
 | 13 | `legacy-sme-review-facilitator` | Governance | Proposed | Generate SME review package and decision-log workflow |
 | 14 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
 | 15 | `legacy-traceability-packager` | Governance / bridge | Proposed | Generate traceability matrix across evidence, BRD, SDD, tests, and code |
-| 16 | `legacy-runtime-matrix-tester` | Governance | Proposed | Generate runtime smoke orchestration for Codex, Claude Code, and OpenCode |
+| 16 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
 | 17 | `legacy-golden-master-test-planner` | Verification | Proposed | Generate old-vs-new equivalence test planning workflow |
 | 18 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 19 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |

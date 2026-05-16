@@ -39,11 +39,12 @@ consistently.
 
 Before running the test, confirm:
 
-- [ ] `scripts/sync-skills.sh --target all --check` returns exit 0 (no drift)
+- [ ] `scripts/sync-skills.sh --skill <name> --target all --check` returns
+      exit 0 (no drift for the target skill)
 - [ ] `python3 scripts/check-spec-contract.py` returns exit 0 (if the skill
       touches `spec.yaml` shape)
-- [ ] The canonical `SKILL.md` is the version being tested (no uncommitted
-      changes that would not be in the synced adapter copies)
+- [ ] The canonical `SKILL.md` is the version being tested and matches the
+      synced adapter copies
 
 If any check fails, fix it before testing.
 
@@ -55,8 +56,8 @@ Each runtime gets the same two-phase test: **Discovery** and **Trigger**.
 
 Confirm the runtime can find and load the skill. Success criteria:
 
-- the skill name appears in the runtime's skill list when project skills are
-  enumerated
+- the target runtime adapter path exists and matches canonical source
+- the runtime invocation confirms the skill can load
 - the skill's `description` is visible to the runtime
 - loading does not error on frontmatter, file paths, or unsupported metadata
 
@@ -65,9 +66,9 @@ Recorded as: `loaded`.
 ### Phase 2 — Trigger
 
 Confirm the skill actually fires on its declared trigger condition. Each
-skill must declare a **canonical trigger prompt** in its `examples/` folder
-(usually the simplest positive example). For the test, use the prompt
-listed under "Test Prompts" below.
+skill must declare a **canonical trigger prompt** in this document or in its
+`examples/` folder. For the test, use the prompt listed under "Test Prompts"
+below when present.
 
 Success criteria:
 
@@ -85,13 +86,13 @@ meets the canonical example's expected shape and pass criteria.
 
 ### Phase 3 (Optional) — Adversarial
 
-For skills that have an `examples/<name>-negative-case/` example, also run
-that prompt and confirm the skill blocks or refuses correctly. Recommended
-for any skill with a stop condition (inventory blocking, gate failure,
-etc.).
+For skills that have a negative prompt in this document or in `examples/`,
+also run that prompt and confirm the skill blocks or refuses correctly.
+Recommended for any skill with a stop condition (inventory blocking, gate
+failure, etc.).
 
-A negative-case pass is not required for 9.5, but it strengthens the
-evidence base.
+A required negative-case pass is required before marking that runtime
+`passed`; otherwise record the runtime as `executed` and document the gap.
 
 ## Recording Results
 
@@ -101,7 +102,8 @@ Update `docs/runtime-matrix.md` only after running the test:
    was tested
 2. Set each runtime column to the highest status reached
 3. Add a Notes cell with the exact runtime + model alias used and the date
-4. Same-PR or same-commit rule applies (see file header)
+4. Include the review scorecard path when one was created
+5. Same-PR or same-commit rule applies (see file header)
 
 Status values:
 
@@ -109,7 +111,8 @@ Status values:
 - `synced` — adapter folder created, content matches canonical
 - `loaded` — runtime discovered the skill but did not complete the scenario
 - `executed` — runtime completed the scenario with the right shape
-- `passed` — runtime completed the scenario and met every pass criterion
+- `passed` — runtime completed the positive scenario and every required
+  negative scenario, and met every pass criterion
 - `failed` — runtime could not discover the skill or violated a hard gate
 
 If a command hangs, errors, or requires unavailable credentials, leave the
@@ -1487,6 +1490,115 @@ Return only:
 Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard remains repo-ready,
 not field-pilot ready, pending SME/domain validation with real redacted
 screen/report evidence.
+
+## Pass Example - `legacy-runtime-matrix-tester` v0.1.0
+
+### Positive Matrix Update Scenario
+
+```text
+Use /legacy-runtime-matrix-tester.
+
+Read the project skill if needed. Do not create or edit files.
+
+User input:
+I just finished testing legacy-ibmi-inventory v0.1.0 and need the runtime
+matrix/test report recommendation. Treat the following as already-captured
+test evidence; do not run subprocesses.
+
+Pre-test checks:
+- canonical source exists at skills/legacy-ibmi-inventory/SKILL.md
+- scripts/sync-skills.sh --skill legacy-ibmi-inventory --target all --check
+  exited 0
+- python3 scripts/check-spec-contract.py exited 0
+- docs/runtime-smoke-tests.md contains positive and negative prompts
+
+Runtime evidence:
+- Codex CLI, model gpt-5.4-mini, read-only ephemeral: adapter loaded,
+  positive trigger passed, negative missing-evidence case blocked, no writes
+- Claude Code, model haiku, Read-only tools: adapter loaded, positive trigger
+  passed, negative missing-evidence case blocked, no writes
+- OpenCode, model opencode/minimax-m2.5-free: adapter loaded, positive trigger
+  passed, negative missing-evidence case blocked, no writes
+
+Use the standard scorecard path for this target skill:
+docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md.
+According to the tester decision rules, an all-passed evidence set with no
+blockers is `field-pilot ready`.
+
+Return only:
+- pre-test decision
+- per-runtime final statuses
+- updated runtime matrix row as a full Markdown table row with exactly six
+  cells: skill, version, Codex, Claude Code, OpenCode, notes. The skill cell
+  must be backtick-quoted, version/status cells must not be backticked, and
+  runtime statuses must be lowercase exact enum values. Notes must include the
+  test date, runtime models, and scorecard path.
+- scorecard decision, using exactly one of `repo-ready`, `field-pilot ready`,
+  or `blocked`
+- scorecard location
+- no-write confirmation
+```
+
+### Positive Pass Criteria
+
+- invokes `legacy-runtime-matrix-tester`
+- records the per-skill sync check, not a whole-repo drift check
+- returns final status `passed` for Codex, Claude Code, and OpenCode
+- returns a valid `docs/runtime-matrix.md` table row for
+  `legacy-ibmi-inventory` v0.1.0
+- marks the scorecard decision `field-pilot ready`
+- mentions the scorecard path
+  `docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md`
+- confirms no files were created or edited
+
+### Negative Runtime Unavailable Scenario
+
+```text
+Use /legacy-runtime-matrix-tester.
+
+Read the project skill if needed. Do not create or edit files.
+
+User input:
+I finished legacy-spec-writer v0.2.0 and synced it to Codex and OpenCode. The
+Codex and OpenCode positive/negative smoke tests passed. Claude Code cannot be
+tested because the local CLI reports: Not logged in - run claude auth login.
+Should I mark Claude Code as passed anyway?
+
+Skill name: legacy-spec-writer
+Runtimes to test: claude-code
+Run mode: discovery
+Canonical version: v0.2.0
+
+The Claude Code adapter is synced, but runtime execution is unavailable due to
+auth. Matrix status values are only `not tested`, `synced`, `loaded`,
+`executed`, `passed`, and `failed`; environment-unavailable synced adapters
+should remain `synced`.
+
+Return only:
+- blocking issues
+- recommendation for matrix entry
+- scorecard decision
+- whether field pilot is blocked
+- no-write confirmation
+```
+
+### Negative Pass Criteria
+
+- invokes `legacy-runtime-matrix-tester`
+- refuses to mark Claude Code as `passed` or `executed`
+- recommends Claude Code status `synced` with an auth/environment blocker
+- recommends scorecard decision `blocked`, not `field-pilot ready`
+- states that field-pilot readiness remains blocked until Claude Code passes
+- confirms no files were created or edited
+
+| Runtime | Model | Positive | Negative | Result |
+| --- | --- | --- | --- | --- |
+| Codex CLI | `gpt-5.4-mini` | Returned six-cell matrix row with lowercase statuses, `field-pilot ready` decision, scorecard path, and no-write confirmation. | Kept Claude Code at `synced`, refused false `passed`, marked smoke run `blocked`, and confirmed no writes. | passed |
+| Claude Code | `haiku` with Read-only tools | Returned six-cell matrix row with lowercase statuses, `field-pilot ready` decision, scorecard path, and no-write confirmation. | Kept Claude Code at `synced`, returned `blocked`, and blocked field pilot until auth is fixed. | passed |
+| OpenCode | `opencode/minimax-m2.5-free` | Returned six-cell matrix row with lowercase statuses, `field-pilot ready` decision, scorecard path, and no-write confirmation. | Kept Claude Code at `synced`, returned `blocked`, and blocked field pilot until auth is fixed. | passed |
+
+Recorded in `docs/runtime-matrix.md`. The v0.1.0 scorecard is recorded at
+`docs/reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md`.
 
 ## Adding A New Skill
 
