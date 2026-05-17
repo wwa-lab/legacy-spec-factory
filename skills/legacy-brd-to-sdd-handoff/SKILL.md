@@ -263,6 +263,43 @@ See **Inputs** and **Stop conditions** above.
 Use `legacy-step-validator` to validate the produced handoff against this
 Step Contract before forwarding to Atlas.
 
+## Workflow State Write-Back
+
+At the end of a handoff packaging run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `10 Forward Handoff Ready` when the bundle passes every Forward Handoff
+  Gate check (spec approved, critical rules SME-approved, no blocking
+  TBDs, acceptance criteria complete, equivalence pack present, target-
+  platform authority approval for every `DEC-*`)
+- No advancement (stays at `8c Spec Approved` or `9 Equivalence Pack
+  Ready`) when any gate item fails — record the failure in
+  `blocking.gates: ["forward_handoff"]`
+
+**Last artifact path pattern:**
+`09_forward-sdlc/<CAP-*>/` (handoff bundle directory; cite the manifest
+file your skill produces, e.g. `handoff-bundle.yaml` or
+`sdd-handoff-manifest.yaml`)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id,
+   handoff manifest path, `last_skill: legacy-brd-to-sdd-handoff`, and
+   blocking IDs (any unresolved Forward Handoff Gate findings).
+2. Append one `history[]` entry with `note` summarizing the handoff
+   outcome (e.g. `"handoff sealed for CAP-ORDER-PRICING"`, or
+   `"blocked: 3 critical rules awaiting SME"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. After stage `10`, work continues in the forward repo
+(`wwa-lab/build-agent-skill`) — Legacy Spec Factory's reverse chain ends
+here.
+
 ## References and Templates
 
 - [references/workflow.md](references/workflow.md) — full 9-step procedure

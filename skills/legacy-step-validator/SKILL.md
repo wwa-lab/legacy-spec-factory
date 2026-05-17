@@ -333,6 +333,41 @@ Layer rules:
 
 See `references/finding-taxonomy.md` for the full model.
 
+## Workflow State Write-Back (history only)
+
+This is a governance / verification skill. It does NOT mutate
+`capabilities[].stage_id` or `current_focus`. After a validation run,
+append one `history[]` entry to `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+
+**Report path pattern:** alongside the validated artifact, e.g.
+`02_programs/<MODULE>/<OBJ>/program-analysis.review.md`,
+`05_specs/<CAP-*>/spec.review-report.md`
+
+**Per-run write:**
+
+```yaml
+history:
+  # ... older entries above (never edit)
+  - at: <ISO 8601>
+    skill: legacy-step-validator
+    capability_id: <CAP-* from current_focus, or null>
+    stage_after: <the capability's current stage_id — UNCHANGED>
+    artifact: <path to the validation report>
+    note: "validated <step-id> — result: pass | pass_with_warnings | blocked"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the validation result is `blocked`, you MAY
+append items to `capabilities[<CAP-*>].blocking.tbds` and
+`blocking.sme_pending` listing the unresolved findings. You MUST NOT
+change `stage_id`, `last_artifact`, or `last_skill` — the Tier 1 skill
+that produced the artifact remains its owner.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+Tell the user (in your prose output) to invoke the orchestrator first.
+
 ## Anti-Hallucination Rules
 
 - Do not invent IBM i facts. The validator reads what is in front of it

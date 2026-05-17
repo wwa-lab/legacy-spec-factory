@@ -43,11 +43,27 @@ Accept:
   exception handling, business context not in code
 - **Optional:** architecture diagrams (for System Flow), data lineage
   documents, regulatory references
+- **Conditionally required from triggers:**
+  - When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
+    → approved `screen-report-analysis.md` for every triggered DSPF /
+    PRTF / menu. View 1 (Operation Flow) consumes these as primary
+    sources for screen-driven rules; absence means missing 40% of
+    user-facing decisions.
+  - When `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+    → approved `04_modules/<MODULE-SLUG>/data-model/dictionary.md`. View
+    4 (Data Flow) populates from this dictionary verbatim instead of
+    re-deriving entities from per-program File I/O tables.
+
+Trigger rules and override protocol live in
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
 
 Stop and require clarification if:
 
 - Any in-scope flow lacks an approved `flow-<FLOW-SLUG>.md` → route to
   `legacy-ibmi-flow-analyzer`
+- A trigger is `required: true` but the corresponding artifact is missing
+  → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
+  or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
 - Module boundary is ambiguous (does flow X belong here or in another
   module?) → SME-only decision
 - No SME has confirmed the business name and scope of the module
@@ -254,6 +270,44 @@ to the orchestrator.
      data analyst for View 4)
    - Module is approved only when **all four views** are at least
      `approved_with_non_blocking_tbd`
+
+## Workflow State Write-Back
+
+At the end of a module-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3f Module Analysis Done` when all 4 views (Operation / System / Program
+  / Data) and `module-overview.md` are approved, capability seeds (`CAP-*`)
+  are listed in the overview, and View 1 business rule seeds (`BR-*`)
+  carry `evidence_id` + `knowledge_type`
+- `3e Module Analysis In Progress` when one or more views are still draft
+  or any required section is missing
+
+**Last artifact path pattern:**
+`04_modules/<MODULE-SLUG>/module-overview.md` (with sibling view files)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` (or, for each
+   `CAP-*` seeded in `module-overview.md` if the orchestrator scoped the
+   module rather than a single capability) with stage id, overview path,
+   `last_skill: legacy-ibmi-module-analyzer`, and blocking IDs (`tbds`,
+   `sme_pending` for every `inferred_business_rule`).
+2. Append one `history[]` entry with `note` naming the module
+   (e.g. `"synthesized CREDIT-CHECK 4 views"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+If this module yields multiple `CAP-*` seeds and the orchestrator scoped
+the entire module (not a single capability), write one `capabilities[]`
+entry per seed at the same `stage_id: "3f Module Analysis Done"`. Do not
+silently collapse them into one entry.
+
+Never touch `current_focus`, other capabilities' entries beyond your
+module's seeds, or past `history[]` rows.
 
 ## Anti-Hallucination Rules
 

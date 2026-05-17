@@ -285,6 +285,33 @@ orchestrator.
    - Blockers (if any) that must be resolved before field pilot
    - Link to updated scorecard and matrix entry
 
+## Workflow State Write-Back (history only, not capability-scoped)
+
+This is a meta / runtime-compatibility skill. It tests skill portability
+across Codex / Claude Code / OpenCode and does NOT operate on a project's
+business capabilities. It does NOT mutate `capabilities[]` or
+`current_focus`.
+
+If the project happens to have a `<project-root>/workflow-state.yaml`,
+append one `history[]` entry per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-runtime-matrix-tester
+    capability_id: null
+    stage_after: null
+    artifact: docs/runtime-matrix.md
+    note: "runtime smoke test — <skill-name> on <runtime>: pass | fail"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it —
+runtime testing is a developer activity, not part of project-level
+modernization state.
+
 ## Anti-Hallucination Rules
 
 **Test results are ground truth.** Do not:

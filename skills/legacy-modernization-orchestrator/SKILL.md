@@ -1,6 +1,6 @@
 ---
 name: legacy-modernization-orchestrator
-description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user asks "what should I do next?", "which skill should I use?", "where am I in the pipeline?", or wants end-to-end guidance for IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
+description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user says "what should I do next?", "which skill should I use?", "where am I in the pipeline?", "我有 AS400 / RPGLE / CLLE / COBOL / DDS 代码要分析", "帮我做反向工程", "I just inherited a legacy project", "我刚接了 PPCR XXX...", "modernize legacy", "现代化", "reverse engineer this", "spec out this system", "我手上有 inventory.yaml / spec.yaml 下一步怎么办" — or any natural-language request for end-to-end guidance through IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization, including multi-project repos under `docs/<PPCR-name>/`. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
 ---
 
 <!--
@@ -100,6 +100,135 @@ responsibility is to:
 You do not replace any downstream skill. You route to it.
 
 ## Core Process
+
+### Step 0 — Resolve Project and Read Workflow State
+
+Every project lives under `docs/<project-name>/` (see
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md)).
+A single repository may hold many projects, each with its own
+`workflow-state.yaml` and artifact tree. This step picks WHICH project
+this turn targets and reads its state file.
+
+#### 0.a — Enumerate existing projects
+
+Scan `docs/*/workflow-state.yaml`. Build a list of `(project-name,
+project.root, project.last_updated_at, current_focus.capability_id)`
+tuples. This list is the input to the project picker below.
+
+#### 0.b — Resolve the project for this turn
+
+Apply in order, first match wins:
+
+| Signal | Action |
+| --- | --- |
+| User message names a project (`XXX260004-demo`, `docs/XXX260004-demo`, path under `docs/<name>/...`) | Use the named project. If it doesn't exist, plan to create at Step 8. |
+| Exactly one project exists in `docs/` | Default to it. Tell the user (e.g. "Resuming `docs/XXX260004-demo/`"). |
+| Multiple projects exist and user did not name one | Present a project picker (list each project + its current focus + last-updated date). ASK rather than guess. |
+| No projects exist | Prompt: "What is the project name? Use PPCR convention `<PPCR-Number>-<short-description>` (e.g. `XXX260004-demo`). Allowed characters: A-Z, a-z, 0-9, hyphen. Must start alphanumeric." |
+
+Validation: project name MUST match `^[A-Za-z0-9][A-Za-z0-9-]*$`.
+
+**Be forgiving on input — never reject silently.** When the user types
+something close-but-not-conforming (`"XXX260004 demo"`, `"XXX260004.demo"`,
+`"xxx260004_demo"`, `"XXX260004 / demo"`), do NOT just say "rejected,
+re-enter". Instead:
+
+1. Auto-normalize:
+   - replace runs of whitespace / `.` / `_` / `/` / `\` with a single `-`
+   - strip leading and trailing hyphens
+   - strip any character that is not `[A-Za-z0-9-]`
+   - preserve case (PPCR numbers are typically uppercase; descriptions
+     typically lowercase — do NOT force-case-fold)
+2. Show the normalized result back and ASK: "I'll use `<normalized>` as the
+   project name (path: `docs/<normalized>/`). Confirm? Or give a different
+   name."
+3. Only after the user confirms, treat the name as resolved.
+4. If the normalized result is empty (input was all punctuation) or starts
+   with a hyphen after stripping, ask the user to provide a new name.
+
+Examples:
+
+| User typed | Auto-normalized | Asked back |
+| --- | --- | --- |
+| `XXX260004 demo` | `XXX260004-demo` | confirm? |
+| `XXX260004.demo` | `XXX260004-demo` | confirm? |
+| `xxx260004_demo` | `xxx260004-demo` | confirm? (note lowercase preserved) |
+| `XXX260004 / demo (v2)` | `XXX260004-demo-v2` | confirm? |
+| `   ---` | (empty after strip) | ask for a real name |
+
+The output of Step 0.b is `project.name` and `project.root = docs/<name>/`.
+All subsequent path interpretation in Steps 0.5–8 uses this root.
+
+#### 0.c — Read this project's state file
+
+Open `<repo-root>/<project.root>/workflow-state.yaml`. Three cases:
+
+| State of the file | What to do |
+| --- | --- |
+| **Exists and current** | Seed `current_focus`, `capabilities[]`, `open_gates` from the file. Skip stage-rederivation when the file already names the user's current capability. |
+| **Exists but stale or empty** | Use it as a hint, then re-verify stage by reading the cited artifacts (under `project.root`). If artifacts disagree, trust the artifacts and plan to rewrite at Step 8 with `history[]` note: `"state corrected from artifact"`. |
+| **Missing** | Plan to create at Step 8 using [`templates/workflow-state.yaml`](templates/workflow-state.yaml) with `project.name` and `project.root` filled in from Step 0.b. Do NOT pre-create empty artifact directories — those are created on demand by downstream skills. |
+
+Read-only verification rules:
+
+- All artifact paths in this state file are **relative to `project.root`**
+  — not the repo root. Resolve before checking existence.
+- Trust artifacts over the state file when they disagree.
+- Never write to the state file in this step.
+- Do not block the user if the file is missing — proceed to Steps 0.5–6
+  and offer to create it in Step 8.
+
+### Step 0.5 — Determine Focus
+
+Before classifying stage, decide **what the user is working on this turn**.
+Multi-capability projects, mid-chain entry, repo handover, and rollback all
+hinge on this step. Without it, every routing decision silently assumes
+"continue the most recent thing" — which breaks for everyone except the
+linear first-time user.
+
+Use [`references/focus-selection.md`](references/focus-selection.md). Its
+decision tree resolves the user's natural-language input plus
+`workflow-state.yaml` into one of five outcomes:
+
+| Outcome | Meaning |
+| --- | --- |
+| `continued` | User implicitly continues `state.current_focus` (no `CAP-*` / `MODULE-*` named) |
+| `switched` | User named a different capability / module that already exists in `capabilities[]` |
+| `new` | User starts a brand-new capability / module not yet tracked |
+| `scan` | No `current_focus` set; enumerate existing artifacts and present a picker |
+| `rollback` | User wants to redo / revert to an earlier stage within current focus |
+
+Signals to detect from the user's natural-language input:
+
+- Literal `CAP-*` / `MODULE-*` IDs
+- File paths matching the directory layout (`05_specs/CAP-XXX/...`,
+  `04_modules/<MODULE>/...`, etc.) — extract the capability or module
+- Verbs: `继续` / `next` / `下一步` / `接着` → `continued`
+- Verbs: `重做` / `redo` / `回到` / `rollback` / `revert` / `回滚` →
+  `rollback`
+- Verbs: `新的` / `new` / `切换` / `switch` → `new` (if target not in
+  `capabilities[]`) or `switched` (if target exists)
+
+Rules:
+
+- Never invent a `CAP-*` or `MODULE-*` ID that has no evidence in artifacts,
+  state, or user message.
+- When the resolution is ambiguous (multiple capabilities match the user's
+  phrasing), ASK rather than pick.
+- When `current_focus` is unset and artifacts exist, run **scan mode** —
+  enumerate `01_inventory/`, `04_modules/`, `05_specs/` (full source list
+  in `references/focus-selection.md`) and present a picker before routing.
+- When the outcome is `rollback`, apply the Rollback Protocol in
+  `references/focus-selection.md`: target must be strictly earlier than
+  current `stage_id` AND must have been previously reached. Never silently
+  overwrite a later `stage_id`.
+- When the outcome is `switched`, apply the Switch Protocol: do not mutate
+  the old `capabilities[]` entry; just rewrite `current_focus` and append
+  one `history[]` line.
+
+The output of this step is a resolved tuple `(capability_id, module_slug,
+focus_intent)` that scopes everything Steps 1–8 do this turn. Record the
+chosen outcome — it appears on the Quick Card's `FOCUS` line at the end.
 
 ### Step 1 — Identify Current Stage
 
@@ -243,6 +372,112 @@ After deciding:
 
 The orchestrator should create momentum, not bureaucracy.
 
+### Step 7 — Attach the Stage Card
+
+Every routing decision **must** end with the **Quick Card** block defined in
+the Output Structure section below, and **must** point the user to the
+matching one-page stage card under
+[`references/stage-cards/`](references/stage-cards/INDEX.md).
+
+Stage-card mapping (use the same number that appears in
+`references/stage-identification.md`):
+
+| Identified Stage | Stage Card |
+| --- | --- |
+| 0 Evidence Intake | `references/stage-cards/00-evidence-intake.md` |
+| 1 Evidence Ready | `references/stage-cards/01-evidence-ready.md` |
+| 2a / 2b / 2c Inventory | `references/stage-cards/02-inventory.md` |
+| 3a / 3b Program Analysis | `references/stage-cards/03-program-analysis.md` |
+| 3c / 3d Flow Analysis | `references/stage-cards/04-flow-analysis.md` |
+| 3e / 3f Module Analysis | `references/stage-cards/05-module-analysis.md` |
+| 8a / 8b / 8c Spec | `references/stage-cards/06-spec-writing.md` |
+| 9 / 10 Equivalence / Handoff | `references/stage-cards/07-forward-handoff.md` |
+
+The cards are deterministic cheat sheets — they tell first-time users exactly
+what input to have, what skill to run, where to save the output, which gate
+to check, and which SME action is required. Attaching the card is mandatory
+because it makes the next step legible even when the LLM running the
+orchestrator is weak or context-starved.
+
+### Step 8 — Write Workflow State
+
+After the routing decision is rendered, update
+`<repo-root>/<project.root>/workflow-state.yaml` (e.g.
+`docs/XXX260004-demo/workflow-state.yaml`) so the next session (or the
+next skill) can resume without re-deriving stage. The project root was
+resolved at Step 0.b. All artifact paths written into the state file
+(`current_focus.next_artifact`, `capabilities[].last_artifact`,
+`history[].artifact`) are **relative to `project.root`**.
+
+The orchestrator's write scope is:
+
+1. **`current_focus`** — overwrite entirely with this turn's routing
+   decision (capability id, module slug, `stage_id` verbatim from
+   `references/stage-identification.md`, `next_skill`, `next_artifact`,
+   `stage_card`, and `open_gates`).
+2. **`capabilities[]`** — overwrite only the entry matching the routed
+   capability (`id`). If no entry exists yet, append one. Never delete or
+   mutate other entries.
+3. **`history[]`** — append exactly one entry:
+   ```yaml
+   - at: <ISO 8601 timestamp>
+     skill: legacy-modernization-orchestrator
+     capability_id: <CAP-* | null>
+     stage_after: <stage_id from references/stage-identification.md>
+     artifact: null            # router does not produce business artifacts
+     note: <one-line summary, e.g. "routed to legacy-ibmi-flow-analyzer">
+   ```
+4. **`project.last_updated_at` / `project.last_updated_by`** — overwrite
+   with this turn's timestamp and `legacy-modernization-orchestrator`.
+
+Special cases:
+
+- **State file missing**: emit the populated file at
+  `docs/<project.name>/workflow-state.yaml` based on the template at
+  [`templates/workflow-state.yaml`](templates/workflow-state.yaml). Fill
+  `project.name` and `project.root` (`docs/<project.name>/`). Tell the
+  user (in the prose section above the Quick Card) that the file has
+  been created, that any in-flight artifacts should be moved under the
+  new project root, and that the file should be committed. Do NOT
+  pre-create the 9 artifact subdirectories — downstream skills create
+  them on demand.
+- **State file disagrees with artifacts**: rewrite the affected
+  `capabilities[]` entry to match the artifact's `status` field and append
+  a `history[]` entry with `note: "state corrected from artifact"`.
+- **Routing decision is BLOCKED by a gate**: still write the state — record
+  the blocked gate in `current_focus.open_gates` and in
+  `capabilities[].blocking.gates`. Do not advance `stage_id`.
+
+The orchestrator MUST NOT write to fields owned by downstream skills (no
+other `capabilities[]` entries; no edits to past `history[]` entries; no
+schema changes). See
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md)
+for the full field-level contract that every skill in the chain follows.
+
+### Step 8.5 — Regenerate STATUS.md
+
+After Step 8 writes the YAML state, regenerate the human-readable
+companion `docs/<project>/STATUS.md` so a human reader can see project
+status at a glance without parsing YAML.
+
+```bash
+python3 scripts/generate-status.py docs/<project-name>/
+```
+
+The script emits a single-page snapshot: current focus, all capabilities
+with their stage / blocking, open blockers grouped by capability, and the
+last 10 history entries. It is **always** in sync with
+`workflow-state.yaml` because it is derived from it — never hand-edit
+STATUS.md.
+
+If the script is unavailable in the runtime, skip this step and tell the
+user (in the prose above the Quick Card): "STATUS.md not regenerated —
+run `python3 scripts/generate-status.py docs/<project>/` manually."
+
+Downstream skills SHOULD also call this script at the end of their own
+write-back, but the orchestrator running it after every routing decision
+is the canonical guarantee that STATUS.md never drifts.
+
 ## Output Structure
 
 Use the following structure. Keep it proportionate to the decision — for an
@@ -273,6 +508,95 @@ obvious route, one short paragraph may be enough.
 - **Manual fallback (if skill is planned):** <what to do until the skill exists; pointer to references/manual-fallback.md>
 ```
 
+### Mandatory Quick Card footer
+
+Every routing decision MUST end with the block below, rendered verbatim with
+each `<...>` replaced by one short value. **Do not omit any line. Do not add
+commentary inside the block. Do not change the line order or labels.** This
+block is the user's at-a-glance cheat sheet — keep it grep-friendly so it
+survives weak LLMs, copy-paste, and session restarts.
+
+```
+----------------------------------------------------------------------
+QUICK CARD — Stage <stage-id> : <stage name>
+----------------------------------------------------------------------
+PROJECT:       docs/<project-name>/   [<resumed | created | switched-project>]
+PROGRESS:      [●●●○○○○○○○] 3/10 <milestone label>
+FOCUS:         <CAP-* | MODULE-* | unset> [continued | switched | new | scan | rollback]
+YOU ARE HERE:  <stage-id from references/stage-identification.md>
+JUST SAVED:    <full path of the artifact the user just produced, or "nothing yet">
+RUN NEXT:      <next skill name>   [<implemented | planned | future | doc-only>]
+WILL PRODUCE:  <full path of the next artifact, including filename>
+GATE CHECK:    <pass | not applicable | BLOCKED: <gate name> — <unresolved IDs>>
+SME ACTION:    <required | recommended | not needed> — <one-line action>
+STAGE CARD:    references/stage-cards/<NN>-<slug>.md
+STATE FILE:    docs/<project-name>/workflow-state.yaml [<updated | created | unchanged>]
+MANUAL FALLBACK: <path under references/manual-fallback.md, or "not needed (skill is implemented)">
+----------------------------------------------------------------------
+```
+
+Rules for filling the Quick Card:
+
+- `PROJECT` reports the resolved project root from Step 0.b plus an
+  intent label: `resumed` (existing project default-picked or named by
+  user), `created` (Step 0 just created `docs/<name>/`),
+  `switched-project` (user named a different project than the prior
+  turn). The path always ends with `/`. WILL PRODUCE / JUST SAVED / STATE
+  FILE paths in this card MUST live underneath this project root — never
+  cross into another project.
+- `PROGRESS` shows the focused capability's position in the 10-step
+  reverse chain as `[●●●○○○○○○○] N/10 <milestone label>`. Mapping (use
+  the milestone label verbatim):
+  - `0` → step 0 "Evidence Intake"
+  - `1` → step 1 "Evidence Ready"
+  - `2*` → step 2 "Inventory"
+  - `3a/3b` → step 3 "Program Analysis"
+  - `3c/3d` → step 4 "Flow Analysis"
+  - `3e/3f` → step 5 "Module Analysis"
+  - `8a` → step 6 "Spec Drafted"
+  - `8b` → step 7 "Spec In Review"
+  - `8c` → step 8 "Spec Approved"
+  - `9` → step 9 "Equivalence Pack Ready"
+  - `10` → step 10 "Forward Handoff Ready"
+  Supplemental stages (`4*`, `5`, `6`, `7`) do not advance the bar — they
+  remain at the prior step's filled count with the appropriate milestone
+  label noted. When `current_focus` is unset, write `[○○○○○○○○○○] 0/10
+  not started`.
+- `FOCUS` reports the outcome of Step 0.5: the resolved `CAP-*` /
+  `MODULE-*` (or `unset` only when scan mode is still pending), followed
+  by exactly one intent label from `[continued | switched | new | scan |
+  rollback]`. Never omit. If the orchestrator skipped Step 0.5 because
+  the user input was advisory only, write `unset [continued]`.
+- `YOU ARE HERE` uses the exact stage id from
+  `references/stage-identification.md` (e.g. `2c Inventory Done`,
+  `3b Program Analysis Done`).
+- `JUST SAVED` is the artifact the user produced in the **previous** step,
+  not the one they are about to produce. If the user is just starting, write
+  `nothing yet`.
+- `RUN NEXT` is one skill name. Never list two. If the path forks, pick the
+  earliest sufficient one and explain alternatives in the prose above, not
+  inside the card.
+- `WILL PRODUCE` is a full suggested path, including filename, drawn from the
+  stage card. Do not invent novel paths — use the directory layout in
+  `references/stage-identification.md` (`Stage to Output Directory` table).
+- `GATE CHECK` either passes, is not applicable, or names the specific
+  blocking gate plus the unresolved item IDs (`TBD-*`, `EV-*`, `BR-*`,
+  `coverage_gaps[i]`). Never leave the reason vague.
+- `STAGE CARD` is always populated using the mapping in **Step 7 — Attach
+  the Stage Card** above.
+- `STATE FILE` reports the outcome of Step 8: `updated` if an existing
+  `workflow-state.yaml` was overwritten, `created` if the file was emitted
+  for the first time this turn, or `unchanged` if this turn was advisory
+  only and no state mutation occurred. Never omit this line — silence
+  hides whether the chain still has a valid resume point.
+- `MANUAL FALLBACK` is required whenever the recommended skill is `planned`
+  or `future`. When the skill is implemented, write
+  `not needed (skill is implemented)` rather than omitting the line.
+
+Validation: a routing decision that omits the Quick Card, omits any of its
+lines, or invents stage / skill / card paths fails the Mechanical validation
+check in the Step Contract below.
+
 ## Step Contract
 
 The orchestrator is one step in the Legacy Spec Factory reverse chain — its
@@ -290,6 +614,14 @@ field-level rules. The summary below is normative for this skill.
   exists yet, the legacy evidence the user is starting from.
 - **Optional**: SME availability, target platform hint, urgency, scope
   preference (one capability vs. whole module).
+- **Workflow state**: `<project-root>/workflow-state.yaml` if present.
+  Read at Step 0 per `docs/workflow-state-contract.md`. Treated as a
+  resume hint; artifacts remain the source of truth.
+- **Focus signals**: literal `CAP-*` / `MODULE-*` IDs, file paths matching
+  the directory layout, and continue / rollback / new / switch verbs in
+  the user's natural-language message. Resolved at Step 0.5 per
+  `references/focus-selection.md` into one of `continued | switched | new |
+  scan | rollback`. When ambiguous, the orchestrator asks rather than guesses.
 - **Readiness checks**: artifact filenames and statuses can be cited
   verbatim from the user's repo or notes (not paraphrased); evidence
   sensitivity is known or explicitly flagged `unknown`.
@@ -332,8 +664,11 @@ field-level rules. The summary below is normative for this skill.
 - **Handoff status**: the decision either hands off to a downstream
   skill (when input is sufficient and the skill is implemented), returns
   a manual fallback (when the skill is planned), or returns a blocking
-  finding (when a gate fails). The orchestrator does not retain state
-  between turns — every routing decision restates its premise.
+  finding (when a gate fails). Across turns, continuity is provided by
+  `workflow-state.yaml` (Step 0 reads, Step 8 writes) per
+  `docs/workflow-state-contract.md`. Within a single turn, every routing
+  decision still restates its premise from the cited artifacts — the
+  state file is a resume hint, not a substitute for artifact evidence.
 
 ### Validation
 
@@ -341,7 +676,18 @@ field-level rules. The summary below is normative for this skill.
   outcome, recommended next skill + status, why, stage-skip safe?, gate
   check, minimum input, route confidence, next artifact, invoke / produce
   / save / SME / manual fallback); cited skill names exist in the chain;
-  cited gates exist in `references/gates.md`.
+  cited gates exist in `references/gates.md`; the **Quick Card** footer
+  block is present, all twelve lines are filled, the cited stage-card path
+  resolves under `references/stage-cards/`, the `WILL PRODUCE` path lives
+  under the resolved `PROJECT` root and conforms to the directory layout
+  in `references/stage-identification.md`, `STATE FILE` resolves to
+  `<PROJECT>workflow-state.yaml` and reports one of `updated | created |
+  unchanged` matching the actual Step 8 outcome, `FOCUS` reports a
+  resolved `CAP-* | MODULE-* | unset` plus one of `continued | switched
+  | new | scan | rollback` matching Step 0.5, `PROJECT` matches the
+  resolved `project.root` from Step 0.b (PPCR-validated name), and
+  `PROGRESS` shows `[●…○…] N/10 <milestone>` derived from
+  `current_focus.stage_id` per the mapping table above.
 - **AI semantic**: recommended next skill is the **earliest sufficient**
   stage (no upstream over-routing, no unsafe downstream jump); gate state
   reflects the artifact's actual fields rather than a confident summary;
@@ -445,6 +791,21 @@ Before outputting workflow guidance, confirm:
 - [ ] Manual fallback offered if skill is planned
 - [ ] No invented artifact maturity
 - [ ] Guidance is proportionate and creates forward motion
+- [ ] **Quick Card** footer block is present and complete (all twelve lines filled)
+- [ ] `PROGRESS` step count and milestone label match the focused capability's `stage_id` per the mapping in the Quick Card rules
+- [ ] `STAGE CARD` line points to an existing file under `references/stage-cards/`
+- [ ] `WILL PRODUCE` path lives under the resolved `PROJECT` root and matches the directory layout in `references/stage-identification.md`
+- [ ] Step 0.b resolved a PPCR-valid project name (`^[A-Za-z0-9][A-Za-z0-9-]*$`); if multiple projects exist, the picker was shown rather than silently defaulted
+- [ ] Step 0.c read `docs/<project>/workflow-state.yaml` (or recorded that it was missing)
+- [ ] No artifact directories were pre-created; only the writing skill's target directory is created on demand
+- [ ] Step 8.5 regenerated `docs/<project>/STATUS.md` (or recorded that the script was unavailable)
+- [ ] When the user-typed project name was non-conforming, Step 0.b auto-normalized + asked the user to confirm — did not silently reject
+- [ ] Step 0.5 resolved focus to one of `continued | switched | new | scan | rollback`; ambiguous inputs were ASKED rather than guessed
+- [ ] No `CAP-*` / `MODULE-*` invented; all IDs trace to artifacts, state, or user message
+- [ ] Rollback (if any) targets a strictly earlier stage AND a previously reached stage, and added a `history[]` note
+- [ ] Scan mode (if triggered) presented the picker; orchestrator did not pre-pick silently
+- [ ] Step 8 updated / created `workflow-state.yaml` per `docs/workflow-state-contract.md` (or wrote `unchanged` with justification)
+- [ ] `current_focus` overwrite respects ownership (no edits to other capabilities' entries or past `history[]` rows)
 
 ## Relationship to Other Legacy Spec Factory Skills
 
@@ -508,6 +869,153 @@ runtime copies.
 
 ## Version History
 
+- v0.12.0 (2026-05-16): Closed two linear-chain gaps.
+  `legacy-ibmi-screen-report-analyzer` and
+  `legacy-ibmi-data-model-analyzer` graduate from optional supplemental
+  to **conditionally required** via a new mechanism: inventory's
+  `sme_review.downstream_required` block. Inventory auto-detects DSPF /
+  PRTF / menu objects (→ screen-report-analyzer required) and ≥ 3 files
+  with FK-like relations or compound master writes (→
+  data-model-analyzer required); SME confirms in the same batched
+  signoff as criticality. Orchestrator's `3b Program Analysis Done`
+  gate now mechanically enforces these triggers. Module-analyzer
+  Inputs + spec-writer Inputs declare the conditional dependency;
+  spec-writer populates `data_model.entities` verbatim from
+  `dictionary.md` when triggered, preserving cross-program invariants.
+  Trigger rules, override protocol, and anti-patterns in
+  `skills/legacy-ibmi-inventory/references/downstream-triggers.md`.
+- v0.11.0 (2026-05-16): SME-bandwidth strategy completion. Three skills
+  now collaborate to drop typical SME review load 70-80%:
+  (1) `legacy-ibmi-inventory` v0.2 adds `criticality` (critical /
+  standard / low_risk) + single-batched SME confirmation;
+  (2) `legacy-ibmi-runtime-evidence-miner` v0.2 adds Rule Auto-Validation
+  (promote `inferred_business_rule` to `auto_validated_spot_check_only`
+  when ≥ N runtime samples corroborate; never auto-validate critical
+  money/posting/compliance);
+  (3) NEW skill `legacy-ibmi-batch-digest` aggregates per-module
+  program analyses into a single SME-facing scan page grouped by
+  criticality with one-line roles, top-3 pending decisions, TBD counts,
+  and SME signoff stub — replaces "open N files" friction with "scan
+  one page". `legacy-sme-review-facilitator` updated with Three-Bucket
+  Review Routing (Full review / Spot-check / Batch confirm). Spec
+  schema extended with `auto_validated_spot_check_only` review_status
+  and `auto_validation` audit block. EXAMPLE-tutorial demonstrates all
+  three strategies end-to-end.
+- v0.10.0 (2026-05-16): Tier 3 polish. Added `PROGRESS` line (12th) to
+  the Quick Card showing visual `[●●●○○○○○○○] 3/10 <milestone>` mapping
+  from `stage_id` to a 10-step pipeline view. Same progress bar
+  surfaced in `scripts/generate-status.py` (under Current Focus + new
+  Progress column on the Capabilities table) and in
+  `scripts/list-projects.py` (new Progress column in text + markdown
+  output). Added [`docs/collaboration.md`](../../docs/collaboration.md)
+  — multi-user patterns (one-project-per-operator recommended; parallel
+  capabilities; sequential handoffs), per-section merge rules for
+  `workflow-state.yaml` conflicts (`version`/`project` immutable,
+  `current_focus` last-writer-wins, `capabilities[]` per-id with later
+  stage winning, `history[]` union-merge with timestamp re-sort), and
+  an optional `.gitattributes` recipe. README + QUICKSTART now link the
+  collaboration doc.
+- v0.9.0 (2026-05-16): Tier 2 UX completion. Added
+  [`QUICKSTART.md`](../../QUICKSTART.md) at repo root — a 10-minute
+  walkthrough for first-time users with each step's natural-language
+  trigger phrase. Added [`docs/EXAMPLE-tutorial/`](../../docs/EXAMPLE-tutorial/)
+  — a fully-populated minimal project (1 program, 1 flow, 1 capability,
+  1 spec) showing every artifact's shape and traceability end-to-end,
+  including `workflow-state.yaml`, auto-generated `STATUS.md`, and lint
+  validation. Added SME communication package templates to
+  `legacy-sme-review-facilitator` (`sme-review-email.md` +
+  `sme-review-checklist.md`) so operators can copy-paste a structured
+  request to the SME in 30 seconds instead of drafting from scratch.
+  README now leads with QUICKSTART + EXAMPLE pointers.
+- v0.8.0 (2026-05-16): First-time-user UX pass (Tier 1). Expanded
+  frontmatter `description` with natural-language trigger phrases in
+  English and Chinese ("我有 AS400 / RPGLE 要分析", "我刚接了 PPCR XXX...",
+  "I just inherited a legacy project", etc.) so the orchestrator matches
+  organic user phrasing instead of requiring "use legacy-modernization-
+  orchestrator". Reworked Step 0.b validation: project names that do not
+  conform to PPCR convention are **auto-normalized** (whitespace / `.` /
+  `_` / `/` → `-`, strip non-alphanumeric, preserve case) and asked back
+  for confirmation instead of being silently rejected. Added Step 8.5:
+  every routing decision regenerates `docs/<project>/STATUS.md` via
+  `scripts/generate-status.py` so the human-readable status snapshot is
+  always in sync with the machine state. New scripts:
+  `scripts/generate-status.py` (renders STATUS.md from one project's
+  state file) and `scripts/list-projects.py` (scans `docs/*/workflow-
+  state.yaml` in cwd; text / markdown / json output). Both scripts
+  registered in README.
+- v0.7.0 (2026-05-16): Multi-project layout. Every project now lives under
+  `docs/<project-name>/` (PPCR convention: `^[A-Za-z0-9][A-Za-z0-9-]*$`,
+  e.g. `XXX260004-demo`). One repository can hold many fully-isolated
+  projects. Added `project.name` and `project.root` to
+  `workflow-state.yaml`; all artifact paths are now resolved relative to
+  `project.root`. Replaced Step 0 with a 3-substep flow: 0.a enumerate
+  `docs/*/workflow-state.yaml`, 0.b resolve / prompt for project name
+  with PPCR validation (picker when multiple, prompt when none), 0.c
+  read the chosen project's state file. Added `PROJECT` line (11th) to
+  the Quick Card showing `docs/<project>/` plus a `resumed | created |
+  switched-project` intent label. Updated contract, snippet,
+  stage-identification, focus-selection (scan mode is now
+  project-scoped), all 8 stage cards, INDEX (added Path Convention
+  note), and lint script (validates PPCR name + `docs/<name>/` root
+  shape; `--template` flag relaxes for the canonical template).
+  Directories created on demand by writing skills; no pre-creation of
+  empty stage folders.
+- v0.6.0 (2026-05-16): Closed the chain-spine loop. Added Workflow State
+  Write-Back sections to 11 additional skills: 2 Tier 1 (full overwrite —
+  `legacy-golden-master-test-planner` at stage 9,
+  `legacy-ibmi-runtime-evidence-miner` at stage 5) and 9 Tier 2
+  (history-only or scoped blocking edits — `legacy-step-validator`,
+  `legacy-traceability-packager`, `legacy-sme-review-facilitator`,
+  `legacy-runtime-matrix-tester`, `legacy-step-contract`,
+  `legacy-ibmi-screen-report-analyzer`,
+  `legacy-ibmi-data-model-analyzer`,
+  `legacy-modernization-decision-writer`, `legacy-brd-writer`).
+  Reclassified `legacy-brd-writer` as supplemental / history-only in the
+  snippet table. Added `scripts/check-workflow-state.py` (PyYAML-only)
+  validating version, project, capabilities[].{id, stage_id, blocking},
+  current_focus.{capability_id, stage_id, stage_card} cross-checks, and
+  history[] append-only ordering. Documented the script in `README.md`.
+  All 18 skills in the reverse chain now participate as peer writers
+  to `workflow-state.yaml`, making the orchestrator-as-chain-spine usage
+  truly closed-loop: any LLM / session / operator can resume from any
+  capability, at any stage, via the lint-validated state file.
+- v0.5.0 (2026-05-16): Mid-chain entry and natural-language focus resolution.
+  Added **Step 0.5 — Determine Focus** to Core Process and a new reference
+  [`references/focus-selection.md`](references/focus-selection.md) defining
+  the five focus outcomes (`continued | switched | new | scan | rollback`),
+  signal detection (CAP-* / MODULE-* / file paths / verbs in any language),
+  the Scan Mode picker for inherited repos and lost state, the Switch
+  Protocol, and the Rollback Protocol (strictly earlier + previously
+  reached; never silent stage overwrite). Added `FOCUS` line (10th) to the
+  Quick Card footer. Extended Step Contract Input to enumerate focus
+  signals, tightened Mechanical Validation and Quality Checklist with
+  focus-resolution requirements (no invented IDs, ambiguity must be asked,
+  rollback / scan rules enforced). Designed for orchestrator-as-chain-
+  spine: any user can drop in at any stage of any capability via natural
+  language and get a deterministic route to the right downstream skill.
+- v0.4.0 (2026-05-16): Cross-session state persistence. Added Step 0 (read
+  `workflow-state.yaml`) and Step 8 (write `workflow-state.yaml`) to Core
+  Process. Added template at `templates/workflow-state.yaml` and the
+  full read/write contract at `docs/workflow-state-contract.md` so every
+  downstream skill can participate as a peer writer (own its
+  `capabilities[]` entry, append one `history[]` line, never touch others).
+  Added `STATE FILE` line to the Quick Card footer and tightened
+  Mechanical Validation + Quality Checklist to enforce Step 0 / Step 8.
+  Designed for orchestrator-as-chain-spine usage: the state file is the
+  resume point that lets a weaker LLM, a new session, or any peer skill
+  pick up exactly where the chain left off without re-deriving stage from
+  artifacts.
+- v0.3.0 (2026-05-16): First-time-user UX hardening. Added 8 deterministic
+  one-page **stage cards** under `references/stage-cards/` (`00-evidence-intake`
+  through `07-forward-handoff` plus `INDEX.md`) covering input / skill /
+  output path / gate / SME action / next card per stage. Added a mandatory
+  **Quick Card** footer block to the Output Structure (8 fixed lines) that
+  every routing decision must render verbatim — designed so weak LLMs and
+  first-time users always see the next step, save path, gate state, SME
+  action, and stage-card pointer at a glance. Added Step 7 (Attach the
+  Stage Card) with a stage → card mapping table. Tightened the Mechanical
+  Validation and Quality Checklist to enforce the new footer and card
+  pointer.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

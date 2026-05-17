@@ -197,6 +197,37 @@ See **Inputs** and **When NOT to Use** above. The skill must not start if any re
 
 Use `legacy-step-validator` to validate the produced package against this Step Contract before forwarding it to the orchestrator or to forward SDLC.
 
+## Workflow State Write-Back (history only)
+
+This is a governance / packager skill. It does NOT mutate
+`capabilities[].stage_id` or `current_focus`. After a packaging run,
+append one `history[]` entry to `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+
+**Package path pattern:**
+`09_forward-sdlc/<CAP-*>/traceability-package/` (sealed bundle)
+
+**Per-run write:**
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-traceability-packager
+    capability_id: <CAP-* from current_focus>
+    stage_after: <the capability's current stage_id — UNCHANGED>
+    artifact: <path to the sealed package or findings report>
+    note: "traceability sealed for <CAP-*>" | "blocked: <findings count>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if any blocking finding emerges, you MAY
+append items to `capabilities[<CAP-*>].blocking.gates` (e.g.
+`"forward_handoff"`) and to `blocking.tbds`. You MUST NOT change
+`stage_id`, `last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## References and Templates
 
 - [references/workflow.md](references/workflow.md) — full eight-step procedure and per-step finding rules

@@ -548,6 +548,44 @@ routing:
 3. **Route findings** to appropriate owners (Evidence Intake, Spec Writer,
    Orchestrator, etc.)
 
+## Workflow State Write-Back (history + targeted blocking edits)
+
+This is a governance / facilitation skill. It does NOT advance
+`capabilities[].stage_id` or mutate `current_focus`. But because the SME's
+decisions are the single source of truth for `sme_pending`, this skill
+has a **scoped exception**: it may update
+`capabilities[<CAP-*>].blocking.sme_pending` to reflect SME outcomes.
+
+After a review session, write to `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+
+**Artifact path pattern:**
+`08_business-understanding/<CAP-*>/sme-review-<YYYY-MM-DD>.md` (decision log)
+
+**Per-run writes:**
+
+1. **Permitted blocking edit** — overwrite
+   `capabilities[<CAP-*>].blocking.sme_pending`: remove items the SME
+   confirmed or rejected; add items the SME flagged for follow-up. Do NOT
+   change `stage_id`, `last_artifact`, or `last_skill`.
+2. Append one `history[]` entry:
+   ```yaml
+   - at: <ISO 8601>
+     skill: legacy-sme-review-facilitator
+     capability_id: <CAP-* from current_focus>
+     stage_after: <UNCHANGED stage_id>
+     artifact: <path to decision log>
+     note: "SME review — N confirmed, M rejected, K deferred"
+   ```
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**SME approval ≠ stage advancement.** Even when the SME signs off, only
+the Tier 1 skill that owns the artifact (e.g. `legacy-spec-writer`) may
+write the new `stage_id`. This skill records the SME's decision; the next
+Tier 1 run consumes it.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Review / Validation Rules
 
 Before releasing review artifacts:
@@ -617,6 +655,108 @@ Before releasing review artifacts:
 1. SME is unavailable for scheduled review window
 2. Required evidence has not been redacted
 3. Prerequisite approval gates (from upstream skills) are not yet complete
+
+## Three-Bucket Review Routing (criticality + auto-validation)
+
+To prevent SME bandwidth from being the chain's bottleneck, this skill
+partitions every batch of pending reviews into three buckets and dials
+the SME's per-item effort to match risk + evidence corroboration.
+
+The two upstream signals that drive routing:
+
+- **`inventory.yaml.objects[].criticality`** (from `legacy-ibmi-inventory`)
+  — `critical | standard | low_risk`, SME-confirmed once during inventory
+- **`spec.yaml.rules[].review_status`** (from `legacy-ibmi-runtime-evidence-miner`)
+  — `auto_validated_spot_check_only` set when ≥ N runtime samples
+  corroborate an `inferred_business_rule`
+
+Partition every rule in `capabilities[<CAP-*>].blocking.sme_pending`:
+
+| Bucket | Routing rule | SME effort |
+| --- | --- | --- |
+| **Full review** | rule owned by a `critical` program OR runtime corroboration failed OR rule is a `modernization_decision` | per-rule decision |
+| **Spot-check sample** | rule is `auto_validated_spot_check_only` AND owning program is `standard` | sample 10-20% of bucket; if all pass, batch-approve the rest |
+| **Batch confirm** | rule is `auto_validated_spot_check_only` AND owning program is `low_risk` | single signoff on the whole bucket |
+
+Render the partition explicitly in the email + checklist so the SME sees
+the workload up front:
+
+```
+You have 47 inferred rules to confirm for CAP-ORDER-PRICING:
+
+  ▸ FULL REVIEW (critical):  8 rules — please decide each
+  ▸ SPOT-CHECK (standard):  28 rules — pick 6 to verify; if all pass we batch-approve
+  ▸ BATCH CONFIRM (low_risk): 11 rules — single signoff if the spot-check passes
+
+Estimated time: 60–90 minutes
+   (vs. 5+ hours if every rule were reviewed individually)
+```
+
+Hard rules:
+
+- The `Full review` bucket is **never empty by default**. If your
+  partition lands every rule in spot-check/batch, double-check the
+  criticality classification — something is probably mislabeled.
+- A rule flagged `runtime_conflict_with_inference` ALWAYS goes to Full
+  review, regardless of criticality.
+- A `modernization_decision` (`DEC-*`) ALWAYS goes to Full review AND
+  requires target-platform authority approval, not just SME.
+- Auto-validation is a bandwidth saver, NOT a safety bypass. Even when
+  every rule auto-validates, the SME's spot-check must run before
+  `spec.yaml.status` can advance to `8c Spec Approved`.
+
+## SME Communication Package
+
+For every review session, this skill can emit a **two-file communication
+package** the operator copy-pastes to reach the SME:
+
+1. [`templates/sme-review-email.md`](templates/sme-review-email.md) — a
+   short, structured email the operator sends (subject line, time
+   estimate, one decision per item with confirm/reject/defer checkbox).
+2. [`templates/sme-review-checklist.md`](templates/sme-review-checklist.md)
+   — a one-page printable / shareable checklist the SME can mark up
+   offline (one item per page section, sign-off block, "what happens
+   next" footer).
+
+### How to fill them
+
+Both templates use `{{placeholder}}` syntax. The skill populates from:
+
+| Placeholder | Source |
+| --- | --- |
+| `{{project_name}}` | `workflow-state.yaml` → `project.name` |
+| `{{capability_id}}`, `{{module_slug}}` | `current_focus` |
+| `{{current_stage}}` | `current_focus.stage_id` |
+| `{{sme_name}}` | `evidence/redacted/evidence-manifest.yaml` → `bundle.sme_contact.name` |
+| `{{artifact_path}}` | the artifact under review (typically `05_specs/<CAP-*>/spec.yaml`) |
+| `{{items[]}}` | one entry per ID in `capabilities[<CAP-*>].blocking.sme_pending` |
+| `{{items[i].observed / inferred / evidence_ids / impact}}` | extracted from the cited row in the artifact |
+| `{{operator_name}}` | the user running the skill |
+| `{{estimated_minutes}}` | 2 min per item (heuristic), rounded up |
+
+### Output location
+
+Save the populated files under
+`08_business-understanding/<CAP-*>/sme-review-<YYYY-MM-DD>/`:
+
+- `email.md` — the email body (copy-paste to your mail client / Lark / WeCom)
+- `checklist.md` — the checklist to share with the SME
+
+Append a `history[]` entry recording the package generation
+(`note: "SME review package prepared for <CAP-*> — N items"`). Per the
+Workflow State Write-Back section above, this does NOT advance
+`stage_id`; advancement happens after the SME's decisions come back and
+`blocking.sme_pending` is updated.
+
+### Why two artifacts
+
+Different SMEs prefer different channels:
+
+- **Email** — quick async decisions, threadable, searchable
+- **Checklist** — for SMEs who prefer to print, walk away, mark up, and
+  hand back (or share over a shared drive)
+
+Always generate both. Let the operator choose which to send.
 
 ## Examples
 
