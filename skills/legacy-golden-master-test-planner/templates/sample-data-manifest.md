@@ -7,7 +7,7 @@
 | Evidence manifest | `<path>` |
 | Redaction log | `<path>` |
 | Raw evidence excluded from repo | yes |
-| Any `sensitive: unknown` | yes |
+| Any `sensitivity: unknown` | yes |
 | Data owner approval | pending |
 
 ## Samples

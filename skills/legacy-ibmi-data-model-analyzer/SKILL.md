@@ -104,6 +104,7 @@ Use:
 - `references/db2-patterns.md` for DB2 for i metadata interpretation
 - `../../docs/id-conventions.md` for stable IDs (reuse OBJ-*, EV-*; mint DATA-*, TBD-*, STEP-*)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength labels
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -126,8 +127,20 @@ field-level rules. The summary below is normative for this skill.
 - **Required**: DDS source or DB2 metadata for each file; SQL DDL if applicable.
 - **Required when CRUD/lifecycle is in scope**: approved program analyses for every program that writes, updates, deletes, archives, or purges in-scope data.
 - **Optional**: approved flow analyses that use these files; SME notes on retention, archival, data quality.
-- **Readiness checks**: Inventory Completeness Gate passing; files are not marked `blocked` in inventory; source is current production (tier 1) rather than archival; evidence is redacted.
-- **Stop conditions**: file missing from inventory; DDS or metadata unavailable; mutating program analysis missing; raw unredacted production data present.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved inventory missing, target file/table unresolved,
+    core DDS/DB metadata missing, mutating program analysis missing when
+    lifecycle is in scope, or evidence authorization unresolved.
+  - `6 minimum_pass`: approved inventory plus authoritative file/table and
+    field metadata are present; missing meanings become TBDs.
+  - `7-8 usable`: access paths, mutating program analyses, flow references,
+    and data dictionary hints are supplied.
+  - `9-10 strong`: sample records, runtime observations, SME field meaning,
+    boundary values, retention notes, and exception examples are also supplied.
+  - Missing sample records does not block structural data analysis; it limits
+    value-domain and edge-case confidence.
+- **Readiness checks**: Inventory Completeness Gate passing; files are not marked `blocked` in inventory; source is current production (tier 1) rather than archival; evidence authorization is resolved.
+- **Stop conditions**: file missing from inventory; DDS or metadata unavailable; mutating program analysis missing; unauthorized raw production data present.
 
 ### Execution
 

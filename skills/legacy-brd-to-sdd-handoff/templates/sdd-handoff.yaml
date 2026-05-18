@@ -242,7 +242,10 @@ evidence:
     sensitivity: "public"
     redaction_status: "not_required"
     redacted_filename: "02_programs/CREDIT-CHECK/program-analysis.md"
-    sme_approval: true
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
 
   - id: "EV-CREDIT-CHECK-002"
     type: "program_analysis"
@@ -250,7 +253,10 @@ evidence:
     sensitivity: "public"
     redaction_status: "not_required"
     redacted_filename: "02_programs/CREDIT-CHECK/program-analysis.md"
-    sme_approval: true
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
 
   - id: "EV-CREDIT-CHECK-003"
     type: "flow_analysis"
@@ -258,7 +264,10 @@ evidence:
     sensitivity: "internal"
     redaction_status: "reviewed"
     redacted_filename: "03_flows/CREDIT-CHECK/credit-check-auth/flow.md"
-    sme_approval: true
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
 
 evidence_summary:
   total_evidence_items: 3

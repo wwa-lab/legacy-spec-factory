@@ -60,8 +60,8 @@ Block and route elsewhere when any of the following hold:
 - Module / flow / program analyses are below `approved_with_non_blocking_tbd`
   → route to the relevant analyzer.
 - A blocking `TBD-*` is open → escalate to the capability-owner SME.
-- Any evidence manifest item has `sensitivity: unknown` or unredacted
-  sensitive payload
+- Any evidence manifest item has `sensitivity: unknown`, lacks source-path
+  authorization, or requires redaction without approval
   → route to `legacy-ibmi-evidence-intake`.
 - Caller wants architecture, design, user stories, code, or tests
   → that is the Atlas SDD chain (`req-to-user-story`,
@@ -115,7 +115,8 @@ Required:
   `03_flows/...`, `02_programs/...`, `01_inventory/inventory.yaml`)
 - evidence manifest produced by `legacy-ibmi-evidence-intake` for every
   `EV-*` referenced by the BRD or spec, using the canonical manifest fields
-  `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`, and
+  `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`,
+  `source_path_verified`, `redaction_required`, `sme_required`, and
   `sme_approval`
 - a named capability-owner SME available to sign off on the handoff
 
@@ -123,6 +124,22 @@ Optional:
 
 - forward-SDLC team intake notes (deadlines, sequencing) — recorded as
   context, **not** used to alter spec content
+
+Input readiness scoring:
+
+- `0-5 blocked`: BRD/spec/upstream approvals missing, blocking TBDs remain,
+  evidence manifest is incomplete or unauthorized, required SME sign-off is
+  missing, or referenced IDs cannot be resolved.
+- `6 minimum_pass`: approved BRD, approved spec, approved upstream analyses,
+  canonical evidence manifest, named capability-owner SME, and resolved
+  blocking TBDs are present.
+- `7-8 usable`: forward-SDLC intake notes, sequencing/deadline context, and
+  known downstream constraints are supplied.
+- `9-10 strong`: Atlas/implementation-team intake expectations, release
+  timing, test strategy context, and known non-functional constraints are also
+  supplied.
+- Missing forward-SDLC notes does not block the handoff package; it only limits
+  how much delivery context can be carried forward.
 
 Stop conditions (each is **blocking by default**; the gate does not advance
 unless explicitly cleared):
@@ -138,9 +155,11 @@ unless explicitly cleared):
 | evidence manifest `package_state` not `approved_for_inventory` | block; route to `legacy-ibmi-evidence-intake` |
 | any referenced `EV-*` missing from manifest `evidence_items[].evidence_id` | block; repair upstream evidence manifest |
 | any referenced `EV-*` with `sensitivity: unknown` | block; route to `legacy-ibmi-evidence-intake` |
-| any referenced `EV-*` with `sensitivity: confidential` and `redaction_status` not `approved` | block; route to evidence intake |
+| any referenced `EV-*` with `redaction_required: true` and `redaction_status` not `approved` | block; route to evidence intake |
+| any referenced `EV-*` with `redaction_required: false`, `source_path_verified` not `true`, and no approved analysis path | block; route to evidence intake |
 | any referenced `EV-*` with `sensitivity: public` or `internal` and `redaction_status` not `not_required`, `reviewed`, or `approved` | block; route to evidence intake |
-| any referenced `EV-*` missing `redacted_filename` or missing SME approval | block; route to evidence intake |
+| any referenced `EV-*` missing `redacted_filename` / approved analysis path | block; route to evidence intake |
+| any referenced `EV-*` with `sme_required: true` and missing SME approval | block; request evidence SME approval |
 | any required upstream analysis below `approved_with_non_blocking_tbd` | block; route to relevant analyzer |
 | referenced spec / BRD / evidence file missing or unreadable | block; repair upstream |
 

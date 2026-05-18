@@ -34,8 +34,10 @@ Accept any combination of:
 - DSPF, PRTF, spool, report, and screen samples
 - SME notes about known programs, files, jobs, reports, or hidden dependencies
 
-If raw production evidence is present, stop and require redaction review using
-`../../docs/data-collection-and-redaction.md`.
+If raw production samples, logs, spool, screenshots, or DB extracts are present
+without source-path authorization or required redaction approval, stop and route
+to `legacy-ibmi-evidence-intake`. Internal source members and metadata may be
+used when the evidence manifest records `source_path_verified: true`.
 
 ## Output Contract
 
@@ -55,6 +57,7 @@ Follow:
 
 - `../../docs/id-conventions.md`
 - `../../docs/evidence-and-knowledge-taxonomy.md`
+- `../../docs/input-readiness-rubric.md`
 - `references/output-contract.md`
 
 Examples:
@@ -72,17 +75,32 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: redacted evidence bundle (source members, DDS, DB2 metadata,
-  job/scheduler notes, screen/spool/report samples), capability scope
-  (name + slug + libraries + collection date), assigned SME owner.
+- **Required**: evidence manifest at `package_state: approved_for_inventory`
+  plus approved analysis paths for source members, DDS, DB2 metadata,
+  job/scheduler notes, screen/spool/report samples; capability scope
+  (name + slug + libraries + collection date); assigned intake reviewer.
 - **Optional**: prior shop inventory spreadsheets, wiki references, vendor
-  docs (treat as tier 3/4 hints, never as ground truth).
-- **Readiness checks**: Redaction Gate has cleared each evidence item; no
-  `sensitive: unknown`; capability slug stable; SME owner named.
-- **Stop conditions**: raw production evidence is present without redaction;
-  capability is "the whole application" (require a narrower slice); no SME
-  owner assigned; ground-truth tier 1 source listings (`WRKOBJ` /
-  `DSPOBJD` / source-member listings) are not available.
+  docs (treat as tier 3/4 hints, never as ground truth); assigned SME owner
+  when available for inventory completeness review.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved manifest missing, required source/object listings
+    unavailable, evidence authorization unresolved, scope is the whole
+    application, or no stable capability slug exists.
+  - `6 minimum_pass`: approved manifest, ground-truth source/object listings,
+    approved analysis paths, capability scope, and intake reviewer are present.
+  - `7-8 usable`: DDS/DB metadata, job/scheduler notes, and screen/report
+    samples are included for most referenced objects.
+  - `9-10 strong`: SME hints, prior inventory, runtime/spool samples, hidden
+    dependency notes, and downstream focus are also supplied.
+  - Missing SME owner does not block starting inventory; it blocks marking
+    inventory done if SME completeness review is required.
+- **Readiness checks**: Evidence Authorization Gate has cleared each evidence
+  item; no `sensitivity: unknown`; capability slug stable; every item has
+  either `source_path_verified: true` or completed required redaction.
+- **Stop conditions**: unauthorized raw production evidence is present;
+  capability is "the whole application" (require a narrower slice);
+  ground-truth tier 1 source listings (`WRKOBJ` / `DSPOBJD` /
+  source-member listings) are not available.
 
 ### Execution
 
@@ -123,10 +141,12 @@ field-level rules. The summary below is normative for this skill.
   hints, not as ground truth; PRTF/DSPF/PF/LF/job/subroutine gaps surfaced
   as TBDs rather than smoothed over.
 - **SME / human approval**: SME records `sme_review.decision`, signed-off
-  object coverage, hidden-dependency confirmation, report/spool
-  confirmation, sensitivity confirmation.
+  object coverage, hidden-dependency confirmation, report/spool confirmation,
+  and any sensitivity confirmation that required SME judgment. SME review is
+  the gate for marking inventory done, not for starting developer-led inventory
+  from an approved evidence manifest.
 - **Blocking conditions**: any object lacks an ID or evidence link; any
-  `sensitive: unknown` remains; SME marks `decision: blocked`; any
+  `sensitivity: unknown` remains; SME marks `decision: blocked`; any
   `coverage_gaps` entry with `blocking: yes` is unresolved.
 
 Emit a Step Validation Report (see
@@ -138,13 +158,15 @@ orchestrator.
 
 1. **Define capability scope**
    Identify the business capability name, slug, source libraries, date of
-   collection, and known SME owner. If the scope is a whole application, ask
-   for a narrower slice.
+   collection, and known reviewer/SME owner when available. If the scope is a
+   whole application, ask for a narrower slice.
 
 2. **Classify input evidence**
    Assign evidence IDs to each source bundle, metadata export, report sample,
    spool sample, job log, screen sample, and SME note. Mark sensitivity as
-   `yes`, `no`, or `unknown`.
+   `public`, `internal`, `confidential`, or `unknown`, preserving
+   `source_path_verified` / `redaction_required` status from the evidence
+   manifest.
 
 3. **Inventory legacy objects**
    Extract or list programs, service programs, CL commands, PF, LF, DSPF, PRTF,
@@ -165,8 +187,8 @@ orchestrator.
 
 5. **Identify coverage gaps**
    Create TBDs for missing DDS, missing PRTF, unresolved called programs,
-   unknown job flow, unclear screen/report artifacts, or sensitive evidence
-   awaiting redaction.
+   unknown job flow, unclear screen/report artifacts, or evidence awaiting
+   authorization/redaction.
 
 6. **Prepare SME review**
    Generate an inventory review checklist that asks the SME to confirm object

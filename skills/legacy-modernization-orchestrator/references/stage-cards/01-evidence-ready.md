@@ -1,18 +1,22 @@
 # Stage 01: Evidence Ready
 
 **You are here if:** `evidence-manifest.yaml` exists, every item has
-`sensitivity ∈ {no, redacted}` with SME approval, and you have not yet
-produced `inventory.yaml`.
+known `sensitivity`, an approved analysis path, and either source-path
+authorization or completed redaction approval, and you have not yet produced
+`inventory.yaml`.
 
 This is the **first safe starting point** for reverse engineering. If you
-arrived here from raw evidence, the Redaction Gate is now closed behind you.
+arrived here from raw evidence, the Evidence Authorization Gate is now closed
+behind you.
 
 ## Need before starting
 
-- `evidence/redacted/evidence-manifest.yaml` (approved)
-- `evidence/redacted/redaction-log.md`
-- The redacted source / metadata bundle referenced by the manifest
-- SME contact for the module under review
+- `evidence/redacted/evidence-manifest.yaml` or
+  `evidence/intake/evidence-manifest.yaml` (approved)
+- `redaction-log.md` or source-authorization log
+- The approved source / metadata bundle referenced by the manifest
+- SME contact for the module under review, if already known; otherwise capture
+  SME questions during inventory
 
 ## Run
 

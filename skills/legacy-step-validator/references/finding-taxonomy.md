@@ -44,7 +44,7 @@ Rules:
 
 | # | Dimension | Common triggers |
 | --- | --- | --- |
-| 1 | Input readiness | Upstream artifact missing, below status, gate blocked, SME owner not assigned |
+| 1 | Input readiness | Upstream artifact missing, below status, gate blocked, required SME owner not assigned |
 | 2 | Execution traceability | Decision point not recorded, procedure not cited, idempotency unstated |
 | 3 | Output contract completeness | Required file / section / field missing or out-of-order |
 | 4 | Evidence integrity | Claim without `EV-*` link; `EV-*` content does not support the claim |
@@ -53,10 +53,10 @@ Rules:
 | 7 | Downstream handoff readiness | Next-step gate fails; required artifact for next step absent |
 | 8 | Open TBD handling | TBD without category; TBD without resolver; TBD blocking-status ambiguous |
 | 9 | Contradiction / missing evidence detection | Two evidence items disagree without a `DEC-*` recording resolution; SME claim contradicts code without TBD |
-| 10 | Redaction and sensitivity safety | `sensitive: unknown`; raw PII / financial detail outside redacted samples; missing redaction record |
+| 10 | Evidence authorization and sensitivity safety | `sensitivity: unknown`; raw PII / financial detail outside authorized samples; missing source-path authorization; missing required redaction approval |
 
 A finding tagged under dimension 10 always has `severity: blocking`. The
-Redaction Gate is non-negotiable.
+Evidence Authorization Gate is non-negotiable.
 
 ## Layer Reference
 

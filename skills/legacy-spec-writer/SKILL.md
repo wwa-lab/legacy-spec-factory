@@ -104,6 +104,7 @@ Follow:
   knowledge-type / evidence-strength model
 - `../../docs/forward-sdlc-contract.md` for the handoff contract to
   `build-agent-skill`
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -129,8 +130,21 @@ field-level rules. The summary below is normative for this skill.
 - **Optional**: target platform hint (Java/Spring, Java/Quarkus,
   serverless, etc.) — informs `target_platform` and
   `modernization_decisions`.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved module missing, capability seed unresolved,
+    blocking TBDs remain, no capability-owner SME, required triggered artifact
+    missing, or evidence authorization unresolved.
+  - `6 minimum_pass`: approved module/upstream analyses, one SME-confirmed
+    `CAP-*`, named SME owner, and required triggered data/screen/report outputs
+    are present.
+  - `7-8 usable`: target platform hint, BAU notes, and related BRD/module
+    context are supplied.
+  - `9-10 strong`: acceptance examples, negative cases, runtime observations,
+    platform constraints, and modernization decision context are also supplied.
+  - Missing target platform hint does not block observed-behavior/spec drafting
+    unless modernization decisions must be framed in the same run.
 - **Readiness checks**: Inventory Completeness Gate and Evidence Approval
-  Gate passing; no `sensitive: unknown` evidence in scope; SME owner
+  Gate passing; no `sensitivity: unknown` evidence in scope; SME owner
   available to approve `BR-*` and `AC-*`.
 - **Stop conditions**: module status below `approved_with_non_blocking_tbd`
   (route back to `legacy-ibmi-module-analyzer`); selected `CAP-*` has
@@ -180,7 +194,7 @@ field-level rules. The summary below is normative for this skill.
   `../../schemas/spec.schema.yaml`; every `BEH-*`, `BR-*`, `DEC-*` links
   to ≥1 `EV-*`; every `BR-*` links to ≥1 `BEH-*`; every `approved`
   `BR-*` has ≥1 `AC-*`; every `AC-*` carries `validates: [BR-*]`; every
-  TBD has a category and resolver; no `sensitive: unknown` in `evidence[]`.
+  TBD has a category and resolver; no `sensitivity: unknown` in `evidence[]`.
 - **AI semantic**: each `BR-*` is supported by its linked `BEH-*` and
   `EV-*` content (not just ID reference); `modernization_decisions`
   are explicitly separated from `observed_behavior`; no invented Java
@@ -194,7 +208,7 @@ field-level rules. The summary below is normative for this skill.
   platform is concerned.
 - **Blocking conditions**: any business-critical `BR-*` unapproved; any
   `approved` `BR-*` missing `AC-*`; any `AC-*` missing
-  `validates: [BR-*]`; any `evidence[]` row with `sensitive: unknown`;
+  `validates: [BR-*]`; any `evidence[]` row with `sensitivity: unknown`;
   any blocking TBD; spec arrives at `build-agent-skill` with silent
   gaps.
 
@@ -216,8 +230,8 @@ to the orchestrator. The Forward Handoff Gate
    - Gather every `EV-*` referenced by any flow / program analysis that
      touches this capability
    - Populate `evidence[]` array — every `EV-*` becomes one row
-   - Confirm `sensitive` flag is set; if any `sensitive: unknown` exists,
-     stop and request redaction review
+   - Confirm `sensitivity` is set; if any `sensitivity: unknown` exists,
+     stop and request evidence authorization review
 
 3. **Lift Observed Behaviors (BEH-*)**
    - From flow analyses' control flow + branch points + error propagation

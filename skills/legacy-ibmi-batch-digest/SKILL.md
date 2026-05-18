@@ -79,6 +79,20 @@ to drive the three-bucket review routing.
 | `workflow-state.yaml` | `<project.root>/workflow-state.yaml` | yes |
 | Existing digest (if regenerating) | `02_programs/<MODULE-SLUG>/programs-batch-digest.md` | optional |
 
+Input readiness scoring:
+
+- `0-5 blocked`: inventory missing, criticality not SME-confirmed, no
+  `program-analysis.md` files, module scope ambiguous, or evidence
+  authorization unresolved.
+- `6 minimum_pass`: module slug, approved inventory with SME-confirmed
+  criticality, workflow state, and at least two program analyses are present.
+- `7-8 usable`: all inventory programs have corresponding analyses or clear
+  `not yet analyzed` rows.
+- `9-10 strong`: regenerated digest context, latest SME routing preferences,
+  prior digest, and known review capacity/priority notes are also supplied.
+- Missing existing digest does not block; missing analyses for some inventory
+  programs lowers completeness but can be reported explicitly.
+
 **Stop conditions:**
 
 - Inventory has no `criticality` fields or
@@ -170,6 +184,10 @@ with `Resolution` empty.
   `program-analysis.md` files for that module
 - **Optional**: existing digest to regenerate (re-render replaces, never
   edits in place)
+- **Input readiness scoring**: apply
+  `../../docs/input-readiness-rubric.md`; `minimum_pass` requires confirmed
+  criticality plus analyzable program outputs, while review-capacity notes are
+  quality boosters only.
 - **Readiness checks**: inventory's `criticality_confirmed_by_sme` is
   `true` for every program; criticality_summary present in
   `sme_review`
