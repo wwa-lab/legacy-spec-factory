@@ -47,6 +47,21 @@ Accept:
   serverless, etc. Used to inform `target_platform` and `modernization_decisions`
 - **SME availability** — capability owner who will approve `business_rules`,
   `acceptance_criteria`, and resolve open `TBD-*`
+- **Conditionally required from inventory triggers:**
+  - When `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+    → approved `04_modules/<MODULE-SLUG>/data-model/dictionary.md`.
+    `spec.yaml.data_model.entities` MUST be populated by reading this
+    dictionary verbatim (entities, fields, types, relationships).
+    Do NOT re-derive entities by recomputing across `program-analysis.md`
+    File I/O rows — cross-program invariants get lost that way.
+  - When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
+    → the approved `screen-report-analysis.md` artifacts contribute to
+    the UI-driven `behaviors` and `business_rules` of the spec (already
+    surfaced via View 1 of the module analyzer, but spec-writer should
+    cite them as evidence_ids in the spec's UI-facing rules).
+
+Trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
 
 Stop and require clarification if:
 
@@ -89,6 +104,7 @@ Follow:
   knowledge-type / evidence-strength model
 - `../../docs/forward-sdlc-contract.md` for the handoff contract to
   `build-agent-skill`
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -114,8 +130,21 @@ field-level rules. The summary below is normative for this skill.
 - **Optional**: target platform hint (Java/Spring, Java/Quarkus,
   serverless, etc.) — informs `target_platform` and
   `modernization_decisions`.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved module missing, capability seed unresolved,
+    blocking TBDs remain, no capability-owner SME, required triggered artifact
+    missing, or evidence authorization unresolved.
+  - `6 minimum_pass`: approved module/upstream analyses, one SME-confirmed
+    `CAP-*`, named SME owner, and required triggered data/screen/report outputs
+    are present.
+  - `7-8 usable`: target platform hint, BAU notes, and related BRD/module
+    context are supplied.
+  - `9-10 strong`: acceptance examples, negative cases, runtime observations,
+    platform constraints, and modernization decision context are also supplied.
+  - Missing target platform hint does not block observed-behavior/spec drafting
+    unless modernization decisions must be framed in the same run.
 - **Readiness checks**: Inventory Completeness Gate and Evidence Approval
-  Gate passing; no `sensitive: unknown` evidence in scope; SME owner
+  Gate passing; no `sensitivity: unknown` evidence in scope; SME owner
   available to approve `BR-*` and `AC-*`.
 - **Stop conditions**: module status below `approved_with_non_blocking_tbd`
   (route back to `legacy-ibmi-module-analyzer`); selected `CAP-*` has
@@ -165,7 +194,7 @@ field-level rules. The summary below is normative for this skill.
   `../../schemas/spec.schema.yaml`; every `BEH-*`, `BR-*`, `DEC-*` links
   to ≥1 `EV-*`; every `BR-*` links to ≥1 `BEH-*`; every `approved`
   `BR-*` has ≥1 `AC-*`; every `AC-*` carries `validates: [BR-*]`; every
-  TBD has a category and resolver; no `sensitive: unknown` in `evidence[]`.
+  TBD has a category and resolver; no `sensitivity: unknown` in `evidence[]`.
 - **AI semantic**: each `BR-*` is supported by its linked `BEH-*` and
   `EV-*` content (not just ID reference); `modernization_decisions`
   are explicitly separated from `observed_behavior`; no invented Java
@@ -179,7 +208,7 @@ field-level rules. The summary below is normative for this skill.
   platform is concerned.
 - **Blocking conditions**: any business-critical `BR-*` unapproved; any
   `approved` `BR-*` missing `AC-*`; any `AC-*` missing
-  `validates: [BR-*]`; any `evidence[]` row with `sensitive: unknown`;
+  `validates: [BR-*]`; any `evidence[]` row with `sensitivity: unknown`;
   any blocking TBD; spec arrives at `build-agent-skill` with silent
   gaps.
 
@@ -201,8 +230,8 @@ to the orchestrator. The Forward Handoff Gate
    - Gather every `EV-*` referenced by any flow / program analysis that
      touches this capability
    - Populate `evidence[]` array — every `EV-*` becomes one row
-   - Confirm `sensitive` flag is set; if any `sensitive: unknown` exists,
-     stop and request redaction review
+   - Confirm `sensitivity` is set; if any `sensitivity: unknown` exists,
+     stop and request evidence authorization review
 
 3. **Lift Observed Behaviors (BEH-*)**
    - From flow analyses' control flow + branch points + error propagation
@@ -266,6 +295,41 @@ to the orchestrator. The Forward Handoff Gate
     - Capture open `TBD-*` with `blocking` status
     - Generate `spec-review.md` checklist
     - The capability owner SME approves; the spec is then `status: approved`
+
+## Workflow State Write-Back
+
+At the end of a spec-writing run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces (mirrors `spec.yaml.status`):**
+
+- `8c Spec Approved` when `spec.yaml.status: approved` AND every rule has
+  `acceptance_criteria` AND no rule with
+  `knowledge_type: inferred_business_rule` is at
+  `review_status: needs_sme_review` AND no blocking `TBD-*` remains
+- `8b Spec In Review` when `spec.yaml.status: in_review`
+- `8a Spec Drafted` when `spec.yaml.status: draft`
+
+**Last artifact path pattern:** `05_specs/<CAP-*>/spec.yaml`
+(sibling: `spec.md`, `traceability.md`, optional `review-report.md`)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id
+   (matching `spec.yaml.status`), `spec.yaml` path, `last_skill:
+   legacy-spec-writer`, and blocking IDs (`tbds`, `sme_pending` for any
+   `inferred_business_rule` not yet confirmed, `gates: ["evidence_approval"]`
+   if any rule still has unlinked evidence).
+2. Append one `history[]` entry with `note` summarizing the spec event
+   (e.g. `"draft saved"`, `"promoted to in_review"`, `"SME approved"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. The `8c → 8b` transition (e.g. SME later rescinds
+approval) is a **rollback** — surface to the orchestrator and request the
+Rollback Protocol rather than silently lowering `stage_id`.
 
 ## Anti-Hallucination Rules
 

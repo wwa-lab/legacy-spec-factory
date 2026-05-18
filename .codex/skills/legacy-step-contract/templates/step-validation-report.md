@@ -33,6 +33,14 @@ warnings: []
 sme_decision: <approved | approved_with_non_blocking_tbd | pending | blocked | not_required>
 downstream_next_step: <skill-name | doc-path | none>
 remediation_step: <skill-name | doc-path | none>
+input_readiness:
+  score: <0-10>
+  status: <blocked | minimum_pass | usable | strong>
+  minimum_pass_met: <true | false>
+  hard_blockers: []
+  optional_missing: []
+  quality_boosters_available: []
+  quality_ceiling_reason:
 ```
 
 `pass` requires all three validation layers to be clean. `pass_with_warnings`
@@ -48,7 +56,8 @@ any blocking semantic finding, or any missing-but-required SME approval.
 | Schema validates |  |  |  |
 | ID prefixes match `docs/id-conventions.md` |  |  |  |
 | No dangling references |  |  |  |
-| Sensitivity resolved |  |  |  |
+| Evidence authorization resolved |  |  |  |
+| Input readiness scored and minimum pass met |  |  |  |
 | Status fields in enum |  |  |  |
 | Every claim has linked evidence |  |  |  |
 | Forbidden tools not used |  |  |  |

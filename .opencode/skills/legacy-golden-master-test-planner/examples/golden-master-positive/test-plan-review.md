@@ -19,7 +19,7 @@
 | Every `TC-*` validates approved `BR-*` / `AC-*` | pass | See coverage matrix |
 | Every `TC-*` has input evidence | pass | `EV-CREDIT-LIMIT-001`, `003`, `005` |
 | Every `TC-*` has expected-output evidence | pass | `EV-CREDIT-LIMIT-002`, `004`, `006` |
-| No evidence has `sensitive: unknown` | pass | Manifest says none |
+| No evidence has `sensitivity: unknown` | pass | Manifest says none |
 | Coverage matrix matches YAML catalog | pass | Three `TC-*` IDs in both files |
 
 ## Semantic Checks

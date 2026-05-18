@@ -16,7 +16,7 @@ evidence:
     location: REDLIB/QRPGLESRC/ORDENTR
     evidence_strength: confirmed_from_code
     summary: Program references CRHOLDP and CRCHKSRV, but neither artifact is present in the bundle.
-    sensitive: no
+    sensitivity: internal
 objects:
   - id: OBJ-CREDIT-CHECK-001
     name: ORDENTR
@@ -26,7 +26,7 @@ objects:
     description: Interactive order entry program.
     evidence_ids:
       - EV-CREDIT-CHECK-001
-    sensitivity: no
+    sensitivity: internal
     review_status: needs_sme_review
     notes: Source references missing PRTF and missing called service program.
   - id: OBJ-CREDIT-CHECK-002
@@ -83,4 +83,3 @@ sme_review:
   review_date:
   decision: blocked
   notes: Do not proceed to program analysis or spec generation until missing artifacts are resolved or explicitly waived by SME.
-

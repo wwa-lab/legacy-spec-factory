@@ -55,6 +55,7 @@ Follow:
 
 - `../../docs/id-conventions.md` for stable IDs (OBJ-*, EV-*, TBD-*)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength labels
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -77,9 +78,20 @@ field-level rules. The summary below is normative for this skill.
   `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
 - **Optional**: DDS copybook source (DSPF, PRTF, PF, LF) for files the
   program touches; SME notes on entry points, quirks, or runtime behavior.
+- **Input readiness scoring**:
+  - `0-5 blocked`: program source missing/incomplete, `OBJ-*` not found,
+    inventory status blocked, or evidence authorization unresolved.
+  - `6 minimum_pass`: one current program source and its approved inventory
+    `OBJ-*` link are present; missing copybooks/runtime details become TBDs.
+  - `7-8 usable`: referenced DDS/copybooks and object metadata are available
+    for most file and display/report interactions.
+  - `9-10 strong`: runtime logs, screen/report samples, SME notes, known
+    edge cases, and parameter/interface notes are also supplied.
+  - Missing runtime samples or SME notes does not block static program
+    analysis; it limits confidence for business meaning and exception realism.
 - **Readiness checks**: Inventory Completeness Gate passing; program is
   not marked `blocked` in inventory; source is current production (tier 1)
-  rather than archival; evidence is redacted.
+  rather than archival; evidence authorization is resolved.
 - **Stop conditions**: source missing or incomplete; program marked
   `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted
   production data present.
@@ -245,6 +257,37 @@ to the orchestrator.
    - Mark analysis as `draft` (ready for review)
    - Gate: Analysis artifact is ready when every non-TBD behavior has an evidence_strength of `confirmed_from_code`, `strongly_inferred`, or `medium_confidence` (the latter two only when an SME review note is attached)
 
+## Workflow State Write-Back
+
+At the end of a program-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3b Program Analysis Done` when **every** in-scope program in
+  `inventory.yaml` has an approved `program-analysis.md`
+- `3a Program Analysis In Progress` when one or more in-scope programs
+  still lack an analysis
+
+**Last artifact path pattern:**
+`02_programs/<MODULE-SLUG>/<OBJ-PROGRAM>/program-analysis.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id,
+   the path of the analysis you just saved, `last_skill:
+   legacy-ibmi-program-analyzer`, and blocking IDs (`tbds`, `sme_pending`
+   for any money / inventory / compliance branch awaiting SME).
+2. Append one `history[]` entry with `note` naming the program analyzed
+   (e.g. `"analyzed ORDENTR"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same program is allowed; a re-run that
+would lower `stage_id` requires the orchestrator's Rollback Protocol.
+
 ## Anti-Hallucination Rules
 
 **Code is ground truth.** See `../../docs/code-as-ground-truth.md` for
@@ -309,4 +352,3 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Evidence tagging and TBD handling
   - SME review checklist
   - Positive and negative examples
-

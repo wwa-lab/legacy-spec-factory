@@ -58,8 +58,9 @@ Block and route elsewhere when:
   `BR-*` / `AC-*` IDs -> route to `legacy-spec-writer` or spec review.
 - Expected outputs are not backed by runtime evidence -> request runtime
   evidence collection; do not guess.
-- Evidence has `sensitive: unknown`, unresolved redaction, or raw production
-  payload -> route to `legacy-ibmi-evidence-intake`.
+- Evidence has `sensitivity: unknown`, unresolved required redaction, missing
+  source-path authorization, or raw production payload -> route to
+  `legacy-ibmi-evidence-intake`.
 - The caller wants executable unit, integration, API, or harness code -> route
   to the downstream SDLC/test-generation chain.
 - The caller wants to change acceptance criteria, business rules, or
@@ -177,6 +178,7 @@ Follow:
   knowledge type
 - `../../docs/data-collection-and-redaction.md` for sample-data safety
 - `../../docs/forward-sdlc-contract.md` for handoff readiness
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 - `../legacy-step-contract/SKILL.md` for the shared Step Contract
 
 Examples:
@@ -197,6 +199,21 @@ the canonical Step Contract shape.
   runtime evidence; evidence manifest / redaction log; capability-owner SME.
 - **Optional**: approved BRD, existing `tests[]` sketches, forward SDLC intake
   notes.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved spec missing, business-critical `BR-*` lacks
+    approved `AC-*`, expected-output runtime evidence missing, evidence
+    authorization unresolved, contradictory outputs lack SME decision, or no
+    SME can approve the plan.
+  - `6 minimum_pass`: approved spec, approved critical rules and ACs, observed
+    runtime evidence for selected cases, evidence manifest, and SME owner are
+    present.
+  - `7-8 usable`: approved BRD, existing test sketches, and forward-SDLC intake
+    notes are supplied.
+  - `9-10 strong`: boundary/negative cases, period-end examples, before/after
+    DB snapshots, spool/report samples, and integration payload samples are
+    also supplied.
+  - Missing BRD or test sketches does not block when runtime expected outputs
+    are present; missing observed expected output does block.
 - **Readiness checks**: spec approved; no blocking TBDs; every business-critical
   rule has at least one AC; evidence sensitivity reviewed; sample data approved
   for agent use.
@@ -235,7 +252,7 @@ Mechanical validation:
 - every `TC-*` uses the correct capability slug and validates at least one
   approved `AC-*` or approved business-critical `BR-*`
 - every `TC-*` cites input evidence and expected-output evidence
-- no referenced evidence has `sensitive: unknown`
+- no referenced evidence has `sensitivity: unknown`
 - every `BR-*` / `AC-*` marked business-critical is covered by at least one
   `TC-*` or has an SME-approved deferral
 - coverage matrix and YAML catalog contain the same `TC-*` IDs
@@ -328,6 +345,37 @@ SME / human approval:
    - If blocked, emit `blocking-findings.yaml` with exact remediation steps.
    - Do not silently edit an already approved spec unless the user explicitly
      asks and the repository workflow allows reopening the spec for review.
+
+## Workflow State Write-Back
+
+At the end of a test-planning run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `9 Equivalence Pack Ready` when the test plan covers every approved rule
+  in `spec.yaml` with `TC-*` cases, sample-data references, and
+  expected-output references — and every reference resolves
+- No advancement (stays at `8c Spec Approved`) when coverage gaps remain;
+  record blockers in `blocking.gates: ["forward_handoff"]` plus the
+  uncovered rule IDs in `blocking.sme_pending`
+
+**Last artifact path pattern:** `06_quality/<CAP-*>/golden-master-tests.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id, the
+   test-plan path, `last_skill: legacy-golden-master-test-planner`, and
+   blocking IDs (uncovered rule IDs / missing samples).
+2. Append one `history[]` entry with `note` summarizing coverage
+   (e.g. `"golden-master plan covers 12 of 12 approved rules"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same capability is allowed; a re-run
+that would lower `stage_id` requires the orchestrator's Rollback Protocol.
 
 ## Completion Checklist
 

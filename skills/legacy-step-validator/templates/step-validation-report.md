@@ -35,6 +35,14 @@ warnings: []
 sme_decision: <approved | approved_with_non_blocking_tbd | pending | blocked | not_required>
 downstream_next_step: <skill-name | doc-path | none>
 remediation_step: <skill-name | doc-path | none>
+input_readiness:
+  score: <0-10>
+  status: <blocked | minimum_pass | usable | strong>
+  minimum_pass_met: <true | false>
+  hard_blockers: []
+  optional_missing: []
+  quality_boosters_available: []
+  quality_ceiling_reason:
 report_path: 06_quality/step-validation-report.md
 findings_path: 06_quality/blocking-findings.yaml | none
 ```
@@ -50,13 +58,14 @@ issue, or any next-step gate failure.
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| No `sensitive: unknown` in evidence |  |  |
+| Evidence authorization complete |  |  |
 | No raw production PII / financial detail outside redacted samples |  |  |
 | Redaction record exists for every production-sourced `EV-*` |  |  |
 | ID prefixes conform to `docs/id-conventions.md` |  |  |
 | All cross-referenced IDs resolve |  |  |
 | Knowledge type labels within allowed enum |  |  |
 | Evidence strength labels within allowed enum |  |  |
+| Input readiness score recorded with blockers/optional gaps/quality boosters |  |  |
 
 If a redaction or sensitivity pre-flight row fails, status is `blocked` and
 the validator stops. For other pre-flight failures, status is locked to
@@ -96,6 +105,10 @@ For each of the ten dimensions, list the findings that mapped to it.
 Dimensions with zero findings are listed as `none`.
 
 ### 1. Input readiness
+
+Record whether the step had the smallest safe input set, which inputs were
+hard blockers, which missing inputs were harmless, and which extra inputs would
+raise output quality.
 
 | Finding ID | Severity | Layer | Points to | Resolver | Recommended action |
 | --- | --- | --- | --- | --- | --- |

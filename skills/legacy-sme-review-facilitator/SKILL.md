@@ -130,6 +130,22 @@ Accept:
   - Behavior claims awaiting SME confirmation
   - Modernization decisions (`DEC-*`) awaiting SME acceptance
 
+Input readiness scoring:
+
+- `0-5 blocked`: no named SME owner, artifact status below allowed level,
+  evidence authorization unresolved, review scope too broad, or materials lack
+  the IDs the SME is being asked to approve.
+- `6 minimum_pass`: one approved or approved-with-non-blocking-TBD artifact,
+  named SME owner, bounded scope statement, and review materials with IDs are
+  present.
+- `7-8 usable`: contradictions, TBD ledgers, BR seeds, behavior claims, and
+  decision candidates are grouped by review topic.
+- `9-10 strong`: SME availability window, decision authority boundaries,
+  priority/risk tags, prior review decisions, and desired output format are
+  also supplied.
+- Missing prior review history does not block; missing SME owner or bounded
+  scope does.
+
 Stop and require clarification if:
 
 - **No SME owner is named or available** → stop; cannot proceed

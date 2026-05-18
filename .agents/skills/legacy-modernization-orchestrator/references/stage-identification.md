@@ -7,13 +7,13 @@ upstream stage that fits — do not "round up" maturity.
 
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
-| 0 | Evidence Intake (pre-redaction) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown` or `sensitive: yes` and no redaction record |
-| 1 | Evidence Ready | Redacted evidence bundle; every item has `sensitive: no` or a recorded redaction note; SME contact listed |
+| 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
+| 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
 | 2a | Inventory In Progress | Partial `inventory.yaml` (some objects, no `sme_review.decision`) |
 | 2b | Inventory Blocked | `inventory.yaml.sme_review.decision: blocked`, or `coverage_gaps[].blocking: yes` unresolved |
 | 2c | Inventory Done | `inventory.yaml.sme_review.decision: approved` or `approved_with_non_blocking_tbd`, plus `object-map.md` |
 | 3a | Program Analysis In Progress | `program-analysis-<OBJ-ID>.md` for some but not all in-scope programs |
-| 3b | Program Analysis Done | `program-analysis-<OBJ-ID>.md` for all in-scope programs |
+| 3b | Program Analysis Done | `program-analysis-<OBJ-ID>.md` for all in-scope programs **AND** all triggered companion artifacts (`screen-report-analysis.md` per triggered DSPF/PRTF/menu; `04_modules/<MODULE>/data-model/dictionary.md` if data-model trigger fires). Triggers declared in `inventory.yaml.sme_review.downstream_required`; see `skills/legacy-ibmi-inventory/references/downstream-triggers.md`. |
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
@@ -39,11 +39,12 @@ When the user has artifacts from multiple stages:
   programs, the current stage is **3a (Program Analysis In Progress)**, not
   8a. Downstream artifacts must be re-validated after analysis completes.
 
-When evidence is mixed sensitivity:
+When evidence authorization is incomplete:
 
-- If any one item has `sensitive: yes` without redaction, the stage is **0
-  (Evidence Intake)** regardless of how much other progress exists. The
-  Redaction Gate is non-bypassable.
+- If any one item has `sensitivity: unknown`, lacks source-path authorization,
+  or requires redaction without approval, the stage is **0 (Evidence Intake)**
+  regardless of how much other progress exists. The Evidence Authorization Gate
+  is non-bypassable.
 
 When only forward chain artifacts exist:
 
@@ -54,7 +55,11 @@ When only forward chain artifacts exist:
 
 ## Stage to Output Directory
 
-| Stage | Lives Under |
+All paths below are **relative to `project.root`** (default
+`docs/<project-name>/`). For a project named `XXX260004-demo`, stage 2
+artifacts live at `docs/XXX260004-demo/01_inventory/`.
+
+| Stage | Lives Under (relative to project.root) |
 | --- | --- |
 | 1 | `evidence/redacted/` (raw never committed) |
 | 2 | `01_inventory/` |
@@ -68,5 +73,7 @@ When only forward chain artifacts exist:
 | 9 | `06_quality/` |
 | 10 | `09_forward-sdlc/` (handoff manifest) |
 
-See the repository `README.md#artifact-chain` section for the full directory
-layout.
+Subdirectories are created on demand by the writing skill — do NOT
+pre-create empty stage folders. See `docs/workflow-state-contract.md` for
+the full project-root resolution rules and `README.md#artifact-chain` for
+the layout diagram.

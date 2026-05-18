@@ -4,15 +4,18 @@
 
 - capability_slug:
 - evidence_manifest:
+- intake_mode: internal_source_review | governed_redaction
+- intake_reviewer:
 - redaction_owner:
 - redaction_owner_role:
 - redaction_date:
 - review_status: draft | in_review | approved | blocked
 
-## Redaction Summary
+## Source Authorization / Redaction Summary
 
-| Evidence ID | File / Item | Sensitivity Before | Redaction Strategy | Status | Owner |
+| Evidence ID | File / Item | Sensitivity | Strategy | Status | Owner |
 | --- | --- | --- | --- | --- | --- |
+| EV-<SLUG>-001 | <source path> | internal | source path verified; no separate redacted copy required for internal analysis | reviewed | <developer/reviewer> |
 | EV-<SLUG>-001 | <item> | confidential | stable fake IDs; amounts shape-preserved; rule-critical values labeled if synthetic | pending | <owner> |
 
 ## Redaction Actions
@@ -39,6 +42,8 @@ values in this log.
 
 ## Approval
 
+- intake_reviewer_approval:
+- intake_review_date:
 - redaction_owner_approval:
 - approval_date:
 - sme_review_required: yes | no

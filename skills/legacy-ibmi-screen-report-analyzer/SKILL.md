@@ -88,6 +88,7 @@ Follow:
 - `../../docs/id-conventions.md` for stable IDs (OBJ-*, EV-*, BEH-*,
   IN-*, OUT-*, DATA-*, SEED-*, TBD-*)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength labels
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -107,8 +108,22 @@ field-level rules. The summary below is normative for this skill.
 
 - **Required**: one DSPF, PRTF, or MENU DDS source file, or screen/report runtime sample; the object's `OBJ-*` ID located in an `approved` (or `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
 - **Optional**: related RPGLE/CLLE/COBOL source snippets showing indicator usage or EXFMT/WRITE/READ logic; SME notes on field validation, user workflows, or report control breaks; program analysis artifacts that reference this screen/report.
-- **Readiness checks**: Inventory Completeness Gate passing; object is not marked `blocked` in inventory; evidence is redacted; DDS source is current or runtime sample is from controlled execution.
-- **Stop conditions**: source missing or incomplete; object marked `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted production data present; field meaning cannot be understood without business context.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved inventory missing, target DSPF/PRTF/menu object
+    unresolved, display/report source or controlled sample missing, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: approved inventory plus authoritative DSPF/PRTF/menu
+    source or controlled runtime sample is present; missing user meaning
+    becomes TBDs.
+  - `7-8 usable`: screenshots, sample spool output, related program snippets,
+    and navigation/report context are supplied.
+  - `9-10 strong`: screen recordings, role-specific SME notes, function-key
+    behavior, error/message examples, and report reconciliation samples are
+    also supplied.
+  - Missing screenshots or SME notes does not block layout/report extraction;
+    it limits workflow interpretation.
+- **Readiness checks**: Inventory Completeness Gate passing; object is not marked `blocked` in inventory; evidence authorization is resolved; DDS source is current or runtime sample is from controlled execution.
+- **Stop conditions**: source missing or incomplete; object marked `blocked` in inventory; `OBJ-*` not found in inventory; unauthorized raw production data present; field meaning cannot be understood without business context.
 
 ### Execution
 

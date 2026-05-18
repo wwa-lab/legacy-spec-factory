@@ -55,6 +55,7 @@ Follow:
 
 - `../../docs/id-conventions.md` for stable IDs (OBJ-*, EV-*, TBD-*)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength labels
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -77,9 +78,20 @@ field-level rules. The summary below is normative for this skill.
   `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
 - **Optional**: DDS copybook source (DSPF, PRTF, PF, LF) for files the
   program touches; SME notes on entry points, quirks, or runtime behavior.
+- **Input readiness scoring**:
+  - `0-5 blocked`: program source missing/incomplete, `OBJ-*` not found,
+    inventory status blocked, or evidence authorization unresolved.
+  - `6 minimum_pass`: one current program source and its approved inventory
+    `OBJ-*` link are present; missing copybooks/runtime details become TBDs.
+  - `7-8 usable`: referenced DDS/copybooks and object metadata are available
+    for most file and display/report interactions.
+  - `9-10 strong`: runtime logs, screen/report samples, SME notes, known
+    edge cases, and parameter/interface notes are also supplied.
+  - Missing runtime samples or SME notes does not block static program
+    analysis; it limits confidence for business meaning and exception realism.
 - **Readiness checks**: Inventory Completeness Gate passing; program is
   not marked `blocked` in inventory; source is current production (tier 1)
-  rather than archival; evidence is redacted.
+  rather than archival; evidence authorization is resolved.
 - **Stop conditions**: source missing or incomplete; program marked
   `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted
   production data present.
@@ -340,4 +352,3 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Evidence tagging and TBD handling
   - SME review checklist
   - Positive and negative examples
-

@@ -85,6 +85,7 @@ Follow:
 
 - `../../docs/id-conventions.md` for stable IDs (`FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength tagging
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -109,6 +110,18 @@ field-level rules. The summary below is normative for this skill.
 - **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
   `WRKJOBSCDE` export (scheduler triggers); trigger-program registration
   (DB triggers); SME notes on BAU rhythm and known error scenarios.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved inventory missing, required program analyses
+    missing, call-chain root unresolved, trigger model unidentified, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: root object, approved inventory, and the program
+    analyses needed for the requested chain are present.
+  - `7-8 usable`: scheduler/job notes, menu/display/report definitions, and
+    object dependencies are available for most chain edges.
+  - `9-10 strong`: runtime logs, screen/report samples, SME notes on triggers
+    and manual workarounds, and known exception cases are also supplied.
+  - Missing runtime samples does not block structural flow analysis; it leaves
+    runtime ordering and trigger confidence lower.
 - **Readiness checks**: Inventory Completeness Gate passing; every node
   in the chain has an approved program-analysis; trigger model identified
   unambiguously; the flow represents one business transaction.

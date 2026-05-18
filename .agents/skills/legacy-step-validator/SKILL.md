@@ -108,13 +108,29 @@ Accept:
 - **SME context** (optional) — if the SME has already reviewed and
   signed off, cite the SME role, date, and IDs approved.
 
+Input readiness scoring:
+
+- `0-5 blocked`: path missing, no recognizable artifact, mixed step types,
+  unauthorized production data, or request asks the validator to create the
+  artifact rather than review it.
+- `6 minimum_pass`: artifact path exists, step type can be identified, and the
+  Evidence Authorization Gate can be evaluated.
+- `7-8 usable`: step type hint, capability/module slug, and upstream context are
+  provided.
+- `9-10 strong`: SME context, prior findings, expected downstream consumer, and
+  known risk areas are also supplied.
+- Missing slug or SME context does not block validation; it may reduce ID
+  quality or SME-readiness precision in the report.
+
 Stop and refuse to validate if:
 
 - The path does not exist or contains no recognizable step artifact.
 - The artifact mixes two step types (e.g., inventory and module
   contents in one folder) — request scope clarification.
-- The artifact contains unredacted production data (`sensitive: unknown`
-  with raw PII / financial detail) — surface a Redaction Gate blocker
+- The artifact contains unauthorized production data (`sensitivity: unknown`,
+  missing source-path authorization, or required redaction without approval)
+  with raw PII / financial detail — surface an Evidence Authorization Gate
+  blocker
   immediately and stop further review.
 - The user is asking the validator to produce the step artifact rather
   than check it.
@@ -145,7 +161,9 @@ Follow:
 
 - `../../docs/evidence-and-knowledge-taxonomy.md` — knowledge type and
   evidence strength rules.
-- `../../docs/data-collection-and-redaction.md` — Redaction Gate.
+- `../../docs/data-collection-and-redaction.md` — Evidence Authorization Gate
+  and governed redaction.
+- `../../docs/input-readiness-rubric.md` — input readiness scoring.
 - `../../docs/id-conventions.md` — ID prefixes and `STEP-*` /
   `TBD-*` minting.
 - `../../docs/skill-review-gate.md` — when the validator is reviewing
@@ -173,11 +191,12 @@ Examples:
    - If two types match, refuse and request clarification.
    - If no type matches, mark the package as unrecognised and stop.
 
-2. **Confirm Redaction & Sensitivity Safety First**
-   - Scan for any `sensitive: unknown`, unredacted personal / financial
-     detail, missing redaction record.
+2. **Confirm Evidence Authorization & Sensitivity Safety First**
+   - Scan for any `sensitivity: unknown`, unapproved personal / financial
+     detail, missing source-path authorization, or missing required redaction
+     approval.
    - If any condition fails, status is `blocked` regardless of other
-     checks. Emit the report citing the Redaction Gate and stop.
+     checks. Emit the report citing the Evidence Authorization Gate and stop.
 
 3. **Run Mechanical Checks**
    - Load the per-step mechanical checklist from
@@ -284,7 +303,7 @@ semantic finding can both belong to dimension 4 (Evidence integrity).
 | 7 | Downstream handoff readiness | Does the artifact satisfy the gate the next step requires? |
 | 8 | Open TBD handling | Is every TBD categorized (`missing_inputs`, `evidence_gaps`, `contradictory_evidence`, `sme_questions`, `downstream_handoff_blockers`) and assigned a resolver? |
 | 9 | Contradiction / missing evidence | Are conflicting evidence items explicitly surfaced, with a `DEC-*` recording any SME resolution? |
-| 10 | Redaction and sensitivity safety | Is every evidence item redacted; is `sensitive: unknown` resolved? |
+| 10 | Evidence authorization and sensitivity safety | Does every evidence item have known sensitivity plus source-path authorization or completed required redaction? |
 
 Per-step dimension-to-check mappings live in
 `references/validation-checklists.md`.
@@ -297,7 +316,7 @@ The validator emits exactly one status:
 | --- | --- | --- |
 | `pass` | Mechanical, semantic, and SME-readiness checks are clean. SME approval is recorded where required. | All ten dimensions clear; no blocking finding. |
 | `pass_with_warnings` | Mechanical is clean. Semantic findings exist but are non-blocking. Open TBDs are SME-marked non-blocking. | Use sparingly. If you are tempted to call something a warning but it is critical, the status is `blocked`. |
-| `blocked` | Any mechanical failure, any blocking semantic finding, any missing-but-required SME approval, or any redaction issue. | Default on uncertainty. The downstream cost of a false `pass` is higher than a false `blocked`. |
+| `blocked` | Any mechanical failure, any blocking semantic finding, any missing-but-required SME approval, or any evidence authorization issue. | Default on uncertainty. The downstream cost of a false `pass` is higher than a false `blocked`. |
 
 The validator never self-promotes a `blocked` package to `pass`. Only
 the step's owning skill plus its SME can revise the artifact and
@@ -332,6 +351,41 @@ Layer rules:
   an SME can review — they are not SME *decisions*.
 
 See `references/finding-taxonomy.md` for the full model.
+
+## Workflow State Write-Back (history only)
+
+This is a governance / verification skill. It does NOT mutate
+`capabilities[].stage_id` or `current_focus`. After a validation run,
+append one `history[]` entry to `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+
+**Report path pattern:** alongside the validated artifact, e.g.
+`02_programs/<MODULE>/<OBJ>/program-analysis.review.md`,
+`05_specs/<CAP-*>/spec.review-report.md`
+
+**Per-run write:**
+
+```yaml
+history:
+  # ... older entries above (never edit)
+  - at: <ISO 8601>
+    skill: legacy-step-validator
+    capability_id: <CAP-* from current_focus, or null>
+    stage_after: <the capability's current stage_id — UNCHANGED>
+    artifact: <path to the validation report>
+    note: "validated <step-id> — result: pass | pass_with_warnings | blocked"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the validation result is `blocked`, you MAY
+append items to `capabilities[<CAP-*>].blocking.tbds` and
+`blocking.sme_pending` listing the unresolved findings. You MUST NOT
+change `stage_id`, `last_artifact`, or `last_skill` — the Tier 1 skill
+that produced the artifact remains its owner.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+Tell the user (in your prose output) to invoke the orchestrator first.
 
 ## Anti-Hallucination Rules
 

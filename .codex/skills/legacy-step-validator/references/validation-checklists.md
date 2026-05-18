@@ -50,9 +50,10 @@ Run these **before** any step-specific check. If any fails, status is
 
 | Check | Layer | Maps to dimension | Severity |
 | --- | --- | --- | --- |
-| No `sensitive: unknown` in evidence | mechanical | 10 | blocking |
-| No raw production PII / financial detail outside redacted samples | semantic | 10 | blocking |
-| Redaction record exists for every `EV-*` whose source was production-sourced | mechanical | 10 | blocking |
+| No `sensitivity: unknown` in evidence | mechanical | 10 | blocking |
+| No raw production PII / financial detail outside authorized samples | semantic | 10 | blocking |
+| Source-path authorization or required redaction approval exists for every `EV-*` | mechanical | 10 | blocking |
+| Input readiness summary exists with `score`, `status`, `hard_blockers`, `optional_missing`, and `quality_boosters_available` | mechanical | 1 | non_blocking |
 | `STEP-*` / `TBD-*` ID prefixes conform to `docs/id-conventions.md` | mechanical | 3 | blocking |
 | All cross-referenced IDs resolve (no dangling `EV-*` / `OBJ-*` / `BR-*`) | mechanical | 4 | blocking |
 | Knowledge type labels are one of `observed_behavior`, `inferred_business_rule`, `modernization_decision`, `unknown_tbd` | mechanical | 5 | blocking |
@@ -92,7 +93,7 @@ are present.
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| SME owner named in `inventory.yaml` | 6 | blocking |
+| SME owner named in `inventory.yaml` when inventory is being marked approved; otherwise SME routing is documented as pending/not required | 6 | blocking |
 | `inventory-review-checklist.md` covers object coverage, hidden dependencies, reports, sensitivity, downstream readiness | 6 | non_blocking |
 | `sme_review.decision` recorded with date and SME role when not `pending` | 6 | blocking |
 

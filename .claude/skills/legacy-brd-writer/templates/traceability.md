@@ -78,7 +78,7 @@ Complete list of evidence collected for this capability.
 | `EV-<CAPABILITY-SLUG>-003` | spool sample | `evidence/redacted/spool-<SAMPLE-ID>.txt` | `redacted` | Yes | `observed_in_runtime` | BEH-002 |
 | `EV-<CAPABILITY-SLUG>-004` | job log | `evidence/redacted/job-<JOB-ID>.log` | `redacted` | Yes | `observed_in_runtime` | BR-002 |
 
-**Validation:** No `sensitive: unknown` items ✓ / ✗
+**Validation:** No `sensitivity: unknown` items ✓ / ✗
 
 ---
 
@@ -134,7 +134,7 @@ Run before SME approval:
 - [ ] **All BR-* items have ≥1 supporting BEH-* and ≥1 supporting EV-***
 - [ ] **No dangling references** (all IDs in brd.md appear here)
 - [ ] **All TBD-* items have a category and resolver**
-- [ ] **No `sensitive: unknown` in evidence items**
+- [ ] **No `sensitivity: unknown` in evidence items**
 - [ ] **Traceability table is consistent** with brd.md section 4 (Evidence Index)
 
 ---

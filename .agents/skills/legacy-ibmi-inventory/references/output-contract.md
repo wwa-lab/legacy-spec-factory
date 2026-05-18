@@ -19,7 +19,7 @@ not be mixed:
 
 | Field | Meaning | Example | Resolved By |
 | --- | --- | --- | --- |
-| `coverage_gaps` | A specific legacy artifact is missing, unreadable, or unredacted | DDS source for a referenced PRTF is not in the bundle | Source-owner action: provide, redact, or formally waive the artifact |
+| `coverage_gaps` | A specific legacy artifact is missing, unreadable, or unauthorized | DDS source for a referenced PRTF is not in the bundle | Source-owner action: provide, authorize, redact, or formally waive the artifact |
 | `open_questions` | The artifacts are present but a business/runtime fact is unclear and needs SME judgment | Whether a data area overrides a threshold during month-end | SME answer recorded in `sme_review` |
 
 Rule of thumb: if a developer or build engineer can fix it by producing a file,
@@ -118,4 +118,3 @@ The checklist must include:
 - report/spool confirmation
 - data sensitivity confirmation
 - downstream readiness decision
-

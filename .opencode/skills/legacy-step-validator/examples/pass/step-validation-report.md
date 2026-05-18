@@ -42,9 +42,9 @@ findings_path: none
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| No `sensitive: unknown` in evidence | pass | inventory.yaml: every evidence row has `sensitive: no` (redacted) |
-| No raw production PII / financial detail outside redacted samples | pass | sample transactions in `evidence/redacted/` are masked |
-| Redaction record exists for every production-sourced `EV-*` | pass | `evidence/index/redaction-log.md` lists each EV-* |
+| No `sensitivity: unknown` in evidence | pass | inventory.yaml: every evidence row has known sensitivity |
+| No raw production PII / financial detail outside authorized samples | pass | sample transactions are authorized or masked |
+| Source-path authorization or required redaction approval exists for every `EV-*` | pass | evidence manifest lists each EV-* |
 | ID prefixes conform to `docs/id-conventions.md` | pass | grep: only `OBJ-*`, `EV-*`, `TBD-*` minted |
 | All cross-referenced IDs resolve | pass | every `evidence_ids[]` value resolves into `evidence[]` |
 | Knowledge type labels within allowed enum | pass | only `observed_behavior` appears in `notes` |

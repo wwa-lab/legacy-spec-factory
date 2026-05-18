@@ -123,7 +123,11 @@ evidence_coverage:
   - evidence_id: EV-<SLUG>-001
     sensitivity: public            # public | internal | confidential | unknown
     redaction_status: not_required
-    redacted_filename: 02_programs/<OBJ>/program-analysis.md
+    redacted_filename: 02_programs/<OBJ>/program-analysis.md  # approved analysis path
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
     referenced_by:
       behaviors: [ BEH-<SLUG>-001 ]
       business_rules: [ BR-<SLUG>-001 ]
@@ -272,9 +276,10 @@ Every finding row has a `find_id` minted as `FIND-<CAPABILITY-SLUG>-<NNN>` and a
 | `HANDOFF-ID-MISMATCH` | 3 | pre-existing `sdd-handoff.yaml` carries a `BR-*` / `AC-*` / `EV-*` whose wording differs from the spec |
 | `EVIDENCE-MANIFEST-MISS` | 4 | spec / BRD references an `EV-*` absent from manifest |
 | `EVIDENCE-SENSITIVITY-UNKNOWN` | 4 | manifest `sensitivity: unknown` |
-| `EVIDENCE-AWAITING-REDACTION` | 4 | manifest redaction status not `approved` / `not_required` / `reviewed` per sensitivity |
-| `EVIDENCE-REDACTED-FILE-MISSING` | 4 | manifest missing `redacted_filename` |
-| `EVIDENCE-SME-APPROVAL-MISSING` | 4 | manifest `sme_approval` ≠ `true` for an approved item |
+| `EVIDENCE-AWAITING-REDACTION` | 4 | manifest marks `redaction_required: true` but redaction is not `approved` |
+| `EVIDENCE-SOURCE-NOT-AUTHORIZED` | 4 | manifest marks `redaction_required: false` but `source_path_verified` is not `true` |
+| `EVIDENCE-APPROVED-PATH-MISSING` | 4 | manifest missing `redacted_filename` / approved analysis path |
+| `EVIDENCE-SME-APPROVAL-MISSING` | 4 | manifest marks `sme_required: true` but `sme_approval` is not `true` |
 | `BR-NO-EVIDENCE` | 5 | approved `BR-*` with empty `evidence_ids[]` |
 | `BR-NO-BEHAVIOR` | 5 | approved `BR-*` with empty `linked_behaviors[]` |
 | `BR-MISSING-AC` | 5 | approved `BR-*` with no linked `AC-*` |

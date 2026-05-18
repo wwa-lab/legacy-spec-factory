@@ -7,8 +7,8 @@ upstream stage that fits — do not "round up" maturity.
 
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
-| 0 | Evidence Intake (pre-redaction) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown` or `sensitive: yes` and no redaction record |
-| 1 | Evidence Ready | Redacted evidence bundle; every item has `sensitive: no` or a recorded redaction note; SME contact listed |
+| 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
+| 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
 | 2a | Inventory In Progress | Partial `inventory.yaml` (some objects, no `sme_review.decision`) |
 | 2b | Inventory Blocked | `inventory.yaml.sme_review.decision: blocked`, or `coverage_gaps[].blocking: yes` unresolved |
 | 2c | Inventory Done | `inventory.yaml.sme_review.decision: approved` or `approved_with_non_blocking_tbd`, plus `object-map.md` |
@@ -39,11 +39,12 @@ When the user has artifacts from multiple stages:
   programs, the current stage is **3a (Program Analysis In Progress)**, not
   8a. Downstream artifacts must be re-validated after analysis completes.
 
-When evidence is mixed sensitivity:
+When evidence authorization is incomplete:
 
-- If any one item has `sensitive: yes` without redaction, the stage is **0
-  (Evidence Intake)** regardless of how much other progress exists. The
-  Redaction Gate is non-bypassable.
+- If any one item has `sensitivity: unknown`, lacks source-path authorization,
+  or requires redaction without approval, the stage is **0 (Evidence Intake)**
+  regardless of how much other progress exists. The Evidence Authorization Gate
+  is non-bypassable.
 
 When only forward chain artifacts exist:
 

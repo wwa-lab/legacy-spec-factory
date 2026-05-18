@@ -330,7 +330,7 @@ Before any handoff, check the gate that applies to that transition. See
 
 | Gate | When Applied | Blocks If |
 | --- | --- | --- |
-| **Redaction Gate** | Before any Layer 1 skill or any agent reads evidence | Any evidence has `sensitive: unknown` or raw evidence is in scope without redaction record |
+| **Evidence Authorization Gate** | Before any Layer 1 skill or any agent reads evidence | Any evidence has `sensitivity: unknown`, lacks source-path authorization, or requires redaction without an approval record |
 | **Inventory Completeness Gate** | Before any Layer 1 analyzer downstream of inventory, and before any Layer 2 skill | `inventory.yaml.sme_review.decision: blocked`, or any `coverage_gaps` entry with `blocking: yes` is unresolved |
 | **Evidence Approval Gate** | Before `legacy-spec-writer` produces an approvable spec | Any business rule has `review_status: needs_sme_review` or no linked evidence, and `knowledge_type` is not `modernization_decision` |
 | **Forward Handoff Gate** | Before crossing to `wwa-lab/build-agent-skill` | `spec.yaml.status` is not `approved`, any critical rule unapproved, any blocking TBD remains, or `acceptance_criteria` missing for any approved rule |
@@ -726,11 +726,14 @@ This skill routes work. It does not replace any downstream skill. If a clear
 downstream skill exists and input is sufficient, hand off rather than stopping
 at routing commentary.
 
-### Redaction-First Rule
+### Evidence-Authorization-First Rule
 
 Never route a user to any agent skill when the evidence has `sensitivity:
-unknown` or `sensitive: yes` without a redaction record. The Redaction Gate
-must pass first, even if the user is impatient.
+unknown`, lacks `source_path_verified: true`, or has `redaction_required: true`
+without a redaction approval record. The Evidence Authorization Gate must pass
+first, even if the user is impatient. Do not require SME ownership or a separate
+redacted copy for Step 0 internal source review when the user has provided the
+same source path as the approved analysis path.
 
 ### Inventory-Before-Inference Rule
 
@@ -841,7 +844,7 @@ contract Layer 2 expects.
 
 | Doc | When the orchestrator points to it |
 | --- | --- |
-| `docs/data-collection-and-redaction.md` | Redaction Gate |
+| `docs/data-collection-and-redaction.md` | Evidence Authorization Gate and governed redaction |
 | `docs/id-conventions.md` | ID prefix / format questions |
 | `docs/evidence-and-knowledge-taxonomy.md` | Confidence / strength / approval questions |
 | `docs/forward-sdlc-contract.md` | Forward Handoff Gate, crossing to `wwa-lab/build-agent-skill` |

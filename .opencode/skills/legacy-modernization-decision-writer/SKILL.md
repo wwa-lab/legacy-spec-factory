@@ -97,6 +97,21 @@ Accept:
   - IBM i / business SME (for legacy behavior preservation and BRs)
   - Architecture / product owner (for target platform decisions)
 
+Input readiness scoring:
+
+- `0-5 blocked`: spec missing, rationale IDs unresolved, no SME for legacy
+  behavior, no architecture/product authority for target choices, unresolved
+  blocking TBDs, or evidence authorization unresolved.
+- `6 minimum_pass`: draft/in-review/approved spec, grounded BR/BEH/EV/TBD
+  records, and named decision authorities are present.
+- `7-8 usable`: approved module/flow/program analyses, explicit platform
+  constraints, and existing DEC drafts are supplied.
+- `9-10 strong`: tradeoff notes, non-functional constraints, operational
+  constraints, incident history, and downstream architecture context are also
+  supplied.
+- Missing existing DEC drafts does not block; vague platform constraints lower
+  decision quality and may keep DEC records in `draft`.
+
 Stop and require clarification if:
 
 - The capability spec is missing or does not contain the BR/BEH/EV records
@@ -219,7 +234,10 @@ rules.
   architecture or product decision authority for every target-system choice.
 - **Optional**: approved BRD, approved module/flow/program analyses, target
   platform constraints, existing `05_decisions/<CAPABILITY-SLUG>/` package.
-- **Readiness checks**: no `sensitive: unknown` evidence; referenced IDs resolve;
+- **Input readiness scoring**: apply
+  `../../docs/input-readiness-rubric.md`; platform context and existing DEC
+  drafts are quality boosters unless a target-system choice is being approved.
+- **Readiness checks**: no `sensitivity: unknown` evidence; referenced IDs resolve;
   every decision candidate has at least one linked BR or BEH and at least one
   linked EV or explicit target-platform constraint; decision authorities are
   named before any `DEC-*` can be approved.
@@ -261,7 +279,7 @@ rules.
 
 - **Mechanical**: required files exist; every ID follows
   `../../docs/id-conventions.md`; no `DECPKG-*` or unregistered status values;
-  no dangling references; no linked evidence has `sensitive: unknown`; no AC,
+  no dangling references; no linked evidence has `sensitivity: unknown`; no AC,
   TC, implementation task, or code artifact is minted.
 - **AI semantic**: DEC records are clearly separated from observed behavior and
   inferred business rules; rationale is grounded in linked BR/BEH/EV or explicit
@@ -357,6 +375,37 @@ For each `DEC-*` record:
 3. **Prepare for external handoff**: after the Forward Handoff Gate passes, the
    external forward SDLC chain consumes approved DEC records from `spec.yaml`
    plus decision package context when supplied
+
+## Workflow State Write-Back (history only)
+
+This is a governance skill — it formalizes large / risky `DEC-*`
+modernization decisions into standalone records. It does NOT advance
+`capabilities[].stage_id` (decisions can be authored at any stage from
+BRD onward) and does NOT mutate `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-modernization-decision-writer
+    capability_id: <CAP-* from current_focus, or null if cross-capability>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to the DEC-* record, e.g. 08_business-understanding/decisions/DEC-001.md>
+    note: "authored DEC-<NNN> — <one-line decision>: status <draft | proposed | approved>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the decision is `proposed` but lacks
+target-platform authority approval (required by the Forward Handoff
+Gate), append `"forward_handoff"` to
+`capabilities[<CAP-*>].blocking.gates`. You MUST NOT change `stage_id`,
+`last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
 
 ## Anti-Hallucination Boundaries
 

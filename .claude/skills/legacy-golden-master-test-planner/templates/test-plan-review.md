@@ -19,7 +19,7 @@
 | Every `TC-*` validates approved `BR-*` / `AC-*` | pending |  |
 | Every `TC-*` has input evidence | pending |  |
 | Every `TC-*` has expected-output evidence | pending |  |
-| No evidence has `sensitive: unknown` | pending |  |
+| No evidence has `sensitivity: unknown` | pending |  |
 | Coverage matrix matches YAML catalog | pending |  |
 
 ## Semantic Checks

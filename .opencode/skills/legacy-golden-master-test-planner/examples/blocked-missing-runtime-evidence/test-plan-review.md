@@ -17,7 +17,7 @@
 | Required files present | pass | Blocked output shape is review + findings |
 | Every `TC-*` validates approved `BR-*` / `AC-*` | fail | No approved `TC-*` can be emitted for `AC-CREDIT-LIMIT-004` |
 | Every `TC-*` has expected-output evidence | fail | `AC-CREDIT-LIMIT-004` lacks observed output evidence |
-| No evidence has `sensitive: unknown` | pass | Known evidence is redacted; missing evidence remains a blocker |
+| No evidence has `sensitivity: unknown` | pass | Known evidence is authorized/redacted; missing evidence remains a blocker |
 
 ## Semantic Checks
 

@@ -30,6 +30,19 @@ Accept:
   `docs/runtime-smoke-tests.md` or the target skill's `examples/`)
 - Optional: run mode (discovery-only, execute, or full including negative-case)
 
+Input readiness scoring:
+
+- `0-5 blocked`: skill name missing or not in canonical `skills/`, target
+  runtimes unspecified, sync drift detected, canonical examples/prompts missing
+  with no override, or required runtime cannot be invoked.
+- `6 minimum_pass`: canonical skill exists, target runtimes/run mode are clear,
+  adapters are synced, and a positive prompt is available.
+- `7-8 usable`: negative/adversarial prompt and version target are supplied.
+- `9-10 strong`: expected pass criteria, prior runtime-matrix row, review
+  scorecard context, and known runtime limitations are also supplied.
+- Missing a custom prompt does not block when canonical smoke prompts exist;
+  missing negative case may cap field-pilot readiness.
+
 ## Output Contract
 
 Produce:
@@ -137,6 +150,9 @@ field-level rules.
 - **Optional**: custom test prompt (if no canonical prompt exists in
   `docs/runtime-smoke-tests.md` or the target skill's examples, or if the user
   wants to override); negative-case prompt (if testing adversarial blocking).
+- **Input readiness scoring**: apply
+  `../../docs/input-readiness-rubric.md`; canonical prompts satisfy minimum
+  pass, while negative cases and prior scorecard context raise confidence.
 - **Readiness checks**: Skill exists under `skills/`; skill version is not
   yet marked as `passed` in all target runtimes in `runtime-matrix.md`;
   `scripts/sync-skills.sh --skill <skill-name> --target all --check` exits

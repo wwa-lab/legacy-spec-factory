@@ -25,11 +25,22 @@ prerequisite_artifacts:
   - path:
     required_status:
 prerequisite_gates:
-  - <Redaction Gate | Inventory Completeness Gate | Evidence Approval Gate | Forward Handoff Gate>
+  - <Evidence Authorization Gate | Inventory Completeness Gate | Evidence Approval Gate | Forward Handoff Gate>
 evidence_scope:
   evidence_ids: []
   object_ids: []
-  sensitive_summary: <none | redacted | unresolved (must be empty for execution)>
+  authorization_summary:
+    sensitivity_unknown: <yes | no>
+    source_path_verified: <yes | no | mixed>
+    redaction_required_unapproved: <yes | no>
+input_readiness:
+  score: <0-10>
+  status: <blocked | minimum_pass | usable | strong>
+  minimum_pass_met: <true | false>
+  hard_blockers: []
+  optional_missing: []
+  quality_boosters_available: []
+  quality_ceiling_reason:
 sme_required: <yes | recommended | no>
 sme_owner: <role or name when required>
 assumptions_recorded:
@@ -44,7 +55,9 @@ out_of_scope:
 | --- | --- |
 | Any prerequisite artifact missing or below status | `blocked` |
 | Any prerequisite gate blocked | `blocked` |
-| Any `sensitive: unknown` in scope | `blocked` |
+| Any `sensitivity: unknown` in scope | `blocked` |
+| Any evidence lacks source-path authorization or required redaction approval | `blocked` |
+| `input_readiness.status = blocked` or `minimum_pass_met = false` | `blocked` |
 | `sme_required = yes` and `sme_owner` empty | `blocked` |
 | `evidence_scope` empty for evidence-bound step | `blocked` |
 
@@ -105,7 +118,8 @@ human_readable_view:
 | Schema validates |  |  |
 | ID prefixes match conventions |  |  |
 | No dangling references |  |  |
-| Sensitivity resolved |  |  |
+| Evidence authorization resolved |  |  |
+| Input readiness scored and minimum pass met |  |  |
 | Status fields in enum |  |  |
 | Claims have evidence |  |  |
 | Forbidden tools not used |  |  |

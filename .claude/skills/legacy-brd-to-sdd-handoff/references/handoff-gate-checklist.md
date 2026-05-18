@@ -158,45 +158,49 @@ For each acceptance criterion linked from Gate 4:
 - [ ] Each referenced evidence record is found by
       `evidence_items[].evidence_id`
 - [ ] Each referenced evidence record has `sensitivity`,
-      `redaction_status`, `redacted_filename`, and `sme_approval`
+      `redaction_status`, `redacted_filename` / approved analysis path,
+      `source_path_verified`, `redaction_required`, `sme_required`, and
+      `sme_approval`
 
 ### Evidence Analysis
 For each evidence ID referenced in the spec:
 - [ ] Look up the evidence record in `evidence_items[].evidence_id`
-- [ ] Check the manifest's `sensitivity` and `redaction_status` fields:
-  - [ ] **If `sensitivity: public` or `internal` and `redaction_status` is
-        `not_required`, `reviewed`, or `approved`**:
-    - **Finding: EVIDENCE-CLEARED (pass)**
+- [ ] Check the manifest's authorization and redaction fields:
+  - [ ] **If `redaction_required: false`, `source_path_verified: true`, and
+        `redaction_status` is `not_required`, `reviewed`, or `approved`**:
+    - **Finding: EVIDENCE-SOURCE-AUTHORIZED (pass)**
     - **Continue**
-  - [ ] **If `sensitivity: confidential` AND `redaction_status: approved`**:
+  - [ ] **If `redaction_required: true` AND `redaction_status: approved`**:
     - **Finding: EVIDENCE-REDACTED (pass)**
     - Note in handoff that evidence is sanitized
     - **Continue**
-  - [ ] **If `sensitivity: confidential` AND `redaction_status` is not
+  - [ ] **If `redaction_required: true` AND `redaction_status` is not
         `approved`**:
     - **Finding: EVIDENCE-AWAITING-REDACTION (blocking)**
     - List the evidence ID
     - **Stop handoff; escalate to evidence intake**
-  - [ ] **If `sensitivity: public` or `internal` AND `redaction_status` is
-        `pending` or `failed`**:
-    - **Finding: EVIDENCE-AWAITING-REDACTION (blocking)**
+  - [ ] **If `redaction_required: false` AND `source_path_verified` is not
+        `true`**:
+    - **Finding: EVIDENCE-SOURCE-NOT-AUTHORIZED (blocking)**
     - **Stop handoff; escalate to evidence intake**
   - [ ] **If `sensitivity: unknown`**:
     - **Finding: EVIDENCE-SENSITIVITY-UNKNOWN (blocking)**
     - List the evidence ID
     - **Stop handoff; escalate to evidence intake for review**
-  - [ ] **If `redacted_filename` is missing/null or `sme_approval` is not true
-        for an approved item**:
-    - **Finding: EVIDENCE-REDACTED-FILE-MISSING** or
-      **EVIDENCE-SME-APPROVAL-MISSING** (blocking)
+  - [ ] **If `redacted_filename` / approved analysis path is missing/null**:
+    - **Finding: EVIDENCE-APPROVED-PATH-MISSING** (blocking)
+    - **Stop handoff; escalate to evidence intake**
+  - [ ] **If `sme_required: true` and `sme_approval` is not true**:
+    - **Finding: EVIDENCE-SME-APPROVAL-MISSING** (blocking)
     - **Stop handoff; escalate to evidence intake**
 
 ### Finding Rules
 - **Pass**: All referenced evidence satisfies the
   `legacy-ibmi-evidence-intake` approved-manifest contract
 - **Fail**: Manifest not approved, evidence ID missing, `sensitivity:
-  unknown`, redaction not approved/complete, redacted file missing, or SME
-  approval missing → **stop handoff; escalate**
+  unknown`, source path not authorized, required redaction not approved,
+  approved analysis path missing, or required SME approval missing → **stop
+  handoff; escalate**
 
 ---
 

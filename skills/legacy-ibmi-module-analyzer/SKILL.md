@@ -97,6 +97,7 @@ Follow:
 - `../../docs/id-conventions.md` for stable IDs
   (`MODULE-*`, `VIEW-*`, `BR-*`, `ACTOR-*`, `SYS-*`, `DATA-*`)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence tagging
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -121,6 +122,18 @@ field-level rules. The summary below is normative for this skill.
   rhythm and manual procedures.
 - **Optional**: architecture diagrams (View 2), data lineage docs
   (View 4), regulatory references.
+- **Input readiness scoring**:
+  - `0-5 blocked`: module scope unresolved, approved upstream analyses
+    missing, triggered data/screen/report analysis missing, evidence links
+    broken, or evidence authorization unresolved.
+  - `6 minimum_pass`: approved inventory, required flows, required program
+    analyses, module slug/name/scope, and SME BAU notes are present.
+  - `7-8 usable`: triggered data/screen/report outputs, architecture notes,
+    data lineage, and known TBD ledgers are supplied.
+  - `9-10 strong`: SME edge cases, exception examples, sample transactions,
+    regulatory context, and modernization decision context are also supplied.
+  - Missing architecture diagrams or regulatory references does not block the
+    module analysis unless the module scope specifically depends on them.
 - **Readiness checks**: every in-scope flow is `approved` or
   `approved_with_non_blocking_tbd`; SME has confirmed the module's
   business name and boundary; BAU notes are present (View 1 requires

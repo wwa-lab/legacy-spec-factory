@@ -3,24 +3,30 @@
 Four non-bypassable gates protect the reverse chain. The orchestrator must
 check the applicable gate before routing across the corresponding boundary.
 
-## Gate 1 — Redaction Gate
+## Gate 1 — Evidence Authorization Gate
 
 **Boundary:** raw legacy evidence → any agent skill
 
 **Pass criteria (all required):**
 
-- every evidence item has `sensitive: yes | no` (never `unknown`)
+- every evidence item has `sensitivity: public | internal | confidential`
+  (never `unknown`)
+- every evidence item has an approved analysis path
+- each item has either `source_path_verified: true` for internal source review
+  or `redaction_required: true` with `redaction_status: approved`
 - raw production data is not in committed paths (`evidence/raw/` is in
   `.gitignore`)
-- redaction notes recorded for any `sensitive: no` item that was originally
-  sensitive
-- `docs/data-collection-and-redaction.md` checklist completed
+- source authorization or redaction notes are recorded without raw sensitive
+  values
+- `docs/data-collection-and-redaction.md` checklist completed when governed
+  redaction is required
 
 **Block actions:**
 
 1. Refuse to route to any Layer 1 skill
-2. Send user to `docs/data-collection-and-redaction.md`
-3. List which evidence items are `sensitive: unknown` or unrecorded
+2. Send user to `legacy-ibmi-evidence-intake`
+3. List which evidence items have `sensitivity: unknown`, missing source-path
+   authorization, or incomplete required redaction
 
 ## Gate 2 — Inventory Completeness Gate
 

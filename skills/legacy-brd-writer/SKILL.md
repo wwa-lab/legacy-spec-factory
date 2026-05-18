@@ -151,6 +151,7 @@ Follow:
     `contradictory`, `missing`
 - `../../docs/data-collection-and-redaction.md` for evidence sensitivity
   checks
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -176,8 +177,20 @@ The summary below is normative for this skill.
   `program-analysis-<OBJ-ID>.md` at `approved` or
   `approved_with_non_blocking_tbd`; approved `01_inventory/inventory.yaml`.
 - **Optional**: BAU notes, supplemental context.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved module missing, selected `CAP-*` unresolved,
+    blocking TBDs remain, capability boundary ambiguous, no SME owner, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: approved module, selected SME-confirmed capability seed,
+    named capability-owner SME, and approved upstream analyses are present.
+  - `7-8 usable`: BAU notes, supplemental SME context, and related open-TBD
+    history are supplied.
+  - `9-10 strong`: examples of real scenarios, exception cases, runtime
+    observations, policy notes, and downstream reader context are also supplied.
+  - Missing supplemental context does not block BRD drafting; it should produce
+    clearer SME questions instead of invented rules.
 - **Readiness checks**: module and all upstream analyses at required status; no
-  `sensitive: unknown` evidence in scope; SME owner available to approve BRD.
+  `sensitivity: unknown` evidence in scope; SME owner available to approve BRD.
 - **Stop conditions**: module below `approved_with_non_blocking_tbd` (route back
   to `legacy-ibmi-module-analyzer`); capability seed has blocking TBDs (escalate
   to SME); no SME owner assigned; capability boundary ambiguous.
@@ -231,7 +244,7 @@ What can be checked by a script, schema, or deterministic linter:
   `TBD-*`)
 - ID prefixes match `docs/id-conventions.md`
 - every claim has at least one linked evidence item (`EV-*` or `BEH-*`)
-- no `sensitive: unknown` in evidence references
+- no `sensitivity: unknown` in evidence references
 - traceability table is complete and consistent (all claims appear in
   `traceability.md`)
 - BRD does not include acceptance criteria, modernization decisions, or target

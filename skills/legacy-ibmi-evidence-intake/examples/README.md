@@ -86,13 +86,15 @@ workflows for IBM i modernization.
 
 2. **Sensitivity Assessment Phase**
    - [ ] Every item has a sensitivity level (no `unknown`)
-   - [ ] Redaction owner assigned
-   - [ ] SME owner assigned
+   - [ ] Intake reviewer assigned
+   - [ ] Redaction owner assigned when redaction is required
+   - [ ] SME owner assigned only when Step 0 needs SME judgment
 
-3. **Redaction Phase**
-   - [ ] Redaction plan documented
-   - [ ] Redaction executed for confidential items
-   - [ ] Redaction log records every change (no raw values)
+3. **Source Authorization / Redaction Phase**
+   - [ ] Source path authorization documented for internal source review
+   - [ ] Redaction plan documented when masking is required
+   - [ ] Redaction executed for items with `redaction_required: true`
+   - [ ] Log records every source authorization or redaction change (no raw values)
 
 4. **Spot-Check Phase**
    - [ ] All files parse without errors
@@ -100,10 +102,10 @@ workflows for IBM i modernization.
    - [ ] No missed PII patterns
    - [ ] Calculations still valid
 
-5. **SME Review Phase**
-   - [ ] SME assesses evidence completeness
-   - [ ] SME assesses redaction quality
-   - [ ] SME approves or requests rework
+5. **Review Phase**
+   - [ ] Intake reviewer assesses evidence completeness
+   - [ ] SME assesses evidence completeness/redaction quality only when required
+   - [ ] Reviewer approves or requests rework
 
 6. **Final Sign-Off Phase**
    - [ ] Manifest is complete
@@ -125,9 +127,15 @@ A: Work with the redaction owner and SME to find a middle ground. Preserve
 business-critical information (amounts for thresholds, error messages for
 logic). Redact identifiers and secrets.
 
+**Q: What if I only have internal source paths and no SME yet?**  
+A: Use `intake_mode: internal_source_review`, record `source_path_verified:
+true`, assign the developer/reviewer as the intake owner, and set
+`sme_required: false` unless Step 0 depends on business judgment.
+
 **Q: How long does evidence intake take?**  
-A: Typically 1-2 days for a single capability (redaction: 4-6 hours, SME
-review: 2-3 hours). Depends on evidence volume and redaction complexity.
+A: Internal source review can be much shorter because it records source paths
+and reviewer approval. Governed redaction still depends on evidence volume,
+redaction complexity, and SME availability.
 
 **Q: Can I automate redaction?**  
 A: Partially. Use regex to find PII patterns. Always manually verify in
