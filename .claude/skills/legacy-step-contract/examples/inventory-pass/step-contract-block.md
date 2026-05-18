@@ -30,7 +30,7 @@ prerequisite_artifacts:
   - path: evidence/redacted/spool/credit-hold-report-001.txt
     required_status: redacted
 prerequisite_gates:
-  - Redaction Gate
+  - Evidence Authorization Gate
 evidence_scope:
   evidence_ids:
     - EV-CREDIT-CHECK-001
@@ -38,7 +38,10 @@ evidence_scope:
     - EV-CREDIT-CHECK-003
     - EV-CREDIT-CHECK-004
   object_ids: []
-  sensitive_summary: redacted
+  authorization_summary:
+    sensitivity_unknown: no
+    source_path_verified: mixed
+    redaction_required_unapproved: no
 sme_required: yes
 sme_owner: Credit Operations SME
 assumptions_recorded:
@@ -54,7 +57,8 @@ out_of_scope:
 | --- | --- |
 | Any prerequisite artifact missing or below status | `blocked` |
 | Any prerequisite gate blocked | `blocked` |
-| Any `sensitive: unknown` in scope | `blocked` |
+| Any `sensitivity: unknown` in scope | `blocked` |
+| Any evidence lacks source-path authorization or required redaction approval | `blocked` |
 | `sme_required = yes` and `sme_owner` empty | `blocked` |
 | `evidence_scope` empty for evidence-bound step | `blocked` |
 
@@ -77,7 +81,7 @@ tools_allowed:
   - read_redacted_spool
   - ask_sme
 tools_forbidden:
-  - read_unredacted_evidence
+  - read_unauthorized_evidence
   - invent_object_names
   - infer_business_rules
 decision_points:
@@ -142,7 +146,7 @@ human_readable_view: 01_inventory/object-map.md
 | Schema validates | n/a | inventory schema not yet formalized |
 | ID prefixes match conventions | yes | `docs/id-conventions.md` |
 | No dangling references | yes | all `evidence_ids[]` resolve |
-| Sensitivity resolved | yes | no `sensitive: unknown` |
+| Evidence authorization resolved | yes | no `sensitivity: unknown`; source paths/redactions approved |
 | Status fields in enum | yes | `sme_review.decision: approved` |
 | Claims have evidence | yes | all objects and relationships link to `EV-*` |
 | Forbidden tools not used | yes | no raw evidence read |

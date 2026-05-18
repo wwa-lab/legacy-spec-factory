@@ -60,8 +60,8 @@ Block and route elsewhere when any of the following hold:
 - Module / flow / program analyses are below `approved_with_non_blocking_tbd`
   → route to the relevant analyzer.
 - A blocking `TBD-*` is open → escalate to the capability-owner SME.
-- Any evidence manifest item has `sensitivity: unknown` or unredacted
-  sensitive payload
+- Any evidence manifest item has `sensitivity: unknown`, lacks source-path
+  authorization, or requires redaction without approval
   → route to `legacy-ibmi-evidence-intake`.
 - Caller wants architecture, design, user stories, code, or tests
   → that is the Atlas SDD chain (`req-to-user-story`,
@@ -115,7 +115,8 @@ Required:
   `03_flows/...`, `02_programs/...`, `01_inventory/inventory.yaml`)
 - evidence manifest produced by `legacy-ibmi-evidence-intake` for every
   `EV-*` referenced by the BRD or spec, using the canonical manifest fields
-  `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`, and
+  `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`,
+  `source_path_verified`, `redaction_required`, `sme_required`, and
   `sme_approval`
 - a named capability-owner SME available to sign off on the handoff
 
@@ -123,6 +124,22 @@ Optional:
 
 - forward-SDLC team intake notes (deadlines, sequencing) — recorded as
   context, **not** used to alter spec content
+
+Input readiness scoring:
+
+- `0-5 blocked`: BRD/spec/upstream approvals missing, blocking TBDs remain,
+  evidence manifest is incomplete or unauthorized, required SME sign-off is
+  missing, or referenced IDs cannot be resolved.
+- `6 minimum_pass`: approved BRD, approved spec, approved upstream analyses,
+  canonical evidence manifest, named capability-owner SME, and resolved
+  blocking TBDs are present.
+- `7-8 usable`: forward-SDLC intake notes, sequencing/deadline context, and
+  known downstream constraints are supplied.
+- `9-10 strong`: Atlas/implementation-team intake expectations, release
+  timing, test strategy context, and known non-functional constraints are also
+  supplied.
+- Missing forward-SDLC notes does not block the handoff package; it only limits
+  how much delivery context can be carried forward.
 
 Stop conditions (each is **blocking by default**; the gate does not advance
 unless explicitly cleared):
@@ -138,9 +155,11 @@ unless explicitly cleared):
 | evidence manifest `package_state` not `approved_for_inventory` | block; route to `legacy-ibmi-evidence-intake` |
 | any referenced `EV-*` missing from manifest `evidence_items[].evidence_id` | block; repair upstream evidence manifest |
 | any referenced `EV-*` with `sensitivity: unknown` | block; route to `legacy-ibmi-evidence-intake` |
-| any referenced `EV-*` with `sensitivity: confidential` and `redaction_status` not `approved` | block; route to evidence intake |
+| any referenced `EV-*` with `redaction_required: true` and `redaction_status` not `approved` | block; route to evidence intake |
+| any referenced `EV-*` with `redaction_required: false`, `source_path_verified` not `true`, and no approved analysis path | block; route to evidence intake |
 | any referenced `EV-*` with `sensitivity: public` or `internal` and `redaction_status` not `not_required`, `reviewed`, or `approved` | block; route to evidence intake |
-| any referenced `EV-*` missing `redacted_filename` or missing SME approval | block; route to evidence intake |
+| any referenced `EV-*` missing `redacted_filename` / approved analysis path | block; route to evidence intake |
+| any referenced `EV-*` with `sme_required: true` and missing SME approval | block; request evidence SME approval |
 | any required upstream analysis below `approved_with_non_blocking_tbd` | block; route to relevant analyzer |
 | referenced spec / BRD / evidence file missing or unreadable | block; repair upstream |
 
@@ -262,6 +281,43 @@ See **Inputs** and **Stop conditions** above.
 
 Use `legacy-step-validator` to validate the produced handoff against this
 Step Contract before forwarding to Atlas.
+
+## Workflow State Write-Back
+
+At the end of a handoff packaging run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `10 Forward Handoff Ready` when the bundle passes every Forward Handoff
+  Gate check (spec approved, critical rules SME-approved, no blocking
+  TBDs, acceptance criteria complete, equivalence pack present, target-
+  platform authority approval for every `DEC-*`)
+- No advancement (stays at `8c Spec Approved` or `9 Equivalence Pack
+  Ready`) when any gate item fails — record the failure in
+  `blocking.gates: ["forward_handoff"]`
+
+**Last artifact path pattern:**
+`09_forward-sdlc/<CAP-*>/` (handoff bundle directory; cite the manifest
+file your skill produces, e.g. `handoff-bundle.yaml` or
+`sdd-handoff-manifest.yaml`)
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id,
+   handoff manifest path, `last_skill: legacy-brd-to-sdd-handoff`, and
+   blocking IDs (any unresolved Forward Handoff Gate findings).
+2. Append one `history[]` entry with `note` summarizing the handoff
+   outcome (e.g. `"handoff sealed for CAP-ORDER-PRICING"`, or
+   `"blocked: 3 critical rules awaiting SME"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. After stage `10`, work continues in the forward repo
+(`wwa-lab/build-agent-skill`) — Legacy Spec Factory's reverse chain ends
+here.
 
 ## References and Templates
 

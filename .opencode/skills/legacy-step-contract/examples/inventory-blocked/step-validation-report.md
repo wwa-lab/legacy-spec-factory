@@ -44,7 +44,7 @@ remediation_step: legacy-ibmi-inventory
 | Schema validates | n/a | step did not execute | no `inventory.yaml` |
 | ID prefixes match `docs/id-conventions.md` | n/a | step did not execute | no minted IDs |
 | No dangling references | n/a | step did not execute | nothing to reference |
-| Sensitivity resolved | pass | linter on INPUT scope | all evidence `sensitive: redacted` |
+| Evidence authorization resolved | pass | linter on INPUT scope | all evidence authorized or redacted |
 | Status fields in enum | n/a | step did not execute | no artifact statuses |
 | Every claim has linked evidence | n/a | step did not execute | no claims |
 | Forbidden tools not used | n/a | step did not execute | no tool calls |

@@ -16,31 +16,31 @@ evidence:
     location: REDLIB/QRPGLESRC/ORDENTR
     evidence_strength: confirmed_from_code
     summary: Order entry program references credit check routine before order release.
-    sensitive: no
+    sensitivity: internal
   - id: EV-CREDIT-CHECK-002
     source_type: clle
     location: REDLIB/QCLLESRC/ORDSUBMIT
     evidence_strength: confirmed_from_code
     summary: Batch submit wrapper calls order release after validation step.
-    sensitive: no
+    sensitivity: internal
   - id: EV-CREDIT-CHECK-003
     source_type: dds_pf
     location: REDLIB/QDDSSRC/CUSTPF
     evidence_strength: confirmed_from_code
     summary: Customer master includes redacted credit limit and hold status fields.
-    sensitive: no
+    sensitivity: internal
   - id: EV-CREDIT-CHECK-004
     source_type: dds_prtf
     location: REDLIB/QDDSSRC/CRHOLDP
     evidence_strength: confirmed_from_code
     summary: Credit hold report printer file is present.
-    sensitive: no
+    sensitivity: internal
   - id: EV-CREDIT-CHECK-005
     source_type: spool
     location: evidence/redacted/spool/credit-hold-report-001.txt
     evidence_strength: observed_in_runtime
     summary: Redacted spool sample shows held orders grouped by customer.
-    sensitive: no
+    sensitivity: confidential
 objects:
   - id: OBJ-CREDIT-CHECK-001
     name: ORDENTR
@@ -50,7 +50,7 @@ objects:
     description: Interactive order entry program.
     evidence_ids:
       - EV-CREDIT-CHECK-001
-    sensitivity: no
+    sensitivity: internal
     review_status: needs_sme_review
     notes: Contains call or internal routine for credit validation.
   - id: OBJ-CREDIT-CHECK-002
@@ -61,7 +61,7 @@ objects:
     description: CL wrapper for submitted order release job.
     evidence_ids:
       - EV-CREDIT-CHECK-002
-    sensitivity: no
+    sensitivity: internal
     review_status: needs_sme_review
     notes: Confirm whether scheduler also invokes this wrapper.
   - id: OBJ-CREDIT-CHECK-003
@@ -72,7 +72,7 @@ objects:
     description: Customer master physical file.
     evidence_ids:
       - EV-CREDIT-CHECK-003
-    sensitivity: no
+    sensitivity: internal
     review_status: needs_sme_review
     notes: Redacted field names preserve length and decimal shape.
   - id: OBJ-CREDIT-CHECK-004
@@ -84,7 +84,7 @@ objects:
     evidence_ids:
       - EV-CREDIT-CHECK-004
       - EV-CREDIT-CHECK-005
-    sensitivity: no
+    sensitivity: internal
     review_status: needs_sme_review
     notes: Ties report source to observed spool output.
 relationships:
@@ -127,4 +127,3 @@ sme_review:
   review_date:
   decision: pending
   notes:
-

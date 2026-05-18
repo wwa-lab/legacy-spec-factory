@@ -20,6 +20,26 @@ Retain this notice in substantial copies or derived versions.
 
 Create a detailed analysis of IBM i display files (DSPF), printer files (PRTF), menu definitions, subfile behavior, function keys, indicators, field-level presentation logic, report layouts, report sections, and related runtime evidence. This skill does not generate modernization code or infer business rules from presentation alone. It produces evidence-backed analysis of the presentation layer ready for SME validation and downstream capability modeling.
 
+## Pipeline Position — Conditionally Required
+
+This skill is **mandatory** (not optional) when
+`inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`.
+The inventory skill auto-detects this trigger from DSPF / PRTF / menu
+objects; the SME confirms during the same single batched signoff that
+confirms criticality. Full trigger rules:
+[`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
+
+Once triggered, the orchestrator's `3b Program Analysis Done` gate
+refuses to advance until every triggered DSPF/PRTF/menu has an approved
+`screen-report-analysis.md`. Without this enforcement, ~40% of real
+screen-driven business rules (F-key bindings, conditional field
+attributes, subfile control semantics) slip through into ad-hoc
+`program-analysis.md` prose.
+
+For tiny modules with no display files, the skill is correctly skipped
+(`downstream_required.screen_report_analyzer.required: false`) and adds
+no overhead.
+
 ## Inputs
 
 Accept any combination of:
@@ -68,6 +88,7 @@ Follow:
 - `../../docs/id-conventions.md` for stable IDs (OBJ-*, EV-*, BEH-*,
   IN-*, OUT-*, DATA-*, SEED-*, TBD-*)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength labels
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -87,8 +108,22 @@ field-level rules. The summary below is normative for this skill.
 
 - **Required**: one DSPF, PRTF, or MENU DDS source file, or screen/report runtime sample; the object's `OBJ-*` ID located in an `approved` (or `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
 - **Optional**: related RPGLE/CLLE/COBOL source snippets showing indicator usage or EXFMT/WRITE/READ logic; SME notes on field validation, user workflows, or report control breaks; program analysis artifacts that reference this screen/report.
-- **Readiness checks**: Inventory Completeness Gate passing; object is not marked `blocked` in inventory; evidence is redacted; DDS source is current or runtime sample is from controlled execution.
-- **Stop conditions**: source missing or incomplete; object marked `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted production data present; field meaning cannot be understood without business context.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved inventory missing, target DSPF/PRTF/menu object
+    unresolved, display/report source or controlled sample missing, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: approved inventory plus authoritative DSPF/PRTF/menu
+    source or controlled runtime sample is present; missing user meaning
+    becomes TBDs.
+  - `7-8 usable`: screenshots, sample spool output, related program snippets,
+    and navigation/report context are supplied.
+  - `9-10 strong`: screen recordings, role-specific SME notes, function-key
+    behavior, error/message examples, and report reconciliation samples are
+    also supplied.
+  - Missing screenshots or SME notes does not block layout/report extraction;
+    it limits workflow interpretation.
+- **Readiness checks**: Inventory Completeness Gate passing; object is not marked `blocked` in inventory; evidence authorization is resolved; DDS source is current or runtime sample is from controlled execution.
+- **Stop conditions**: source missing or incomplete; object marked `blocked` in inventory; `OBJ-*` not found in inventory; unauthorized raw production data present; field meaning cannot be understood without business context.
 
 ### Execution
 
@@ -202,6 +237,35 @@ to the orchestrator.
    - Provide a checklist for SME review covering field validation realism, subfile behavior, function key mapping, report structure, and overall presentation flow
    - Mark handoff status as `draft`, `needs_sme_review`, `approved`, or `approved_with_non_blocking_tbd`
 
+## Workflow State Write-Back (history only — supplemental)
+
+This is a supplemental Layer 1 skill. It analyzes DSPF / PRTF / subfile /
+menu artifacts that strengthen evidence for downstream program / flow /
+module analysis, but does NOT advance the main linear stage. It does NOT
+mutate `capabilities[].stage_id` or `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-ibmi-screen-report-analyzer
+    capability_id: <CAP-* from current_focus, or null if module-scoped>
+    stage_after: <UNCHANGED stage_id>
+    artifact: <path to the screen/report analysis, e.g. 02_programs/<MODULE>/<OBJ>/screen-report-analysis.md>
+    note: "analyzed <DSPF | PRTF | menu | subfile> for <OBJ-*>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if the analysis uncovers new TBDs or evidence
+gaps, you MAY append to `capabilities[<CAP-*>].blocking.tbds`. You MUST
+NOT change `stage_id`, `last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
+
 ## Review Checklist
 
 - [ ] All fields in the screen/report layout have names, roles, and types consistent with DDS or runtime evidence
@@ -235,6 +299,12 @@ provided evidence.
 
 ## Version History
 
+- v0.2.0 (2026-05-16): Promoted from "optional supplemental" to
+  "conditionally required". When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`,
+  this skill becomes a mechanically enforced prerequisite for `3b
+  Program Analysis Done` — no more screen-driven rules slipping into
+  ad-hoc program-analysis prose. Inventory auto-detects DSPF / PRTF /
+  menu objects and SME confirms in the batched inventory signoff.
 - v0.1.0 (2026-05-16): Initial screen/report analyzer. Positive no-write
   smoke test passed in Codex CLI (`gpt-5.4-mini`), Claude Code (`haiku`), and
   OpenCode (`opencode/minimax-m2.5-free`); artifact remains repo-ready pending

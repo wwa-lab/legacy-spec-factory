@@ -7,6 +7,7 @@
 # Replace example values with actual data. Do not include raw sensitive values.
 
 package_state: "approved_for_inventory"
+intake_mode: "internal_source_review" # internal_source_review | governed_redaction
 
 capability:
   name: "Customer Credit Check"
@@ -23,13 +24,22 @@ redaction:
   redaction_date: "2026-05-15"
   approval_date: "2026-05-16"
 
-sme_review:
-  owner: "Bob Johnson"
-  owner_title: "IBM i SME / Finance Systems Lead"
-  owner_email: "bob.johnson@company.com"
+intake_review:
+  owner: "Leo Developer"
+  owner_title: "Developer / Intake Reviewer"
+  owner_email: "leo.developer@company.com"
   review_date: "2026-05-16"
   approval_status: "approved_with_non_blocking_tbd"
-  approval_notes: "All inventory-critical evidence is approved. Secondary approval screen remains open for later flow analysis."
+  approval_notes: "Source paths were supplied by the project team inside the isolated company environment; inventory may proceed before SME assignment."
+
+sme_review:
+  required: false
+  owner: null
+  owner_title: null
+  owner_email: null
+  review_date: null
+  approval_status: "not_required"
+  approval_notes: "SME review is deferred until business-rule validation; not required for Step 0 source intake."
 
 intake_decision:
   status: "pass_with_warnings"
@@ -49,7 +59,9 @@ evidence_items:
       object_type: "PGM"
       last_modified: "2025-06-10"
     original_filename: "CUSTPGM.RPGLE"
-    redacted_filename: "01_sources/EV-CREDIT-CHECK-001-CUSTPGM.RPGLE"
+    redacted_filename: "source/CUSTPGM.RPGLE"
+    source_path_verified: true
+    redaction_required: false
     size_bytes: 45620
     description: "Main customer credit validation program"
     sensitivity: "confidential"
@@ -57,15 +69,17 @@ evidence_items:
       - "customer account numbers"
       - "credit limits"
       - "algorithm parameters"
-    redaction_status: "approved"
+    redaction_status: "reviewed"
+    approval_basis: "developer_review"
     redaction_notes: |
       - Customer account numbers (CUSTNO) replaced with stable fake IDs.
       - Credit limits masked while preserving numeric scale.
       - Approval logic preserved (IF/THEN branches intact).
       - Field types and lengths preserved.
       - Spot-check: verified calculation logic still valid.
-    sme_approval: true
-    reviewed_by: "Bob Johnson"
+    sme_required: false
+    sme_approval: false
+    reviewed_by: "Leo Developer"
     review_date: "2026-05-16"
     tags:
       - "critical"
@@ -85,15 +99,19 @@ evidence_items:
       object_type: "PGM"
       last_modified: "2025-06-08"
     original_filename: "CUSTMENU.CLLE"
-    redacted_filename: "01_sources/EV-CREDIT-CHECK-002-CUSTMENU.CLLE"
+    redacted_filename: "source/CUSTMENU.CLLE"
+    source_path_verified: true
+    redaction_required: false
     size_bytes: 12340
     description: "Menu driver and job routing for customer credit module"
     sensitivity: "internal"
     sensitive_content: []
     redaction_status: "not_required"
+    approval_basis: "source_path_provided"
     redaction_notes: "No PII or financial data; approved as-is."
-    sme_approval: true
-    reviewed_by: "Bob Johnson"
+    sme_required: false
+    sme_approval: false
+    reviewed_by: "Leo Developer"
     review_date: "2026-05-16"
     tags:
       - "entry-point"
@@ -112,15 +130,19 @@ evidence_items:
       object_type: "DSPF"
       last_modified: "2025-04-20"
     original_filename: "CUSTSCN01.DSPF"
-    redacted_filename: "01_sources/EV-CREDIT-CHECK-003-CUSTSCN01.DSPF"
+    redacted_filename: "source/CUSTSCN01.DSPF"
+    source_path_verified: true
+    redaction_required: false
     size_bytes: 8900
     description: "Customer inquiry screen display file"
     sensitivity: "internal"
     sensitive_content: []
     redaction_status: "not_required"
+    approval_basis: "source_path_provided"
     redaction_notes: "Screen field definitions only; no data included."
-    sme_approval: true
-    reviewed_by: "Bob Johnson"
+    sme_required: false
+    sme_approval: false
+    reviewed_by: "Leo Developer"
     review_date: "2026-05-16"
     tags:
       - "ui"
@@ -139,14 +161,18 @@ evidence_items:
       collection_date: "2026-05-15"
     original_filename: "CUSTMAST-metadata.txt"
     redacted_filename: "02_metadata/EV-CREDIT-CHECK-010-CUSTMAST-FD.txt"
+    source_path_verified: true
+    redaction_required: false
     size_bytes: 5600
     description: "DB2 customer master table field descriptions"
     sensitivity: "internal"
     sensitive_content: []
     redaction_status: "not_required"
+    approval_basis: "source_path_provided"
     redaction_notes: "Metadata only; no data values included."
-    sme_approval: true
-    reviewed_by: "Bob Johnson"
+    sme_required: false
+    sme_approval: false
+    reviewed_by: "Leo Developer"
     review_date: "2026-05-16"
     tags:
       - "data-model"
@@ -167,6 +193,8 @@ evidence_items:
       collection_time: "23:45:00"
     original_filename: "CRDBATCH-joblog-20260514.txt"
     redacted_filename: "03_logs/EV-CREDIT-CHECK-020-JOBLOG.txt"
+    source_path_verified: false
+    redaction_required: true
     size_bytes: 125000
     description: "Job log from overnight credit batch run"
     sensitivity: "confidential"
@@ -174,12 +202,14 @@ evidence_items:
       - "customer transaction IDs"
       - "account numbers"
     redaction_status: "approved"
+    approval_basis: "redaction_owner_review"
     redaction_notes: |
       - Transaction IDs replaced with stable fake IDs.
       - Summary counts preserved.
       - Timestamps and durations preserved.
       - Error messages kept because they are business-critical operational evidence.
       - Spot-check: verified log timestamps match source code expectations.
+    sme_required: true
     sme_approval: true
     reviewed_by: "Bob Johnson"
     review_date: "2026-05-16"
@@ -200,6 +230,8 @@ evidence_items:
       collection_method: "screenshot from DSPMNU CRDSYS/CUSTMENU"
     original_filename: "CUSTINQ-screen-sample.png"
     redacted_filename: "04_samples/EV-CREDIT-CHECK-030-CUSTINQ.png"
+    source_path_verified: false
+    redaction_required: true
     size_bytes: 45000
     description: "Customer inquiry screen with test data sample"
     sensitivity: "confidential"
@@ -207,10 +239,12 @@ evidence_items:
       - "test account numbers"
       - "test credit limits"
     redaction_status: "approved"
+    approval_basis: "redaction_owner_review"
     redaction_notes: |
       - Account number field contains synthetic test value only.
       - Credit limit field contains synthetic test value only.
       - Field layout and flow visible for analysis.
+    sme_required: true
     sme_approval: true
     reviewed_by: "Bob Johnson"
     review_date: "2026-05-16"
@@ -232,6 +266,8 @@ evidence_items:
       sampling_notes: "Representative redacted sample selected by operations SME"
     original_filename: "credit-requests-20260514-sample.csv"
     redacted_filename: "04_samples/EV-CREDIT-CHECK-040-CREDRQ-SAMPLE.csv"
+    source_path_verified: false
+    redaction_required: true
     size_bytes: 3200
     description: "10 representative credit request transactions with outcomes"
     sensitivity: "confidential"
@@ -240,11 +276,13 @@ evidence_items:
       - "request amounts"
       - "approval decisions"
     redaction_status: "approved"
+    approval_basis: "redaction_owner_review"
     redaction_notes: |
       - Customer IDs replaced with stable fake IDs.
       - Amount scale and range preserved to show business logic.
       - Approval codes preserved (A, D, P).
       - Transaction flow and decision timing visible.
+    sme_required: true
     sme_approval: true
     reviewed_by: "Bob Johnson"
     review_date: "2026-05-16"
@@ -279,9 +317,9 @@ summary:
     rejected: 0
     draft: 0
   items_by_redaction_status:
-    approved: 4
+    approved: 3
     not_required: 3
-    reviewed: 0
+    reviewed: 1
     pending: 0
     failed: 0
   next_steps:

@@ -83,7 +83,9 @@
   - [x] EV-CREDIT-CHECK-008: sensitivity=internal, redaction_status=reviewed ✅
 
 - [x] No `sensitivity: unknown` items
-- [x] Every referenced evidence item has `redacted_filename` and SME approval
+- [x] Every referenced evidence item has an approved analysis path and source
+      authorization or required redaction approval
+- [x] Required evidence SME approvals are present (`sme_required: true` only)
 
 **Status**: ✅ PASS
 

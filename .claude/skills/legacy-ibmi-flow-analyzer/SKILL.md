@@ -85,6 +85,7 @@ Follow:
 
 - `../../docs/id-conventions.md` for stable IDs (`FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence strength tagging
+- `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
 
@@ -109,6 +110,18 @@ field-level rules. The summary below is normative for this skill.
 - **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
   `WRKJOBSCDE` export (scheduler triggers); trigger-program registration
   (DB triggers); SME notes on BAU rhythm and known error scenarios.
+- **Input readiness scoring**:
+  - `0-5 blocked`: approved inventory missing, required program analyses
+    missing, call-chain root unresolved, trigger model unidentified, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: root object, approved inventory, and the program
+    analyses needed for the requested chain are present.
+  - `7-8 usable`: scheduler/job notes, menu/display/report definitions, and
+    object dependencies are available for most chain edges.
+  - `9-10 strong`: runtime logs, screen/report samples, SME notes on triggers
+    and manual workarounds, and known exception cases are also supplied.
+  - Missing runtime samples does not block structural flow analysis; it leaves
+    runtime ordering and trigger confidence lower.
 - **Readiness checks**: Inventory Completeness Gate passing; every node
   in the chain has an approved program-analysis; trigger model identified
   unambiguously; the flow represents one business transaction.
@@ -296,6 +309,37 @@ to the orchestrator.
      - no blocking TBDs (or SME has explicitly waived them)
      - SME has signed off on the trigger model + business event name +
        capability seeds
+
+## Workflow State Write-Back
+
+At the end of a flow-analysis run, update
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `3d Flow Analysis Done` when **every** business transaction the SME lists
+  for this module has an approved `flow-*.md`
+- `3c Flow Analysis In Progress` when one or more in-scope flows are still
+  draft, blocked, or missing
+
+**Last artifact path pattern:**
+`03_flows/<MODULE-SLUG>/flow-<FLOW-SLUG>.md`
+
+**Writes per run:**
+
+1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id, the
+   path of the flow you just saved, `last_skill: legacy-ibmi-flow-analyzer`,
+   and blocking IDs (`tbds`, `sme_pending` for trigger context / commit
+   boundary questions).
+2. Append one `history[]` entry with `note` naming the flow
+   (e.g. `"analyzed flow-submit-order"`).
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. A re-run on the same flow is allowed; a re-run that
+would lower `stage_id` requires the orchestrator's Rollback Protocol.
 
 ## Anti-Hallucination Rules
 

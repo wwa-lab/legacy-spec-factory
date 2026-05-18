@@ -36,7 +36,7 @@ Review that all required artifacts are present:
 
 ### Sensitivity Check
 
-- [ ] No `sensitive: unknown` fields in linked evidence
+- [ ] No `sensitivity: unknown` fields in linked evidence
 - [ ] Redaction log reviewed for any PII/confidential data
 - [ ] All sensitive data properly redacted per `docs/data-collection-and-redaction.md`
 

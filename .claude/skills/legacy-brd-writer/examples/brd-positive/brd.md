@@ -242,7 +242,7 @@ See `traceability.md` for the full cross-reference table.
 - 3 inferred business rules identified (all confirmed by SME as accurate)
 - 3 open questions (0 blocking, 3 non-blocking)
 - All claims trace to supporting evidence
-- No `sensitive: unknown` evidence
+- No `sensitivity: unknown` evidence
 
 ---
 

@@ -108,6 +108,10 @@ evidence_coverage:
     sensitivity: "public"
     redaction_status: "not_required"
     redacted_filename: "02_programs/CREDIT-CHECK/program-analysis.md"
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
     referenced_by:
       behaviors: ["BEH-CREDIT-CHECK-001"]
       business_rules: ["BR-CREDIT-CHECK-001"]
@@ -122,6 +126,10 @@ evidence_coverage:
     sensitivity: "public"
     redaction_status: "not_required"
     redacted_filename: "02_programs/CREDIT-CHECK/program-analysis.md"
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
     referenced_by:
       behaviors: ["BEH-CREDIT-CHECK-001"]
       business_rules: ["BR-CREDIT-CHECK-001"]
@@ -136,6 +144,10 @@ evidence_coverage:
     sensitivity: "internal"
     redaction_status: "reviewed"
     redacted_filename: "03_flows/CREDIT-CHECK/credit-check-auth/flow.md"
+    source_path_verified: true
+    redaction_required: false
+    sme_required: false
+    sme_approval: false
     referenced_by:
       behaviors: ["BEH-CREDIT-CHECK-002"]
       business_rules: ["BR-CREDIT-CHECK-002"]
@@ -150,6 +162,10 @@ evidence_coverage:
     sensitivity: "confidential"
     redaction_status: "approved"
     redacted_filename: "evidence/redacted/spool-credit-001.txt"
+    source_path_verified: false
+    redaction_required: true
+    sme_required: true
+    sme_approval: true
     referenced_by:
       behaviors: ["BEH-CREDIT-CHECK-002"]
       business_rules: ["BR-CREDIT-CHECK-002"]

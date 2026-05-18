@@ -7,7 +7,7 @@
 | Evidence manifest | `07_runtime-evidence/evidence-manifest.yaml` |
 | Redaction log | `07_runtime-evidence/redaction-log-2025-05-01.md` |
 | Raw evidence excluded from repo | yes |
-| Any `sensitive: unknown` | no |
+| Any `sensitivity: unknown` | no |
 | Data owner approval | approved |
 
 ## Samples

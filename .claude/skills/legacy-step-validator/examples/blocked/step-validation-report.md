@@ -51,9 +51,9 @@ the package is blocked.
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| No `sensitive: unknown` in evidence | pass | inventory.yaml has none |
-| No raw production PII / financial detail outside redacted samples | pass | samples in `evidence/redacted/` |
-| Redaction record exists for every production-sourced `EV-*` | pass | `evidence/index/redaction-log.md` |
+| No `sensitivity: unknown` in evidence | pass | inventory.yaml has none |
+| No raw production PII / financial detail outside authorized samples | pass | samples are authorized or masked |
+| Source-path authorization or required redaction approval exists for every `EV-*` | pass | evidence manifest lists each EV-* |
 | ID prefixes conform to `docs/id-conventions.md` | pass | linter |
 | All cross-referenced IDs resolve | **fail** | `03-program-flow.md` references `FLOW-CHARGEBACK-001` which has no approved `flow-*.md` |
 | Knowledge type labels within allowed enum | pass | linter |

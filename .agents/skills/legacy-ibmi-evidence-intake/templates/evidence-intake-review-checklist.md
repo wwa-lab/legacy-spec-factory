@@ -6,6 +6,7 @@
 - manifest_path:
 - redaction_log_path:
 - package_state: draft | blocked | approved_for_inventory
+- intake_mode: internal_source_review | governed_redaction
 - reviewer:
 - review_date:
 
@@ -16,15 +17,21 @@
 - [ ] Every evidence item has an `EV-<SLUG>-NNN` ID.
 - [ ] Every evidence item has a type and source location.
 - [ ] No item has `sensitivity: unknown`.
-- [ ] Confidential items have redaction status `approved`.
-- [ ] Redaction log records strategy without exposing raw sensitive values.
+- [ ] Every item has either `source_path_verified: true` with an approved
+      analysis path, or a completed redaction record.
+- [ ] Items with `redaction_required: true` have redaction status `approved`.
+- [ ] Redaction/source-authorization log records strategy without exposing raw
+      sensitive values.
 - [ ] Rule-critical constants, thresholds, coefficients, and amounts are
       preserved or explicitly labeled as synthetic.
 - [ ] Field shape, control flow, timestamps, and error codes are preserved where
       downstream analysis needs them.
 - [ ] Missing evidence is recorded as `TBD-*`.
 - [ ] Contradictory evidence is recorded and routed to SME decision.
-- [ ] SME owner and redaction owner are named.
+- [ ] Intake reviewer is named.
+- [ ] Redaction owner is named when redaction is required.
+- [ ] SME owner is named only when SME review is required for Step 0; otherwise
+      SME review is recorded as deferred/not required for inventory.
 - [ ] Manifest package state and intake decision allow or block
       `legacy-ibmi-inventory` consistently.
 

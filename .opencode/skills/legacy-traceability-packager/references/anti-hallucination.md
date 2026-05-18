@@ -51,13 +51,16 @@ If you find yourself drafting a missing `BR-*`, completing a half-written `AC-*`
 
 - create a new `EV-*` record in the manifest or in the package;
 - reclassify `sensitivity` (e.g. silently treat `unknown` as `internal`);
-- assume a `redacted_filename` when one is missing;
+- assume a `redacted_filename` / approved analysis path when one is missing;
+- assume source-path authorization when `source_path_verified` is not `true`;
 - hide an orphan `EV-*` by deleting it from the inventory.
 
 ✅ **DO**:
 
 - copy every manifest field verbatim into `evidence_coverage`;
-- raise `EVIDENCE-SENSITIVITY-UNKNOWN`, `EVIDENCE-AWAITING-REDACTION`, or `EVIDENCE-REDACTED-FILE-MISSING` (all blocking) and route to `legacy-ibmi-evidence-intake`;
+- raise `EVIDENCE-SENSITIVITY-UNKNOWN`, `EVIDENCE-AWAITING-REDACTION`,
+  `EVIDENCE-SOURCE-NOT-AUTHORIZED`, or `EVIDENCE-APPROVED-PATH-MISSING`
+  (all blocking) and route to `legacy-ibmi-evidence-intake`;
 - record orphan `EV-*` either as a warning (`ORPHAN-EVIDENCE`) or, when the spec / BRD claims full closure, as `ORPHAN-EVIDENCE-IN-CLOSURE-PACKAGE` (blocking).
 
 ### 4. Test cases

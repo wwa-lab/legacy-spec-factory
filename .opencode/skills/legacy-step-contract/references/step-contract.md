@@ -23,8 +23,9 @@ plus the Compact Validation Result and the Unresolved Items Ledger.
 | `step_name` | yes | short human-readable name | e.g. `Inventory for Credit Check` |
 | `skill` | yes | canonical skill name or doc path | One of the skills in this repo, or `docs/forward-sdlc-contract.md` |
 | `prerequisite_artifacts` | yes | list of `{path, required_status}` | Status from each upstream artifact's own status enum |
-| `prerequisite_gates` | yes | list of gate names | Subset of: Redaction Gate, Inventory Completeness Gate, Evidence Approval Gate, Forward Handoff Gate |
-| `evidence_scope` | yes | list of `EV-*` and `OBJ-*` IDs | Plus a `sensitive` summary; must not contain `sensitive: unknown` |
+| `prerequisite_gates` | yes | list of gate names | Subset of: Evidence Authorization Gate, Inventory Completeness Gate, Evidence Approval Gate, Forward Handoff Gate |
+| `evidence_scope` | yes | list of `EV-*` and `OBJ-*` IDs | Plus authorization summary; must not contain `sensitivity: unknown`, missing source-path authorization, or incomplete required redaction |
+| `input_readiness` | yes | `{score, status, minimum_pass_met, hard_blockers, optional_missing, quality_boosters_available, quality_ceiling_reason}` | Uses `docs/input-readiness-rubric.md`; tells the user what blocks, what is enough, and what would improve quality |
 | `sme_required` | yes | `yes` / `recommended` / `no` | If `yes`, `sme_owner` must be set |
 | `sme_owner` | conditional | role or name | Required when `sme_required = yes` |
 | `assumptions_recorded` | optional | bullet list | Any assumption used during execution must appear here; silent assumptions are not allowed |
@@ -37,7 +38,10 @@ A step **must not start** if any of the following hold:
 - a required prerequisite artifact is missing
 - a required prerequisite artifact is below its required status
 - a prerequisite gate is `blocked`
-- any evidence has `sensitive: unknown` or lacks a redaction record
+- any evidence has `sensitivity: unknown`, lacks source-path authorization, or
+  requires redaction without an approval record
+- `input_readiness.status = blocked` or `input_readiness.minimum_pass_met`
+  is false
 - `sme_required = yes` and `sme_owner` is empty
 - `evidence_scope` is empty for a step whose output must trace to evidence
 
@@ -52,7 +56,7 @@ under `missing_inputs` or `evidence_gaps`.
 | `procedure_pointer` | yes | path to skill section or `references/*.md` | The Step Contract cites the procedure; it does not re-state it |
 | `inputs_to_outputs_mapping` | yes | list of `{input_field → output_field}` | Lets a reviewer trace each output field back to one or more inputs |
 | `tools_allowed` | yes | list | e.g. `read_source`, `read_dds`, `read_db2_metadata`, `read_runtime_evidence`, `call_subskill`, `ask_sme` |
-| `tools_forbidden` | yes | list | e.g. `generate_java`, `invent_object_names`, `read_unredacted_evidence`, `call_external_network` |
+| `tools_forbidden` | yes | list | e.g. `generate_java`, `invent_object_names`, `read_unauthorized_evidence`, `call_external_network` |
 | `decision_points` | recommended | list of `{decision, alternatives, recorded_as}` | Where the executing skill must choose, the choice must be recorded explicitly |
 | `idempotency` | recommended | `idempotent` / `non_idempotent` / `idempotent_with_caveat` | Affects re-execution behavior |
 | `id_minting_policy` | yes | list of allowed ID prefixes for this step | See per-step table below |
@@ -142,10 +146,11 @@ These checks must be deterministic and reproducible:
 | Schema validates | `spec.yaml` matches `schemas/spec.schema.yaml` |
 | ID prefixes match conventions | No `OBJ-*` in a field that requires `EV-*` |
 | No dangling references | Every `evidence_ids` value resolves to a real `EV-*` in `evidence[]` |
-| Sensitivity resolved | No item has `sensitive: unknown` |
+| Evidence authorization resolved | No item has `sensitivity: unknown`; every item has `source_path_verified: true` or completed required redaction |
+| Input readiness scored and minimum pass met | `input_readiness.score >= 6` and hard blockers are empty before execution |
 | Status fields in enum | `review_status` only contains values from the allowed enum |
 | Claims have evidence | Every `BEH-*`, `BR-*`, `DEC-*` has ≥1 linked `EV-*` |
-| Forbidden tools not used | Step did not call `generate_java`, read unredacted evidence, etc. |
+| Forbidden tools not used | Step did not call `generate_java`, read unauthorized evidence, etc. |
 | ID minting policy respected | A flow analysis did not mint `BR-*` |
 | Non-outputs absent | Inventory did not produce `spec.yaml` |
 
@@ -184,7 +189,7 @@ SME name (or role), date, and the specific IDs approved.
 
 | Check | Required When |
 | --- | --- |
-| Object coverage approved | Always, at inventory `sme_review` |
+| Object coverage approved | Before inventory is marked complete; not required to start developer-led inventory from an approved evidence manifest |
 | Inferred business rules approved | Always, before `BR-*` → `approved` in spec-writer |
 | Modernization decisions approved | Always, before `DEC-*` → `approved` (architecture/product authority, not just IBM i SME) |
 | Behavior intentionality approved | When a `BEH-*` is being promoted into a `BR-*` |
@@ -257,13 +262,14 @@ authoritative procedure.
 
 ### Inventory (`legacy-ibmi-inventory`)
 
-- INPUT: redacted evidence bundle, capability slug, SME owner
+- INPUT: approved evidence manifest with source-path authorization or required
+  redaction, capability slug, intake reviewer, optional SME owner
 - EXECUTION: inventory procedure in the skill's workflow section
 - OUTPUT: `01_inventory/inventory.yaml`, `object-map.md`,
   `inventory-review-checklist.md`
 - VALIDATION:
   - mechanical: every object has an ID and `evidence_ids`; no
-    `sensitive: unknown`
+    `sensitivity: unknown`; evidence authorization is complete
   - semantic: object scope matches capability slug; no inferred rules
     sneaking in
   - SME: `sme_review.decision` ∈ `approved`, `approved_with_non_blocking_tbd`

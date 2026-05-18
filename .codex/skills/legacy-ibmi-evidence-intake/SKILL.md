@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-evidence-intake
-description: Register, classify, assign evidence IDs, and govern redaction for IBM i modernization evidence. Use when preparing source code, DB metadata, job logs, spool files, screen samples, reports, transactions, or runtime evidence before inventory analysis. This skill records intake metadata and redaction approvals; it must not expose unredacted sensitive evidence to the agent. Precedes legacy-ibmi-inventory.
+description: Register, classify, assign evidence IDs, and record source-path authorization or redaction governance for IBM i modernization evidence. Use when preparing source code, DB metadata, job logs, spool files, screen samples, reports, transactions, or runtime evidence before inventory analysis. This skill records intake metadata, source paths, internal review decisions, and redaction approvals when required. Precedes legacy-ibmi-inventory.
 ---
 
 <!--
@@ -20,15 +20,25 @@ Retain this notice in substantial copies or derived versions.
 
 Provide a structured, auditable workflow for registering evidence from IBM i
 legacy systems, assigning stable evidence IDs, validating sensitivity status,
-governing redaction of personally identifiable information (PII), financial
-data, credentials, and other regulated content, and producing a signed evidence
-manifest that downstream skills (`legacy-ibmi-inventory`, flow analyzer,
-program analyzer) can reference with confidence.
+governing source-path authorization and, when required, redaction of personally
+identifiable information (PII), financial data, credentials, and other regulated
+content, and producing a reviewed evidence manifest that downstream skills
+(`legacy-ibmi-inventory`, flow analyzer, program analyzer) can reference with
+confidence.
 
-The agent must not read, transform, summarize, or quote unredacted sensitive
-evidence. When evidence is raw or sensitivity is unknown, work only from file
-names, counts, checksums, owner-provided metadata, and redaction-review notes
-until a redaction owner confirms the safe redacted artifact.
+Default mode is **internal source review**: evidence remains inside the
+company-controlled, isolated environment and the user-provided source path is
+the authorization signal for downstream analysis. In this mode, source code and
+metadata may proceed without creating a separate redacted copy when the same
+source path is recorded as the approved analysis artifact and a developer or
+reviewer signs the intake decision.
+
+Use **governed redaction** only when evidence leaves the controlled
+environment, contains production data samples/logs/spool/screenshots with PII or
+regulated values, or the data owner explicitly requires masking. When evidence
+is raw and sensitivity is unknown, work only from file names, counts, checksums,
+owner-provided metadata, and review notes until an authorized reviewer confirms
+whether internal source review is sufficient or redaction is required.
 
 This skill does NOT perform technical analysis. It establishes the evidence
 foundation—traceability, confidentiality, and data governance—that all
@@ -56,16 +66,23 @@ hash/checksum if available). Do not inspect the raw content.
 - IBM i / AS400 system access is authorized and documented.
 - Evidence export has been approved by the data owner and client.
 - Retention period and storage location are agreed.
-- Redaction owner, review process, and sign-off authority are defined.
+- Intake mode is declared:
+  - `internal_source_review` for company-internal, isolated analysis where
+    source paths are supplied by the user and are allowed as-is.
+  - `governed_redaction` for evidence that must be masked before use.
+- Reviewer authority is defined. This may be the developer doing the initial
+  analysis for internal source review; it does not need to be an SME at Step 0.
 
 **Stop conditions:**
 
-- Raw production evidence is present without redaction review.
+- Raw production samples, logs, spool, screenshots, or database extracts with
+  likely PII/regulatory values are present and neither source-path
+  authorization nor redaction review is recorded.
 - Evidence sensitivity is marked `unknown` and cannot be reviewed by authorized
-  redaction staff.
+  staff.
 - Evidence bundle is overly broad (e.g., "the entire application" vs. a
   capability slice).
-- No SME owner is assigned to validate redaction quality.
+- No developer/reviewer owner is assigned for the intake decision.
 
 ## Output Contract
 
@@ -88,6 +105,7 @@ Reference templates in:
 Follow:
 
 - `../../docs/data-collection-and-redaction.md`
+- `../../docs/input-readiness-rubric.md`
 - `../../docs/id-conventions.md`
 - `../../docs/evidence-and-knowledge-taxonomy.md`
 - `references/evidence-types.md`
@@ -101,19 +119,35 @@ This skill conforms to the Step Contract shape. See
 ### Input
 
 - **Required**:
-  - Evidence item list or already-redacted evidence bundle
+  - Evidence item list or approved analysis / governed-redaction bundle
   - Business capability name and slug (e.g., `CREDIT-CHECK`)
   - Evidence collection date and collection context (which IBM i library, job,
     or system)
-  - Assigned redaction owner (the person responsible for redaction review and
-    approval)
-  - Assigned SME owner (the IBM i or business SME validating redaction quality)
+  - Assigned intake reviewer. In `internal_source_review`, this is typically the
+    developer/reviewer who will analyze the evidence first.
 
 - **Optional**:
   - Prior shop documentation (spreadsheets, wiki, vendor docs) — treat as
     tier-3 hints only
   - Known sensitive data locations or patterns
+  - Assigned redaction owner, when governed redaction is required
+  - Assigned SME owner, when business judgment or redaction-quality validation
+    is required
   - Custom redaction rules beyond standard PII/financial masking
+
+- **Input readiness scoring**:
+  - `0-5 blocked`: no evidence list/source path, no capability scope, no
+    intake reviewer, unresolved export authorization, or raw production samples
+    with neither source-path authorization nor required redaction review.
+  - `6 minimum_pass`: evidence items, capability slug, collection context,
+    intake mode, and reviewer are present; unknowns are captured as TBDs.
+  - `7-8 usable`: sensitivity classes, owners, hashes/checksums, and approved
+    analysis paths are mostly populated.
+  - `9-10 strong`: collection rationale, known sensitive patterns, SME/data
+    owner notes, retention location, and downstream inventory focus are also
+    supplied.
+  - Missing SME owner is optional in Step 0 unless the intake decision needs
+    business judgment, redaction-quality validation, or compliance approval.
 
 - **Readiness checks**:
   - Data owner has approved evidence export.
@@ -126,10 +160,13 @@ This skill conforms to the Step Contract shape. See
 - **Procedure**: 8 ordered steps below (Workflow section).
 - **Allowed inference**: Identifying evidence types from file headers, extensions,
   and metadata; flagging likely sensitive content based on field names and
-  patterns; assigning evidence IDs.
+  patterns; assigning evidence IDs; treating a repeated user-provided source
+  path as explicit authorization to use that path internally when
+  `intake_mode: internal_source_review`.
 - **Forbidden assumptions**: Inventing evidence that was not provided; reading
-  unredacted sensitive content; assuming redaction is "good enough" without SME
-  review; committing raw evidence to version control.
+  unredacted regulated samples without authorization; assuming external
+  redaction is required for ordinary source files in an isolated internal
+  environment; committing raw production evidence to version control.
 - **TBD handling**: Use `TBD-<SLUG>-<NNN>` for gaps (missing evidence files,
   unknown redaction rules, or unclear sensitivity status). Mark `status:
   open` until resolved.
@@ -142,8 +179,13 @@ This skill conforms to the Step Contract shape. See
   - `source` (system, library, member name, export date)
   - `sensitivity` (public, internal, confidential, unknown)
   - `redaction_status` (not_required, pending, reviewed, approved, failed)
+  - `source_path_verified` (true when the user-provided source path is the
+    approved analysis artifact)
+  - `approval_basis` (source_path_provided, developer_review,
+    redaction_owner_review, sme_review)
   - `redaction_notes` (what was redacted and why)
-  - `sme_approval` (approver name, date)
+  - `sme_required` and `sme_approval` (SME approval is required only when
+    `sme_required: true`)
 
 - **Package state and gate decision**:
   - `package_state` must be `draft`, `blocked`, or `approved_for_inventory`.
@@ -151,8 +193,11 @@ This skill conforms to the Step Contract shape. See
   - Only `package_state: approved_for_inventory` may be handed to
     `legacy-ibmi-inventory`.
   - `sensitivity: unknown`, missing `redacted_filename`, missing redaction owner,
-    or missing SME approval is allowed only in `draft` or `blocked` manifests and
-    must be tied to a `TBD-<SLUG>-NNN` unresolved item.
+    or missing required SME approval is allowed only in `draft` or `blocked`
+    manifests and must be tied to a `TBD-<SLUG>-NNN` unresolved item. For
+    `internal_source_review`, `redacted_filename` may equal the user-provided
+    source path when `source_path_verified: true` and `redaction_status:
+    not_required` or `reviewed`.
 
 - **Redaction log** (Markdown) documenting:
   - PII replaced and masking strategy
@@ -187,7 +232,7 @@ This skill conforms to the Step Contract shape. See
 
 **Input:**
 
-- Evidence item list or redacted evidence bundle
+- Evidence item list or approved analysis / governed-redaction bundle
 - Capability scope (name, slug, libraries)
 - Data owner approval memo or email
 
@@ -197,7 +242,9 @@ This skill conforms to the Step Contract shape. See
 2. List all evidence items received (count by type: source, log, sample, etc.).
 3. Verify capability slice is narrow (one business function, not entire
    application).
-4. Assign a redaction owner and SME owner.
+4. Assign an intake reviewer. Assign a redaction owner only when governed
+   redaction is required. Assign an SME owner only when business judgment is
+   needed for the Step 0 decision.
 5. Note any obvious gaps (e.g., "DSPF expected but not provided").
 
 **Output:**
@@ -210,7 +257,7 @@ This skill conforms to the Step Contract shape. See
 
 - Data owner approval cannot be found.
 - Capability scope is too broad.
-- Redaction or SME owner cannot be assigned.
+- Intake reviewer cannot be assigned.
 
 ### Step 2: Evidence Typing and Source Mapping
 
@@ -246,19 +293,20 @@ This skill conforms to the Step Contract shape. See
 1. Assess each item as `public`, `internal`, `confidential`, or `unknown`
    using `references/evidence-types.md`.
 2. Document rationale for each assessment without quoting sensitive values.
-3. Flag every `unknown` item for redaction owner and SME review before
-   downstream use.
+3. Flag every `unknown` item for reviewer assessment before downstream use. Use
+   a redaction owner for governed redaction; use an SME only when the item's
+   business meaning or safe masking strategy cannot be judged by the developer.
 
 **Output:**
 
 - Sensitivity matrix (item vs. classification)
 - Redaction priority list (confidential items first)
-- SME review list (unknown items)
+- Reviewer list (unknown items)
 
 **Stop if:**
 
-- More than a few items are marked `unknown` and SME cannot review before
-  redaction.
+- More than a few items are marked `unknown` and no authorized reviewer can
+  classify them.
 
 ### Step 4: Evidence ID Assignment
 
@@ -280,7 +328,7 @@ This skill conforms to the Step Contract shape. See
    - Original file/item name
    - Type
    - Sensitivity
-   - Redaction owner
+   - Redaction owner, or intake reviewer when redaction is not required
 
 3. Store mapping in source control (no raw data yet).
 
@@ -289,7 +337,7 @@ This skill conforms to the Step Contract shape. See
 - Evidence ID assignment log
 - Capability slug ↔ evidence ID index
 
-### Step 5: Redaction Checklist and Planning
+### Step 5: Source Authorization or Redaction Planning
 
 **Input:**
 
@@ -299,23 +347,28 @@ This skill conforms to the Step Contract shape. See
 
 **Actions:**
 
-1. For each `confidential` item, use `references/redaction-checklist.md` to
-   identify categories that must be redacted.
+1. For each item, choose one path:
+   - `internal_source_review`: record the user-provided source path as the
+     approved analysis path, set `source_path_verified: true`, and set
+     `redaction_status: not_required` or `reviewed`.
+   - `governed_redaction`: use `references/redaction-checklist.md` to identify
+     categories that must be redacted.
 2. Plan replacements that preserve type, field length, decimal scale, and
-   downstream-relevant relationships.
-3. Create a redaction plan with one section per evidence item, including
-   strategy, rationale, and unresolved questions.
+   downstream-relevant relationships when redaction is required.
+3. Create an intake plan with one section per evidence item, including strategy,
+   rationale, source path, and unresolved questions.
 
 **Output:**
 
-- Redaction plan (markdown)
+- Intake/redaction plan (markdown)
 - Redaction rules document (custom rules beyond template)
 - Estimated effort and timeline
 
 **Stop if:**
 
-- Redaction effort is too high (suggest splitting the evidence bundle).
-- Custom redaction rules cannot be agreed upon (escalate to SME).
+- Redaction effort is too high for a governed-redaction package (suggest
+  splitting the evidence bundle).
+- Custom redaction rules cannot be agreed upon (escalate to SME or data owner).
 
 ### Step 6: Redaction Execution Governance
 
@@ -323,54 +376,62 @@ This skill conforms to the Step Contract shape. See
 
 - Redaction plan
 - Evidence file inventory (confidential items)
-- Authorized redaction owner
+- Authorized redaction owner, when governed redaction is required
 
 **Actions:**
 
-1. Redaction owner performs the actual redaction in the approved controlled
-   environment. The agent records the redaction plan and the owner's reported
-   results; it does not inspect raw confidential content.
+1. If governed redaction is required, the redaction owner performs the actual
+   redaction in the approved controlled environment. The agent records the
+   redaction plan and the owner's reported results; it does not inspect raw
+   confidential content.
 
-2. Require the redaction owner to confirm that raw originals stayed in an
-   approved restricted location and that the plan was followed.
-3. Spot-check only redacted artifacts for missed sensitive patterns, corrupted
-   structure, and lost business logic.
-4. Record redaction actions at category and strategy level only; never record
+2. If internal source review is used, record that the approved analysis artifact
+   is the same user-provided source path; do not create a fake redacted copy just
+   to satisfy the gate.
+3. Require the redaction owner or intake reviewer to confirm that raw originals
+   stayed in an approved restricted location and that the plan was followed.
+4. Spot-check only approved analysis artifacts for missed sensitive patterns,
+   corrupted structure, and lost business logic.
+5. Record redaction actions at category and strategy level only; never record
    raw sensitive values.
 
 **Output:**
 
-- Redacted evidence files
-- Detailed redaction log (what was replaced, when, by whom)
+- Approved analysis artifacts or redacted evidence files
+- Detailed source-authorization/redaction log (what was approved or replaced,
+  when, by whom)
 - Spot-check report
 
-### Step 7: SME Review
+### Step 7: Review
 
 **Input:**
 
-- Redacted evidence files
+- Approved analysis artifacts or redacted evidence files
 - Redaction log
 - Review checklist template from `templates/evidence-intake-review-checklist.md`
 
 **Actions:**
 
-1. Assigned SME reviews redaction completeness, data integrity, evidence
-   completeness, and downstream suitability using the review checklist.
-2. SME spot-checks redacted artifacts for business-rule preservation and
-   evidence quality.
-3. SME marks each item with `review_status: approved` or
+1. Assigned reviewer checks source-path authorization, evidence completeness,
+   and downstream suitability using the review checklist. The reviewer may be a
+   developer for Step 0 internal source review.
+2. SME review is optional at Step 0 unless business meaning, data masking, or
+   regulatory release needs SME judgment. Record deferred SME routing as a
+   non-blocking TBD when inventory can proceed from source evidence.
+3. Reviewer marks each item with `review_status: approved` or
    `review_status: rejected`. If the evidence set can advance with known
    non-blocking gaps, record those gaps in `unresolved_items` and set the
    package-level `intake_decision.status: pass_with_warnings`.
-4. SME documents missed redactions, data integrity issues, missing evidence,
-   and confidence level.
+4. Reviewer documents missed redactions, data integrity issues, missing
+   evidence, and confidence level.
 5. If rejections exist, route back to Step 6 (redaction rework) or Step 2
    (evidence collection).
 
 **Output:**
 
-- SME review checklist (filled and signed)
-- Approval memo with redaction owner and SME signatures
+- Review checklist (filled and signed)
+- Approval memo with intake reviewer and, when required, redaction owner/SME
+  signatures
 - List of approved items
 - List of TBDs and blocking issues
 
@@ -380,7 +441,7 @@ This skill conforms to the Step Contract shape. See
 
 - All approved evidence items
 - Redaction log
-- SME approval memo
+- Review approval memo
 - Evidence ID assignments
 
 **Actions:**
@@ -388,7 +449,8 @@ This skill conforms to the Step Contract shape. See
 1. Create the evidence manifest (`evidence-manifest.yaml`):
    - One entry per evidence item
    - Include package-level `package_state`, `intake_decision`, redaction owner,
-     SME owner, and unresolved item ledger
+     intake reviewer, optional redaction owner, optional SME owner, and
+     unresolved item ledger
    - Include per-item `evidence_id`, `type`, `subtype`, source metadata,
      `description`, `size_bytes`, `sensitivity`, `redaction_status`,
      `redaction_notes`, `sme_approval`, `reviewed_by`, and `review_date`
@@ -417,8 +479,8 @@ This skill conforms to the Step Contract shape. See
 3. Verify manifest completeness:
    - All evidence items listed.
    - All IDs assigned.
-   - All redaction statuses recorded.
-   - All approvals signed.
+   - All redaction statuses or source-path authorizations recorded.
+   - All required approvals signed.
    - `package_state: approved_for_inventory` has no `sensitivity: unknown`.
    - Any unresolved `TBD-*` is marked non-blocking before inventory is allowed.
 
@@ -440,6 +502,46 @@ This skill conforms to the Step Contract shape. See
 - `evidence-intake-review-checklist.md` (signed review)
 - Organized redacted evidence files
 - Intake summary (markdown)
+
+## Workflow State Write-Back
+
+At the end of an intake run, update `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `1 Evidence Ready` when every item has `sensitivity` other than `unknown`,
+  has either source-path authorization or completed redaction, and all required
+  approvals are recorded
+- `0 Evidence Intake` (no advancement) if any item still has
+  `sensitivity: unknown`, lacks source-path authorization, or lacks required
+  redaction records
+
+**Last artifact path pattern:** `evidence/redacted/evidence-manifest.yaml`
+
+**Capability scoping:** Evidence intake typically runs **before** a `CAP-*`
+is scoped (capability seeds only emerge during module analysis). Two cases:
+
+- If `current_focus.capability_id` is set, write the `capabilities[]` entry
+  for that CAP-* with `stage_id: "1 Evidence Ready"` and your manifest path.
+- If `current_focus.capability_id` is `null`, **append `history[]` only**
+  with `capability_id: null` — do not invent a CAP-*. The orchestrator will
+  scope a capability later.
+
+**Writes per run:**
+
+1. (When CAP-* is scoped) Overwrite `capabilities[<CAP-*>]` with stage id,
+   artifact path, `last_skill: legacy-ibmi-evidence-intake`, and blocking
+   IDs (any unauthorized unredacted production evidence remains a
+   `gates: ["redaction"]` blocker).
+2. Append one `history[]` entry — always.
+3. Overwrite `project.last_updated_at` / `project.last_updated_by` — always.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. Evidence Authorization Gate failure is recorded in
+`blocking.gates`, not silently — the orchestrator refuses to advance until that
+list is empty.
 
 ## Adversarial Cases
 
@@ -484,22 +586,29 @@ making business logic unanalyzable):
 - Re-execute redaction.
 - SME re-reviews.
 
-### Missing Redaction Owner or SME
+### Missing Reviewer, Redaction Owner, or SME
 
-If no one is available to approve redaction:
+If no one is available to approve the Step 0 intake decision:
 
 - Do not proceed.
 - Escalate to project sponsor or data owner.
 - Evidence must not be used without accountability.
 
+If no SME is known yet but the item is source code or metadata provided by path
+inside the isolated company environment, do not block inventory solely for
+missing SME. Record `sme_required: false` or a non-blocking `TBD-*` for later
+business validation.
+
 ## Success Criteria
 
 - ✅ All evidence items have been typed and assessed for sensitivity.
 - ✅ Each item has a unique `EV-<SLUG>-NNN` ID.
-- ✅ Redaction plan has been created and approved by redaction owner.
-- ✅ Redaction has been executed, logged, and spot-checked.
-- ✅ SME has reviewed redaction quality, data integrity, and completeness.
-- ✅ SME has approved the evidence set and signed the review checklist.
+- ✅ Source-path authorization or redaction plan has been created and approved
+  by the responsible reviewer.
+- ✅ Required redaction has been executed, logged, and spot-checked.
+- ✅ Reviewer has checked data integrity and completeness.
+- ✅ SME has approved only items where `sme_required: true`; otherwise SME
+  review may be deferred to later analysis stages.
 - ✅ Evidence manifest lists all items with status and approvals.
 - ✅ Approved handoff manifest has `package_state: approved_for_inventory` and
   `intake_decision.status` of `pass` or `pass_with_warnings`.

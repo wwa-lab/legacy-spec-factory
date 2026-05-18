@@ -67,7 +67,7 @@ recorded for spec-writer promotion
 | `EV-CREDIT-LIMIT-004` | program analysis | `program-analysis-CREDIT-CHECK-001.md`, section 5.0 | `public` | `confirmed_from_code` | BEH-003, BR-001, BR-003 |
 | `EV-CREDIT-LIMIT-005` | program analysis | `program-analysis-CREDIT-CHECK-001.md`, section 6.2 | `public` | `confirmed_from_code` | BEH-004, BR-001 |
 
-**Validation:** ✓ No `sensitive: unknown` items
+**Validation:** ✓ No `sensitivity: unknown` items
 
 ---
 
@@ -146,7 +146,7 @@ recorded for spec-writer promotion
 - [x] **All BR-* items have ≥1 supporting BEH-* and ≥1 supporting EV-***
 - [x] **No dangling references** (all IDs in brd.md appear here)
 - [x] **All TBD-* items have a category and resolver**
-- [x] **No `sensitive: unknown` in evidence items**
+- [x] **No `sensitivity: unknown` in evidence items**
 - [x] **Traceability table is consistent** with brd.md section 5
 
 ---

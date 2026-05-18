@@ -321,6 +321,94 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 
 ---
 
+## Rule Auto-Validation (cross-check inferred rules against runtime)
+
+After mining `runtime-evidence.jsonl`, the skill performs a cross-check
+pass against any `inferred_business_rule` entries already present in
+`02_programs/<MODULE>/<OBJ>/program-analysis.md` and module View 1.
+
+Goal: promote rules whose code-side inference is corroborated by ≥ N
+runtime samples (default N=3) from `review_status: needs_sme_review` to
+`review_status: auto_validated_spot_check_only`. SMEs spot-check this
+bucket instead of reviewing every rule individually — typically cuts SME
+load 30-60% per capability.
+
+The full protocol, eligibility rules, threshold logic, conflict handling,
+and audit trail format live in
+[`references/rule-auto-validation-protocol.md`](references/rule-auto-validation-protocol.md).
+Summary:
+
+| Rule must be | Action |
+| --- | --- |
+| `inferred_business_rule` + medium/high source confidence + ≥ N matching runtime samples (all outcomes match) | Promote to `auto_validated_spot_check_only`; append runtime `EV-RUN-*` IDs to the rule's `evidence_ids` |
+| matching runtime samples but conflicting outcomes | Flag as `runtime_conflict_with_inference`; ESCALATE to SME — do NOT downgrade |
+| `critical` criticality + affects money/posting/compliance | Leave at `needs_sme_review` regardless of corroboration (bandwidth-saver, not safety bypass) |
+| < N matching samples OR 0 samples OR `low` source confidence | Leave at `needs_sme_review` |
+
+Each promotion appends an audit entry to the rule:
+
+```yaml
+auto_validation:
+  matched_records: 5
+  runtime_evidence_ids: [EV-RUN-014, EV-RUN-027, EV-RUN-041, EV-RUN-053, EV-RUN-061]
+  validated_at: 2026-05-16
+  validated_by: legacy-ibmi-runtime-evidence-miner
+  protocol_version: 1
+```
+
+The skill MUST NOT auto-validate when:
+
+- Source-side confidence is `low`
+- All matching samples come from a single batch / single day (not
+  representative)
+- The rule depends on date/time, seasonality, or a configuration value
+- The owning capability is `critical` AND the rule touches money,
+  posting, or compliance
+
+`legacy-sme-review-facilitator` consumes the resulting partition to
+generate three-bucket review packages (full review / spot-check / batch
+confirm) — see that skill's SME Communication Package section.
+
+## Workflow State Write-Back
+
+At the end of a mining run, update `<project-root>/workflow-state.yaml`
+per [`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-snippet.md`](../legacy-modernization-orchestrator/references/state-writeback-snippet.md).
+
+**Stage this skill produces:**
+
+- `5 Runtime Evidence Mined` when `runtime-evidence.jsonl` is complete and
+  every record links back to an `OBJ-*` from inventory and an `EV-*` from
+  the approved evidence manifest
+- No advancement when any record has unresolved redaction or missing
+  inventory mapping; record blockers in `blocking.gates: ["redaction"]` or
+  `blocking.tbds`
+
+**Last artifact path pattern:** `07_runtime-evidence/runtime-evidence.jsonl`
+(plus referenced sample files under `07_runtime-evidence/samples/`)
+
+**Capability scoping:** Runtime mining typically runs per-module rather
+than per-capability. Two cases:
+
+- If `current_focus.capability_id` is set, overwrite that
+  `capabilities[]` entry's `stage_id` and `last_artifact`.
+- If `current_focus` is module-scoped only (no `CAP-*` yet), append
+  `history[]` only with `capability_id: null` and the module slug in
+  `note`. Do not invent a `CAP-*`.
+
+**Writes per run:**
+
+1. (When CAP-* is scoped) Overwrite `capabilities[<CAP-*>]` with stage id,
+   the JSONL path, `last_skill: legacy-ibmi-runtime-evidence-miner`, and
+   blocking IDs.
+2. Append one `history[]` entry with the run's record count and any
+   redaction findings.
+3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+Never touch `current_focus`, other capabilities' entries, or past
+`history[]` rows. Stage `5` is parallel to the linear program/flow/module
+chain — re-running this skill does NOT regress those stages.
+
 ## SME Review Questions
 
 After mining is complete, present SME with these questions before approving output:
@@ -445,6 +533,17 @@ This skill is part of the Legacy Spec Factory project. See LICENSE and NOTICE fi
 
 **Version History**:
 
+- v0.2.0 (2026-05-16): Added Rule Auto-Validation pass. After mining,
+  cross-checks any `inferred_business_rule` against runtime samples and
+  promotes corroborated rules from `needs_sme_review` to
+  `auto_validated_spot_check_only`. Default threshold N=3 matching
+  samples; conflicting samples flag `runtime_conflict_with_inference`
+  and escalate. Critical-criticality rules touching money/posting/
+  compliance never auto-validate. Full protocol with eligibility,
+  threshold logic, conflict handling, audit trail, and anti-patterns
+  in `references/rule-auto-validation-protocol.md`. Together with the
+  inventory criticality field this reduces typical SME review load by
+  ~30–60% per capability.
 - v0.1.0 (2026-05-16): Initial runtime evidence miner. Frontmatter,
   confidence rules, `job_log` artifact typing, single-run frequency guard,
   and `mining-checklist.md` output contract validated by positive and

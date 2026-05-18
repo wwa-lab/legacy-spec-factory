@@ -107,10 +107,11 @@ Required fields:
 - `prerequisite_artifacts` — list of upstream artifacts with their required
   status (e.g. `inventory.yaml` at `approved` or
   `approved_with_non_blocking_tbd`)
-- `prerequisite_gates` — gates that must already be passing (Redaction,
-  Inventory Completeness, Evidence Approval, Forward Handoff)
+- `prerequisite_gates` — gates that must already be passing (Evidence
+  Authorization, Inventory Completeness, Evidence Approval, Forward Handoff)
 - `evidence_scope` — the `EV-*` IDs and `OBJ-*` IDs that are in scope, plus
-  any `sensitive` flag that must already be resolved
+  authorization fields (`sensitivity`, `source_path_verified`,
+  `redaction_required`, `redaction_status`) that must already be resolved
 - `sme_availability` — whether an SME owner is required for this step and the
   capability slug they own
 - `assumptions_recorded` — assumptions the runner is allowed to make
@@ -120,7 +121,8 @@ Stop and refuse to execute the step if:
 
 - any prerequisite artifact is missing or below the required status
 - any prerequisite gate is blocked
-- any evidence has `sensitive: unknown` or no redaction record
+- any evidence has `sensitivity: unknown`, lacks source-path authorization, or
+  requires redaction without an approval record
 - SME is required by the step but not assigned
 
 ### 2. EXECUTION
@@ -134,7 +136,7 @@ Required fields:
 - `tools_allowed` — what the executing skill is allowed to do (read source,
   read DDS, call sub-skill, call SME, etc.)
 - `tools_forbidden` — what the step must refuse (e.g. generating Java,
-  inventing object names, reading non-redacted evidence)
+  inventing object names, reading unauthorized evidence)
 - `decision_points` — any branch where the step must choose between
   alternatives, plus how that choice is recorded
 
@@ -175,7 +177,8 @@ What can be checked by a script, a schema, or a deterministic linter:
 - all referenced IDs resolve (no dangling `EV-*`, `BR-*`, `OBJ-*`)
 - ID prefixes match `docs/id-conventions.md`
 - every claim has at least one linked evidence item
-- every `sensitive: unknown` is resolved
+- every `sensitivity: unknown` is resolved and every evidence item has either
+  source-path authorization or completed required redaction
 - review status fields are in the allowed enum
 
 Mechanical validation **must** be reproducible. If it depends on judgment,
@@ -234,7 +237,7 @@ Every Step Validation Report must categorize unresolved items into:
 | Category | Definition | Typical Resolver |
 | --- | --- | --- |
 | `missing_inputs` | A required upstream artifact, status, or gate is absent | Run or finish the upstream skill / gate |
-| `evidence_gaps` | An artifact reference exists but the evidence itself is missing, unreadable, or unredacted | Source owner provides, redacts, or formally waives the artifact |
+| `evidence_gaps` | An artifact reference exists but the evidence itself is missing, unreadable, or unauthorized | Source owner provides, authorizes, redacts, or formally waives the artifact |
 | `contradictory_evidence` | Two or more evidence items disagree about behavior, rule, or field shape | SME decides which evidence holds; record the decision with a `DEC-*` |
 | `sme_questions` | A judgment-only question that only a domain expert can answer | SME records the answer in the artifact's review section |
 | `downstream_handoff_blockers` | An item that does not block this step's draft but will block the next step | Resolve before next step, or mark non-blocking with SME approval and forward |
@@ -257,7 +260,7 @@ matrix. Summary:
 
 | Step | Skill | Primary Input | Primary Output | SME Required At Pass? |
 | --- | --- | --- | --- | --- |
-| Inventory | `legacy-ibmi-inventory` | redacted evidence bundle | `inventory.yaml`, `object-map.md` | Yes — `sme_review.decision` must be `approved` or `approved_with_non_blocking_tbd` |
+| Inventory | `legacy-ibmi-inventory` | approved evidence manifest with source-path authorization or required redaction | `inventory.yaml`, `object-map.md` | Yes for inventory completion — `sme_review.decision` must be `approved` or `approved_with_non_blocking_tbd`; no for starting developer-led inventory |
 | Program analysis | `legacy-ibmi-program-analyzer` | approved inventory + program source | `program-analysis.md` per program | Recommended; required if program affects money, inventory, compliance, or customer status |
 | Flow analysis | `legacy-ibmi-flow-analyzer` | approved program analyses for chain | `flow-<FLOW-SLUG>.md` | Recommended; required if cross-program rule emerges |
 | Module analysis | `legacy-ibmi-module-analyzer` | approved flow analyses + BAU notes | 4-view module package | Yes — for module-level capability seeds and BR-* seeds |
@@ -282,10 +285,16 @@ values change. That is the point — one contract shape, every step.
 ### B. Pre-Execution Check
 
 1. Confirm every INPUT field has a concrete value.
-2. Confirm prerequisite gates are passing (do not assume).
-3. If any INPUT field cannot be resolved, mark the step `blocked` immediately
+2. Score input readiness using
+   [`docs/input-readiness-rubric.md`](../../docs/input-readiness-rubric.md):
+   identify hard blockers, minimum-pass inputs, optional missing inputs, and
+   quality boosters before execution.
+3. Confirm prerequisite gates are passing (do not assume).
+4. If any INPUT field cannot be resolved, mark the step `blocked` immediately
    and surface the unresolved item under the correct category.
-4. Only when INPUT is complete, hand control to the executing skill.
+5. Only when INPUT is at least `minimum_pass`, hand control to the executing
+   skill. A `minimum_pass` score may proceed with warnings; a `blocked` score
+   must not.
 
 ### C. Post-Execution Validation
 
@@ -316,6 +325,31 @@ remediation_step: <skill-name | doc-path | none>
 ```
 
 Anything more verbose belongs in the full Step Validation Report.
+
+## Workflow State Write-Back (history only)
+
+This is a meta / contract skill — it defines the INPUT → EXECUTION →
+OUTPUT → VALIDATION contract that other skills follow. It rarely runs
+standalone. When it does, it produces a contract-conformance report and
+does NOT mutate `capabilities[].stage_id` or `current_focus`.
+
+After a run, append one `history[]` entry to
+`<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md):
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-step-contract
+    capability_id: <CAP-* from current_focus, or null>
+    stage_after: <UNCHANGED stage_id, or null>
+    artifact: <path to the conformance report, or null>
+    note: "contract conformance check — <step-id>: pass | warnings | blocked"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
 
 ## Anti-Hallucination Rules
 

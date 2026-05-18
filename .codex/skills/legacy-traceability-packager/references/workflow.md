@@ -98,14 +98,17 @@ For every `EV-*` in the inventory, look it up in the evidence manifest:
 | --- | --- | --- | --- |
 | `EV-*` not found in `evidence_items[].evidence_id` | `EVIDENCE-MANIFEST-MISS` | blocking | repair upstream manifest |
 | `sensitivity: unknown` | `EVIDENCE-SENSITIVITY-UNKNOWN` | blocking | route to `legacy-ibmi-evidence-intake` |
-| `sensitivity: confidential` and `redaction_status: approved` | `EVIDENCE-REDACTED` | pass | continue |
-| `sensitivity: confidential` and `redaction_status` is anything else | `EVIDENCE-AWAITING-REDACTION` | blocking | route to `legacy-ibmi-evidence-intake` |
-| `sensitivity: public` or `internal` and `redaction_status: not_required`, `reviewed`, or `approved` | `EVIDENCE-CLEARED` | pass | continue |
-| `sensitivity: public` or `internal` and any other `redaction_status` | `EVIDENCE-AWAITING-REDACTION` | blocking | route to `legacy-ibmi-evidence-intake` |
-| `redacted_filename` missing or null | `EVIDENCE-REDACTED-FILE-MISSING` | blocking | route to `legacy-ibmi-evidence-intake` |
-| `sme_approval` not `true` | `EVIDENCE-SME-APPROVAL-MISSING` | blocking | request evidence SME approval |
+| `redaction_required: true` and `redaction_status: approved` | `EVIDENCE-REDACTED` | pass | continue |
+| `redaction_required: true` and `redaction_status` is anything else | `EVIDENCE-AWAITING-REDACTION` | blocking | route to `legacy-ibmi-evidence-intake` |
+| `redaction_required: false` and `source_path_verified: true` and `redaction_status: not_required`, `reviewed`, or `approved` | `EVIDENCE-SOURCE-AUTHORIZED` | pass | continue |
+| `redaction_required: false` and `source_path_verified` is not `true` | `EVIDENCE-SOURCE-NOT-AUTHORIZED` | blocking | route to `legacy-ibmi-evidence-intake` |
+| `redacted_filename` missing or null | `EVIDENCE-APPROVED-PATH-MISSING` | blocking | route to `legacy-ibmi-evidence-intake` |
+| `sme_required: true` and `sme_approval` not `true` | `EVIDENCE-SME-APPROVAL-MISSING` | blocking | request evidence SME approval |
 
-`sensitivity: unknown` is **always** blocking. The packager never assumes a default sensitivity.
+`sensitivity: unknown` is **always** blocking. The packager never assumes a
+default sensitivity. SME approval is required only when the evidence manifest
+marks `sme_required: true`; internal source-review evidence with
+`sme_required: false` must not be blocked for missing SME approval.
 
 Also build `evidence_coverage` for Step 6: for every `EV-*`, list the IDs that reference it (`BEH-*`, `BR-*`, `DEC-*`, `STEP-*`, `AC-*`, `TC-*`, `IN-*`, `OUT-*`, `EX-*`, data-model fields).
 

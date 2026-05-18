@@ -22,7 +22,7 @@ Package one capability's **end-to-end traceability** into a sealed, audit-friend
 
 1. **EV coverage** — for every `EV-*`, which `BEH-*` / `BR-*` / `DEC-*` / `STEP-*` / `AC-*` / `TC-*` use it?
 2. **BR closure** — for every approved `BR-*`, is there evidence, behavior, acceptance criteria, and test coverage?
-3. **Mechanical integrity** — are there dangling IDs, orphan evidence, orphan AC, missing evidence, `sensitive: unknown` items, or blocking TBDs?
+3. **Mechanical integrity** — are there dangling IDs, orphan evidence, orphan AC, missing evidence, `sensitivity: unknown` items, authorization gaps, or blocking TBDs?
 4. **Routing** — which downstream handoff blockers remain, and which upstream skill owns each one?
 
 This skill is an **audit and governance packager**. It is **not** `legacy-brd-to-sdd-handoff` — it neither produces nor replaces the Atlas-bound SDD handoff. It consumes the same upstream artefacts and emits a parallel, traceability-focused package that auditors, SMEs, compliance, and the modernization orchestrator can consume without re-deriving cross-references.
@@ -48,7 +48,9 @@ Block and route elsewhere when any of the following hold:
 - Caller wants new `BR-*`, `BEH-*`, `AC-*`, `DEC-*`, `EV-*`, `TC-*`, or `TBD-*` → route to the owning skill (`legacy-spec-writer`, `legacy-brd-writer`, `legacy-ibmi-program-analyzer`, etc.).
 - Caller wants an Atlas-consumable SDD handoff package → route to `legacy-brd-to-sdd-handoff`.
 - Caller wants architecture, design, user stories, code, or tests → that is the Atlas SDD chain.
-- The evidence manifest has any item with `sensitivity: unknown` or unredacted sensitive payload → route to `legacy-ibmi-evidence-intake`.
+- The evidence manifest has any item with `sensitivity: unknown`, missing
+  source-path authorization, or required redaction without approval → route to
+  `legacy-ibmi-evidence-intake`.
 - Module / flow / program analyses are below `approved_with_non_blocking_tbd` → route to the relevant analyzer.
 
 This skill is an **audit gate and packager**. If you find yourself writing new business content, you are in the wrong skill.
@@ -70,7 +72,7 @@ You must not:
 - invent `BR-*`, `BEH-*`, `AC-*`, `DEC-*`, `EV-*`, `TC-*`, `TBD-*`, `IN-*`, `OUT-*`, `EX-*`, or `STEP-*`;
 - rewrite, paraphrase, or merge upstream content;
 - promote any review status or downgrade severity to make the package green;
-- silently demote a `sensitive: unknown` evidence item;
+- silently demote a `sensitivity: unknown` evidence item;
 - treat a missing spec as recoverable by reading the BRD or the analyses directly;
 - mint a competing SDD handoff package — `legacy-brd-to-sdd-handoff` owns that artefact.
 
@@ -86,7 +88,7 @@ Required:
 - approved `05_specs/<CAPABILITY-SLUG>/spec.yaml` and `spec.md` (or, for an explicit blocked-audit run, a `draft`/`in_review` spec accompanied by an explicit `status_override: blocked_audit` from the caller — the package is still produced as `blocked`);
 - `05_specs/<CAPABILITY-SLUG>/traceability.md` if present (read for cross-check, not for content);
 - approved upstream analyses referenced by the spec (`04_modules/...`, `03_flows/...`, `02_programs/...`, `01_inventory/inventory.yaml`);
-- evidence manifest produced by `legacy-ibmi-evidence-intake` for every `EV-*` referenced by the BRD or spec, using the canonical manifest fields `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`, and `sme_approval`;
+- evidence manifest produced by `legacy-ibmi-evidence-intake` for every `EV-*` referenced by the BRD or spec, using the canonical manifest fields `evidence_id`, `sensitivity`, `redaction_status`, `redacted_filename`, `source_path_verified`, `redaction_required`, `sme_required`, and `sme_approval`;
 - a named capability-owner SME (for sign-off on the resulting package).
 
 Optional:
@@ -94,6 +96,23 @@ Optional:
 - approved `05_brds/<CAPABILITY-SLUG>/brd.md` and `brd-review.md` (if a BRD step was executed);
 - approved `06_sdd_handoffs/<CAPABILITY-SLUG>/` package (if the SDD handoff has already been packaged — the traceability package then cross-checks the handoff for consistency);
 - approved `legacy-golden-master-test-planner` output, if present, for `TC-*` cross-check.
+
+Input readiness scoring:
+
+- `0-5 blocked`: required spec/upstream analysis missing or below status,
+  evidence manifest incomplete or unauthorized, referenced IDs unresolved,
+  blocking TBDs unresolved, or required SME sign-off missing.
+- `6 minimum_pass`: approved spec, approved upstream analyses, canonical
+  evidence manifest, named capability-owner SME, and resolvable ID graph are
+  present.
+- `7-8 usable`: approved BRD, handoff package, and existing traceability view
+  are supplied for cross-checking.
+- `9-10 strong`: approved golden-master test outputs, runtime coverage notes,
+  audit/compliance review context, and downstream package expectations are also
+  supplied.
+- Missing BRD, handoff, or golden-master outputs does not block when the run is
+  explicitly spec-centered; it limits cross-check coverage and should be listed
+  as optional missing.
 
 Stop conditions are listed under **When NOT to Use**; each one is **blocking by default** and the gate does not advance unless explicitly cleared by an SME-recorded waiver in the upstream artefact.
 
@@ -196,6 +215,37 @@ See **Inputs** and **When NOT to Use** above. The skill must not start if any re
 - **SME approval**: the package sign-off block records name + role + ISO date for the capability-owner SME plus any audit / compliance reviewer required by the host project.
 
 Use `legacy-step-validator` to validate the produced package against this Step Contract before forwarding it to the orchestrator or to forward SDLC.
+
+## Workflow State Write-Back (history only)
+
+This is a governance / packager skill. It does NOT mutate
+`capabilities[].stage_id` or `current_focus`. After a packaging run,
+append one `history[]` entry to `<project-root>/workflow-state.yaml` per
+[`docs/workflow-state-contract.md`](../../docs/workflow-state-contract.md).
+
+**Package path pattern:**
+`09_forward-sdlc/<CAP-*>/traceability-package/` (sealed bundle)
+
+**Per-run write:**
+
+```yaml
+history:
+  - at: <ISO 8601>
+    skill: legacy-traceability-packager
+    capability_id: <CAP-* from current_focus>
+    stage_after: <the capability's current stage_id — UNCHANGED>
+    artifact: <path to the sealed package or findings report>
+    note: "traceability sealed for <CAP-*>" | "blocked: <findings count>"
+```
+
+Also overwrite `project.last_updated_at` / `project.last_updated_by`.
+
+**Permitted side-effect:** if any blocking finding emerges, you MAY
+append items to `capabilities[<CAP-*>].blocking.gates` (e.g.
+`"forward_handoff"`) and to `blocking.tbds`. You MUST NOT change
+`stage_id`, `last_artifact`, or `last_skill`.
+
+If `workflow-state.yaml` does not exist, this skill does NOT create it.
 
 ## References and Templates
 

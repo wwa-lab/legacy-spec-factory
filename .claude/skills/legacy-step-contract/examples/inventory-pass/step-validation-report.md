@@ -43,7 +43,7 @@ remediation_step: none
 | Schema validates | n/a | no formal inventory schema yet | output-contract checklist used |
 | ID prefixes match `docs/id-conventions.md` | pass | linter | only `OBJ-*`, `EV-*`, `TBD-*`, `STEP-*` |
 | No dangling references | pass | linter | all `evidence_ids[]` resolve |
-| Sensitivity resolved | pass | linter | no `sensitive: unknown` |
+| Evidence authorization resolved | pass | linter | no `sensitivity: unknown`; source paths/redactions approved |
 | Status fields in enum | pass | review | `sme_review.decision: approved` |
 | Every claim has linked evidence | pass | linter | all objects and relationships have `EV-*` |
 | Forbidden tools not used | pass | runner note | no raw evidence read |

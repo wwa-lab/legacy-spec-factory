@@ -10,7 +10,8 @@ downstream usage rules for artifacts produced by the evidence-intake workflow.
 ### Purpose
 
 Single source of truth for all evidence items: IDs, types, sources, sensitivity,
-redaction status, approvals, package state, and downstream inventory gate status.
+source-path authorization or redaction status, approvals, package state, and
+downstream inventory gate status.
 
 ### Package States
 
@@ -20,7 +21,7 @@ The manifest may exist in three states:
 | --- | --- | --- |
 | `draft` | Intake is being assembled and has not reached review. | Not allowed |
 | `blocked` | Intake has a blocking redaction, sensitivity, approval, or evidence gap. | Not allowed |
-| `approved_for_inventory` | Redaction and SME gates are complete; only non-blocking TBDs may remain. | Allowed |
+| `approved_for_inventory` | Source-path authorization or required redaction is complete; only non-blocking TBDs may remain. | Allowed |
 
 Use the Step Contract compact validation status for the gate decision:
 
@@ -38,6 +39,7 @@ non-blocking for inventory and are carried forward in `unresolved_items`.
 
 ```yaml
 package_state: draft | blocked | approved_for_inventory
+intake_mode: internal_source_review | governed_redaction
 
 capability:
   name: string                    # Human-readable capability name
@@ -48,18 +50,27 @@ capability:
   collection_context: string      # Which system, job, or process
 
 redaction:
-  owner: string | null            # Required before approved_for_inventory
+  owner: string | null            # Required before approved_for_inventory only when redaction_required is true
   owner_title: string | null
   owner_email: string | null
   redaction_date: YYYY-MM-DD | null
   approval_date: YYYY-MM-DD | null
 
+intake_review:
+  owner: string                   # Developer/reviewer responsible for Step 0 decision
+  owner_title: string | null
+  owner_email: string | null
+  review_date: YYYY-MM-DD
+  approval_status: pending | approved | approved_with_non_blocking_tbd | blocked
+  approval_notes: string
+
 sme_review:
-  owner: string | null            # Required before approved_for_inventory
+  required: boolean               # false is valid for internal source review
+  owner: string | null            # Required only when required is true
   owner_title: string | null
   owner_email: string | null
   review_date: YYYY-MM-DD | null
-  approval_status: pending | approved | approved_with_non_blocking_tbd | blocked
+  approval_status: not_required | pending | approved | approved_with_non_blocking_tbd | blocked
   approval_notes: string
 
 intake_decision:
@@ -91,13 +102,17 @@ type: string                      # See type-specific schemas below
 subtype: string | null            # rpgle, clle, dds, csv, job_log, screenshot, etc.
 source_location: object           # Shape depends on evidence type
 original_filename: string
-redacted_filename: string | null  # Null allowed only in draft/blocked packages
+redacted_filename: string | null  # Approved analysis path; may equal original source path for internal_source_review
+source_path_verified: boolean     # True when user-provided source path is authorized for internal analysis
+redaction_required: boolean
 size_bytes: number | null
 description: string
 sensitivity: public | internal | confidential | unknown
 sensitive_content: [string ...]   # Category names only, never raw values
 redaction_status: not_required | pending | reviewed | approved | failed
+approval_basis: source_path_provided | developer_review | redaction_owner_review | sme_review
 redaction_notes: string           # What was done and why; no raw values
+sme_required: boolean
 sme_approval: boolean
 reviewed_by: string | null
 review_date: YYYY-MM-DD | null
@@ -109,6 +124,19 @@ review_status: draft | in_review | approved | rejected
 `redaction_status: pending` are valid only while `package_state` is `draft` or
 `blocked`. They must be linked to an unresolved `TBD-*` before the manifest is
 saved as blocked.
+
+For `intake_mode: internal_source_review`, `redacted_filename` means "approved
+analysis path" and may equal `original_filename` or the supplied source path
+when all of the following are true:
+
+- `source_path_verified: true`
+- `redaction_required: false`
+- `redaction_status: not_required` or `reviewed`
+- `approval_basis: source_path_provided` or `developer_review`
+
+This is the normal Step 0 path for source members and metadata inside an
+isolated company environment. Do not block inventory merely because no separate
+redacted copy exists.
 
 ### Type-Specific Source Location Fields
 
@@ -231,21 +259,31 @@ All manifest states:
 - `intake_decision.status` must be `blocked`.
 - `downstream_inventory_allowed` must be `false`.
 - At least one unresolved item must have `blocks_inventory: true`.
-- Any item with `sensitivity: unknown`, missing redacted file, or missing owner
-  must point to a blocking `TBD-*`.
+- Any item with `sensitivity: unknown`, missing approved analysis path, missing
+  required redaction owner, or missing reviewer must point to a blocking
+  `TBD-*`.
 
 `package_state: approved_for_inventory`:
 
 - `intake_decision.status` must be `pass` or `pass_with_warnings`.
 - `downstream_inventory_allowed` must be `true`.
 - No evidence item may have `sensitivity: unknown`.
-- Every item must have a `redacted_filename`.
-- Every confidential item must have `redaction_status: approved`.
-- Internal/public items must have `redaction_status: not_required`, `reviewed`,
-  or `approved`.
-- `sme_approval` must be `true` for every `review_status: approved` item.
-- `sme_review.approval_status` must be `approved` or
+- Every item must have a `redacted_filename` or approved analysis path. In
+  `internal_source_review`, this may be the original source path with
+  `source_path_verified: true`.
+- Every item with `redaction_required: true` must have `redaction_status:
+  approved`.
+- Internal/public source-path-authorized items may have `redaction_status:
+  not_required`, `reviewed`, or `approved`.
+- Confidential source code or metadata may proceed without masking only when
+  `intake_mode: internal_source_review`, `source_path_verified: true`, and
+  `redaction_required: false`; mark `redaction_status: reviewed`.
+- `sme_approval` must be `true` only for items with `sme_required: true`.
+- `intake_review.approval_status` must be `approved` or
   `approved_with_non_blocking_tbd`.
+- `sme_review.approval_status` may be `not_required` for Step 0 internal source
+  review; otherwise it must be `approved` or
+  `approved_with_non_blocking_tbd` when `sme_review.required: true`.
 - Any open unresolved item must have `blocks_inventory: false`.
 
 ---
@@ -254,14 +292,16 @@ All manifest states:
 
 ### Purpose
 
-Audit trail of what was redacted, why, by whom, and when. Enables compliance
-review and traceability without exposing raw sensitive data.
+Audit trail of what was authorized as source-path input or redacted, why, by
+whom, and when. Enables compliance review and traceability without exposing raw
+sensitive data.
 
 ### Required Sections
 
 1. **Metadata**
    - Capability name and slug
-   - Redaction owner (name, title, email)
+   - Intake reviewer (name, title, email)
+   - Redaction owner (name, title, email), when redaction was required
    - Redaction date
    - Review status (`draft | in_review | approved | blocked`)
 
@@ -295,8 +335,9 @@ review and traceability without exposing raw sensitive data.
    - SME approved quality
 
 7. **Approval Records**
-   - Redaction owner sign-off
-   - SME reviewer sign-off
+   - Intake reviewer sign-off
+   - Redaction owner sign-off, when required
+   - SME reviewer sign-off, when required
    - Final decision (`pass | pass_with_warnings | blocked`)
 
 ### Validation Rules
@@ -307,7 +348,7 @@ review and traceability without exposing raw sensitive data.
 - If a rule-critical threshold, coefficient, amount, or code value is changed,
   mark the replacement as synthetic and state whether the exact legacy value may
   be inferred downstream.
-- All decisions must be justified and approved.
+- All decisions must be justified and approved by the intake reviewer.
 - All spot-checks must pass before `approved_for_inventory`.
 
 ---
@@ -316,8 +357,9 @@ review and traceability without exposing raw sensitive data.
 
 ### Purpose
 
-SME-executable assessment of evidence completeness, redaction quality, and
-readiness for downstream analysis.
+Developer- or SME-executable assessment of evidence completeness, source-path
+authorization, redaction quality when required, and readiness for downstream
+analysis.
 
 ### Required Sections
 
@@ -336,7 +378,7 @@ readiness for downstream analysis.
      - Is sensitivity classification correct?
      - Is redaction complete (no missed PII)?
      - Is business logic preserved or explicitly marked synthetic?
-     - SME approval status
+     - SME approval status, when SME review is required
 
 4. **Evidence Completeness for Downstream Analysis**
    - What does inventory need? Is it present?
@@ -355,11 +397,15 @@ readiness for downstream analysis.
    - Are any evidence items contradictory?
    - Which require SME resolution?
 
-7. **Redaction Owner Sign-Off**
+7. **Intake Reviewer Sign-Off**
    - Approval status
    - Date and signature
 
-8. **SME Review Sign-Off**
+8. **Redaction Owner Sign-Off, if Required**
+   - Approval status
+   - Date and signature
+
+9. **SME Review Sign-Off, if Required**
    - Evidence suitability for modernization
    - Confidence in redaction quality
    - Approval status
@@ -367,8 +413,10 @@ readiness for downstream analysis.
 
 ### Validation Rules
 
-- Every evidence item must have SME assessment.
-- All sign-offs must be dated for `approved_for_inventory`.
+- Every evidence item must have reviewer assessment.
+- SME assessment is required only when `sme_required: true` or a business
+  judgment is needed to unblock inventory.
+- All required sign-offs must be dated for `approved_for_inventory`.
 - No item can be marked approved with `sensitivity: unknown`.
 - All blocking items must be listed in `unresolved_items`.
 - All TBDs must have next steps.
@@ -462,8 +510,10 @@ Before manifest is approved for inventory:
 - [ ] All IDs are unique.
 - [ ] All items have type, subtype, source metadata, and description.
 - [ ] No item has `sensitivity: unknown`.
-- [ ] All confidential items have `redaction_status: approved`.
-- [ ] All approved items have `sme_approval: true`.
+- [ ] All items requiring redaction have `redaction_status: approved`.
+- [ ] All items not requiring redaction have `source_path_verified: true` or an
+      approved analysis artifact path.
+- [ ] All items with `sme_required: true` have `sme_approval: true`.
 - [ ] All dates are ISO format when known.
 - [ ] No raw sensitive values appear in any field.
 - [ ] Summary counts match item count.
@@ -478,7 +528,7 @@ Before log is approved:
 - [ ] All decisions are justified.
 - [ ] All spot-checks passed.
 - [ ] Redaction owner signed off.
-- [ ] SME reviewed and approved.
+- [ ] SME reviewed and approved when required.
 
 ### Review Checklist Gate
 
@@ -491,7 +541,8 @@ Before checklist is approved:
 - [ ] All contradictions identified.
 - [ ] No blocking issues remain for inventory.
 - [ ] Redaction owner signed off.
-- [ ] SME signed off.
+- [ ] Intake reviewer signed off.
+- [ ] SME signed off when required.
 
 ---
 
@@ -504,11 +555,13 @@ Evidence intake is complete and ready to pass to `legacy-ibmi-inventory` when:
 - All evidence items have EV IDs and are organized.
 - Manifest is complete and signed.
 - Redaction log is complete and signed.
-- Review checklist is complete and signed by SME.
+- Review checklist is complete and signed by the intake reviewer.
+- SME review is complete when `sme_review.required: true`; otherwise it may be
+  deferred to inventory/program/module analysis.
 - No item has `sensitivity: unknown`.
-- All confidential items are redacted and approved.
+- All items have source-path authorization or completed redaction.
 - No unresolved item has `blocks_inventory: true`.
-- All contradictions are escalated to SME.
+- All contradictions that affect business meaning are escalated to SME.
 
 ---
 
@@ -516,12 +569,13 @@ Evidence intake is complete and ready to pass to `legacy-ibmi-inventory` when:
 
 | Issue | Solution |
 | --- | --- |
-| Evidence item has `sensitivity: unknown` | Block intake; escalate to redaction owner for assessment |
+| Evidence item has `sensitivity: unknown` | Block intake; escalate to intake reviewer for assessment |
 | Redaction removed business-critical information | Rework redaction; preserve values or label synthetic replacements |
 | Evidence item references missing file | Document as TBD; plan follow-up collection |
 | Contradictory evidence (two sources disagree) | Document in manifest; escalate to SME for decision |
 | Manifest has duplicate EV IDs | Assign new IDs for duplicates; do not renumber reviewed IDs |
 | Spot-check found missed PII | Rework redaction; re-spot-check; re-approve |
+| SME not known at Step 0 | Do not block internal source review; record `sme_review.required: false` or a non-blocking later-analysis TBD |
 | SME rejects redaction quality | Return to redaction owner; rework; re-submit to SME |
 
 ---

@@ -24,10 +24,11 @@
 
 - **Stage skip safe?** No. Skipping inventory means downstream rule mining
   has no object-to-evidence backbone.
-- **Gate check:** Redaction Gate — passes. All evidence has `sensitive: no`
-  per the user's note; inventory will record the sensitivity decisions.
+- **Gate check:** Evidence Authorization Gate — passes. All evidence has known
+  sensitivity and source-path authorization per the user's note; inventory will
+  record the sensitivity decisions.
 - **Minimum input needed next:** capability slug (suggest `CREDIT-CHECK`),
-  source library name, collection date, SME owner name.
+  source library name, collection date, and intake reviewer.
 - **Route confidence:** High.
 - **Next artifact expected:** `01_inventory/inventory.yaml` and
   `01_inventory/object-map.md`.
