@@ -49,15 +49,16 @@ Last regenerated: 2026-05-16
 | `legacy-golden-master-test-planner` | v0.1.0 | 9.59 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) |
 | `legacy-step-contract` | v0.1.1 | 9.52 | field-pilot ready | passed | passed | passed | 2026-05-14 | [link](reviews/legacy-step-contract-v0.1.1-scorecard.md) |
 | `legacy-step-validator` | v0.1.1 | 9.53 | field-pilot ready | passed | passed | passed | 2026-05-14 | [link](reviews/legacy-step-validator-v0.1.1-scorecard.md) |
+| `legacy-html-exporter` | v0.1.0 | 9.31 | repo-ready | passed | failed | passed | 2026-05-19 | [link](reviews/legacy-html-exporter-v0.1.0-scorecard.md) |
 
 ## Summary
 
 | Decision | Count |
 | --- | ---: |
 | `field-pilot ready` (all three runtimes `passed`) | 10 |
-| `repo-ready` (runtime cap or partial coverage) | 9 |
+| `repo-ready` (runtime cap or partial coverage) | 10 |
 
-**19 skills total** in canonical source; **9 superseded scorecards** kept
+**20 skills total** in canonical source; **9 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

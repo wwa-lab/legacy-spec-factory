@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 19 skills. They are not equally connected — some are
+Legacy Spec Factory has 20 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -18,9 +18,9 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Layer 1 — IBM i extraction | 8 | Once per legacy capability slice |
 | Layer 2 — synthesis | 3 | After Layer 1 produces evidence |
 | Bridge / handoff | 2 | After synthesis is approved |
-| Governance | 4 | Cross-cutting; called by other skills |
+| Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **19** | |
+| **Total** | **20** | |
 
 ---
 
@@ -149,6 +149,7 @@ or by reviewers, not by end users directly.
 | [`legacy-step-validator`](../skills/legacy-step-validator/SKILL.md) | Applies the contract to a completed step package; emits `pass` / `pass_with_warnings` / `blocked` report | Orchestrator before advancing |
 | [`legacy-sme-review-facilitator`](../skills/legacy-sme-review-facilitator/SKILL.md) | Prepares SME review packages, records decision logs, captures sign-off, routes follow-up findings | Between BRD/spec writing and approval |
 | [`legacy-runtime-matrix-tester`](../skills/legacy-runtime-matrix-tester/SKILL.md) | Orchestrates runtime smoke evidence + matrix + scorecard decisions across Codex / Claude Code / OpenCode | When new skill is added or version-bumped |
+| [`legacy-html-exporter`](../skills/legacy-html-exporter/SKILL.md) | Exports stakeholder-facing Markdown artifacts into standalone HTML companions for easier SME / user review | After BRD/spec/review/status docs already exist and need browser-friendly packaging |
 
 **Pairings (use together, but kept separate intentionally)**:
 
@@ -160,6 +161,8 @@ or by reviewers, not by end users directly.
   prepares humans for it.
 - `runtime-matrix-tester` is independent of the BRD/spec pipeline but
   required for skill release readiness.
+- `html-exporter` is independent of the evidence/spec gate chain. It improves
+  review ergonomics only and must not be treated as a source-of-truth writer.
 
 **Why these aren't merged**: see "Why we kept them as separate skills"
 section below.
@@ -209,9 +212,9 @@ A canonical "first slice" run, in order:
                                      → Atlas (external)
 ```
 
-Governance skills (`step-contract`, `step-validator`, `runtime-matrix-tester`)
-are called as needed by the orchestrator or by skill authors, not in this
-linear sequence.
+Governance skills (`step-contract`, `step-validator`, `runtime-matrix-tester`,
+and `legacy-html-exporter`) are called as needed by the orchestrator, skill
+authors, or human reviewers, not in this linear sequence.
 
 ---
 

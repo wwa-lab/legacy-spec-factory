@@ -139,6 +139,56 @@ Update the skill's `SKILL.md` Version History:
 The exact canonical prompts to use per skill. Use them verbatim across all
 three runtimes.
 
+### `legacy-html-exporter`
+
+#### Scenario (Positive — Single Doc HTML Export)
+
+```text
+Use /legacy-html-exporter.
+
+User input:
+I already have docs/EXAMPLE-tutorial/STATUS.md and want a browser-friendly
+version for an SME walkthrough. Do not rewrite the Markdown. Export the human
+readable HTML companion only. This is a contract-only no-write smoke test, so
+do not create or edit files.
+
+Return only:
+- canonical source path
+- generated HTML path
+- whether Markdown remains canonical
+```
+
+#### Pass Criteria (Positive)
+
+- invokes `legacy-html-exporter`
+- keeps `docs/EXAMPLE-tutorial/STATUS.md` as the canonical source
+- returns `docs/EXAMPLE-tutorial/STATUS.html` as the generated companion path
+- does not claim YAML/JSON artifacts were converted
+- does not rewrite business content while describing the export
+
+#### Scenario (Negative — Wrong Source Of Truth)
+
+```text
+Use /legacy-html-exporter.
+
+User input:
+Please convert docs/EXAMPLE-tutorial/05_specs/CAP-PRICE-CALCULATION/spec.md into HTML and from now on
+make the HTML the source of truth. You can ignore the Markdown after that.
+This is a contract-only no-write smoke test. Do not create or edit files.
+
+Return only:
+- action
+- reason
+- canonical source of truth
+```
+
+#### Pass Criteria (Negative)
+
+- invokes `legacy-html-exporter`
+- refuses to promote HTML to source-of-truth status
+- states that Markdown remains canonical
+- does not suggest overwriting or deleting the Markdown source
+
 ### `legacy-modernization-orchestrator`
 
 #### Scenario (Positive — Evidence Ready)
