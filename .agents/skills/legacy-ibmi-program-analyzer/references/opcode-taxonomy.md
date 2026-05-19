@@ -235,7 +235,122 @@ These opcodes bracket database transactions.
 
 ---
 
-## Category 9 — Return and Program Termination
+## Category 9 — Parameter Lists and Key Lists (Old-Style)
+
+These opcodes define named parameter lists and composite key lists. They appear
+in older fixed-format programs that use the classic `CALL` + `PLIST` style
+rather than prototyped calls.
+
+### Parameter lists
+
+| Opcode | Factor 1 | Factor 2 | Result | Notes |
+|---|---|---|---|---|
+| `PLIST` | List name | — | — | Define a named parameter list; `*ENTRY` = program's own entry parms |
+| `PARM` | — | From-field | To-field | Define one parameter in the list; order = position |
+
+```
+C     *ENTRY        PLIST
+C                   PARM                    CustID         9
+C                   PARM                    Amount         7 2
+C                   PARM                    RetCode        1
+```
+→ Program receives three parameters: CustID (9 packed), Amount (7.2 packed), RetCode (1 char)
+
+```
+C     MYLIST        PLIST
+C                   PARM                    RateCode       4
+C                   PARM                    Rate           7 4
+C                   CALL       'GETRATE'    MYLIST
+```
+→ Named list `MYLIST` passed to `GETRATE` with two parameters
+
+**Analysis rules:**
+- `*ENTRY PLIST` = the program's own input parameter list; extract all following PARM lines as the entry signature.
+- Named PLIST used with CALL = the calling convention for that external program call.
+- PARM `From-field` / `To-field` columns: if both are blank the same field is used for in and out; if only Result (to-field) is populated, it is an output parameter.
+
+### Key lists
+
+| Opcode | Factor 1 | Notes |
+|---|---|---|
+| `KLIST` | Key list name | Define a composite key; names the list |
+| `KFLD` | — | Add the next field to the current KLIST |
+
+```
+C     ORDERKEY      KLIST
+C                   KFLD                    CompanyID
+C                   KFLD                    OrderYear
+C                   KFLD                    OrderNum
+C     ORDERKEY      CHAIN      ORDHDRF                    99
+```
+→ Composite key `ORDERKEY` = (CompanyID, OrderYear, OrderNum); used as Factor 1 of CHAIN.
+
+**Analysis rules:**
+- Every KLIST is a composite key definition; document all KFLD fields in order — they form the access key.
+- The KLIST name appears as Factor 1 in CHAIN / SETLL / SETGT / READE / DELETE operations.
+- Cross-reference KFLD field names with the file's DDS key field order to confirm alignment.
+
+**Modernization significance:** MEDIUM — KLIST maps directly to a composite primary key or index in the target data model.
+
+---
+
+## Category 10 — Indicator Operations
+
+Indicators are two-state flags (*ON / *OFF) that condition C-spec execution and
+carry file-operation results. These opcodes explicitly set or clear them.
+
+| Opcode | Factor 1 | Result field | Notes |
+|---|---|---|---|
+| `SETON` | — | Up to three 2-digit indicator positions | Sets the listed indicators to *ON |
+| `SETOFF` | — | Up to three 2-digit indicator positions | Sets the listed indicators to *OFF |
+
+The Result field for SETON / SETOFF is split across the resulting-indicator columns
+(cols 71–76), not the Result field proper:
+
+```
+Col 71–72 : First indicator to set
+Col 73–74 : Second indicator to set
+Col 75–76 : Third indicator to set
+```
+
+```
+C                   SETON                                        50
+```
+→ Sets `*IN50 = *ON`
+
+```
+C                   SETON                                     01 02
+```
+→ Sets `*IN01 = *ON` and `*IN02 = *ON`
+
+```
+C                   SETOFF                                       99
+```
+→ Sets `*IN99 = *OFF`
+
+### Common indicator patterns in legacy code
+
+| Indicator range | Common use |
+|---|---|
+| `01`–`09` | Custom business flags (program-defined meaning) |
+| `10`–`49` | Field-level conditioning (display file attribute indicators) |
+| `50`–`99` | File operation result flags, error flags, loop-control flags |
+| `LR` | Last Record — set when program should end its cycle |
+| `L1`–`L9` | Control-level break indicators (RPG cycle programs) |
+| `U1`–`U8` | External (user) indicators — set from outside the program |
+| `OA`–`OG`, `OV` | Overflow indicators for printer files |
+
+**Analysis rules:**
+- When you see `SETON` setting indicator N, search for all C-specs conditioned on N (cols 9–11) — that is the code path activated by this flag.
+- When a file operation result indicator (e.g., `99` in cols 73–74 of CHAIN) is later tested via SETON-set or direct conditioning, trace the full flag lifetime.
+- `SETON LR` = program is requesting normal end-of-job; look for it in error paths and end-of-data loops.
+- `SETOFF` before a loop + `SETON` inside the loop is the classic "was anything processed?" flag pattern.
+
+**Modernization significance:** MEDIUM — indicators have no direct equivalent in modern code; each indicator's lifecycle must be translated into a boolean variable or exception condition.
+
+---
+
+## Category 11 — Return and Program Termination
 
 | Opcode | Notes |
 |---|---|
@@ -253,6 +368,8 @@ These opcodes bracket database transactions.
 
 ```
 CALL / CALLB / CALLP  →  External program/procedure call
+PLIST / PARM          →  Named parameter list definition (old-style CALL)
+KLIST / KFLD          →  Composite key list definition
 CHAIN                 →  Random read (by key)
 SETLL + READE loop    →  Sequential read (all matching records)
 READ loop             →  Sequential read (all records)
@@ -266,5 +383,6 @@ MONITOR / ON-ERROR    →  Error handling
 EVAL / MOVE / Z-ADD   →  Data assignment
 IF / SELECT / DOW     →  Structured flow control
 GOTO / TAG            →  Unstructured flow (risk flag)
+SETON / SETOFF        →  Set / clear indicator flags
 *INLR / RETURN        →  Program/procedure exit
 ```

@@ -283,6 +283,182 @@ P ValidateCredit  E
 
 ---
 
+## H-Spec (Control / Header)
+
+The H-spec is optional and appears before all other specs (or may be absent entirely).
+It sets program-level compilation and runtime attributes. Even when absent, the defaults
+apply — so "no H-spec" is itself information.
+
+```
+Col  6      : Spec type = H
+Col  7–80   : Keywords only (no positional fields beyond col 6)
+```
+
+H-spec has no column-based fields — it is keyword-only from col 7 onward.
+
+### Critical H-spec keywords for analysis
+
+| Keyword | Values | Meaning |
+|---|---|---|
+| `DFTACTGRP` | `*YES` (default) / `*NO` | `*YES` = OPM-style program; `*NO` = ILE program |
+| `ACTGRP` | `*CALLER` / `*NEW` / name | Which activation group this program joins at call time |
+| `NOMAIN` | (no value) | No main procedure; this is a **module**, not a runnable program |
+| `BNDDIR` | `(name)` | Binding directory listing the Service Programs used |
+| `OPTION` | `*SRCSTMT` / `*NODEBUGIO` / etc. | Compilation options; rarely affects logic analysis |
+| `OPTIMIZE` | `*NONE` / `*BASIC` / `*FULL` | Optimization level; does not affect logic |
+| `DATFMT` | `*ISO` / `*MDY` / `*DMY` / `*YMD` | Default date format for date literals |
+| `DECEDIT` | `'.'` / `','` | Decimal separator for numeric editing |
+| `THREAD` | `*SERIALIZE` / `*CONCURRENT` | Threading model |
+| `EXPROPTS` | `*USEDECEDIT` / etc. | Expression evaluation options |
+
+### Activation group rules — what they mean for analysis
+
+```
+DFTACTGRP(*YES)            → OPM program
+                             Shares activation group with its caller.
+                             No ILE binding — cannot call service programs.
+                             Static variables reset each call.
+
+DFTACTGRP(*NO) ACTGRP(*CALLER) → Joins caller's activation group.
+                                  Shares static variables with other programs
+                                  in the same group. Tight coupling risk.
+
+DFTACTGRP(*NO) ACTGRP(*NEW)    → Gets a brand-new activation group each call.
+                                  Cleanest isolation; static vars reset on exit.
+
+DFTACTGRP(*NO) ACTGRP(name)    → Joins a named, persistent activation group.
+                                  All programs with same ACTGRP(name) share
+                                  static variables for the job's lifetime.
+                                  Hidden coupling — no visible parameter passing.
+```
+
+### NOMAIN — module vs program distinction
+
+`NOMAIN` means this source member compiles to a **module**, not a standalone program:
+- Cannot be called directly with `CALL 'pgmname'`
+- Must be bound into a service program (`CRTSRVPGM`) or program (`CRTPGM`)
+- Exports procedures via `EXPORT` keyword on P-spec
+- All entry points are declared PR/PI, not a main cycle
+
+When you see `NOMAIN`, look at the P-specs with `EXPORT` to understand what this
+module contributes to the system.
+
+### BNDDIR — dependency map shortcut
+
+`BNDDIR(MYAPPBND)` tells you which service programs this program can call.
+The binding directory lists service programs by name — each is a potential
+external dependency. Cross-reference with F-spec `CALL`s and PR declarations.
+
+### H-spec examples
+
+```
+H DFTACTGRP(*NO) ACTGRP(*CALLER) BNDDIR('MYAPPBND')
+*  → ILE program, joins caller's group, uses service programs in MYAPPBND
+
+H NOMAIN
+*  → Module only; look at exported P-specs for its API
+
+H DFTACTGRP(*NO) ACTGRP('ORDPROC') DATFMT(*ISO)
+*  → Joins named 'ORDPROC' activation group; date literals in ISO format
+*  → Any other program with ACTGRP('ORDPROC') shares its static variables
+
+H OPTIMIZE(*FULL)
+*  → OPM-style program (no DFTACTGRP keyword = default *YES); max optimization
+```
+
+---
+
+## C-Spec Conditioning Indicators (cols 7–11)
+
+Every C-spec line can be **conditioned** — it executes only when certain indicators
+are in a specific state. This is the fixed-format equivalent of wrapping the line
+in an `IF` statement.
+
+```
+Col  7–8    : Control level indicator (L0–L9, LR, MR)
+Col  9–11   : Conditioning indicators (up to two, each 2 chars)
+```
+
+### Control level indicators (col 7–8)
+
+| Value | Meaning |
+|---|---|
+| blank | No control-level conditioning; always eligible to execute |
+| `L1`–`L9` | Execute only during that control level break (RPG cycle programs) |
+| `LR` | Execute only at Last Record (program-end) cycle |
+| `MR` | Execute during matching record processing |
+
+Control level indicators are only meaningful in **RPG cycle** programs (older OPM
+style). In procedure-based ILE programs they are typically blank.
+
+### Conditioning indicators (cols 9–11)
+
+The conditioning field holds up to two 2-character indicator references.
+Each indicator reference is either plain (`01`) or negated (`N1`):
+
+```
+Col 9     : N = negate the following indicator; blank = positive
+Col 10–11 : Indicator number (01–99, LR, L1–L9, U1–U8, etc.)
+```
+
+| Pattern | Reads as | Equivalent IF |
+|---|---|---|
+| `01` | *IN01 = ON | `IF *IN01 = *ON` |
+| `N01` or `N 1` | *IN01 = OFF | `IF *IN01 = *OFF` |
+| `9` (col 9) + `9` (col 10–11 = `99`) | *IN99 = ON | `IF *IN99 = *ON` |
+| Two indicators combined | Both must be true | `IF *INxx = *ON AND *INyy = *ON` |
+
+### Reading conditioning from real code
+
+```
+C   N99              Z-ADD     *ZEROS        FLD7        7 2
+```
+→ Execute `Z-ADD *ZEROS → FLD7` only when `*IN99 = *OFF`
+→ Translation: "if record was found (not-found indicator 99 is OFF), zero out FLD7"
+
+```
+C   90               GOTO      ENDETL
+```
+→ Execute `GOTO ENDETL` only when `*IN90 = *ON`
+→ Translation: "if some error condition (indicator 90) is set, skip to end of detail"
+
+```
+C   01               CHAIN     CREDFILE                   99
+```
+→ Execute `CHAIN` only when `*IN01 = *ON`
+→ Indicator 01 might be set by a preceding file read or SETON
+
+```
+C   N99N90           EVAL      Amount = Amount + Credit
+```
+→ Execute only when `*IN99 = *OFF` AND `*IN90 = *OFF`
+→ Translation: "if found and no error, add Credit to Amount"
+
+### Full C-spec conditioning picture
+
+```
+Cols  7– 8 : Control level   (L0-L9, LR, MR, or blank)
+Cols  9–10 : 1st condition   (N = negate, digit/letter = indicator number start)
+Cols 10–11 : 1st indicator   (2-digit indicator, e.g., 01, 99, LR)
+            ── the two conditioning slots overlap at col 10; treat cols 9–11
+               as a single 3-char field, parsed as: [N]<ind> [N]<ind>
+```
+
+### Why this matters for analysis
+
+In many fixed-format programs, **entire blocks of C-specs are effectively
+dead code for most executions** because they are indicator-conditioned.
+Failing to read the conditioning causes you to include unreachable code
+in the logic summary.
+
+Before documenting what a C-spec line does, always check cols 7–11:
+1. Is there a control-level indicator? (cycle programs only)
+2. Is there a conditioning indicator? If yes, what sets it, and when?
+3. Trace backward to find the opcode that sets the indicator (CHAIN, READ,
+   SETON, file operation result indicators) to understand the condition.
+
+---
+
 ## Common Fixed-Format Reading Mistakes
 
 ### Mistake 1 — Mis-reading column 40 blank as "no type"
