@@ -126,6 +126,11 @@ The useful output is not the one that produces more text. It is the one that is
 complete, explicitly traceable, directly mapped to source, technically accurate
 from an IBM i perspective, and machine-consumable enough for downstream agents.
 
+For human reviewers, the repo now also supports a derived **review workspace**
+that condenses the source artifacts into queueable `Review Item` questions,
+evidence cards, gaps, contradictions, and explicit review actions. The
+workspace is built from the artifacts; it does not replace them.
+
 | Evaluation Area | Observed Failure Mode | Legacy Spec Factory Standard |
 | --- | --- | --- |
 | Program coverage | Top-level programs may be listed, but secondary artifacts can be missed | Inventory must report complete program coverage and list unresolved objects explicitly |
@@ -675,6 +680,11 @@ knowledge-hub.manifest.yaml
     approval-record.md
     unresolved-findings.md
 
+08_review_workspace/
+  review-items.json
+  index.html
+  review-items.manual.yaml
+
 99_archive/
   retired/
 ```
@@ -693,6 +703,11 @@ Branch and review workflow:
 The PR can include a temporary knowledge-hub preview to help review, but that
 preview must not be treated as trusted organizational knowledge until the
 underlying analysis outputs are merged.
+
+When the team wants a lightweight human decision surface instead of a full wiki
+preview, generate `08_review_workspace/index.html` from the analysis artifacts.
+It is optimized for queue-based review: blocked items, SME questions,
+contradictions, and ready-to-approve conclusions.
 
 The repo root `README.md` should state:
 

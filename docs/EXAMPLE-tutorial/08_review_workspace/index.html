@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Workspace — EXAMPLE-tutorial</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d7dfeb;
+      --text: #172033;
+      --muted: #5f6b85;
+      --accent: #2158d6;
+      --blocked: #b42318;
+      --needs: #b54708;
+      --ready: #175cd3;
+      --approved: #027a48;
+      --shadow: 0 10px 30px rgba(18, 27, 53, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .shell {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+    .hero {
+      padding: 24px 28px 20px;
+      background: linear-gradient(135deg, #1b3c86, #3557b7 60%, #5080f2);
+      color: white;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 980px;
+      color: rgba(255, 255, 255, 0.88);
+    }
+    .hero-meta {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+      font-size: 13px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .summary-card {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      min-height: 84px;
+    }
+    .summary-card .label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .summary-card strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      padding: 20px 24px 24px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .queue {
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+    }
+    .queue h2, .detail h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    button.filter {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button.filter.active {
+      background: #eef4ff;
+      border-color: #a9c0f4;
+      color: var(--accent);
+    }
+    .queue-list {
+      display: grid;
+      gap: 10px;
+    }
+    .queue-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+    }
+    .queue-item.active {
+      border-color: #9bb8ff;
+      box-shadow: 0 0 0 2px #dce8ff;
+    }
+    .queue-item .queue-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .queue-item .queue-question {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .detail {
+      padding: 20px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .status-blocked, .status-contradicted { background: #fee4e2; color: var(--blocked); }
+    .status-needs_sme_review, .status-needs_review { background: #fff0dc; color: var(--needs); }
+    .status-ready_to_approve { background: #e9f2ff; color: var(--ready); }
+    .status-approved, .status-deferred { background: #dcfae6; color: var(--approved); }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+    }
+    .detail-block {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      background: #fcfdff;
+    }
+    .detail-block h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+    }
+    .detail-block p, .detail-block li {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .detail-block ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .evidence-list {
+      display: grid;
+      gap: 12px;
+    }
+    .evidence-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: white;
+    }
+    .evidence-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .evidence-card .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .link-list a {
+      display: inline-block;
+      margin: 0 8px 8px 0;
+      font-size: 13px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 1080px) {
+      .workspace, .detail-grid, .summary { grid-template-columns: 1fr; }
+      .queue { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <h1>Review Workspace — EXAMPLE-tutorial</h1>
+      <p>Evidence-first review workspace. The queue is organized for human decisions: what is blocked, what needs SME input, what is ready to approve, and what has already closed cleanly.</p>
+      <div class="hero-meta" id="hero-meta"></div>
+      <section class="summary" id="summary"></section>
+    </header>
+    <main class="workspace">
+      <aside class="panel queue">
+        <h2>Review Queue</h2>
+        <div class="filters" id="filters"></div>
+        <div class="queue-list" id="queue-list"></div>
+      </aside>
+      <section class="panel detail">
+        <h2>Current Review Item</h2>
+        <div id="detail-root" class="empty">No review items available.</div>
+      </section>
+    </main>
+  </div>
+  <script id="review-data" type="application/json">{"schema_version": "0.1", "project": {"name": "EXAMPLE-tutorial", "project_root": "docs/EXAMPLE-tutorial", "capability_id": "CAP-PRICE-CALCULATION", "status": "approved", "source_commit": "7bf32e9", "generated_at": "2026-05-19T18:03:59+00:00"}, "summary": {"item_count": 4, "status_counts": {"approved": 4}, "group_counts": {"Closed": 4}, "action_counts": {"approve": 4}, "evidence_cards": 6}, "review_items": [{"id": "RI-CAP-PRICE-CALCULATION-003", "capability_id": "CAP-PRICE-CALCULATION", "type": "error_behavior_review", "theme": "ERR-PRICE-001", "question": "How should the legacy system behave when Item / tier combination not found in PRICEFL?", "sub_questions": ["Is the returned status or error outcome explicit enough for downstream implementation?", "Is there enough evidence to preserve this failure behavior without reinterpretation?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_only", "current_conclusion": "status_code='1', final_price=0", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Item / tier combination not found in PRICEFL", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved"}], "contradictions": [], "gaps": [], "impacts": ["ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"acceptance_criteria": "Caller receives status='1' and price=0; no exception thrown"}, "updated_at": "2026-05-19T18:03:59+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-900", "capability_id": "CAP-PRICE-CALCULATION", "type": "traceability_review", "theme": "Traceability coverage", "question": "Is every approved rule traceable to evidence and a reviewable verification path?", "sub_questions": ["Does each approved rule have at least one evidence link?", "Does each approved rule point to a verification path reviewers can audit?", "Are there any open coverage gaps or orphaned references?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "Coverage checks in traceability.md are complete.", "evidence": [{"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Traceability coverage", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved"}, {"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Traceability coverage", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved"}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001", "BR-PRICE-002", "ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"coverage_check": "Every spec rule is backed by ≥ 1 `evidence_id`. ✓ | Every `inferred_business_rule` would need SME confirmation — there are | Every approved rule has `acceptance_criteria`. ✓ | No open `TBD-*`. ✓"}, "updated_at": "2026-05-19T18:03:59+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-002", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Promo code stacking", "question": "How should promo code handling behave, and is the silent fallback intentional?", "sub_questions": ["Does evidence support BR-PRICE-002 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?", "Is the silent fallback an intentional business rule or a defensive implementation detail?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Promo code stacking", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved"}, {"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Promo code stacking", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved"}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-002"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` row P4; SME walkthrough", "acceptance_tests": "spec.yaml acceptance row 4–7"}, "updated_at": "2026-05-19T18:03:59+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-001", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Final price formula", "question": "Should the pricing formula, discount order, and rounding behavior be accepted as the legacy truth?", "sub_questions": ["Does evidence support BR-PRICE-001 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_only", "current_conclusion": "final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Final price formula", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved"}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` rows P2–P5", "acceptance_tests": "spec.yaml acceptance row 1–3"}, "updated_at": "2026-05-19T18:03:59+00:00"}], "evidence_index": {"EV-SRC-001": {"evidence_id": "EV-SRC-001", "type": "source", "member": "PRICECALC.RPGLE", "relative_path": "source/PRICECALC.RPGLE", "sensitivity": "redacted", "redaction_note": "Customer account numbers replaced with C0001..C9999", "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-DDS-001": {"evidence_id": "EV-DDS-001", "type": "dds", "member": "PRICEFL.PF", "relative_path": "dds/PRICEFL.PF", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-SME-001": {"evidence_id": "EV-SME-001", "type": "sme_note", "relative_path": "notes/pricing-rules-walkthrough.md", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}, "note": "SME walkthrough of tier discount + promotion stacking rules"}}}</script>
+  <script>
+    const payload = JSON.parse(document.getElementById("review-data").textContent);
+    const filters = ["all", "blocked", "contradicted", "needs_sme_review", "needs_review", "ready_to_approve", "approved", "deferred"];
+    let activeFilter = "all";
+    let activeId = payload.review_items[0] ? payload.review_items[0].id : null;
+
+    function statusLabel(status) {
+      return status.replaceAll("_", " ");
+    }
+
+    function renderSummary() {
+      const meta = document.getElementById("hero-meta");
+      meta.innerHTML = "";
+      [
+        `Source commit ${payload.project.source_commit}`,
+        `Generated ${payload.project.generated_at}`,
+        `${payload.summary.item_count} review items`,
+        `${payload.project.project_root}`
+      ].forEach(text => {
+        const span = document.createElement("span");
+        span.className = "chip";
+        span.textContent = text;
+        meta.appendChild(span);
+      });
+
+      const summary = document.getElementById("summary");
+      summary.innerHTML = "";
+      const cards = [
+        ["Must Resolve", payload.summary.group_counts["Must Resolve"] || 0],
+        ["Needs SME", payload.summary.group_counts["Needs SME"] || 0],
+        ["Ready To Approve", payload.summary.status_counts["ready_to_approve"] || 0],
+        ["Closed", payload.summary.group_counts["Closed"] || 0],
+      ];
+      for (const [label, value] of cards) {
+        const card = document.createElement("article");
+        card.className = "summary-card";
+        card.innerHTML = `<span class="label">${label}</span><strong>${value}</strong>`;
+        summary.appendChild(card);
+      }
+    }
+
+    function renderFilters() {
+      const root = document.getElementById("filters");
+      root.innerHTML = "";
+      for (const filter of filters) {
+        const button = document.createElement("button");
+        button.className = `filter ${filter === activeFilter ? "active" : ""}`;
+        button.textContent = filter === "all" ? "all" : statusLabel(filter);
+        button.onclick = () => {
+          activeFilter = filter;
+          const visible = filteredItems();
+          if (!visible.find(item => item.id === activeId)) {
+            activeId = visible[0] ? visible[0].id : null;
+          }
+          renderFilters();
+          renderQueue();
+          renderDetail();
+        };
+        root.appendChild(button);
+      }
+    }
+
+    function filteredItems() {
+      return payload.review_items.filter(item => activeFilter === "all" || item.status === activeFilter);
+    }
+
+    function renderQueue() {
+      const root = document.getElementById("queue-list");
+      root.innerHTML = "";
+      const items = filteredItems();
+      if (!items.length) {
+        root.innerHTML = `<div class="empty">No items for this filter.</div>`;
+        return;
+      }
+      for (const item of items) {
+        const button = document.createElement("button");
+        button.className = `queue-item ${item.id === activeId ? "active" : ""}`;
+        button.onclick = () => {
+          activeId = item.id;
+          renderQueue();
+          renderDetail();
+        };
+        const evidenceCount = item.evidence ? item.evidence.length : 0;
+        const gapCount = item.gaps ? item.gaps.length : 0;
+        button.innerHTML = `
+          <div class="queue-meta">
+            <span>${statusLabel(item.status)}</span>
+            <span>${item.priority} priority</span>
+          </div>
+          <div class="queue-question">${item.question}</div>
+          <div class="queue-meta">
+            <span>${evidenceCount} evidence card${evidenceCount === 1 ? "" : "s"}</span>
+            <span>${gapCount} gap${gapCount === 1 ? "" : "s"}</span>
+          </div>
+        `;
+        root.appendChild(button);
+      }
+    }
+
+    function artifactLink(path) {
+      if (!path) return "";
+      const href = `../${path}`;
+      return `<a href="${href}">${path}</a>`;
+    }
+
+    function renderDetail() {
+      const root = document.getElementById("detail-root");
+      const item = payload.review_items.find(candidate => candidate.id === activeId);
+      if (!item) {
+        root.className = "empty";
+        root.textContent = "No review item selected.";
+        return;
+      }
+      const evidenceHtml = (item.evidence || []).map(card => `
+        <article class="evidence-card">
+          <strong>${card.id} — ${card.title || card.type}</strong>
+          <div class="meta">${card.type} · ${card.strength || "evidence"} · ${card.approval || "approval not recorded"}</div>
+          <div>${card.supports || ""}</div>
+          <div class="meta">${card.source || "source not indexed"}</div>
+        </article>
+      `).join("");
+      const subQuestions = (item.sub_questions || []).length
+        ? `<ul>${item.sub_questions.map(text => `<li>${text}</li>`).join("")}</ul>`
+        : `<div class="empty">No sub-questions recorded.</div>`;
+      const contradictions = (item.contradictions || []).length
+        ? `<ul>${item.contradictions.map(text => `<li>${text}</li>`).join("")}</ul>`
+        : `<div class="empty">No contradictions recorded.</div>`;
+      const gaps = (item.gaps || []).length
+        ? `<ul>${item.gaps.map(text => `<li>${text}</li>`).join("")}</ul>`
+        : `<div class="empty">No gaps recorded.</div>`;
+      const impacts = (item.impacts || []).length
+        ? `<ul>${item.impacts.map(text => `<li>${text}</li>`).join("")}</ul>`
+        : `<div class="empty">No impacted IDs recorded.</div>`;
+      const sources = (item.source_artifacts || []).map(artifactLink).join("");
+      root.className = "";
+      root.innerHTML = `
+        <div>
+          <span class="badge status-${item.status}">${statusLabel(item.status)}</span>
+          <span class="badge status-${item.status}">${item.review_action}</span>
+          <span class="badge status-${item.status}">${item.confidence}</span>
+        </div>
+        <h3 style="margin: 6px 0 10px; font-size: 24px; line-height: 1.3;">${item.question}</h3>
+        <p style="margin: 0 0 14px; color: var(--muted);">Theme: ${item.theme} · Basis: ${item.decision_basis} · Type: ${item.type}</p>
+        <div class="detail-grid">
+          <div class="detail-block">
+            <h3>Current Conclusion</h3>
+            <p>${item.current_conclusion}</p>
+          </div>
+          <div class="detail-block">
+            <h3>Decision Needed Now</h3>
+            <p>${item.review_action} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.</p>
+          </div>
+          <div class="detail-block">
+            <h3>Sub-Questions</h3>
+            ${subQuestions}
+          </div>
+          <div class="detail-block">
+            <h3>Impact</h3>
+            ${impacts}
+          </div>
+          <div class="detail-block">
+            <h3>Evidence</h3>
+            <div class="evidence-list">${evidenceHtml || '<div class="empty">No evidence cards recorded.</div>'}</div>
+          </div>
+          <div class="detail-block">
+            <h3>Gaps</h3>
+            ${gaps}
+            <h3 style="margin-top: 18px;">Contradictions</h3>
+            ${contradictions}
+          </div>
+          <div class="detail-block" style="grid-column: 1 / -1;">
+            <h3>Source Artifacts</h3>
+            <div class="link-list">${sources || '<span class="empty">No source artifacts recorded.</span>'}</div>
+            <h3 style="margin-top: 18px;">Source Excerpt</h3>
+            <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; color: var(--muted);">${JSON.stringify(item.source_excerpt || {}, null, 2)}</pre>
+          </div>
+        </div>
+      `;
+    }
+
+    renderSummary();
+    renderFilters();
+    renderQueue();
+    renderDetail();
+  </script>
+</body>
+</html>
