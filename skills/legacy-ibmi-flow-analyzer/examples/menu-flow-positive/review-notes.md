@@ -13,19 +13,21 @@
 ## Key Patterns Demonstrated
 
 ### 1. Re-entrant Orchestrator Node
-CUSTINQ is shown multiple times in the sequence diagram, but it's still
+CUSTINQ is shown multiple times in the Transaction Call Map, but it's still
 one Node (NODE-01). This is correct: the same program cycles between
 showing DSPFs and calling workers. We do not create separate nodes for
 each visit.
 
 ### 2. F-Key Branch Inside an Interactive Flow
 The flow is not just menu-triggered — it has further F-key driven branches
-inside (F11 to show history). Captured as BR-02 with all alternatives.
+inside (F11 to show history). Captured through EDGE-CUST-INQUIRY-03 plus
+NODE-CUST-INQUIRY-01 exit paths.
 
 ### 3. Subfile Option Dispatch as a Branch
-Subfile option codes are a separate branch type (BR-03). Documents both
-the handled option (5=Display) and the unhandled-option behavior
-(silent drop) — the latter as a SEED for SME.
+Subfile option codes are a separate branch type under
+NODE-CUST-INQUIRY-01 subfile dispatch. Documents both the handled option
+(5=Display) and the unhandled-option behavior (silent drop) — the latter as
+a SEED for SME.
 
 ### 4. Read-Only Flow with No Commit Boundaries
 Explicit "no commit boundaries — read-only" rather than leaving the

@@ -25,9 +25,22 @@
 
 ---
 
-## Sequence Diagram
+## Transaction Call Map
 
 Source: derived-from-code + SME confirmed
+
+```mermaid
+flowchart LR
+  MENU["CSRMENU option 5"]
+  CUSTINQ["NODE-01 CUSTINQ"]
+  CUSTLKP["NODE-02 CUSTLKP"]
+  TXNHIST["NODE-03 TXNHIST"]
+  MENU --> CUSTINQ
+  CUSTINQ --> CUSTLKP
+  CUSTINQ --> TXNHIST
+```
+
+### Call Chain Summary
 
 ```text
 [CSR on CSRMENU; selects option 5]
@@ -85,34 +98,46 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 ## Edges
 
-| Edge ID | From → To | Call Type | Site | Condition | Evidence |
+| Edge ID | From -> To | Via | Call Type | Site | Condition | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| EDGE-CUST-INQUIRY-01 | (MENU option 5) -> NODE-01 | N/A | MENU-option | CSRMENU opt 5 | user selects | EV-001 |
+| EDGE-CUST-INQUIRY-02 | NODE-01 -> NODE-02 | search-handler routine | CALLP | CUSTINQ:120 | always after CustID input | EV-002 |
+| EDGE-CUST-INQUIRY-03 | NODE-01 -> NODE-03 | F11-handler routine | CALLP | CUSTINQ:180 | user presses F11 on detail panel | EV-003 |
+
+---
+
+## Common Dependencies
+
+| Common Node | Inbound Callers | Role Classification | Main Graph Treatment | Risk Notes | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| EDGE-CUST-INQUIRY-01 | (MENU option 5) → NODE-01 | MENU-option | CSRMENU opt 5 | user selects | EV-001 |
-| EDGE-CUST-INQUIRY-02 | NODE-01 → NODE-02 | CALLP | CUSTINQ:120 | always after CustID input | EV-002 |
-| EDGE-CUST-INQUIRY-03 | NODE-01 → NODE-03 | CALLP | CUSTINQ:180 | user presses F11 on detail panel | EV-003 |
+| (none) | N/A | N/A | N/A | no shared common program/API is called by multiple nodes in this flow | EV-002 to EV-003 |
 
 ---
 
 ## Cross-Program Data Flow
 
-| Data ID | On Edge | Mechanism | Payload | Direction | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| DATA-CUST-INQUIRY-01 | EDGE-02 | CALL parameters | CustID (in), CustData DS (out), RC (out) | NODE-01 → NODE-02 → NODE-01 | EV-... |
-| DATA-CUST-INQUIRY-02 | EDGE-03 | CALL parameters | CustID (in), SubfileBuffer (out array), RC (out) | NODE-01 → NODE-03 → NODE-01 | EV-... |
-| DATA-CUST-INQUIRY-03 | (out of band) | Shared file CUSTMSTR | full customer master record | NODE-02 reads (no writes by this flow) | EV-... |
-| DATA-CUST-INQUIRY-04 | (out of band) | Shared file TXNLOGPF | last 90 days of CustID's transactions | NODE-03 reads | EV-... |
+| Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DATA-CUST-INQUIRY-01 | EDGE-02 | NODE-01 | NODE-02 / NODE-01 | CALL parameters | CustID (in), CustData DS (out), RC (out) | sync in/out | lookup result returned | EV-... |
+| DATA-CUST-INQUIRY-02 | EDGE-03 | NODE-01 | NODE-03 / NODE-01 | CALL parameters | CustID (in), SubfileBuffer (out array), RC (out) | sync in/out | history buffer returned | EV-... |
+| DATA-CUST-INQUIRY-03 | CUSTMSTR | NODE-02 | NODE-01 via EDGE-02 | Shared file | full customer master record keyed by CustID | sync lookup | read-only | EV-... |
+| DATA-CUST-INQUIRY-04 | TXNLOGPF | NODE-03 | NODE-01 via EDGE-03 | Shared file | last 90 days of CustID transactions | sync lookup | read-only | EV-... |
+
+**Critical trails:**
+- Customer identity: DSPF input CustID -> CUSTINQ -> CUSTLKP -> CUSTMSTR -> CustData DS -> CUSTINQ detail panel.
+- Transaction history: CUSTINQ F11 branch -> TXNHIST -> TXNLOGPF -> SubfileBuffer -> TXNHISTD subfile.
 
 ---
 
 ## Branch Points
 
-| Branch ID | Location | Decider | Alternatives | Evidence |
+| Branch Ref | Location | Decider | Alternatives | Evidence |
 | --- | --- | --- | --- | --- |
-| BR-CUST-INQUIRY-01 | CUSTINQ:135 | RC from CUSTLKP | RC=0 → show detail panel; RC=-1 → show "not found" message on search panel | EV-... |
-| BR-CUST-INQUIRY-02 | CUSTINQ:175 | F-key pressed on detail panel | F3 → exit to menu; F11 → show history; F12 → back to search | EV-... |
-| BR-CUST-INQUIRY-03 | CUSTINQ:225 | Subfile option code | 5 → show detail subwindow; other → ignore (no error) | EV-... |
+| EDGE-CUST-INQUIRY-02 / NODE-CUST-INQUIRY-01 not-found path | CUSTINQ:135 | RC from CUSTLKP | RC=0 → show detail panel; RC=-1 → show "not found" message on search panel | EV-... |
+| EDGE-CUST-INQUIRY-03 / NODE-CUST-INQUIRY-01 exit paths | CUSTINQ:175 | F-key pressed on detail panel | F3 → exit to menu; F11 → EDGE-CUST-INQUIRY-03; F12 → back to search | EV-... |
+| NODE-CUST-INQUIRY-01 subfile dispatch | CUSTINQ:225 | Subfile option code | 5 → show detail subwindow; other → ignore (no error) | EV-... |
 
-**Unhandled subfile options:** silent ignore (per branch BR-03) → SEED-CUST-INQUIRY-02 (is this correct UX?)
+**Unhandled subfile options:** silent ignore (per NODE-CUST-INQUIRY-01 subfile dispatch) → SEED-CUST-INQUIRY-02 (is this correct UX?)
 
 ---
 
@@ -157,7 +182,7 @@ boundaries. Every error is fully recoverable by the user.
 | Seed ID | Candidate Rule / Capability | Suggested By | SME Question |
 | --- | --- | --- | --- |
 | SEED-CUST-INQUIRY-01 | CSR role must be authorised to view customer transaction history | Menu option 5 visibility depends on CSR group; data shown is sensitive | What governs CSR access — group profile only, or finer-grained authorities? |
-| SEED-CUST-INQUIRY-02 | Unknown subfile options are silently dropped | BR-03 ignores unrecognised option codes | Is silent drop intentional or should an error be shown? |
+| SEED-CUST-INQUIRY-02 | Unknown subfile options are silently dropped | NODE-CUST-INQUIRY-01 subfile dispatch ignores unrecognised option codes | Is silent drop intentional or should an error be shown? |
 | SEED-CUST-INQUIRY-03 | Transaction history limited to 90 days | NODE-03 hard-coded 90-day window | Is 90 days a regulatory limit, performance choice, or arbitrary? |
 
 ---
@@ -189,7 +214,7 @@ boundaries. Every error is fully recoverable by the user.
 - [X] Business event name confirmed by SME (Liu Wei)
 - [X] All nodes in scope
 - [X] All edges reflect actual production calls
-- [X] Cross-program data flow complete
+- [X] Cross-program data flow captures carriers, producers, consumers, timing, and state impact
 - [X] Branch points capture user-visible decisions (incl. F-keys and subfile options)
 - [X] UI surfaces match production screens — 3 DSPFs documented
 - [X] Error propagation matches operational reality

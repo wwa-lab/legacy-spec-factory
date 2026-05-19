@@ -60,7 +60,7 @@ This example, plus the supporting references and template, supports a
 target score of **≥ 9.5 / 10**:
 
 - Purpose & trigger clarity: 10/10 (combined Scheduler+Batch model)
-- Workflow completeness: 9/10 (9 steps applied, all 9 sections present)
+- Workflow completeness: 9/10 (10 steps applied, all required sections present)
 - IBM i domain correctness: 9/10 (CL+RPGLE+SQLRPG handled idiomatically)
 - Evidence & anti-hallucination: 10/10 (every edge / data / boundary traced)
 - Output contract: 9/10 (matches template)
