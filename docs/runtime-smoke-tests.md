@@ -661,7 +661,11 @@ Provide the analysis in the output contract format.
 The response must include all of the following:
 
 - **Metadata section:** Program ID (OBJ-CREDIT-VALIDATION-001), Program Type (RPGLE), entry points list
+- **Analysis Coverage & Scope:** `standard` mode, source index summary, coverage ledger, and no claim that analysis exceeds supplied source coverage
+- **Program Call Map:** RDi-style structural map, not a statement-level flowchart
+- **Routine Cards / Deep Read Windows:** `CreditChk` routine card with coverage value `deep_read`; coverage values, if present, use only `indexed_only`, `deep_read`, or `blocked`; Deep Read Windows may use `full-source-read` as the source range/reason for small programs
 - **Entry Points & Parameters:** CreditChk procedure with (CustID, RequestAmount) parameters and return decision code
+- **Data Touch Map:** CREDFILE lookup and CreditChk output/return carrier, including `ApprovedAmount` if source declares it
 - **Control Flow:** CHAIN operation on CREDFILE, IF/ELSE branching on credit limit check
 - **File I/O:** CREDFILE with CHAIN operation; CUSTFILE marked as declared but unused
 - **External Calls:** None (correctly identifies no external CALLs)
@@ -716,6 +720,38 @@ opencode run -m opencode/minimax-m2.5-free \
 For the negative scenario, substitute the incomplete-source prompt above into
 the same commands.
 
+#### Scenario (Negative — Large RPG Fixed-Chunk Summary)
+
+```text
+Use /legacy-ibmi-program-analyzer.
+
+User input:
+I have a 32,039-line RPGLE program called CUE64 (OBJ-CARD-AUTH-001).
+Please split it into fixed 1,000-line chunks, summarize each chunk, then
+write one complete business summary from those chunk summaries. You do not
+need to build call maps or data maps; speed matters more than structure.
+
+This is a contract-only no-write smoke test. Do not create or edit files.
+Return only:
+- detected skill
+- status
+- accepted_or_rejected_requested_method
+- required_large_program_sections
+- reason
+```
+
+#### Pass Criteria (Negative — Large RPG Fixed-Chunk Summary)
+
+- invokes `legacy-ibmi-program-analyzer`
+- rejects fixed-line chunk-summary synthesis as insufficient for business facts
+- switches to structure-first large-program mode
+- requires `Analysis Coverage & Scope`, source index summary, `Routine Cards`,
+  `Deep Read Windows`, `Program Call Map`, `Data Touch Map`, and explicit
+  blocking/non-blocking gaps
+- refuses to produce a complete business summary before coverage ledger,
+  call/data evidence, and deep-read windows support it
+- does not create or edit files
+
 ### `legacy-ibmi-flow-analyzer`
 
 #### Scenario (Positive — Scheduler + Batch Job Flow)
@@ -731,7 +767,8 @@ report), RECONSQL (final cross-check with GL ledger via SQL). All four program
 analyses are approved. Help me analyze the complete flow, including data
 exchanges, error propagation, and commit boundaries.
 
-Return the flow analysis with all 9 sections populated.
+Return the flow analysis with all required sections populated, including
+Transaction Call Map and Common Dependencies.
 ```
 
 #### Pass Criteria (Positive)
@@ -740,10 +777,10 @@ The response must include all of the following:
 
 - **Metadata section:** Flow ID (FLOW-NIGHTLY-RECON-001 or similar), Trigger Model correctly identified as Scheduler or Scheduler + SBMJOB, all 4 nodes listed
 - **Trigger Context:** Scheduler entry name, frequency (daily 22:00), SBMJOB command details, SLA (must complete before 06:00)
-- **Sequence Diagram:** Scheduler entry → SBMJOB → 4 nodes in sequence, all edges traced
+- **Transaction Call Map:** Scheduler entry → SBMJOB → 4 nodes in sequence, all edges traced
 - **Nodes section:** 4 programs with roles (orchestrator, worker, reporter, data-access), all marked as approved program-analyses
 - **Edges section:** 5 edges including scheduler-fire edge and CALL edges between nodes, all with call sites and conditions
-- **Cross-Program Data Flow:** RUNDATE parameter, shared file TXNLOGPF, shared file GLPOSTPF, spool RECONPRT, DTAQ message, data area with completion flag
+- **Cross-Program Data Flow:** RUNDATE parameter, shared file TXNLOGPF, shared file GLPOSTPF, spool RECONPRT, DTAQ message, data area with completion flag; rows include carrier, producer, consumer, timing, and state impact
 - **Branch Points:** RC-driven conditional branches in orchestrator CL program
 - **Error Propagation & Commit Boundaries:** 3 commit boundaries clearly identified, vulnerable windows documented
 - **Business Capability Seeds:** SEED-* IDs (not BR-*) for candidate rules like "all transactions for a run date must be reconciled before GL consolidation"
@@ -767,11 +804,11 @@ Return the flow analysis output showing the correct stop/blocking behavior.
 #### Pass Criteria (Negative)
 
 - **Status:** blocked_pending_source (not draft; analysis cannot proceed)
-- **Does NOT complete** full 9-section analysis
+- **Does NOT complete** the full required flow analysis
 - **Creates blocking TBDs** for each missing program-analysis:
   - TBD-WEB-ORDER-001: ORDPRICE lacks approved program-analysis; routes to legacy-ibmi-program-analyzer
   - TBD-WEB-ORDER-002: WEBORDOUT lacks approved program-analysis; routes to legacy-ibmi-program-analyzer
-- **Sequence Diagram:** Shows 5 nodes; marks 2 as ❌ MISSING
+- **Transaction Call Map:** Shows 5 nodes; marks 2 as ❌ MISSING
 - **Refuses to guess** ORDPRICE or WEBORDOUT behavior
 - **Nodes table:** Shows all 5; marks ORDPRICE and WEBORDOUT with MISSING status
 - **TBDs section:** Clearly distinguishes `blocking: pending_source` from non-blocking TBDs
@@ -782,17 +819,17 @@ Return the flow analysis output showing the correct stop/blocking behavior.
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map and Common Dependencies."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map and Common Dependencies."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all 9 sections populated."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved. Help me analyze the complete flow, including data exchanges, error propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map and Common Dependencies."
 ```
 
 For the negative scenario, substitute the missing-program-analysis prompt above into
