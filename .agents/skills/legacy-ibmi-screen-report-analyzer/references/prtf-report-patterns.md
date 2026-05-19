@@ -4,6 +4,112 @@ Use this reference when analyzing IBM i printer-file DDS, RPG output specs
 (O-specs), report programs, and spool samples. Keep layout facts separate from
 calculation and print-order facts.
 
+## PRTF DDS Column Layout
+
+PRTF DDS is column-based like all IBM i DDS. The form type in col 6 (A-spec)
+and the position of the name field determine what each line defines.
+
+```
+Col  6      : A (always — marks a DDS spec line; * = comment, skip it)
+Col  7      : Form type indicator (R=record format, blank=field/keyword)
+Col  8–16   : Name (record format name or field name)
+Col  17     : Reference indicator (R = inherits type from reference file)
+Col  18–19  : Length (for field lines)
+Col  20     : Data type (A=char, P=packed, S=zoned, B=binary, blank=depends)
+Col  21–22  : Decimal positions
+Col  23–27  : Usage (O=output only, B=both, P=program-only, H=hidden)
+Col  28–29  : Line number (row on page, 1-based)
+Col  30–32  : Position (column on page, 1-based)
+Col  33+    : Keywords
+```
+
+### Form type letters (col 7)
+
+| Col 7 | Meaning |
+|---|---|
+| `R` | Record format — begins a named section of the report |
+| blank | Field or keyword continuation of the current record format |
+
+### Identifying a record format
+
+```
+     A          R RPTHDR                    TEXT('Report Header')
+     A            TITLE         80A   O  1  5
+     A            RUNDATE        8A   O  1 60
+     A            PAGNO          4  0 O  1 70    EDTCDE(Z)
+```
+
+- Line beginning with `R` = record format `RPTHDR` starts here
+- Fields below it (`TITLE`, `RUNDATE`, `PAGNO`) belong to `RPTHDR` until the next `R` line
+- `O` in col 23 = output-only (report output, never returned to program)
+- `1  5` = row 1, column 5 (printed position on page)
+
+### Field data types in PRTF
+
+Same type codes as PF DDS:
+
+| Code | Type | Typical use in reports |
+|---|---|---|
+| `A` | Alphanumeric | Names, codes, labels |
+| `P` | Packed decimal | Amounts, totals (always with EDTCDE) |
+| `S` | Zoned decimal | Older numeric style |
+| blank + len + dec | Numeric (EDTCDE/EDTWRD determines appearance) | Calculated totals |
+
+### Edit codes (EDTCDE) — what numbers look like on the report
+
+| Code | Format | Example (value 1234567) |
+|---|---|---|
+| `1` | Comma, no sign, blank zero | `1,234,567` |
+| `2` | Comma, no sign, zero as zero | `1,234,567` |
+| `3` | No comma, no sign | `1234567` |
+| `4` | No comma, sign | `1234567` |
+| `A` | Comma, CR for negative | `1,234,567` |
+| `B` | Comma, minus for negative | `1,234,567-` |
+| `J` | Comma, with sign protection | `1,234,567` |
+| `Z` | Suppress leading zeros | `1234567` (no commas) |
+
+**Modernization note:** EDTCDE encodes display-only formatting. Do not treat the
+edit code as a business rule — it is a presentation choice. Capture it so the
+target UI can replicate the appearance, but do not infer precision or sign
+convention from it alone.
+
+### Spacing keywords — section separators
+
+| Keyword | Meaning |
+|---|---|
+| `SPACEA(n)` | Skip n lines **after** printing this format |
+| `SPACEB(n)` | Skip n lines **before** printing this format |
+| `SKIPA(n)` | Skip **to** line n after printing |
+| `SKIPB(n)` | Skip **to** line n before printing |
+| `SKIPA(01)` | Skip to line 1 = new page after printing |
+| `SKIPB(01)` | Skip to line 1 before printing = new page before |
+
+A `SKIPA(01)` or `SKIPB(01)` on a record format usually marks a page boundary.
+A `SPACEA(2)` after a detail format and `SPACEA(1)` on a subtotal format means
+detail lines are single-spaced and subtotals get a blank line before them.
+
+### Overflow indicator (OVERFLOW keyword)
+
+```
+     A          R RPTDET                    OVERFLOW(OA)
+```
+
+`OVERFLOW(OA)` means indicator `OA` (overflow A) is set by the system when
+printing this format would exceed the page length. The program tests `*INOA`
+and decides whether to write a new page header before the next detail line.
+
+### Constants (literal text)
+
+```
+     A                         10A   O  1  2 'REPORT TITLE'
+```
+
+A field with a literal value in quotes is a constant — printed text that never
+changes. These are labels, headings, or column headers. Capture them for
+report layout documentation but do not treat them as data fields.
+
+---
+
 ## Evidence Boundaries
 
 | Evidence | What it can prove | What it cannot prove alone |
