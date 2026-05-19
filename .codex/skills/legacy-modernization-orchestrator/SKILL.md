@@ -55,7 +55,7 @@ Evidence Manifest + Redaction Log + Redacted Evidence Bundle
         ↓ FORWARD HANDOFF GATE (docs/forward-sdlc-contract.md)
 Forward SDLC (wwa-lab/build-agent-skill: ibm-i-program-spec, code-generator, …)
 
-Folded MVP capabilities: call graph, CRUD matrix, DDS/screen schema extraction,
+Folded MVP capabilities: Program Call Map, CRUD matrix, DDS/screen schema extraction,
 business-rule mining, and capability mapping are produced inside the program,
 flow, module, and spec-writer artifacts rather than routed as separate active
 skills.
@@ -819,7 +819,7 @@ This skill coordinates the rest of the reverse chain:
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
-| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: call graph, file I/O, object deps, error handling |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: Program Call Map, file I/O, object deps, error handling |
 | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** | Per call chain: 7 trigger models; cross-program data flow; commit boundaries |
 | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |

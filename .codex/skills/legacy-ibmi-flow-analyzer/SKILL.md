@@ -24,6 +24,11 @@ multiple programs, from trigger to final outcome. Where
 across programs: how they are stitched together, what data passes between
 them, when they branch, and how errors propagate.
 
+The primary orientation view is a **Transaction Call Map**: an RDi-style
+cross-program/cross-boundary call map. It is not a statement-level
+flowchart. It should preserve the transaction's program and external
+dependency structure while keeping full call details in tables.
+
 This skill does **not** re-analyze individual programs. Every program in
 the flow must already have an approved
 `program-analysis-<OBJ-ID>.md`; if any is missing, route back to
@@ -56,6 +61,9 @@ Stop and require clarification if:
 
 - Any program in the chain lacks an approved `program-analysis-<OBJ-ID>.md`
   → route to `legacy-ibmi-program-analyzer`
+- A required call edge, data flow, or error path depends on an upstream
+  program routine marked `blocked` or `indexed_only` with business state
+  impact → route back to `legacy-ibmi-program-analyzer`
 - Inventory `sme_review.decision` is `blocked` or `relationships` are
   incomplete → route to `legacy-ibmi-inventory`
 - Trigger model cannot be identified from the entry point → require SME
@@ -126,13 +134,15 @@ field-level rules. The summary below is normative for this skill.
   in the chain has an approved program-analysis; trigger model identified
   unambiguously; the flow represents one business transaction.
 - **Stop conditions**: any node missing an approved program-analysis;
+  a required call edge, data flow, or error path depends on an upstream
+  routine marked `blocked` or `indexed_only` with business state impact;
   inventory `sme_review.decision` is `blocked` or relationships are
   incomplete; trigger model cannot be identified from the entry point;
   flow spans multiple business modules.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (9 ordered steps).
+- **Procedure**: see the Workflow section below (10 ordered steps).
 - **Allowed inference**: assembling cross-program call edges from
   upstream program analyses; classifying call types (CALL / CALLP /
   CALLPRC / SBMJOB / remote); deriving branch destinations from DSPF
@@ -148,22 +158,30 @@ field-level rules. The summary below is normative for this skill.
   routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
   `TBD: pending_sme_judgment`; unnamed business event → stop and request
   the name from SME (do not autogenerate from program names).
+- **Coverage propagation**: consume each upstream program's Analysis
+  Coverage & Scope, Routine Cards, and Deep Read Windows before using
+  program-level evidence in a flow. If the requested flow relies on a
+  routine that was only `indexed_only` and that routine changes state,
+  performs external handoff, handles commit/rollback, or controls error
+  outcome, flow analysis is blocked until the routine is `deep_read` or a
+  named SME waiver is recorded in review metadata.
 
 ### Output
 
 - **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
-- **Required sections**: trigger model & entry point, nodes, edges,
-  cross-program data flow, branch points, UI surfaces (or
-  `N/A — non-interactive`), error propagation & commit boundaries,
-  capability seeds, SME review checklist.
+- **Required sections**: trigger model & entry point, transaction call
+  map, nodes, edges, common dependencies, cross-program data flow, branch
+  points, UI surfaces (or `N/A — non-interactive`), error propagation &
+  commit boundaries, capability seeds, SME review checklist.
 - **Required IDs**: mints `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`,
   `SEED-*`, `TBD-*`; reuses `OBJ-*`, `EV-*`, and program-level `BEH-*`
   from upstream. Flow analysis does not mint `BR-*`; branch points are
   represented by `NODE-*` / `EDGE-*` entries and capability questions by
   `SEED-*`.
-- **Handoff status**: `status: draft` → `in_review` → `approved` or
-  `approved_with_non_blocking_tbd`. `blocked_pending_source` and
-  `blocked_pending_sme` halt module-analyzer.
+- **Handoff status**: `status: draft` → `needs_sme_review` →
+  `approved` or `approved_with_non_blocking_tbd`.
+  `blocked_pending_source` and `blocked_pending_sme` halt
+  module-analyzer.
 
 ### Validation
 
@@ -171,12 +189,15 @@ field-level rules. The summary below is normative for this skill.
   statement, config export, or integration contract); every data exchange
   traces to a source line; every UI surface traces to a DSPF/PRTF/`*MENU`
   in inventory; every trigger has evidence type 2 plus SME confirmation
-  of business meaning; all nine sections populated.
+  of business meaning; every node carries upstream coverage state and
+  any blocking coverage gaps; all required sections populated.
 - **AI semantic**: edges match upstream program-analyses (no invented
   calls); branch destinations match DSPF option tables; error
   propagation matches each node's program-analysis; commit boundaries
-  are evidenced, not assumed; capability seeds are *questions*, not
-  rule claims.
+  are evidenced, not assumed; flow evidence is not taken from
+  `indexed_only` or `blocked` routines when those routines have business
+  state impact unless a named SME waiver is recorded; capability seeds
+  are *questions*, not rule claims.
 - **SME / human approval**: SME confirms trigger model, business event
   name, node/edge correctness, branch points, UI surfaces (interactive
   flows), error propagation realism, commit boundaries, and that seeds
@@ -185,8 +206,10 @@ field-level rules. The summary below is normative for this skill.
   status.
 - **Blocking conditions**: any node lacks an approved program-analysis;
   any edge has no evidence; trigger model unresolved; business event
-  name unnamed by SME; ambiguous module boundary; SME absence when the
-  flow's risk class requires SME.
+  name unnamed by SME; ambiguous module boundary; required flow evidence
+  depends on `blocked` coverage or `indexed_only` state-impacting
+  routines without a named SME waiver; SME absence when the flow's risk
+  class requires SME.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with
@@ -221,9 +244,20 @@ to the orchestrator.
        `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
        worker / data-access / reporter / exit)
+     - carry forward the program's Analysis Coverage & Scope, Routine
+       Cards, and Deep Read Windows; record node coverage status as
+       `deep_read`, `indexed_only`, or `blocked` plus flow readiness
+       (`approved`, `warning`, or `blocked`)
+     - record blocking coverage gaps when a required call edge, data
+       exchange, branch, error path, or commit boundary depends on a
+       routine that is `blocked` or is `indexed_only` with business state
+       impact
    - If a node has no approved `program-analysis`, **stop** and create
      `TBD-<SLUG>-<NNN>: pending_source` routing back to
      `legacy-ibmi-program-analyzer`.
+   - If a node's required state-impacting routine is only `indexed_only`,
+     **stop** until `legacy-ibmi-program-analyzer` deep-reads it or a
+     named SME waiver is recorded in evidence/review/sign-off metadata.
 
 3. **Trace Edges (Calls Between Nodes)**
    - For every call between two nodes, document an edge:
@@ -232,11 +266,30 @@ to the orchestrator.
        SBMJOB, remote-call)
      - Call site (source program + line number) — from the caller's
        `program-analysis`
+     - `Via` routine/procedure — the internal node from the caller's
+       Program Call Map where the edge exits the program, when visible
      - Call condition (always / conditional / loop / error path)
-   - Build the **sequence diagram** (see `references/output-contract.md`
-     for format).
+   - Build the **Transaction Call Map** (see
+     `references/output-contract.md` for format). The map shows
+     cross-program and cross-boundary structure; detailed call conditions
+     remain in the edge table.
 
-4. **Cross-Program Data Flow**
+4. **Classify Common Dependencies**
+   - If multiple nodes call the same common program, service program, API,
+     data queue, message queue, or wrapper, keep every inbound call in the
+     edge table and summarize the target in Common Dependencies.
+   - Keep common nodes expanded as formal flow nodes when they write
+     business files, change customer/account/inventory/money state,
+     decide approve/decline outcomes, control commit/rollback, or call an
+     external business system.
+   - Fold common nodes in the visual map only when they are technical
+     utilities such as logging, message formatting, date/time,
+     delay/wait, or wrapper code. Folding is visual only; evidence and
+     edge rows remain complete.
+   - Do not infer a Java service boundary from shared usage alone. That is
+     a modernization decision for module/spec stages with SME review.
+
+5. **Cross-Program Data Flow**
    - For each edge, document what data passes (see
      `references/data-flow-patterns.md`):
      - parameters passed in the CALL
@@ -245,10 +298,23 @@ to the orchestrator.
      - shared file writes/reads (program A writes, program B reads)
      - temporary work files / spool / IFS files
      - signal flags (return codes, indicators, error fields)
+   - For each `DATA-*`, capture carrier, producer, consumer, mechanism,
+     payload/key fields, direction and timing, state impact, and
+     evidence. A carrier can be an `EDGE-*`, PF/LF, data area, data
+     queue, message queue, spool, IFS file, DSPF field set, or manual
+     handoff.
+   - Track object / record / critical-field granularity. Critical fields
+     include money, account/customer/card/inventory identifiers,
+     approval/decline/status/posting flags, return/error codes, audit
+     IDs, and external payload fields. Do not trace every temporary work
+     variable.
+   - Add short critical trails for business-important records or
+     messages, such as `request -> DTAQ -> program -> log PF -> batch
+     posting`.
    - Assign `DATA-<SLUG>-<NNN>` for each distinct data exchange.
    - Tag evidence; cross-reference to source line numbers via EV-\*.
 
-5. **Branch Points & Decision Nodes**
+6. **Branch Points & Decision Nodes**
    - Identify points where the flow forks (subfile option, F-key,
      conditional CALL, trigger event).
    - For each branch point:
@@ -256,7 +322,7 @@ to the orchestrator.
      - the alternatives and which target node each leads to
      - whether unhandled options/keys exist (silently dropped vs. error)
 
-6. **UI Surfaces (interactive flows only)**
+7. **UI Surfaces (interactive flows only)**
    - List every DSPF / PRTF / MENU the user sees during the flow.
    - For each:
      - object name + `OBJ-*`
@@ -267,7 +333,7 @@ to the orchestrator.
    - For non-interactive flows (batch, trigger, scheduler, API), this
      section may be `N/A — non-interactive flow`.
 
-7. **Error Propagation**
+8. **Error Propagation**
    - For each node, summarise (from its `program-analysis` Error Handling
      section) what happens when each error condition occurs.
    - Trace propagation: does the error abort the whole flow, roll back to
@@ -278,7 +344,7 @@ to the orchestrator.
      error would crash the entire flow without recovery (create TBD).
    - See `references/error-propagation.md`.
 
-8. **Business Capability Seeds**
+9. **Business Capability Seeds**
    - Extract `SEED-*` candidates (business rule seeds) that this flow
      plausibly enforces — **without inventing rules**.
    - Each seed is a *question* for SME review (e.g., "Does the rule
@@ -290,13 +356,13 @@ to the orchestrator.
      represented by `NODE-*` / `EDGE-*` entries; capability seeds use
      `SEED-*` IDs.
 
-9. **Prepare for SME Review**
+10. **Prepare for SME Review**
    - Consolidate all TBDs grouped by blocking status (`pending_source` /
      `pending_sme_judgment` / `non_blocking`).
    - **If any blocking TBDs exist:**
      - Mark flow as `blocked_pending_source` (missing program-analysis, missing DSPF, etc.)
        or `blocked_pending_sme` (ambiguous trigger, unclear error handling, missing business context)
-     - Do not complete all 9 sections; provide partial flow stub
+     - Do not complete the full required analysis; provide partial flow stub
      - Route to `legacy-ibmi-program-analyzer` or SME assignment process
      - Do not proceed to module-analyzer
    - **If no blocking TBDs:**
@@ -304,7 +370,7 @@ to the orchestrator.
      - Generate the flow review checklist (see `templates/trigger-checklist.md`).
      - Mark flow as `draft` and route to SME.
    - **Gate:** the flow is ready for module-analyzer when:
-     - all 9 sections populated
+     - all required sections populated
      - every node has an approved `program-analysis`
      - no blocking TBDs (or SME has explicitly waived them)
      - SME has signed off on the trigger model + business event name +
@@ -385,7 +451,8 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 **Evidence minimum** (see Evidence Taxonomy):
 
 - Every edge must trace to evidence type 1, 2, or 3 (source statement, config export, or integration contract)
-- Every data exchange must trace to source (parameter, data area, queue, file)
+- Every data exchange must trace to source (parameter, data area, queue,
+  file, screen field, message, IFS file, or SME note)
 - Every UI surface must trace to a DSPF / PRTF / MENU object in inventory
 - Every trigger must have evidence type 2 (config export) + evidence type 4 (SME confirmation of business meaning)
 
@@ -401,8 +468,8 @@ covering:
 - [ ] All nodes (programs) in scope are correct; no missing programs and
       no extra programs
 - [ ] All edges (calls) reflect actual production behavior
-- [ ] Cross-program data flow is complete (no undocumented shared files
-      or data areas)
+- [ ] Cross-program data flow captures carriers, producers, consumers,
+      timing, state impacts, and no undocumented shared files or data areas
 - [ ] Branch points correctly capture user-visible decision points
 - [ ] UI surfaces match production screens (interactive flows only)
 - [ ] Error propagation matches operational reality (what actually

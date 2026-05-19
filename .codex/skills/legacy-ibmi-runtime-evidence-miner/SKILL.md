@@ -291,11 +291,11 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 ## Runtime Hints (Optional)
 - Source: runtime-evidence.jsonl (EV-CREDIT-CHECK-015)
 - Observation: Call sequence MAIN → VALIDATE → CALC confirmed in 5 job runs
-- Effect: Program call graph marked `confirmed_from_code + observed_in_runtime`
+- Effect: Program Call Map edge marked `confirmed_from_code + observed_in_runtime`
 - Confidence: high (multiple runs, consistent pattern)
 ```
 
-**Integration rule**: If program-analyzer finds a call graph edge in source code AND runtime mining confirms it in 3+ job logs, tag as `confirmed_from_code + observed_in_runtime`. Confidence upgraded from "source-only" to "code + runtime co-confirmed."
+**Integration rule**: If program-analyzer finds a Program Call Map edge in source code AND runtime mining confirms it in 3+ job logs, tag as `confirmed_from_code + observed_in_runtime`. Confidence upgraded from "source-only" to "code + runtime co-confirmed."
 
 ### Flow Analyzer: `bau_notes` Parameter
 ```yaml

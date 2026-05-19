@@ -44,16 +44,16 @@ verbatim and record the workaround in the review notes.
 
 ### Folded Supplemental Analysis (manual only when explicitly requested)
 
-The former standalone call-graph, CRUD matrix, DDS/schema, business-rule, and
+The former standalone Program Call Map, CRUD matrix, DDS/schema, business-rule, and
 capability-mapping tasks are folded into the MVP analyzers. Only use these
 manual workflows when a user specifically asks for the standalone supplemental
 view.
 
-#### Call Graph View
+#### Program Call Map View
 
 1. For each in-scope program, read the source with the team
-2. Extract a list of all `CALL` / `CALLP` / `SBMJOB` from each program
-3. Build a graph (Mermaid or simple table) showing program → program edges
+2. Extract internal routine definitions plus `EXSR` / `CALL` / `CALLP` / `SBMJOB`
+3. Build an RDi-style call map plus edge table showing routine and program edges
 4. Tag each edge with confidence and evidence
 5. Mark unresolved calls (target program not in inventory) as
    `TBD-<SLUG>-<NNN>` and update the inventory's `coverage_gaps`

@@ -15,25 +15,64 @@
 
 ---
 
-## Entry Points & Parameters
+## Analysis Coverage & Scope
 
-| Entry Point | Type | Parameters | Return | Evidence |
+Purpose: state how much source was available, how the analysis was scoped, and
+which claims are fully supported versus indexed-only.
+
+### Source Size & Strategy
+
+| Source Lines | Analysis Mode | Mode Reason | Structure Index Built | Full Source In Context | Business Narrative Allowed |
+| --- | --- | --- | --- | --- | --- |
+| [N lines] | standard / segmented / large-program | [why this mode was selected] | yes / no | yes / no | yes / limited / no |
+
+### Coverage Ledger
+
+| Routines Found | Routines Deep-Read | Routines Indexed Only | External Edges Resolved | Data Touches Resolved | Blocking Gaps | Non-Blocking Gaps |
+| --- | --- | --- | --- | --- | --- | --- |
+| [N] | [N] | [N] | [N/N] | [N/N] | [N] | [N] |
+
+### Source Index Summary
+
+| Mainline Segments | Subroutines / Procedures | External Calls | File Operations | Display / Report Operations | Commit / Rollback Points |
+| --- | --- | --- | --- | --- | --- |
+| [N] | [N] | [N] | [N] | [N] | [N] |
+
+## Program Call Map
+
+Purpose: RDi-style structural view of the program. This is a call map, not
+a business-process diagram.
+
+### Visual Overview
+
+Source: source-level flow header (lines [XX-YY]) | derived-from-code | both (matched)
+
+```mermaid
+flowchart LR
+  MAIN["[PROGRAM] mainline"]
+  MAIN --> SR100["SR100"]
+  MAIN --> SR200["SR200"]
+  SR200 --> SR980["SR980"]
+  SR980 --> EXT1["[EXTERNAL_PROGRAM]"]
+```
+
+### Node Inventory
+
+| Node | Node Type | Defined At | Role / Notes | Evidence |
 | --- | --- | --- | --- | --- |
-| [NAME] | Main Program / Subroutine / Procedure | (param1: type, param2: type) | [return type/code] | confirmed_from_code |
+| [PROGRAM] | Mainline | lines [XX-YY] | entry orchestration | [EV-[SLUG]-[NNN]] |
+| [SR_NAME] | Subroutine / Procedure | line [XX] | [hot path / utility / error handler / unknown] | [EV-[SLUG]-[NNN]] |
+| [PROGRAM_NAME] | External Program / Service Program / API / DTAQ / MSGQ | call site line [XX] | external dependency | [EV-[SLUG]-[NNN]] |
 
-**Evidence links:**
-- [EV-[SLUG]-[NNN]: Description]
+**Hub / common candidates:**
+- [NODE_NAME]: called by [N] callers; [reason this may matter]
 
-**Unresolved:**
-- TBD-[SLUG]-[NNN]: [Question]
+**Orphaned subroutines/procedures:**
+- [SR_NAME] -> TBD-[SLUG]-[NNN]: confirm whether dead code, callback entry, or shop convention
 
----
+### Call Tree
 
-## Call Graph
-
-### Tree View
-
-Source: source-level flow header (lines [XX–YY]) | derived-from-code | both (matched)
+Source: source-level flow header (lines [XX-YY]) | derived-from-code | both (matched)
 
 ```text
 Main line                    Main flow control
@@ -44,25 +83,63 @@ Main line                    Main flow control
 ```
 
 **Evidence:**
-- [EV-[SLUG]-[NNN]: source-level flow header lines XX–YY] (if header present)
+- [EV-[SLUG]-[NNN]: source-level flow header lines XX-YY] (if header present)
 - [EV-[SLUG]-[NNN]: EXSR / CALL / PERFORM statements] (code-derived)
 
-**Header vs. code:** matched | drift detected → see TBD-[SLUG]-[NNN]
+**Header vs. code:** matched | drift detected -> see TBD-[SLUG]-[NNN]
 
-### Call Sites
+### Call Edge Table
 
-| Caller | Callee | Type | Line | Call Condition | Evidence |
+| From | To | Type | Line | Call Condition / Context | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| [CALLER] | [CALLEE] | EXSR / CALLP / CALL / PERFORM / CALLPRC | [LINE] | always / in loop / only if X / first-time-only | confirmed_from_code |
+| [CALLER] | [CALLEE] | EXSR / CALLP / CALL / PERFORM / CALLPRC | [LINE] | always / in loop / only if X / first-time-only | [EV-[SLUG]-[NNN]] |
 
-### Reverse Index
+### Reverse Caller Index
 
-| Subroutine | Called By | Notes |
+| Node | Called By | Notes |
 | --- | --- | --- |
-| [SR_NAME] | [CALLER] [line] | [hot path / dead code / single callsite / etc.] |
+| [SR_NAME] | [CALLER] [line] | [hot path / common utility / single callsite / etc.] |
 
-**Orphaned subroutines (declared but never called):**
-- [SR_NAME] → TBD-[SLUG]-[NNN]: confirm whether dead code
+---
+
+## Routine Cards
+
+Purpose: summarize every routine that affects calls, data, errors, state, or
+external boundaries, including whether the routine was deep-read or only indexed.
+SME confirmation belongs in evidence, review notes, or sign-off; it is not a
+coverage value.
+
+| Routine | Location | Called By | Calls Out | Data Touches | State Impact | Error Handling | Evidence | Coverage |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [MAIN / SR_NAME / PROCEDURE] | lines [XX-YY] | [CALLER list] | [EXSR / CALL / CALLP / API list] | [files, data areas, queues, parameters] | read-only / creates / updates / deletes / boundary-state | [MONITOR / indicator / ON ERROR / none observed] | [EV-[SLUG]-[NNN]] | indexed_only / deep_read / blocked |
+
+---
+
+## Deep Read Windows
+
+Purpose: identify the source windows used to support high-risk claims,
+state-changing behavior, and business narrative. For `standard` mode where the
+full source was read in context, record one `full-source-read` window or mark
+this section `N/A — full source read in context`; do not invent artificial
+windows.
+
+| Window ID | Source Range | Reason Selected | Routines Covered | Claims Supported | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| WIN-[SLUG]-[NNN] | lines [XX-YY] or full-source-read | state change / external boundary / error path / high-risk branch / representative path / full-source-read | [routine list] | [claim IDs or short claim summary] | [EV-[SLUG]-[NNN]] |
+
+---
+
+## Entry Points & Parameters
+
+| Entry Point | Type | Parameters | Return | Evidence |
+| --- | --- | --- | --- | --- |
+| [NAME] | Main Program / Callable Procedure / External Entry | (param1: type, param2: type) | [return type/code] | confirmed_from_code |
+
+**Evidence links:**
+- [EV-[SLUG]-[NNN]: Description]
+
+**Unresolved:**
+- TBD-[SLUG]-[NNN]: [Question]
 
 ---
 
@@ -72,9 +149,9 @@ Source: shop F5-OBJREF TREE tool output | derived-from-code | both (matched)
 
 ### Uses (forward dependencies)
 
-| Object        | Type      | Version  | Description                          | Inventory ID         | Evidence            |
-| ---           | ---       | ---      | ---                                  | ---                  | ---                 |
-| [OBJ_NAME]    | PF / LF / DSPF / PRTF / *DTAARA / *DTAQ / *MSGF / *PGM / *SRVPGM / Copybook / PF (DS) | [VERSION or —] | [Description] | OBJ-[SLUG]-[NNN] or TBD-[SLUG]-[NNN] | confirmed_from_code |
+| Object | Type | Version | Description | Inventory ID | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| [OBJ_NAME] | [PF / LF / DSPF / PRTF / *DTAARA / *DTAQ / *MSGF / *PGM / *SRVPGM / Copybook / PF (DS)] | [VERSION or —] | [Description] | OBJ-[SLUG]-[NNN] or TBD-[SLUG]-[NNN] | confirmed_from_code |
 
 **Inventory gaps:**
 - TBD-[SLUG]-[NNN]: object [NAME] referenced by program but not in inventory.yaml
@@ -89,7 +166,37 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ---
 
+## Data Touch Map
+
+Purpose: program-local data movement and state-change view. Track objects,
+records, carriers, and critical fields; do not enumerate every temporary
+working variable.
+
+### Data Touches
+
+| Data Object / Carrier | Mechanism | Operation | Routine / Procedure | Key / Payload | Critical Fields Touched | State Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [FILE_NAME] | PF / LF | CHAIN / READ / READE / WRITE / UPDATE / DELETE | [SRxxx / procedure] | key=[FIELD] | [amount/status/customer/account/RC/etc.] | read-only / creates / updates / deletes | [EV-*] |
+| [DTAARA_NAME] | *DTAARA | IN / OUT / CHGDTAARA / RTVDTAARA | [SRxxx / procedure] | [value or structure] | [critical fields] | reads shared state / updates shared state | [EV-*] |
+| [DTAQ_NAME] | *DTAQ | SNDDTAQ / RCVDTAQ / QSNDDTAQ / QRCVDTAQ | [SRxxx / procedure] | [message structure] | [critical fields] | async send / async receive | [EV-*] |
+| [CALL_TARGET] | CALL parameters | in / out / inout | [SRxxx / procedure] | [parameter list] | [decision/status/error fields] | passes state across program boundary | [EV-*] |
+
+### Critical Field Watchlist
+
+| Field / Data Structure | Object / Carrier | Why It Matters | Observed Operations | Evidence |
+| --- | --- | --- | --- | --- |
+| [FIELD_NAME] | [OBJECT] | amount / status / customer / account / inventory / posting / approval / error code | read / written / compared / returned | [EV-*] |
+
+**Unresolved:**
+- TBD-[SLUG]-[NNN]: [Question about payload structure, key field, direction, or state impact]
+
+---
+
 ## Control Flow
+
+Purpose: concise narrative derived from Program Call Map, Routine Cards, Data
+Touch Map, and Deep Read Windows. Do not introduce new business facts here that
+are absent from the evidence-backed sections above.
 
 ### Main Entry Point
 1. [Step description] [evidence_strength]
@@ -190,22 +297,27 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 Before approval, SME must validate:
 
-- [ ] Entry points are correct and complete (no missing callable subroutines)
+- [ ] External entry points and callable procedures are correct and complete
+- [ ] Analysis Coverage & Scope honestly states whether this was standard, segmented, or large-program mode
+- [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
+- [ ] Deep Read Windows support all high-risk claims and state-changing behavior
+- [ ] Indexed-only routines are either technical utilities or routed to explicit review items
+- [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] File I/O matches job design (no hallucinated key fields or unobserved operations)
 - [ ] External calls match system interfaces (especially for undocumented calls)
 - [ ] Error handling aligns with production reliability requirements
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access
 - [ ] All evidence links reference existing inventory items (OBJ-*, EV-*)
-- [ ] Status field is set correctly (draft → needs_sme_review → approved)
+- [ ] Status field is set correctly (`draft` → `needs_sme_review` /
+  `blocked_pending_source` → `approved` / `approved_with_non_blocking_tbd` /
+  `rejected`)
 
----
-
-## SME Sign-Off
+### SME Sign-Off
 
 - **Reviewer:** [Name]
 - **Review Date:** [YYYY-MM-DD]
-- **Decision:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | rejected
+- **Decision:** approved | approved_with_non_blocking_tbd | rejected
 - **Notes:** [Free-form SME commentary]
-

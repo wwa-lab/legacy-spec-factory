@@ -29,7 +29,7 @@ analysis. The analyzer must:
 ## Trigger Context
 (partial — captured what's known about the MQ trigger)
 
-## Sequence Diagram
+## Transaction Call Map
 
 ```text
 [MQ WEBORDER.IN]
