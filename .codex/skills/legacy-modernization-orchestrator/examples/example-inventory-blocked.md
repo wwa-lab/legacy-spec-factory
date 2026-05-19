@@ -52,6 +52,8 @@
   the gap does not block, and (b) what compensating evidence will be used
   for the missing artifact (e.g., a spool sample stands in for absent PRTF
   source).
+- **Review/export reminder:** Do not export HTML as a workaround. The inventory
+  is blocked; resolve source or SME-waiver evidence in Markdown/YAML first.
 - **Manual fallback:** Not applicable — this is a gate failure, not a
   missing skill.
 

@@ -46,6 +46,9 @@
 - **SME reminder:** Ask the SME to validate any branch affecting money,
   inventory, compliance, customer status, or posting before treating it as a
   confirmed rule.
+- **Review/export reminder:** Not applicable yet. Program analysis should stay
+  in canonical Markdown; consider `legacy-html-exporter` later only if SMEs
+  need browser-friendly review of stable Markdown.
 - **Manual fallback:** Not needed — `legacy-ibmi-program-analyzer` is
   implemented. Use fallback only if the runtime cannot load the skill and the
   user explicitly accepts a manual workaround.

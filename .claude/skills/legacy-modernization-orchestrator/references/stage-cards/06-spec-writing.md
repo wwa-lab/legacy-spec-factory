@@ -27,6 +27,10 @@ Optional companions:
   risky `DEC-*` decision, formalize it as a separate decision package
 - `legacy-sme-review-facilitator` — to organize the SME review session
   that closes the `in_review → approved` transition
+- `legacy-html-exporter` — after `spec.md`, `traceability.md`, or review /
+  question-pack Markdown exists and SMEs need a browser-friendly review view.
+  Markdown remains canonical; fix Markdown first and regenerate HTML if content
+  changes.
 
 ## Produce
 
@@ -53,6 +57,8 @@ Optional companions:
   - `spec.yaml.status: approved` AND no blocking `TBD-*` remain
 - **Blocks if:** any of the above fail. The orchestrator must refuse to
   hand off to the Forward Handoff Gate until all are satisfied.
+- **HTML export note:** HTML companions never satisfy this gate. They only make
+  stable Markdown easier to review.
 
 ## SME action
 
