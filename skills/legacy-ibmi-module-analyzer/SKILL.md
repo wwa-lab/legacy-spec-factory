@@ -250,8 +250,8 @@ to the orchestrator.
 6. **Build View 4 — Data Flow (Aggregate)**
    - Use the View 4 section in `references/output-contract.md` and the
      aggregation rules in `references/synthesis-rules.md`
-   - **Primary source: every program's Object Dependencies section,
-     aggregated.**
+   - **Primary source: every flow's Cross-Program Data Flow section,
+     backed by every program's Data Touch Map and Object Dependencies.**
    - Compute data lifecycle per object (created / updated / read /
      archived / purged) by walking flows
    - Compute coupling score (number of flows touching each object)

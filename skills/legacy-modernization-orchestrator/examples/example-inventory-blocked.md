@@ -17,7 +17,7 @@
 - **Desired Outcome:** Run program analyzer next
 - **Recommended Next Skill:** `legacy-ibmi-inventory` (resume) (status: Implemented v0.1.0)
 - **Why:** The Inventory Completeness Gate fails. Running the analyzer now
-  will either produce a hallucinated call graph (analyzer invents what
+  will either produce a hallucinated Program Call Map (analyzer invents what
   CRHOLDP and CRCHKSRV look like) or stop with errors. Neither saves time.
 
 ## Routing Notes

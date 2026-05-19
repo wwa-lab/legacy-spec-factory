@@ -284,7 +284,7 @@ Program analyzer accepts optional `runtime_hints` parameter:
 ```
 
 Program analyzer reads observations with `related_object_ids` containing this program and uses them to:
-- Validate extracted call graph against runtime observations
+- Validate extracted Program Call Map edges against runtime observations
 - Upgrade evidence strength to `confirmed_from_code + observed_in_runtime` where confirmed
 - Flag dead code (program in source but never seen in logs)
 - Document error paths with runtime examples

@@ -265,10 +265,10 @@ to the orchestrator. The Forward Handoff Gate
    - Capture lifecycle hints (immutable / mutable / append-only)
 
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
-   - `process_flow.steps[]` from the relevant flow analysis Sequence Diagram
+   - `process_flow.steps[]` from the relevant flow analysis Transaction Call Map
    - `inputs[]` from flow analysis Trigger Context + UI surfaces' input fields
-   - `outputs[]` from flow analysis exit nodes + Cross-Program Data Flow's
-     out-of-band consumers
+   - `outputs[]` from flow analysis exit nodes + Cross-Program Data Flow
+     carriers with `external handoff`, `creates`, or `updates` state impact
    - `exceptions[]` from flow analysis Error Propagation + program analyses'
      error handling
 

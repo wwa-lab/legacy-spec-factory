@@ -94,8 +94,8 @@ them.
 
 **Captures:**
 - All data objects in scope (PF, LF, DSPF, PRTF, \*DTAARA, \*DTAQ, \*MSGF,
-  copybooks, parameter data structures) — aggregated from every program's
-  Object Dependencies section
+  copybooks, parameter data structures) — aggregated from flow `DATA-*`
+  rows and backed by program Data Touch Maps / Object Dependencies
 - Data lifecycle per object: **Created → Updated → Read → Archived → Purged**
   with the program(s) responsible at each stage
 - Critical data trails (e.g., a transaction record's path from intake to
@@ -107,9 +107,10 @@ them.
   files, shared reference tables)
 - Data retention / archival policy (where applicable)
 
-**Primary source:** Aggregated `Object Dependencies` sections from every
-`program-analysis-<OBJ-ID>.md`; DDS definitions from inventory; SME notes
-on data ownership and retention.
+**Primary source:** Aggregated `Cross-Program Data Flow` sections from
+every `flow-<FLOW-SLUG>.md`, backed by every program's `Data Touch Map`
+and `Object Dependencies`; DDS definitions from inventory; SME notes on
+data ownership and retention.
 
 ## View Independence vs Cross-View Linking
 
@@ -198,4 +199,3 @@ overlap or omission for an IBM i / AS400 reverse-modernization context.
 - `docs/runtime-matrix.md` — module-analyzer must sync to all runtime adapters
 - `schemas/spec.schema.yaml` — `spec.yaml` references the module ID and
   capability ID; module analysis grounds those references
-

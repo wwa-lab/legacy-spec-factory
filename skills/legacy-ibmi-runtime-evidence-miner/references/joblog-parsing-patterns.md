@@ -95,7 +95,7 @@ CALLSRVPGM\s+([A-Z0-9_]+)
 - Timestamp (if available)
 - Calling context (which program made the call)
 
-**Use for**: call_sequence observations; validation of call graph
+**Use for**: call_sequence observations; validation of Program Call Map edges
 
 **Example parsing**:
 ```
