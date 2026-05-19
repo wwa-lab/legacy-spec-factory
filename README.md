@@ -238,11 +238,30 @@ Portability rules:
 Use [scripts/sync-skills.sh](scripts/sync-skills.sh) to copy canonical skills
 into runtime adapter folders or check for drift:
 
+```bash
+scripts/sync-skills.sh --target all
+scripts/sync-skills.sh --target all --check
+```
+
+Track validation in [docs/runtime-matrix.md](docs/runtime-matrix.md). Use
+[docs/runtime-smoke-tests.md](docs/runtime-smoke-tests.md) before promoting a
+runtime from `synced` to `loaded`, `executed`, or `passed`.
+
+The portability goal is simple: one skill design, multiple execution surfaces.
+Team members can use Codex, Claude Code, or OpenCode without changing the
+business logic, SME governance, evidence model, or spec contract.
+
 ## HTML Exports For User / SME Docs
 
 Markdown remains the canonical source for human-facing artifacts in this
 repository, but pilot reviews often go more smoothly when stakeholders can read
 the same content as standalone HTML.
+
+`legacy-modernization-orchestrator` may remind users to run
+`legacy-html-exporter` when stable human-facing Markdown already exists and an
+SME / user review would benefit from a browser-readable companion. HTML export
+is optional review packaging only: it does not advance gates, replace Markdown,
+or replace `spec.yaml` as the machine-readable source of truth.
 
 Use [scripts/render_stakeholder_html.py](scripts/render_stakeholder_html.py) to
 export any Markdown artifact into a styled HTML companion:
@@ -263,18 +282,28 @@ easy sharing inside pilot reviews. See
 [docs/human-readable-html-exports.md](docs/human-readable-html-exports.md) for
 usage details.
 
-```bash
-scripts/sync-skills.sh --target all
-scripts/sync-skills.sh --target all --check
-```
+## OpenCode Internal Pilot Fixtures
 
-Track validation in [docs/runtime-matrix.md](docs/runtime-matrix.md). Use
-[docs/runtime-smoke-tests.md](docs/runtime-smoke-tests.md) before promoting a
-runtime from `synced` to `loaded`, `executed`, or `passed`.
+For company environments that only run OpenCode, use the synthetic corpus under
+[docs/synthetic-corpus/](docs/synthetic-corpus/) to validate the main reverse
+chain without customer source code.
 
-The portability goal is simple: one skill design, multiple execution surfaces.
-Team members can use Codex, Claude Code, or OpenCode without changing the
-business logic, SME governance, evidence model, or spec contract.
+Current starter fixtures cover:
+
+- fixed-format `SQLRPGLE` credit-check happy path
+- blocked credit-check path for missing LF / SME-meaning gaps
+- scheduler-submitted batch AR reconciliation with joblog and spool evidence
+- DSPF subfile inquiry flow
+
+Use
+[docs/synthetic-corpus/pilot-execution-checklist.md](docs/synthetic-corpus/pilot-execution-checklist.md),
+[docs/synthetic-corpus/pilot-prompts.md](docs/synthetic-corpus/pilot-prompts.md),
+and
+[docs/synthetic-corpus/pilot-results-template.md](docs/synthetic-corpus/pilot-results-template.md)
+to run and record the first OpenCode-only pilot. Use
+[docs/orchestrator-review-checklist.md](docs/orchestrator-review-checklist.md)
+to score whether `legacy-modernization-orchestrator` is reliable enough as the
+single front door.
 
 ## Skill Review Quality Gate
 
