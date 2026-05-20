@@ -26,6 +26,9 @@ out of Legacy Spec Factory into the forward repo.
   produces the equivalence pack required above
 - **Skill (governance):** `legacy-traceability-packager` — audits and seals
   the end-to-end capability bundle before handoff
+- **Skill (optional review view):** `legacy-html-exporter` — exports approved
+  human-facing Markdown companions for stakeholder browsing; it does not
+  replace the handoff bundle or `spec.yaml`.
 
 ## Produce
 
@@ -50,6 +53,9 @@ out of Legacy Spec Factory into the forward repo.
 - **Blocks if:** any of the above fail. The orchestrator must refuse to
   cross the boundary into `wwa-lab/build-agent-skill` and route back to
   the failing prerequisite.
+- **HTML export note:** HTML may help stakeholders read the approved package,
+  but it is not evidence of approval and does not satisfy the Forward Handoff
+  Gate.
 
 See `docs/forward-sdlc-contract.md` for the full gate text.
 

@@ -93,7 +93,7 @@ existing analyses. These rules tell it how.
 | Field | Source | Rule |
 | --- | --- | --- |
 | Flow Inventory | One row per `flow-<FLOW-SLUG>.md` | direct copy of metadata |
-| Cross-Flow Dependencies | Computed by scanning each flow's Cross-Program Data Flow section for shared files / DTAARAs / DTAQs | Where producer flow ≠ consumer flow, that's a cross-flow dependency |
+| Cross-Flow Dependencies | Computed by scanning each flow's Cross-Program Data Flow section for shared carriers (files / DTAARAs / DTAQs / MSGQs / spool / IFS / external handoffs) | Where producer flow ≠ consumer flow, that's a cross-flow dependency |
 | Shared Sub-Programs | Computed by scanning each flow's Nodes; any program appearing in ≥2 flows is shared | Sort by number of containing flows |
 | Overall Call Topology | Top-level synthesis (often an ASCII diagram showing flows side-by-side) | Manual / SME-reviewed |
 
@@ -122,19 +122,20 @@ For each pair of flows (A, B):
 ## View 4 — Data Flow
 
 ### Inputs
-- Every program's Object Dependencies section (from each
-  `program-analysis-<OBJ-ID>.md`)
+- Every flow's Cross-Program Data Flow section
+- Every program's Data Touch Map and Object Dependencies sections (from
+  each `program-analysis-<OBJ-ID>.md`)
 - inventory.yaml (for cross-reference)
 
 ### Aggregation Rules
 
 | Field | Source | Rule |
 | --- | --- | --- |
-| Data Objects in Scope | Union of every program's Object Dependencies | One row per OBJ-* |
-| Producer Flows / Consumer Flows | Determined by each flow's data-flow section | Producer = flow with writer node; Consumer = flow with reader node |
+| Data Objects in Scope | Union of every flow `DATA-*` carrier plus every program Data Touch Map / Object Dependencies entry | One row per meaningful data object / carrier |
+| Producer Flows / Consumer Flows | Determined by each flow's Cross-Program Data Flow section | Producer = flow with writer/sender/creator node; Consumer = flow with reader/receiver node |
 | Coupling Score | Number of flows touching the object | Integer |
-| Data Lifecycle | Union of all flow operations on the object | Created (first write) / Updated (subsequent writes) / Read / Archived / Purged |
-| Critical Data Trails | Manually curated; trace key business records end-to-end | SME-confirmed |
+| Data Lifecycle | Union of all flow `State Impact` values and program Data Touch operations | Created (first write) / Updated (subsequent writes) / Read / Archived / Purged |
+| Critical Data Trails | Flow critical trails plus SME review; trace key business records end-to-end | Evidence-backed, SME-confirmed for business meaning |
 | DB Table Relationships | From DDS / SQL definitions in inventory | Direct mapping |
 | Cross-Module Data Dependencies | Objects in this view owned by another module OR consumed by another module | Boundary detection |
 

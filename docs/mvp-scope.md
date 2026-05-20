@@ -32,7 +32,7 @@ The pilot must deliver:
 | # | Skill | Layer | Status | Role |
 |---|---|---|---|---|
 | 1 | `legacy-ibmi-inventory` | 1 (platform-specific) | ✅ v0.1.0 | Catalogue every legacy object touched by the module |
-| 2 | `legacy-ibmi-program-analyzer` | 1 (platform-specific) | ✅ v0.1.0 | Deep-dive one program: call graph, file I/O, object deps, error handling |
+| 2 | `legacy-ibmi-program-analyzer` | 1 (platform-specific) | ✅ v0.1.0 | Deep-dive one program: Program Call Map, file I/O, object deps, error handling |
 | 3 | `legacy-ibmi-flow-analyzer` | 1.5 (platform-specific) | ✅ v0.1.1 | Analyze a call chain (job flow, menu option, subfile dispatch, F-key branch, trigger, scheduler, API) — one business transaction end-to-end |
 | 4 | `legacy-ibmi-module-analyzer` | 1.5 (platform-specific) | ✅ v0.1.1 | Synthesize a business module from multiple flows + BAU, producing the **4-view model** (Operation / System / Program / Data). See `docs/module-analysis-model.md`. |
 | 5 | `legacy-spec-writer` | 2 (platform-agnostic) | ✅ v0.1.0 | Produce `spec.yaml` + `spec.md` from module + flow + program analyses |

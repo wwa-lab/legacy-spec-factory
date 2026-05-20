@@ -43,5 +43,8 @@
   inventory-review-checklist before routing to any analyzer skill. SME must
   confirm program coverage, hidden dependencies (data areas, scheduler
   entries), and report/spool completeness.
+- **Review/export reminder:** Not applicable yet. No stable human-facing
+  Markdown package exists; keep producing canonical Markdown/YAML artifacts
+  first.
 - **Manual fallback:** Not needed — `legacy-ibmi-inventory` is implemented.
 ```

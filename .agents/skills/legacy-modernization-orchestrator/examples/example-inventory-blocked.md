@@ -17,7 +17,7 @@
 - **Desired Outcome:** Run program analyzer next
 - **Recommended Next Skill:** `legacy-ibmi-inventory` (resume) (status: Implemented v0.1.0)
 - **Why:** The Inventory Completeness Gate fails. Running the analyzer now
-  will either produce a hallucinated call graph (analyzer invents what
+  will either produce a hallucinated Program Call Map (analyzer invents what
   CRHOLDP and CRCHKSRV look like) or stop with errors. Neither saves time.
 
 ## Routing Notes
@@ -52,6 +52,8 @@
   the gap does not block, and (b) what compensating evidence will be used
   for the missing artifact (e.g., a spool sample stands in for absent PRTF
   source).
+- **Review/export reminder:** Do not export HTML as a workaround. The inventory
+  is blocked; resolve source or SME-waiver evidence in Markdown/YAML first.
 - **Manual fallback:** Not applicable — this is a gate failure, not a
   missing skill.
 

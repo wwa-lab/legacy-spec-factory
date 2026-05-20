@@ -34,3 +34,7 @@ evidence/**/*sensitive*
 
 # Local IDE/agent settings
 .claude/settings.local.json
+
+# Python cache
+__pycache__/
+*.py[cod]

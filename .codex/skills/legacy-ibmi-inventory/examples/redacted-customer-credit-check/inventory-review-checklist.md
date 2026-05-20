@@ -40,6 +40,5 @@
 
 | ID | Note | Blocking |
 | --- | --- | --- |
-| `TBD-CREDIT-CHECK-001` | Scheduler path needs confirmation before call graph analysis. | pending |
+| `TBD-CREDIT-CHECK-001` | Scheduler path needs confirmation before Program Call Map analysis. | pending |
 | `TBD-CREDIT-CHECK-002` | Data area usage must be ruled out before business rule mining. | pending |
-

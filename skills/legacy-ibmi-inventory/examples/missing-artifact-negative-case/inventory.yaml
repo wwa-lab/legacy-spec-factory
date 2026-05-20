@@ -50,7 +50,7 @@ objects:
       - EV-CREDIT-CHECK-001
     sensitivity: unknown
     review_status: needs_sme_review
-    notes: Missing service program blocks call graph completeness.
+    notes: Missing service program blocks Program Call Map completeness.
 relationships:
   - from_id: OBJ-CREDIT-CHECK-001
     relationship: uses_printer_file

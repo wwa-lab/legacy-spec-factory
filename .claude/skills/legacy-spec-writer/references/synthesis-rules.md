@@ -25,9 +25,9 @@ tells you **where each value comes from**.
 | `modernization_decisions[]` | derived from BRs + target_platform constraints + SME | each DEC has rationale |
 | `data_model.entities[]` | module View 4 (Data Flow) | each major PF/LF/SQL table that the target system will own |
 | `data_model.entities[].fields[]` | DDS / SQL definitions + cross-program references | type maps to target type per platform |
-| `process_flow.steps[]` | the relevant flow analysis Sequence Diagram | one STEP per major flow node |
+| `process_flow.steps[]` | the relevant flow analysis Transaction Call Map | one STEP per major flow node |
 | `inputs[]` | flow analysis Trigger Context + UI surfaces input fields | source = api/screen/batch/file/integration/manual |
-| `outputs[]` | flow analysis exit nodes + Cross-Program Data Flow out-of-band consumers | target = api_response/event/database/report/spool/file/integration |
+| `outputs[]` | flow analysis exit nodes + Cross-Program Data Flow carriers with external handoff / creates / updates state impact | target = api_response/event/database/report/spool/file/integration |
 | `exceptions[]` | flow analysis Error Propagation + program analyses Error Handling | each EX has severity |
 | `acceptance_criteria[]` | each approved BR → ≥1 AC | Gherkin preferred for procedural; checklist for declarative |
 | `tests[]` | optional sketch only; defers to future equivalence-test skill | TC-* IDs only |

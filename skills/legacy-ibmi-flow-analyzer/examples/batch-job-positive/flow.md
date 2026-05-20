@@ -25,9 +25,24 @@
 
 ---
 
-## Sequence Diagram
+## Transaction Call Map
 
 Source: derived-from-code + SME confirmed
+
+```mermaid
+flowchart LR
+  TRG["Scheduler NIGHTLY-RECON"]
+  RECONCL["NODE-01 RECONCL"]
+  RECON01R["NODE-02 RECON01R"]
+  RECON02R["NODE-03 RECON02R"]
+  RECONSQL["NODE-04 RECONSQL"]
+  TRG --> RECONCL
+  RECONCL --> RECON01R
+  RECONCL --> RECON02R
+  RECONCL --> RECONSQL
+```
+
+### Call Chain Summary
 
 ```text
 [Scheduler 22:00 daily Mon-Fri]
@@ -71,36 +86,48 @@ NODE-04 (RECONSQL) ── SQLRPG: cross-checks GLPOSTPF against ledger via embed
 
 ## Edges
 
-| Edge ID | From → To | Call Type | Site (program:line) | Condition | Evidence |
+| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| EDGE-NIGHTLY-RECON-01 | (scheduler) -> NODE-01 | N/A | scheduler-fire -> SBMJOB | (WRKJOBSCDE entry) | always at 22:00 weekday | EV-NIGHTLY-RECON-001 |
+| EDGE-NIGHTLY-RECON-02 | NODE-01 -> NODE-02 | N/A | CALL | RECONCL:38 | always | EV-NIGHTLY-RECON-002 |
+| EDGE-NIGHTLY-RECON-03 | NODE-01 -> NODE-03 | N/A | CALL | RECONCL:52 | only if NODE-02 returned RC=0 | EV-NIGHTLY-RECON-003 |
+| EDGE-NIGHTLY-RECON-04 | NODE-01 -> NODE-04 | N/A | CALL | RECONCL:66 | only if NODE-03 returned RC=0 | EV-NIGHTLY-RECON-004 |
+
+---
+
+## Common Dependencies
+
+| Common Node | Inbound Callers | Role Classification | Main Graph Treatment | Risk Notes | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| EDGE-NIGHTLY-RECON-01 | (scheduler) → NODE-01 | scheduler-fire → SBMJOB | (WRKJOBSCDE entry) | always at 22:00 weekday | EV-NIGHTLY-RECON-001 |
-| EDGE-NIGHTLY-RECON-02 | NODE-01 → NODE-02 | CALL | RECONCL:38 | always | EV-NIGHTLY-RECON-002 |
-| EDGE-NIGHTLY-RECON-03 | NODE-01 → NODE-03 | CALL | RECONCL:52 | only if NODE-02 returned RC=0 | EV-NIGHTLY-RECON-003 |
-| EDGE-NIGHTLY-RECON-04 | NODE-01 → NODE-04 | CALL | RECONCL:66 | only if NODE-03 returned RC=0 | EV-NIGHTLY-RECON-004 |
+| (none) | N/A | N/A | N/A | no shared common program/API is called by multiple nodes in this flow | EV-NIGHTLY-RECON-002 to EV-NIGHTLY-RECON-004 |
 
 ---
 
 ## Cross-Program Data Flow
 
-| Data ID | On Edge | Mechanism | Payload | Direction | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| DATA-NIGHTLY-RECON-01 | EDGE-02/03/04 | CALL parameter | RUNDATE (char 8) | NODE-01 → NODE-02/03/04 | EV-... |
-| DATA-NIGHTLY-RECON-02 | EDGE-02/03/04 | CALL parameter (out) | RC (numeric 4) | NODE-N → NODE-01 | EV-... |
-| DATA-NIGHTLY-RECON-03 | (out of band) | Shared file TXNLOGPF | day's transactions | upstream auth flow writes; NODE-02 reads | EV-... |
-| DATA-NIGHTLY-RECON-04 | (out of band) | Shared file GLPOSTPF | GL staging rows | NODE-02 writes; NODE-04 reads (via SQL); downstream GL consolidation reads | EV-... |
-| DATA-NIGHTLY-RECON-05 | (out of band) | Spool RECONPRT | exception report | NODE-03 produces; Finance team reads next morning | EV-... |
-| DATA-NIGHTLY-RECON-06 | (out of band) | DTAQ RECONDTAQ | "RECON COMPLETE / FAILED" status message | NODE-04 produces; monitoring system consumes | EV-... |
-| DATA-NIGHTLY-RECON-07 | (out of band) | Data area HSSDTAR002 | BatchRunDate + completion-flag (checkpoint) | NODE-01 reads BatchRunDate; NODE-04 writes completion flag | EV-... |
+| Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DATA-NIGHTLY-RECON-01 | EDGE-02/03/04 | NODE-01 | NODE-02/03/04 | CALL parameter | RUNDATE (char 8) | sync in | run-date handoff | EV-... |
+| DATA-NIGHTLY-RECON-02 | EDGE-02/03/04 | NODE-02/03/04 | NODE-01 | CALL parameter (out) | RC (numeric 4) | sync out | return status controls next edge | EV-... |
+| DATA-NIGHTLY-RECON-03 | TXNLOGPF | upstream auth flow | NODE-02 | Shared file | day's transactions keyed by RUNDATE | batch-later | reads persistent transaction rows | EV-... |
+| DATA-NIGHTLY-RECON-04 | GLPOSTPF | NODE-02 | NODE-04 and downstream GL consolidation | Shared file | GL staging rows | batch-later | creates rows, later read by SQL / GL | EV-... |
+| DATA-NIGHTLY-RECON-05 | RECONPRT | NODE-03 | Finance team | Spool / PRTF | exception report | next-morning human review | report handoff | EV-... |
+| DATA-NIGHTLY-RECON-06 | RECONDTAQ | NODE-04 | monitoring system | DTAQ | "RECON COMPLETE / FAILED" status message | async | external status handoff | EV-... |
+| DATA-NIGHTLY-RECON-07 | HSSDTAR002 | NODE-01 / NODE-04 | NODE-01 / NODE-04 | Shared data area | BatchRunDate + completion flag | shared state | reads run date; updates checkpoint | EV-... |
+
+**Critical trails:**
+- Run date: HSSDTAR002 -> RECONCL -> CALL parameters -> RECON01R/RECON02R/RECONSQL.
+- Transaction records: upstream auth flow -> TXNLOGPF -> RECON01R -> GLPOSTPF -> RECONSQL -> downstream GL consolidation.
 
 ---
 
 ## Branch Points
 
-| Branch ID | Location | Decider | Alternatives | Evidence |
+| Branch Ref | Location | Decider | Alternatives | Evidence |
 | --- | --- | --- | --- | --- |
-| BR-NIGHTLY-RECON-01 | NODE-01 RECONCL:40 | RC from RECON01R | RC=0 → continue to NODE-03; RC≠0 → log + GOTO ERREXIT (skip remaining nodes) | EV-... |
-| BR-NIGHTLY-RECON-02 | NODE-01 RECONCL:54 | RC from RECON02R | RC=0 → continue to NODE-04; RC≠0 → log + GOTO ERREXIT | EV-... |
-| BR-NIGHTLY-RECON-03 | NODE-01 RECONCL:68 | RC from RECONSQL | RC=0 → normal exit; RC≠0 → log + ABEND | EV-... |
+| EDGE-NIGHTLY-RECON-03 / NODE-NIGHTLY-RECON-01 ERREXIT | NODE-01 RECONCL:40 | RC from RECON01R | RC=0 → EDGE-NIGHTLY-RECON-03; RC≠0 → log + GOTO ERREXIT (skip remaining nodes) | EV-... |
+| EDGE-NIGHTLY-RECON-04 / NODE-NIGHTLY-RECON-01 ERREXIT | NODE-01 RECONCL:54 | RC from RECON02R | RC=0 → EDGE-NIGHTLY-RECON-04; RC≠0 → log + GOTO ERREXIT | EV-... |
+| NODE-NIGHTLY-RECON-01 normal-exit / abend | NODE-01 RECONCL:68 | RC from RECONSQL | RC=0 → normal exit; RC≠0 → log + ABEND | EV-... |
 
 ---
 
@@ -202,7 +229,7 @@ Before approval, SME must validate:
 - [X] Business event name accurately reflects the business transaction — confirmed by Anna Chen (Finance Ops)
 - [X] All nodes in scope — 4 programs, none missing, none extra
 - [X] All edges reflect actual production calls
-- [X] Cross-program data flow is complete — 7 data exchanges, all traced
+- [X] Cross-program data flow captures carriers, producers, consumers, timing, state impact — 7 data exchanges, all traced
 - [X] Branch points capture user-visible decisions — all 3 RC-driven branches in CL
 - [X] UI surfaces match production screens — N/A (batch)
 - [ ] Error propagation matches operational reality — **partial-restart procedure documented, but in operational notes not in code** (see SEED-04)

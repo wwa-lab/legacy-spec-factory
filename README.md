@@ -251,6 +251,60 @@ The portability goal is simple: one skill design, multiple execution surfaces.
 Team members can use Codex, Claude Code, or OpenCode without changing the
 business logic, SME governance, evidence model, or spec contract.
 
+## HTML Exports For User / SME Docs
+
+Markdown remains the canonical source for human-facing artifacts in this
+repository, but pilot reviews often go more smoothly when stakeholders can read
+the same content as standalone HTML.
+
+`legacy-modernization-orchestrator` may remind users to run
+`legacy-html-exporter` when stable human-facing Markdown already exists and an
+SME / user review would benefit from a browser-readable companion. HTML export
+is optional review packaging only: it does not advance gates, replace Markdown,
+or replace `spec.yaml` as the machine-readable source of truth.
+
+Use [scripts/render_stakeholder_html.py](scripts/render_stakeholder_html.py) to
+export any Markdown artifact into a styled HTML companion:
+
+```bash
+python3 scripts/render_stakeholder_html.py 05_specs/CAP-PRICE-CALCULATION/spec.md
+python3 scripts/render_stakeholder_html.py docs/EXAMPLE-tutorial --recursive
+```
+
+Typical good candidates:
+
+- `brd.md`, `spec.md`, `sdd-handoff.md`
+- `*-review.md`, `traceability.md`, `question-pack.md`
+- `STATUS.md`, `programs-batch-digest.md`, `object-map.md`
+
+Directory mode creates sibling `.html` files plus an `index.html` page for
+easy sharing inside pilot reviews. See
+[docs/human-readable-html-exports.md](docs/human-readable-html-exports.md) for
+usage details.
+
+## OpenCode Internal Pilot Fixtures
+
+For company environments that only run OpenCode, use the synthetic corpus under
+[docs/synthetic-corpus/](docs/synthetic-corpus/) to validate the main reverse
+chain without customer source code.
+
+Current starter fixtures cover:
+
+- fixed-format `SQLRPGLE` credit-check happy path
+- blocked credit-check path for missing LF / SME-meaning gaps
+- scheduler-submitted batch AR reconciliation with joblog and spool evidence
+- DSPF subfile inquiry flow
+
+Use
+[docs/synthetic-corpus/pilot-execution-checklist.md](docs/synthetic-corpus/pilot-execution-checklist.md),
+[docs/synthetic-corpus/pilot-prompts.md](docs/synthetic-corpus/pilot-prompts.md),
+and
+[docs/synthetic-corpus/pilot-results-template.md](docs/synthetic-corpus/pilot-results-template.md)
+to run and record the first OpenCode-only pilot. Use
+[docs/orchestrator-review-checklist.md](docs/orchestrator-review-checklist.md)
+to score whether `legacy-modernization-orchestrator` is reliable enough as the
+single front door.
+
 ## Skill Review Quality Gate
 
 Skills generated for this project must pass a Codex review gate before they are
@@ -316,6 +370,7 @@ even if the static review score is higher.
 | `legacy-golden-master-test-planner` | [v0.1.0 scorecard](docs/reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 9.59 | 9.59 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
 | `legacy-step-validator` | [v0.1.1 scorecard](docs/reviews/legacy-step-validator-v0.1.1-scorecard.md) | 9.53 | 9.53 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional checklist-ID / re-validation-ID cleanup |
+| `legacy-html-exporter` | [v0.1.0 scorecard](docs/reviews/legacy-html-exporter-v0.1.0-scorecard.md) | 9.31 | 9.0 | Repo-ready | Codex passed smoke, but Claude Code failed the negative source-of-truth guardrail and OpenCode has not yet converged to a final no-write answer |
 
 For public trust, scorecards should show both the score before caps and the
 score after caps. A 9.0 here should usually be read as "repo-ready and
@@ -380,7 +435,7 @@ all agree.
 
 ## Target Skill Family
 
-**See [`docs/skill-families.md`](docs/skill-families.md) for how the 19 skills
+**See [`docs/skill-families.md`](docs/skill-families.md) for how the 20 skills
 group into 6 families, which order they fire in, and which pairs were
 intentionally kept separate.**
 
@@ -445,17 +500,18 @@ explicitly decides to vendor or mirror them.
 | 17 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
 | 18 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
 | 19 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
-| 20 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
-| 21 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
-| 22 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
-| 23 | `architecture-to-design` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates design, data model, data flow, API guide |
-| 24 | `design-to-tasks` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; turns design into task breakdown |
-| 25 | `tasks-to-implementation` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; greenfield / brownfield / migration implementation |
-| 26 | `tasks-to-code` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; incremental code work from task docs |
-| 27 | `review-doc-quality` | Atlas review | Atlas reference | Downstream Atlas quality gate for SDD documents |
-| 28 | `review-code-against-design` | Atlas review | Atlas reference | Downstream Atlas quality gate for code-vs-design alignment |
-| 29 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
-| 30 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
+| 20 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
+| 21 | `req-to-user-story` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; consume handoff requirements, do not recreate here |
+| 22 | `user-story-to-spec` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates implementation-facing spec |
+| 23 | `spec-to-architecture` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates architecture artifacts |
+| 24 | `architecture-to-design` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; generates design, data model, data flow, API guide |
+| 25 | `design-to-tasks` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; turns design into task breakdown |
+| 26 | `tasks-to-implementation` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; greenfield / brownfield / migration implementation |
+| 27 | `tasks-to-code` | Atlas SDD chain | Atlas reference | Downstream Atlas skill; incremental code work from task docs |
+| 28 | `review-doc-quality` | Atlas review | Atlas reference | Downstream Atlas quality gate for SDD documents |
+| 29 | `review-code-against-design` | Atlas review | Atlas reference | Downstream Atlas quality gate for code-vs-design alignment |
+| 30 | `architecture-review` | Atlas review | Atlas reference | Downstream Atlas architecture quality gate |
+| 31 | `_shared` | Atlas shared references | Atlas reference | Shared rules, not an independent execution skill |
 
 No repository-owned skill in the current BRD + SDD handoff roadmap remains only
 as a placeholder. The remaining work is validation and scorecard hardening:

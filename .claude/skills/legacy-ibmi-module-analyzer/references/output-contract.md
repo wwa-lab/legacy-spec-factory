@@ -240,7 +240,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - [ ] **All flows in scope?** Flow Inventory lists every business event touched by this module; no missing or extra flows
 - [ ] **Cross-flow dependencies correct?** Shared files, data areas, and sub-program calls accurately reflect the code and approved flow analyses
 - [ ] **Shared sub-programs correctly identified?** Every CALL statement touching multiple flows is documented
-- [ ] **Call topology sound?** The sequence / tree accurately represents the actual call graph from approved flow and program analyses
+- [ ] **Call topology sound?** The Transaction Call Map / Program Call Map accurately represents the actual call topology from approved flow and program analyses
 - [ ] **Evidence linked?** Each node, edge, and dependency references a FLOW-* ID or approved program-analysis
 
 ## SME Sign-Off
@@ -260,19 +260,20 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 ## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | rejected
 
 ## Data Objects in Scope
-(Aggregated from every program's Object Dependencies section.)
+(Aggregated from every flow's Cross-Program Data Flow section, backed by
+program Data Touch Maps and Object Dependencies.)
 
-| Object | Type | Inventory ID | Producer Flows | Consumer Flows | Coupling Score | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| DATA-TXN-LOG | PF | OBJ-AUTH-MODULE-050 | FLOW-AUTH-001, FLOW-MANUAL-001 | FLOW-BATCH-001 | 3 (HIGH) | EV |
-| DATA-POSTING | PF | OBJ-AUTH-MODULE-060 | FLOW-BATCH-001 | (external — posting system) | 1 | EV |
-| DATA-STATE | *DTAARA | OBJ-AUTH-MODULE-070 | FLOW-BATCH-001 | FLOW-BATCH-001 | 1 (internal) | EV |
-| DATA-MASTER | PF | OBJ-AUTH-MODULE-080 | (external) | FLOW-AUTH-001 | 1 | EV |
+| Object / Carrier | Type | Inventory ID | Producer Flows | Consumer Flows | State Impact Summary | Coupling Score | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| DATA-TXN-LOG | PF | OBJ-AUTH-MODULE-050 | FLOW-AUTH-001, FLOW-MANUAL-001 | FLOW-BATCH-001 | created by online/manual flows; read by batch | 3 (HIGH) | EV |
+| DATA-POSTING | PF | OBJ-AUTH-MODULE-060 | FLOW-BATCH-001 | (external — posting system) | created as file handoff | 1 | EV |
+| DATA-STATE | *DTAARA | OBJ-AUTH-MODULE-070 | FLOW-BATCH-001 | FLOW-BATCH-001 | read and updated as shared checkpoint | 1 (internal) | EV |
+| DATA-MASTER | PF | OBJ-AUTH-MODULE-080 | (external) | FLOW-AUTH-001 | read-only lookup | 1 | EV |
 
 ## Data Lifecycle
-| Object | Created By | Updated By | Read By | Archived By | Purged By |
-| --- | --- | --- | --- | --- | --- |
-| DATA-TXN-LOG | FLOW-AUTH-001 (per event) | (none — append-only) | FLOW-BATCH-001, FLOW-MANUAL-001 | (monthly archive job — out of module) | (yearly purge — out of module) |
+| Object / Carrier | Created By | Updated By | Read By | Sent / Received By | Archived By | Purged By |
+| --- | --- | --- | --- | --- | --- | --- |
+| DATA-TXN-LOG | FLOW-AUTH-001 (per event) | (none — append-only) | FLOW-BATCH-001, FLOW-MANUAL-001 | n/a | (monthly archive job — out of module) | (yearly purge — out of module) |
 
 ## Coupling Hotspots (Modernization Risks)
 | Object | Coupling Score | Risk | Mitigation |
@@ -280,8 +281,9 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | DATA-TXN-LOG | HIGH (3 flows) | Schema change ripples through all flows | Maintain backward compatibility; version transactions |
 
 ## Critical Data Trails
-[End-to-end paths of important data — e.g., a transaction record from
-intake → log → GL posting → archive.]
+[End-to-end paths of important data, using flow `DATA-*` rows as anchors
+— e.g., authorization request -> DTAQ -> online program -> AUTHLOG -> GL
+posting -> archive.]
 
 ## DB Table Relationships
 [ER-style diagram or table listing PK/FK relationships among the module's

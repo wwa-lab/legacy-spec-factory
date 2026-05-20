@@ -55,7 +55,7 @@ Evidence Manifest + Redaction Log + Redacted Evidence Bundle
         ↓ FORWARD HANDOFF GATE (docs/forward-sdlc-contract.md)
 Forward SDLC (wwa-lab/build-agent-skill: ibm-i-program-spec, code-generator, …)
 
-Folded MVP capabilities: call graph, CRUD matrix, DDS/screen schema extraction,
+Folded MVP capabilities: Program Call Map, CRUD matrix, DDS/screen schema extraction,
 business-rule mining, and capability mapping are produced inside the program,
 flow, module, and spec-writer artifacts rather than routed as separate active
 skills.
@@ -505,8 +505,25 @@ obvious route, one short paragraph may be enough.
 - **Produce:** <next artifact>
 - **Save reminder:** <save current artifact as [suggested filename]; consumed by [downstream skill]>
 - **SME reminder:** <when SME is required and what to ask>
+- **Review/export reminder:** <when Markdown should remain canonical; whether `legacy-html-exporter` is useful for SME/browser review; or "not applicable">
 - **Manual fallback (if skill is planned):** <what to do until the skill exists; pointer to references/manual-fallback.md>
 ```
+
+Review/export reminder rules:
+
+- Markdown remains canonical for human-facing artifacts (`spec.md`, `brd.md`,
+  `traceability.md`, `STATUS.md`, review packs, question packs, handoff docs).
+- `spec.yaml` remains the machine-readable source of truth for downstream
+  automation.
+- Recommend `legacy-html-exporter` only after a stable human-facing Markdown
+  artifact exists and the user needs browser-friendly SME / user review.
+- If Markdown is missing, blocked, or wrong, route to the producing skill first;
+  do not suggest HTML as a workaround for unfinished content.
+- If the user asks for HTML to replace Markdown or become the source of truth,
+  block that request and state that HTML is a companion view only.
+- Do not put `legacy-html-exporter` in `RUN NEXT` unless the user's desired
+  outcome is explicitly review packaging, browser view, HTML export, or easier
+  SME/user reading. Otherwise mention it only in the Review/export reminder.
 
 ### Mandatory Quick Card footer
 
@@ -657,8 +674,8 @@ field-level rules. The summary below is normative for this skill.
 - **Required sections**: current stage, desired outcome, recommended next
   skill (with implementation status), why, stage-skip safety, gate-check
   result, minimum input needed next, route confidence, next artifact
-  expected, invoke / produce / save reminder / SME reminder / manual
-  fallback (if next skill is planned).
+  expected, invoke / produce / save reminder / SME reminder /
+  review-export reminder / manual fallback (if next skill is planned).
 - **Required IDs**: no new ID minting. Cites existing IDs from upstream
   artifacts when surfacing blockers (`TBD-*`, `EV-*`, `BR-*`, etc.).
 - **Handoff status**: the decision either hands off to a downstream
@@ -675,9 +692,10 @@ field-level rules. The summary below is normative for this skill.
 - **Mechanical**: every routing field present (current stage, desired
   outcome, recommended next skill + status, why, stage-skip safe?, gate
   check, minimum input, route confidence, next artifact, invoke / produce
-  / save / SME / manual fallback); cited skill names exist in the chain;
-  cited gates exist in `references/gates.md`; the **Quick Card** footer
-  block is present, all twelve lines are filled, the cited stage-card path
+  / save / SME / review-export / manual fallback); cited skill names exist
+  in the chain; cited gates exist in `references/gates.md`; the **Quick
+  Card** footer block is present, all twelve lines are filled, the cited
+  stage-card path
   resolves under `references/stage-cards/`, the `WILL PRODUCE` path lives
   under the resolved `PROJECT` root and conforms to the directory layout
   in `references/stage-identification.md`, `STATE FILE` resolves to
@@ -692,7 +710,8 @@ field-level rules. The summary below is normative for this skill.
   stage (no upstream over-routing, no unsafe downstream jump); gate state
   reflects the artifact's actual fields rather than a confident summary;
   implementation status is honest (`Implemented` vs `Planned` /
-  `Future`); SME reminder included whenever SME is required.
+  `Future`); SME reminder included whenever SME is required; HTML export is
+  recommended only as a companion read view for stable human-facing Markdown.
 - **SME / human approval**: not required for the routing decision itself,
   but the orchestrator must **flag** every SME control point the
   downstream skill will hit and refuse to advise skipping it.
@@ -779,6 +798,7 @@ path unless they explicitly ask for options.
 - Do not collapse evidence, behavior, rule, and decision into one bucket. The
   taxonomy in `docs/evidence-and-knowledge-taxonomy.md` is the source of truth.
 - Do not skip SME reminders to make the user happier.
+- Do not let HTML replace Markdown or `spec.yaml` as a source of truth.
 
 ## Quality Checklist
 
@@ -790,6 +810,7 @@ Before outputting workflow guidance, confirm:
 - [ ] Stage-skipping rules respected
 - [ ] All four hard gates checked where applicable
 - [ ] SME reminder included when SME is required
+- [ ] Review/export reminder preserves Markdown / `spec.yaml` source-of-truth rules
 - [ ] Planned vs implemented status stated for the recommended skill
 - [ ] Manual fallback offered if skill is planned
 - [ ] No invented artifact maturity
@@ -819,7 +840,7 @@ This skill coordinates the rest of the reverse chain:
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
-| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: call graph, file I/O, object deps, error handling |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: Program Call Map, file I/O, object deps, error handling |
 | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** | Per call chain: 7 trigger models; cross-program data flow; commit boundaries |
 | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
@@ -839,6 +860,7 @@ contract Layer 2 expects.
 | `legacy-spec-writer` | **Implemented v0.1.0** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability |
 | `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
+| `legacy-html-exporter` | **Implemented v0.1.0** | Optional companion export for stable human-facing Markdown; creates `.html` / `index.html` without changing the source of truth |
 
 ### Documentation routes (not skills)
 

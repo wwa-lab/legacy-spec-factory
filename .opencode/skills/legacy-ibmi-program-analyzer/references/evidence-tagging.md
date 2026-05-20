@@ -19,7 +19,7 @@ This guide explains how to assign evidence strength labels to each claim in the 
 - CALL statements or copybook bindings
 - MONITOR blocks or exception handlers
 - Explicit IF/SELECT conditions
-- **Source-level flow-header comments** (common IBM i convention: ASCII tree at top of program documenting the subroutine call hierarchy). When present, this is first-class evidence for the call graph — but always cross-check against actual EXSR/CALL/PERFORM statements; a stale header creates a TBD, not a fact.
+- **Source-level flow-header comments** (common IBM i convention: ASCII tree at top of program documenting the subroutine call hierarchy). When present, this is first-class evidence for the Program Call Map — but always cross-check against actual EXSR/CALL/PERFORM statements; a stale header creates a TBD, not a fact.
 
 **Examples:**
 
@@ -455,4 +455,3 @@ Error Handling: Network timeout behavior for GETRATE (needs_sme_review)
 - **missing:** Required evidence not available → create TBD
 
 Every claim must carry evidence. When in doubt, use `needs_sme_review` or create a TBD rather than guessing.
-

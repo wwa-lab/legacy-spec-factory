@@ -34,9 +34,12 @@ Skill statuses:
 | 6 — Business Rules Drafted | (subsumed) | (BR seeds live in module View 1; spec-writer formalizes) | n/a | Stage retained for backward compatibility |
 | 7 — Capabilities Mapped | (subsumed) | (CAP seeds live in module-overview; spec-writer produces one spec per CAP) | n/a | Stage retained for backward compatibility |
 | 8a — Spec Drafted | Expand modernization decisions (optional) | `legacy-modernization-decision-writer` | **Implemented v0.1.0** | Optional governance skill. Use when decisions are complex, cross-cutting, or need explicit architecture approval. Produces `05_decisions/` package; reconciles back to `spec.yaml`. |
+| 8a — Spec Drafted | Prepare browser-friendly SME review view | `legacy-html-exporter` | **Implemented v0.1.0** | Optional companion route only when stable human-facing Markdown already exists (`spec.md`, `traceability.md`, review/question docs). Markdown remains canonical; HTML must not replace review source. |
 | 8a — Spec Drafted | Validate | `legacy-spec-reviewer` | Future (deferred from MVP) | Until implemented, use spec-writer's `spec-review.md` + SME |
 | 8b — Spec In Review | Promote to approved | (SME sign-off) | Doc-only | Update `spec.yaml.status: approved` once SME signs; not a skill |
+| 8b — Spec In Review | Make review docs easier for SMEs to read | `legacy-html-exporter` | **Implemented v0.1.0** | Optional review ergonomics. Use for browser-readable companions during SME walkthroughs; fix Markdown first if content is wrong. |
 | 8c — Spec Approved | Generate equivalence tests | `legacy-equivalence-test-generator` | Planned | Produces golden-master test pack |
+| 8c — Spec Approved | Export approved human-facing package | `legacy-html-exporter` | **Implemented v0.1.0** | Optional after approval for stakeholder browsing. Does not advance the chain and does not alter `spec.yaml.status`. |
 | 9 — Equivalence Pack Ready | Hand off to forward SDLC | `docs/forward-sdlc-contract.md` then `ibm-i-program-spec` / `ibm-i-code-generator` / etc. | External | **Forward Handoff Gate first.** Cross to `wwa-lab/build-agent-skill` only after gate passes |
 
 ## Optional Detours
@@ -79,6 +82,25 @@ When using the decision-writer:
 When the user just asks what they have without a clear outcome, run Step 1
 (stage identification), report the stage, and list the 2-3 most useful next
 moves with their gate requirements.
+
+### "HTML / browser view / SME-readable export" requests
+
+When the user asks for HTML, a browser view, a web-readable package, or easier
+SME/user review:
+
+1. Confirm the source is human-facing Markdown (`*.md`) or a directory
+   containing Markdown review docs.
+2. If the Markdown exists and is stable enough for review, route to
+   `legacy-html-exporter`.
+3. If the Markdown is missing, blocked, draft content that still needs upstream
+   correction, or the request targets `spec.yaml` / JSON / YAML machine
+   artifacts, route back to the producing skill or gate first.
+4. If the user asks to make HTML the canonical artifact, block the request:
+   Markdown remains canonical for human-facing docs, and `spec.yaml` remains
+   canonical for automation.
+
+Do not treat HTML export as a stage advancement. It is a supplemental read
+view for review ergonomics.
 
 ### "Skip ahead" requests
 

@@ -26,7 +26,7 @@ This document defines the types of observations that can be extracted from IBM i
 "CREDITCHK main program calls VALIDATECREDIT, then CALCFEE, then UPDATEACCOUNT in sequence"
 
 **Downstream consumption**:
-- Program analyzer validates extracted call graph against runtime observations
+- Program analyzer validates extracted Program Call Map edges against runtime observations
 - Marks call edges as `confirmed_from_code + observed_in_runtime` where validated
 - Flags dead code (call in source but never observed in logs)
 
@@ -226,7 +226,7 @@ This document defines the types of observations that can be extracted from IBM i
 
 | Type | Source | Confidence Threshold | Rarity (High=Rare) | Actionability |
 |------|--------|----------------------|-------------------|---------------|
-| `call_sequence` | JOBLOG | 3+ runs | Low | High — feeds call graph validation |
+| `call_sequence` | JOBLOG | 3+ runs | Low | High — feeds Program Call Map validation |
 | `error_pattern` | JOBLOG | 3+ occurrences | Medium | High — documents exception handling |
 | `timing_observation` | JOBLOG timestamps | 3+ runs | Low | High — for SLA & performance baseline |
 | `batch_window` | JOBLOG | 3+ runs | Low | High — operational scheduling |

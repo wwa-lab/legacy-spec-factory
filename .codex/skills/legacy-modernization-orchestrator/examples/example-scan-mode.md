@@ -133,6 +133,9 @@ Stage derivation for `CAP-AR-POSTING`:
   `legacy-spec-writer` once all four views are approved.
 - **SME reminder:** confirm any `inferred_business_rule` in View 1 or any
   new ones surfaced by completing View 4.
+- **Review/export reminder:** Not applicable for this blocked module step. Once
+  stable `spec.md`, `traceability.md`, or review-pack Markdown exists, use
+  `legacy-html-exporter` only as a browser-friendly companion view.
 - **Manual fallback:** Not needed — `legacy-ibmi-module-analyzer` is
   implemented.
 

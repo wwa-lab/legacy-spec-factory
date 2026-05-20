@@ -211,20 +211,40 @@ job).
 For each data exchange in the flow:
 
 ```markdown
-| Data ID | On Edge | Mechanism | Payload | Direction | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| DATA-FLOW-01 | EDGE-02 | CALL parameter (out) | Decision: char 1 | NODE-02 → NODE-01 | EV-FLOW-005 |
+| Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DATA-FLOW-01 | EDGE-02 | NODE-02 | NODE-01 | CALL parameter (out) | Decision: char 1 | sync out | decision returned | EV-FLOW-005 |
 ```
 
 For each, capture:
 - **Data ID** — `DATA-<SLUG>-<NN>` stable across the flow document
-- **On Edge** — which edge carries this exchange (or "out of band" if
-  it's not an edge but a shared resource)
+- **Carrier** — edge ID or data object carrying the exchange
+- **Producer** — node, external system, user, scheduler, or manual actor
+  that creates/sends/writes the data
+- **Consumer** — node, external system, user, monitor, report consumer, or
+  manual actor that receives/reads the data
 - **Mechanism** — one of the 9 categories above
-- **Payload** — what's actually communicated (field name + type + meaning)
-- **Direction** — producer → consumer
+- **Payload / Key Fields** — what's actually communicated (record,
+  message, parameter list, key fields, critical fields)
+- **Direction & Timing** — sync in/out/inout, async, batch-later,
+  polling, manual, external handoff
+- **State Impact** — read-only, creates, updates, deletes, sends,
+  receives, commits, or unknown
 - **Evidence** — pointer to source code (parameter declaration, DTAARA
   access, queue send / receive, file I/O, IFS read / write) or to SME note
+
+## Granularity Rule
+
+Data flow is object / record / critical-field level by default. Do not
+trace every RPG work variable.
+
+Escalate to field-level detail only for:
+- money / amount fields
+- account / customer / card / inventory identifiers
+- approval, decline, status, posting, reconciliation, and lifecycle flags
+- return codes, reason codes, and error codes
+- audit IDs, journal IDs, external message IDs
+- fields crossing an external system boundary
 
 ---
 

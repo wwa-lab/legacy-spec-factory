@@ -66,6 +66,7 @@ score at 9.0.
 | `legacy-golden-master-test-planner` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 2026-05-16 | Positive returned five `06_quality/CREDIT-LIMIT/` files with `TC-*` IDs. Negative blocked missing-customer rejection without observed expected-output evidence. |
 | `legacy-step-contract` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-step-contract-v0.1.1-scorecard.md) | 2026-05-14 | Positive and negative smoke passed across all three runtimes. Scorecard 9.52. |
 | `legacy-step-validator` | v0.1.1 | passed | passed | passed | [scorecard](reviews/legacy-step-validator-v0.1.1-scorecard.md) | 2026-05-14 | Positive and negative smoke passed across all three runtimes. Scorecard 9.53. |
+| `legacy-html-exporter` | v0.1.0 | passed | failed | passed | [scorecard](reviews/legacy-html-exporter-v0.1.0-scorecard.md) | 2026-05-19 | Codex passed positive and negative no-write smoke after quoting the frontmatter description for YAML safety. Claude Code still violates the negative source-of-truth guardrail. OpenCode now passes the positive contract-only smoke by invoking `export_contract_helper.py` and returning the exact sibling `.html` path while keeping Markdown canonical. |
 
 ## Verification
 
