@@ -6,16 +6,25 @@ fully-populated minimal project — every artifact in the chain).
 
 Legacy Spec Factory is an end-to-end modernization pipeline for turning IBM i
 (AS/400) legacy system behavior into evidence-backed, reviewable, and
-implementation-ready specifications.
+implementation-ready specifications. In field use, it can be driven by an
+external RAG / code knowledge graph that already indexes source, ARCAD REF
+relationships, table metadata, and the enterprise data dictionary.
 
 The goal is not to translate RPG, CL, COBOL, or DDS source directly into Java.
 The goal is to recover the business intent hidden inside the legacy system,
 produce a trusted `spec.yaml` / `spec.md` pair, and then use that spec package
 as the source of truth for AI-native SDLC on the new cloud platform.
 
+The preferred enterprise scenario is **module-first**: the team supplies a
+business module or subsystem context, including four reviewed flows (Operation /
+Business Flow, System Flow, Program Flow, and Data Flow), plus RAG-retrieved
+evidence. Program and flow analysis remain valid starting points for building
+or validating that module model; they are not the only required entry path when
+the module context is already known.
+
 ## Visual Overview
 
-![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview.png)
+![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview-v2.png)
 
 ### Skill Family Poster
 
@@ -26,20 +35,20 @@ as the source of truth for AI-native SDLC on the new cloud platform.
 ![Legacy Spec Factory repository overview](docs/assets/legacy-spec-factory-repo-overview.png)
 
 ```text
-IBM i / AS/400 Evidence
-  RPGLE / CLLE / COBOL / DDS / DB2 / jobs / screens / reports / logs
+Enterprise RAG / Code Knowledge Graph
+  full source, ARCAD REF, table metadata, data dictionary, snippets, impact scope
+        |
+        v
+Module Context
+  Operation / Business Flow, System Flow, Program Flow, Data Flow
         |
         v
 Legacy Understanding Layer
-  inventory, call graph, CRUD matrix, data dictionary, runtime evidence
-        |
-        v
-Business Capability Map
-  program-level logic grouped into business capabilities
+  program analysis, flow analysis, module synthesis, selective source checks
         |
         v
 Evidence-backed spec package
-  requirements, rules, acceptance criteria, traceability, open questions
+  BRD, rules, acceptance criteria, traceability, open questions
         |
         v
 Human Review Gate
@@ -73,6 +82,14 @@ delivery.
   for agents and automation; `spec.md` is the human-readable review view.
 - **Evidence over guesses**: every extracted rule should point to source code,
   data, logs, screens, reports, or SME confirmation.
+- **RAG as evidence context, not final truth**: retrieval output, ARCAD REF
+  relationships, source snippets, and dictionary mappings help hydrate the
+  module context; they do not replace source evidence, human-confirmed flows,
+  or SME approval.
+- **Module-first analysis**: when a team already has the business module and
+  four flows, start from that module context and use program / flow analysis to
+  validate and fill gaps. When the module is unclear, start from program and
+  flow analysis and synthesize the module model incrementally.
 - **Observed vs inferred vs decided**: legacy behavior, inferred business rules,
   and modernization decisions must not be mixed together.
 - **Traceability by default**: requirements, business rules, tests, and
@@ -448,6 +465,25 @@ The skill family is split into two layers:
   structured outputs of Layer 1 and never read raw legacy source. Adding a
   new legacy platform means adding a new Layer 1 family; Layer 2 is reused.
 
+For enterprise deployments with an external RAG / code knowledge graph, the
+repository also supports a module-first operating model:
+
+```text
+RAG output + human-confirmed 4-flow module context
+        |
+        v
+module synthesis / selective program-flow validation
+        |
+        v
+BRD package -> spec package -> SDD handoff
+```
+
+The RAG layer is outside this repository. It provides relationship and evidence
+context such as source snippets, ARCAD REF impact references, table/field
+metadata, and data dictionary mappings. Legacy Spec Factory consumes that
+context, keeps evidence provenance visible, and turns the reviewed module
+model into BRD / spec / traceability artifacts.
+
 Naming convention:
 
 ```
@@ -465,7 +501,7 @@ The full roadmap has two major halves:
 
 ```text
 Legacy Spec Factory
-  old system -> evidence-backed BRD -> approved SDD handoff
+  RAG/context + module flows -> evidence-backed BRD -> approved SDD handoff
 
 Atlas Engineering Delivery Hub
   approved BRD -> SDD artifacts -> code / test / deploy
@@ -534,7 +570,7 @@ Governance/Infrastructure skills (already implemented):
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs | `flow-<FLOW-SLUG>.md` | Repo-ready (9.0 capped; smoke pending for provisional 9.6) |
-| `legacy-ibmi-module-analyzer` | Synthesize related flows into the 4-view module model | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
+| `legacy-ibmi-module-analyzer` | Synthesize a 4-view module model from reviewed Operation / Business, System, Program, and Data flows; when needed, start from program or flow analysis and build the module incrementally | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
 | `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
 | `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
@@ -559,7 +595,7 @@ contracts remain platform-agnostic from day one.
 | `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.2.0 repo-ready (9.0 capped; expanded-route smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
-| `legacy-brd-writer` | Produce an evidence-backed BRD from approved module analysis while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | Field-pilot ready (v0.1.1, 9.56) |
+| `legacy-brd-writer` | Produce an evidence-backed BRD from an approved module analysis, including module-first inputs hydrated by RAG evidence, while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | Field-pilot ready (v0.1.1, 9.56) |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
 | `legacy-sme-review-facilitator` | Prepare SME review sessions, record decision logs, capture sign-off, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/` | Field-pilot ready (v0.1.0, 9.55) |
@@ -693,6 +729,17 @@ knowledge-hub.manifest.yaml
   source-system.md
   sme-roster.md
   decision-log.md
+
+00_context_packages/
+  <MODULE-SLUG>/
+    context-index.yaml
+    01-operation-business-flow.md
+    02-system-flow.md
+    03-program-flow.md
+    04-data-flow.md
+    rag-evidence-map.md
+    contradiction-log.md
+    open-questions.md
 
 01_inventory/
   <CAP-SLUG>/
@@ -1000,6 +1047,17 @@ authoritative sources.
 ## Artifact Chain
 
 ```text
+00_context_packages/
+  <MODULE-SLUG>/
+    context-index.yaml
+    01-operation-business-flow.md
+    02-system-flow.md
+    03-program-flow.md
+    04-data-flow.md
+    rag-evidence-map.md
+    contradiction-log.md
+    open-questions.md
+
 01_inventory/
   inventory.yaml
   object-map.md
