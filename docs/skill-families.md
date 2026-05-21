@@ -182,7 +182,7 @@ or by reviewers, not by end users directly.
 | --- | --- | --- |
 | [`legacy-step-contract`](../skills/legacy-step-contract/SKILL.md) | Defines the INPUT → EXECUTION → OUTPUT → VALIDATION shape every step must follow | Skill authors; reviewers |
 | [`legacy-step-validator`](../skills/legacy-step-validator/SKILL.md) | Applies the contract to a completed step package; emits `pass` / `pass_with_warnings` / `blocked` report | Orchestrator before advancing |
-| [`legacy-sme-review-facilitator`](../skills/legacy-sme-review-facilitator/SKILL.md) | Prepares SME review packages, records decision logs, captures sign-off, routes follow-up findings | Between BRD/spec writing and approval |
+| [`legacy-sme-review-facilitator`](../skills/legacy-sme-review-facilitator/SKILL.md) | Runs chat-driven SME review, records decision logs, writes BRD review decisions back to the package, captures sign-off, routes follow-up findings | Between BRD/spec writing and approval |
 | [`legacy-runtime-matrix-tester`](../skills/legacy-runtime-matrix-tester/SKILL.md) | Orchestrates runtime smoke evidence + matrix + scorecard decisions across Codex / Claude Code / OpenCode | When new skill is added or version-bumped |
 | [`legacy-html-exporter`](../skills/legacy-html-exporter/SKILL.md) | Exports stakeholder-facing Markdown artifacts into standalone HTML companions for easier SME / user review | After BRD/spec/review/status docs already exist and need browser-friendly packaging |
 
@@ -193,7 +193,8 @@ or by reviewers, not by end users directly.
   output paths and `BLOCKING / WARNING / OK` finding taxonomy.
 - `sme-review-facilitator` is upstream of any Layer 2 / Bridge skill that
   requires `sme_sign_offs[]`. It is not part of the synthesis itself; it
-  prepares humans for it.
+  runs the chat review loop and records SME decisions back into durable
+  artifacts.
 - `runtime-matrix-tester` is independent of the BRD/spec pipeline but
   required for skill release readiness.
 - `html-exporter` is independent of the evidence/spec gate chain. It improves
@@ -235,7 +236,7 @@ enough module context to start at the module level:
 2.  module-context-intake           → 00_context_packages/<MODULE-SLUG>/
 3.  module-analyzer                 → 04_modules/<MODULE-SLUG>/
 4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/ (BRD + VAL-* scenario seeds)
-5.  sme-review-facilitator          → 07_sme_reviews/<CAPABILITY-SLUG>/
+5.  sme-review-facilitator          → chat review + 07_sme_reviews/<CAPABILITY-SLUG>/ + review-decision.yaml
 6.  spec-writer                     → 05_specs/<CAPABILITY-SLUG>/
 7.  traceability-packager           → 06_traceability_packages/
 8.  brd-to-sdd-handoff              → 06_sdd_handoffs/<CAPABILITY-SLUG>/

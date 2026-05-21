@@ -26,6 +26,8 @@ For RAG construction details, see
 [`docs/rag-setup-detail.md`](docs/rag-setup-detail.md). For a concrete
 file-based output example, see
 [`docs/rag-output-sample/`](docs/rag-output-sample/).
+For the chat-driven SME review experience, see
+[`docs/conversation-review-mode.md`](docs/conversation-review-mode.md).
 
 ## Operating Paths
 
@@ -50,7 +52,31 @@ skills remain available as selective verification tools: use them when RAG
 output conflicts with human flow, when a high-risk rule needs source evidence,
 or when the module boundary is not yet understood.
 
+## Conversation Review Mode
+
+The default SME experience is chat-driven. The assistant pre-fills review
+items from the draft BRD Package, presents 3-7 questions at a time with
+evidence and suggested decisions, and the SME answers directly in chat. Those
+answers are then written back into review artifacts and the BRD Package.
+
+```text
+draft BRD Package
+  -> chat review batches
+  -> SME choices / comments
+  -> review-decision.yaml + sme-decision-log.yaml
+  -> final BRD Package
+```
+
+Email, meetings, and offline checklists are optional export channels, not the
+primary workflow.
+
 ## Visual Overview
+
+### BRD Generation Process
+
+![BRD generation process](docs/assets/brd-generation-process.png)
+
+### Delivery Hub Overview
 
 ![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview-v2.png)
 
@@ -405,12 +431,12 @@ even if the static review score is higher.
 | `legacy-ibmi-module-analyzer` | [v0.1.1 corrected scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) | 9.27 | 9.0 | Repo-ready | Post-review fixes committed and re-scored; three-runtime smoke evidence is still pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
-| `legacy-brd-writer` | [v0.1.1 scorecard](docs/reviews/legacy-brd-writer-v0.1.1-scorecard.md) | 9.56 | 9.0 | Repo-ready | v0.1.2 adds BRD-stage `VAL-*` validation scenarios; runtime smoke / rescore pending |
+| `legacy-brd-writer` | [v0.1.2 scorecard](docs/reviews/legacy-brd-writer-v0.1.2-scorecard.md) | 9.36 | 9.0 | Repo-ready | v0.1.2 adds BRD-stage `VAL-*` validation scenarios; three-runtime smoke pending |
 | `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
 | `legacy-spec-writer` | [v0.1.0 scorecard](docs/reviews/legacy-spec-writer-v0.1.0-scorecard.md) | 9.24 | 9.0 | Repo-ready | Post-review fixes committed; Claude Code passed; Codex/OpenCode smoke and post-smoke re-score pending |
 | `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
 | `legacy-modernization-decision-writer` | [v0.1.0 scorecard](docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional field-style decision package coverage |
-| `legacy-sme-review-facilitator` | [v0.1.0 scorecard](docs/reviews/legacy-sme-review-facilitator-v0.1.0-scorecard.md) | 9.55 | 9.55 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional DSPF/PRTF SME review example coverage |
+| `legacy-sme-review-facilitator` | [v0.1.1 scorecard](docs/reviews/legacy-sme-review-facilitator-v0.1.1-scorecard.md) | 9.39 | 9.0 | Repo-ready | v0.1.1 adds Conversation Review Mode; three-runtime smoke pending |
 | `legacy-traceability-packager` | [v0.1.1 scorecard](docs/reviews/legacy-traceability-packager-v0.1.1-scorecard.md) | 9.51 | 9.51 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-runtime-matrix-tester` | [v0.1.0 scorecard](docs/reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-golden-master-test-planner` | [v0.1.0 scorecard](docs/reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 9.59 | 9.59 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
@@ -569,7 +595,7 @@ full status matrix and scorecard links.
 | 12 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
 | 13 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
 | 14 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
-| 15 | `legacy-sme-review-facilitator` | Governance | Existing | Field-pilot ready (v0.1.0, 9.55); prepares SME review packages and records decision logs |
+| 15 | `legacy-sme-review-facilitator` | Governance | Existing | Repo-ready after v0.1.1 Conversation Review Mode update; run three-runtime smoke and rescore before field-pilot label |
 | 16 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
 | 17 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
 | 18 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
@@ -636,7 +662,7 @@ contracts remain platform-agnostic from day one.
 | `legacy-brd-writer` | Produce an evidence-backed BRD Package from an approved module analysis, including module-first inputs hydrated by RAG evidence and BRD-stage `VAL-*` validation scenario seeds, while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | v0.1.2 pending smoke / rescore |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` | `spec.yaml`, `spec.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
-| `legacy-sme-review-facilitator` | Prepare SME review sessions, record decision logs, capture sign-off, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/` | Field-pilot ready (v0.1.0, 9.55) |
+| `legacy-sme-review-facilitator` | Run chat-driven SME review, record decision logs, capture sign-off, write BRD review decisions back to `review-decision.yaml`, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/`, `05_brds/<CAPABILITY-SLUG>/review-decision.yaml` | v0.1.1 pending smoke / rescore |
 | `legacy-brd-to-sdd-handoff` | Validate an approved BRD and approved spec, then package the Atlas SDD handoff without inventing design or implementation decisions | `06_sdd_handoffs/<CAPABILITY-SLUG>/sdd-handoff.yaml`, `sdd-handoff.md`, `atlas-context-pack.json`, `handoff-review.md`, `traceability.md` | Field-pilot ready (v0.1.0, 9.63) |
 | `legacy-traceability-packager` | Package and audit cross-artifact traceability from evidence through BRD, spec, acceptance criteria, tests, and SDD handoff | `06_traceability_packages/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.1, 9.51) |
 | `legacy-runtime-matrix-tester` | Generate and validate runtime smoke evidence, runtime-matrix rows, and scorecard readiness decisions across Codex, Claude Code, and OpenCode | runtime matrix update plan and scorecard evidence | Field-pilot ready (v0.1.0, 9.56) |
@@ -1111,6 +1137,7 @@ Primary module-first chain:
     brd.md
     brd-review.md
     validation-scenarios.md
+    review-decision.yaml
     traceability.md
 
 05_specs/
@@ -1296,9 +1323,11 @@ Default enterprise flow:
    only where the module context is missing evidence, high risk, or
    contradictory.
 
-6. **Review and approve**
-   SMEs and engineers review confidence levels, TBDs, modernization decisions,
-   and acceptance criteria.
+6. **Review and approve in chat**
+   Use Conversation Review Mode to ask the SME focused questions in batches,
+   capture decisions and comments in the chat, and write them back to
+   `review-decision.yaml`, `brd-review.md`, `validation-scenarios.md`, and the
+   SME decision log.
 
 7. **Generate Java/cloud artifacts**
    Feed the approved `spec.yaml` / `spec.md` pair into the forward SDLC agent
