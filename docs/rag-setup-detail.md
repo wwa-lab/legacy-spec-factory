@@ -1,12 +1,14 @@
 # Legacy Modernization RAG Setup Detail
 
-本文用于和团队对齐外部 RAG 的建设边界、索引设计、知识图谱关系、数据字典接入方式，以及它如何支撑
-Legacy Spec Factory 生成 BRD Package。
+本文用于和团队对齐 AI retrieval / external RAG / code knowledge graph 的
+建设边界、索引设计、知识图谱关系、数据字典接入方式，以及它如何支撑
+Legacy Spec Factory 生成 BRD + Validation Package。
 
 ## 1. 定位
 
-我们的 RAG 不是通用问答机器人，而是面向 Legacy Modernization 的
-**代码知识图谱 + 数据字典语义层 + 证据检索层**。
+这里的 RAG 不要求一定自研成独立产品。第一版可以接 OpenAI / 现成搜索检索 /
+客户已有 code knowledge graph；关键是形成面向 Legacy Modernization 的
+**代码知识图谱 + 数据字典语义层 + 证据检索层**，并输出稳定的 evidence bundle。
 
 它负责：
 
@@ -17,7 +19,7 @@ Legacy Spec Factory 生成 BRD Package。
 
 它不负责：
 
-- 直接生成最终 BRD。
+- 直接生成最终 BRD 或正式测试用例。
 - 自动批准业务规则。
 - 替代 SME 判断。
 - 替代全域数据字典中心。
@@ -31,7 +33,8 @@ Source code is observed behavior.
 Data dictionary is approved business meaning.
 ARCAD REF is relationship seed.
 Human-confirmed four flows are the BRD skeleton.
-SME approval remains the rule promotion gate.
+BRD-stage VAL scenarios are review seeds, not final TC cases.
+SME approval remains the rule and test promotion gate.
 ```
 
 ## 2. 输入来源
@@ -582,21 +585,29 @@ status: needs_review
   `00_context_packages/<MODULE>/`。
 - module analyzer / BRD writer 可以基于 module-first + RAG evidence 生成
   reviewable downstream package。
+- RAG / AI retrieval 不是 source of truth，只是 context candidate generator。
+  source of truth 是 SME-reviewed context package，以及有 evidence 支撑的
+  BRD / spec / validation artifacts。
 
 完成标准：
 
 - 输入四条 flow + RAG output。
-- 输出 BRD Package：
+- 输出 BRD + Validation Package：
 
 ```text
 05_brds/<MODULE-or-CAPABILITY>/
 ├── brd.md
 ├── brd-review.md
+├── validation-scenarios.md
 ├── traceability.md
 ├── source-evidence-map.md
 ├── flow-comparison-notes.md
 └── open-questions.md
 ```
+
+其中 `validation-scenarios.md` 只产出 BRD 阶段的 `VAL-*` 业务验证场景种子，
+用于 SME 验证、SOW 讨论和后续测试计划输入；不提前生成正式 `AC-*`
+acceptance criteria，也不提前生成正式 `TC-*` golden master test cases。
 
 ## 9. 会议对齐建议
 

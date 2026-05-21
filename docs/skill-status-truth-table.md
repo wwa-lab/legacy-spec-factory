@@ -31,7 +31,7 @@ Last regenerated: 2026-05-21
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
 | `legacy-modernization-orchestrator` | v0.2.0 | 9.34 | repo-ready | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) |
-| `legacy-module-context-intake` | v0.1.0 | 9.20 | repo-ready | synced | synced | synced | 2026-05-21 | [link](reviews/legacy-module-context-intake-v0.1.0-scorecard.md) |
+| `legacy-module-context-intake` | v0.1.0 | 9.33 | repo-ready | synced | synced | synced | 2026-05-21 | [link](reviews/legacy-module-context-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
@@ -40,7 +40,7 @@ Last regenerated: 2026-05-21
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.1.1 | 9.61 | repo-ready (provisional) | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) |
 | `legacy-ibmi-module-analyzer` | v0.1.1 | 9.27 | repo-ready | executed | executed | executed | 2026-05-14 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) |
-| `legacy-brd-writer` | v0.1.1 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-brd-writer-v0.1.1-scorecard.md) |
+| `legacy-brd-writer` | v0.1.2 | 9.0 | repo-ready | synced | synced | synced | not-yet-tested | [v0.1.1 scorecard](reviews/legacy-brd-writer-v0.1.1-scorecard.md); v0.1.2 validation scenario update needs rescore |
 | `legacy-spec-writer` | v0.1.0 | 9.24 | repo-ready | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-spec-writer-v0.1.0-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |
 | `legacy-sme-review-facilitator` | v0.1.0 | 9.55 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-sme-review-facilitator-v0.1.0-scorecard.md) |

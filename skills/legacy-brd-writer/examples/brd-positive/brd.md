@@ -165,7 +165,21 @@ TBD-002 covers this.
 
 ---
 
-## 4. Open Questions & Gaps (TBDs)
+## 4. Validation Scenario Summary
+
+See `validation-scenarios.md` for SME-reviewable `VAL-*` scenario seeds.
+These are not formal `AC-*` acceptance criteria or formal `TC-*` test cases.
+
+| Scenario ID | Scenario Type | Related BR/BEH | Evidence | Readiness | SME Focus |
+| --- | --- | --- | --- | --- | --- |
+| `VAL-CREDIT-LIMIT-001` | `happy_path` | `BR-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-001` | `EV-CREDIT-LIMIT-001`, `EV-CREDIT-LIMIT-004` | `ready_for_spec` | Normal approval path |
+| `VAL-CREDIT-LIMIT-002` | `exception` | `BR-CREDIT-LIMIT-001`, `BR-CREDIT-LIMIT-002` | `EV-CREDIT-LIMIT-001`, `EV-CREDIT-LIMIT-002`, `EV-CREDIT-LIMIT-003` | `ready_for_spec` | Credit exceeded rejection |
+| `VAL-CREDIT-LIMIT-003` | `exception` | `BR-CREDIT-LIMIT-003`, `BEH-CREDIT-LIMIT-003` | `EV-CREDIT-LIMIT-004` | `needs_sme_review` | Missing customer routing |
+| `VAL-CREDIT-LIMIT-004` | `boundary` | `BR-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-001` | `EV-CREDIT-LIMIT-001` | `needs_sme_review` | Equal-to-limit boundary |
+
+---
+
+## 5. Open Questions & Gaps (TBDs)
 
 ### TBD-CREDIT-LIMIT-001: Partial Credit Scenarios
 
@@ -221,7 +235,7 @@ this results in order rejection or a different flow.
 
 ---
 
-## 5. Evidence Index
+## 6. Evidence Index
 
 | ID | Source | Type | Sensitivity | Strength | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -233,13 +247,14 @@ this results in order rejection or a different flow.
 
 ---
 
-## 6. Traceability Summary
+## 7. Traceability Summary
 
 See `traceability.md` for the full cross-reference table.
 
 **Summary:**
 - 4 observed behaviors documented
 - 3 inferred business rules identified (all confirmed by SME as accurate)
+- 4 validation scenario seeds drafted
 - 3 open questions (0 blocking, 3 non-blocking)
 - All claims trace to supporting evidence
 - No `sensitivity: unknown` evidence

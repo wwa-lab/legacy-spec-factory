@@ -88,7 +88,15 @@ aspiration?
 
 ---
 
-## 4. Open Questions & Gaps (TBDs)
+## 4. Validation Scenario Summary
+
+See `validation-scenarios.md` for deferred scenario notes. No `VAL-*` scenario
+seed is safe to draft yet because the available evidence does not support a
+business validation scenario without inventing routing logic.
+
+---
+
+## 5. Open Questions & Gaps (TBDs)
 
 ### TBD-ORDER-ROUTING-001: Missing Program Flow Details
 
@@ -175,7 +183,7 @@ approved.
 
 ---
 
-## 5. Evidence Index
+## 6. Evidence Index
 
 | ID | Source | Type | Sensitivity | Strength | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -184,7 +192,7 @@ approved.
 
 ---
 
-## 6. Traceability Summary
+## 7. Traceability Summary
 
 **Status:** `BLOCKED — cannot proceed to SME review**
 

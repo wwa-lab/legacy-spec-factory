@@ -124,7 +124,7 @@ while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
-| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `traceability.md` | After module-analyzer is approved |
+| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved |
 | [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved BRD + module-analysis | `spec.yaml`, `spec.md` | After BRD is SME-approved |
 | [`legacy-modernization-decision-writer`](../skills/legacy-modernization-decision-writer/SKILL.md) | spec.yaml entries needing expansion | `05_decisions/<CAPABILITY-SLUG>/` | Optional — when a `DEC-*` becomes large or architecture-governed |
 
@@ -234,7 +234,7 @@ enough module context to start at the module level:
 1.  orchestrator                   → "stage: module context; next: module-context-intake"
 2.  module-context-intake           → 00_context_packages/<MODULE-SLUG>/
 3.  module-analyzer                 → 04_modules/<MODULE-SLUG>/
-4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/
+4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/ (BRD + VAL-* scenario seeds)
 5.  sme-review-facilitator          → 07_sme_reviews/<CAPABILITY-SLUG>/
 6.  spec-writer                     → 05_specs/<CAPABILITY-SLUG>/
 7.  traceability-packager           → 06_traceability_packages/
