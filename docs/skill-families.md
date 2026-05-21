@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 20 skills. They are not equally connected — some are
+Legacy Spec Factory has 21 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -15,12 +15,13 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
+| Module-first context intake | 1 | When external RAG / code-knowledge-graph output or four-view module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Once per legacy capability slice |
 | Layer 2 — synthesis | 3 | After Layer 1 produces evidence |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **20** | |
+| **Total** | **21** | |
 
 ---
 
@@ -38,6 +39,32 @@ ready for the next step?"
 
 **Important**: the orchestrator does NOT execute downstream skills. It tells
 the user (or wrapping agent) which skill to invoke next.
+
+---
+
+## 1A. Module-First Context Intake
+
+**Purpose**: Normalize external RAG / code-knowledge-graph output and
+human-confirmed four-view module context into a traceable package before module
+analysis. This is an alternate entry path for enterprise deployments that
+already have module context; it does not replace evidence authorization or SME
+approval.
+
+| Skill | Reads | Writes | Position |
+| --- | --- | --- | --- |
+| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs |
+
+**Sequence**:
+
+```text
+external RAG bundle + human-confirmed module context
+  └─ module-context-intake
+       └─ module-analyzer (validates / synthesizes approved 4-view module)
+```
+
+**Anti-pattern**: treating RAG candidates as approved `BR-*` rules. Context
+intake preserves candidates and gaps; downstream SME review decides what can be
+promoted.
 
 ---
 
@@ -70,6 +97,9 @@ evidence-intake (gate)
   │    │         └─ module-analyzer (per capability module)
   │    ├─ data-model-analyzer (per data subject)
   │    └─ screen-report-analyzer (per UI/report surface)
+
+module-context-intake (optional module-first entry)
+  └─ module-analyzer (after evidence authorization and contradiction visibility gates)
 ```
 
 **Shared vocabulary**: `OBJ-*`, `EV-*`, `TBD-*` IDs; `observed/inferred/unknown`
@@ -201,14 +231,15 @@ A canonical "first slice" run, in order:
 6.  flow-analyzer × M              → flow-*.md per FLOW-*
 7.  data-model-analyzer × K        → 03_data_models/ per DATA-*
 8.  screen-report-analyzer × J     → screen-report-analysis-*.md per OBJ-*
-9.  module-analyzer × P            → 04_modules/<MODULE-SLUG>/ per MODULE-*
-10. brd-writer                     → 05_brds/<CAPABILITY-SLUG>/
-11. sme-review-facilitator         → 07_sme_reviews/<CAPABILITY-SLUG>/
-12. spec-writer                    → 05_specs/<CAPABILITY-SLUG>/
-13. decision-writer (optional)     → 05_decisions/<CAPABILITY-SLUG>/ (per DEC)
-14. golden-master-test-planner     → 06_quality/<CAPABILITY-SLUG>/
-15. traceability-packager          → 06_traceability_packages/
-16. brd-to-sdd-handoff             → 06_sdd_handoffs/<CAPABILITY-SLUG>/
+9.  module-context-intake (optional module-first route) → 00_context_packages/<MODULE-SLUG>/
+10. module-analyzer × P            → 04_modules/<MODULE-SLUG>/ per MODULE-*
+11. brd-writer                     → 05_brds/<CAPABILITY-SLUG>/
+12. sme-review-facilitator         → 07_sme_reviews/<CAPABILITY-SLUG>/
+13. spec-writer                    → 05_specs/<CAPABILITY-SLUG>/
+14. decision-writer (optional)     → 05_decisions/<CAPABILITY-SLUG>/ (per DEC)
+15. golden-master-test-planner     → 06_quality/<CAPABILITY-SLUG>/
+16. traceability-packager          → 06_traceability_packages/
+17. brd-to-sdd-handoff             → 06_sdd_handoffs/<CAPABILITY-SLUG>/
                                      → Atlas (external)
 ```
 

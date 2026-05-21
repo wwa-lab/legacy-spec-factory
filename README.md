@@ -373,6 +373,7 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
+| `legacy-module-context-intake` | [v0.1.0 scorecard](docs/reviews/legacy-module-context-intake-v0.1.0-scorecard.md) | 9.20 | 9.0 | Repo-ready | New module-first RAG intake skill; runtime copies synced, execution smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
