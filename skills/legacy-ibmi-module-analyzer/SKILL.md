@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-module-analyzer
-description: Synthesize a complete IBM i business module from multiple flow analyses and BAU notes, producing the canonical 4-view module analysis (Operation Flow, System Flow, Program Flow, Data Flow). Use when multiple flows belong to the same business module and you need cross-flow synthesis to feed `legacy-spec-writer`. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
+description: Synthesize a complete IBM i business module from multiple flow analyses, BAU notes, or a ready module-first context package, producing the canonical 4-view module analysis (Operation Flow, System Flow, Program Flow, Data Flow). Use when multiple flows belong to the same business module, or when `legacy-module-context-intake` has normalized external RAG / human four-view context and you need module synthesis to feed `legacy-spec-writer`. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
 ---
 
 <!--
@@ -35,6 +35,10 @@ Accept:
 
 - **Module definition** — module slug, business name, scope statement,
   the list of flows that belong to this module
+- **Ready module context package** from `legacy-module-context-intake`
+  (`00_context_packages/<MODULE-SLUG>/context-index.yaml`) when this is a
+  module-first RAG / human-context run. Treat it as context and evidence map,
+  not as approved module analysis.
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
 - **Approved program analyses** for every program referenced by those flows
@@ -60,7 +64,10 @@ Trigger rules and override protocol live in
 Stop and require clarification if:
 
 - Any in-scope flow lacks an approved `flow-<FLOW-SLUG>.md` → route to
-  `legacy-ibmi-flow-analyzer`
+  `legacy-ibmi-flow-analyzer`, unless a ready
+  `00_context_packages/<MODULE-SLUG>/` package is explicitly being used as the
+  module-first input; in that case, carry missing flow-analysis coverage as
+  `TBD-*` and keep affected claims at `needs_sme_review`
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
   or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
@@ -115,19 +122,24 @@ field-level rules. The summary below is normative for this skill.
 ### Input
 
 - **Required**: module definition (slug + business name + scope statement
-  + list of in-scope flows); approved `flow-<FLOW-SLUG>.md` for every
-  in-scope flow; approved `program-analysis-<OBJ-ID>.md` for every
-  program referenced by those flows; approved
-  `01_inventory/inventory.yaml`; BAU notes from SME covering operational
-  rhythm and manual procedures.
+  + list of in-scope flows); either approved `flow-<FLOW-SLUG>.md` for every
+  in-scope flow or a ready
+  `00_context_packages/<MODULE-SLUG>/context-index.yaml` from
+  `legacy-module-context-intake`; approved `program-analysis-<OBJ-ID>.md`
+  for every program referenced by confirmed flows when available; approved
+  `01_inventory/inventory.yaml` when this is a normal IBM i extraction run;
+  BAU notes from SME covering operational rhythm and manual procedures.
 - **Optional**: architecture diagrams (View 2), data lineage docs
   (View 4), regulatory references.
 - **Input readiness scoring**:
-  - `0-5 blocked`: module scope unresolved, approved upstream analyses
-    missing, triggered data/screen/report analysis missing, evidence links
-    broken, or evidence authorization unresolved.
+  - `0-5 blocked`: module scope unresolved, neither approved upstream flow
+    analyses nor a ready context package is supplied, triggered
+    data/screen/report analysis missing, evidence links broken, or evidence
+    authorization unresolved.
   - `6 minimum_pass`: approved inventory, required flows, required program
-    analyses, module slug/name/scope, and SME BAU notes are present.
+    analyses, module slug/name/scope, and SME BAU notes are present; for
+    module-first runs, a ready context package with all four views can satisfy
+    the initial module context but does not approve missing source coverage.
   - `7-8 usable`: triggered data/screen/report outputs, architecture notes,
     data lineage, and known TBD ledgers are supplied.
   - `9-10 strong`: SME edge cases, exception examples, sample transactions,
@@ -135,12 +147,14 @@ field-level rules. The summary below is normative for this skill.
   - Missing architecture diagrams or regulatory references does not block the
     module analysis unless the module scope specifically depends on them.
 - **Readiness checks**: every in-scope flow is `approved` or
-  `approved_with_non_blocking_tbd`; SME has confirmed the module's
-  business name and boundary; BAU notes are present (View 1 requires
+  `approved_with_non_blocking_tbd`, or the context package status is
+  `ready_for_module_analysis` / `ready_with_warnings`; SME has confirmed the
+  module's business name and boundary; BAU notes are present (View 1 requires
   SME input that code alone cannot supply).
-- **Stop conditions**: any in-scope flow lacks an approved analysis;
-  module boundary is ambiguous (which module owns flow X); no SME has
-  confirmed module identity; BAU notes are absent.
+- **Stop conditions**: any in-scope flow lacks an approved analysis and no
+  ready context package is supplied; module boundary is ambiguous (which
+  module owns flow X); no SME has confirmed module identity; BAU notes are
+  absent.
 
 ### Execution
 
@@ -206,6 +220,9 @@ to the orchestrator.
 
 1. **Confirm Module Scope**
    - Validate the module slug, business name, and scope statement with SME
+   - If `00_context_packages/<MODULE-SLUG>/` is supplied, read
+     `context-index.yaml`, `contradiction-log.md`, and `open-questions.md`
+     first; block if the context package is not ready for module analysis
    - List in-scope flows; check every one has an approved analysis
    - Confirm no in-scope flow actually belongs to a different module
    - Assign `MODULE-<SLUG>-001`

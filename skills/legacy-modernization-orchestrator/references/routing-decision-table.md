@@ -16,6 +16,8 @@ Skill statuses:
 | Current Stage | Desired Outcome | Route To | Skill Status | Note |
 | --- | --- | --- | --- | --- |
 | 0 — Evidence Intake | Any | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 | Register metadata, assign `EV-*` IDs, govern redaction, and produce the manifest. The agent must not inspect unredacted sensitive content. |
+| 0m — Module Context Intake | Normalize RAG/context package | `legacy-module-context-intake` | Implemented v0.1.0 | Use when the user has external RAG output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context. Blocks on unapproved evidence and does not promote RAG candidates to approved rules. |
+| 0n — Module Context Ready | Synthesize or validate module | `legacy-ibmi-module-analyzer` | Implemented v0.1.1 | Use when `00_context_packages/<MODULE-SLUG>/context-index.yaml` is `ready_for_module_analysis` or `ready_with_warnings`; preserve open questions as TBDs. |
 | 1 — Evidence Ready (IBM i) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented | First call after redaction |
 | 1 — Evidence Ready (COBOL) | Start reverse engineering | `legacy-cobol-inventory` | Future | Use manual fallback; produce `inventory.yaml` following the same schema as the IBM i family |
 | 2a — Inventory In Progress | Continue inventory | `legacy-ibmi-inventory` | Implemented | Keep iterating; do not exit until SME decision is recorded |
