@@ -23,7 +23,9 @@ or validating that module model; they are not the only required entry path when
 the module context is already known.
 
 For RAG construction details, see
-[`docs/rag-setup-detail.md`](docs/rag-setup-detail.md).
+[`docs/rag-setup-detail.md`](docs/rag-setup-detail.md). For a concrete
+file-based output example, see
+[`docs/rag-output-sample/`](docs/rag-output-sample/).
 
 ## Visual Overview
 

@@ -485,6 +485,9 @@ Legacy Spec Factory 整理后的目标结构：
 └── open-questions.md
 ```
 
+可参考一个完整但紧凑的 synthetic 输出样例：
+[`docs/rag-output-sample/`](rag-output-sample/)。
+
 ## 7. 冲突和缺口处理
 
 RAG 输出必须显式暴露冲突，不能帮用户悄悄合并。
