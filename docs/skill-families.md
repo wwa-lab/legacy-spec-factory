@@ -15,9 +15,9 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 1 | When external RAG / code-knowledge-graph output or four-view module context enters the repo |
-| Layer 1 — IBM i extraction | 8 | Once per legacy capability slice |
-| Layer 2 — synthesis | 3 | After Layer 1 produces evidence |
+| Module-first context intake | 1 | Default enterprise entry path when external RAG / code-knowledge-graph output or four-view module context enters the repo |
+| Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
+| Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
@@ -46,9 +46,9 @@ the user (or wrapping agent) which skill to invoke next.
 
 **Purpose**: Normalize external RAG / code-knowledge-graph output and
 human-confirmed four-view module context into a traceable package before module
-analysis. This is an alternate entry path for enterprise deployments that
-already have module context; it does not replace evidence authorization or SME
-approval.
+analysis. This is the default enterprise entry path when a team already has
+RAG output, four reviewed flows, or a module-level context package. It does
+not replace evidence authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
@@ -68,12 +68,17 @@ promoted.
 
 ---
 
-## 2. Layer 1 — IBM i Extraction
+## 2. Layer 1 — IBM i Extraction / Selective Verification
 
 **Purpose**: Read raw IBM i artifacts (RPGLE, CLLE, COBOL, DDS, jobs, screens,
 reports) and produce structured, evidence-tagged extraction output. Every
 Layer 1 skill respects the same anti-hallucination rules: code is ground
 truth (tier 1), SME knowledge is tier 2/3, prior wikis are tier 4.
+
+In the module-first operating model, Layer 1 is not the default path for every
+run. Use these skills selectively when RAG output is incomplete, when a human
+flow conflicts with code/ARCAD/dictionary evidence, when the module boundary is
+unclear, or when a high-risk rule needs source-level verification.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
@@ -94,28 +99,28 @@ evidence-intake (gate)
   │    ├─ runtime-evidence-miner (optional but recommended where logs/spool exist)
   │    ├─ program-analyzer (per program)
   │    │    └─ flow-analyzer (per transaction flow)
-  │    │         └─ module-analyzer (per capability module)
   │    ├─ data-model-analyzer (per data subject)
   │    └─ screen-report-analyzer (per UI/report surface)
 
-module-context-intake (optional module-first entry)
-  └─ module-analyzer (after evidence authorization and contradiction visibility gates)
+targeted findings
+  └─ context package / module-analyzer evidence repair
 ```
 
 **Shared vocabulary**: `OBJ-*`, `EV-*`, `TBD-*` IDs; `observed/inferred/unknown`
 classification; sensitivity tagging; SME review gate.
 
-**Anti-pattern**: skipping intake to "save time" — every downstream skill
-will refuse to start without the evidence manifest.
+**Anti-pattern**: running a full source-first excavation when a RAG-backed
+module package is already sufficient. Use Layer 1 to answer specific evidence,
+impact, or contradiction questions.
 
 ---
 
 ## 3. Layer 2 — Synthesis
 
-**Purpose**: Take Layer 1 extracted output (no raw source code) and synthesize
-business-facing artifacts. Layer 2 is platform-agnostic — adding a new
-legacy platform (e.g., COBOL/JCL) means adding a new Layer 1 family but
-reusing Layer 2.
+**Purpose**: Take approved module context and evidence outputs, then synthesize
+business-facing artifacts. Layer 2 is platform-agnostic — adding a new legacy
+platform (e.g., COBOL/JCL) means adding or swapping the verification family,
+while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
@@ -220,28 +225,43 @@ implementation. The test plan becomes the equivalence-test contract.
 
 ## End-to-End Sequence
 
-A canonical "first slice" run, in order:
+### Route A — Module-First Enterprise Path
+
+Use this path when the team has an external RAG bundle, four reviewed flows, or
+enough module context to start at the module level:
 
 ```
-1.  orchestrator                   → "stage: scope; next: evidence-intake"
+1.  orchestrator                   → "stage: module context; next: module-context-intake"
+2.  module-context-intake           → 00_context_packages/<MODULE-SLUG>/
+3.  module-analyzer                 → 04_modules/<MODULE-SLUG>/
+4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/
+5.  sme-review-facilitator          → 07_sme_reviews/<CAPABILITY-SLUG>/
+6.  spec-writer                     → 05_specs/<CAPABILITY-SLUG>/
+7.  traceability-packager           → 06_traceability_packages/
+8.  brd-to-sdd-handoff              → 06_sdd_handoffs/<CAPABILITY-SLUG>/
+                                      → Atlas (external)
+```
+
+### Route B — Source-First Discovery / Verification Path
+
+Use this path when the module context is not known yet, or when Route A finds a
+gap, contradiction, high-risk rule, or missing source/dictionary/runtime
+evidence:
+
+```
+1.  orchestrator                   → "stage: scope/evidence; next: evidence-intake"
 2.  evidence-intake (gate)         → evidence/manifest.yaml approved
 3.  inventory                      → 01_inventory/ approved by SME
-4.  runtime-evidence-miner         → 07_runtime-evidence/runtime-evidence.jsonl (optional where logs/spool exist)
-5.  program-analyzer × N           → program-analysis-*.md per OBJ-*
-6.  flow-analyzer × M              → flow-*.md per FLOW-*
-7.  data-model-analyzer × K        → 03_data_models/ per DATA-*
-8.  screen-report-analyzer × J     → screen-report-analysis-*.md per OBJ-*
-9.  module-context-intake (optional module-first route) → 00_context_packages/<MODULE-SLUG>/
-10. module-analyzer × P            → 04_modules/<MODULE-SLUG>/ per MODULE-*
-11. brd-writer                     → 05_brds/<CAPABILITY-SLUG>/
-12. sme-review-facilitator         → 07_sme_reviews/<CAPABILITY-SLUG>/
-13. spec-writer                    → 05_specs/<CAPABILITY-SLUG>/
-14. decision-writer (optional)     → 05_decisions/<CAPABILITY-SLUG>/ (per DEC)
-15. golden-master-test-planner     → 06_quality/<CAPABILITY-SLUG>/
-16. traceability-packager          → 06_traceability_packages/
-17. brd-to-sdd-handoff             → 06_sdd_handoffs/<CAPABILITY-SLUG>/
-                                     → Atlas (external)
+4.  program-analyzer × targeted N   → program-analysis-*.md for selected OBJ-*
+5.  flow-analyzer × targeted M      → flow-*.md for selected FLOW-*
+6.  data-model-analyzer × targeted K → 03_data_models/ for selected data subjects
+7.  screen-report-analyzer × targeted J → screen-report-analysis-*.md
+8.  runtime-evidence-miner          → 07_runtime-evidence/runtime-evidence.jsonl where logs/spool exist
+9.  return to Route A               → update context package / module / BRD
 ```
+
+Do not run Route B as a full exhaustive prerequisite when Route A already has
+enough evidence to proceed. It exists to discover, repair, and verify.
 
 Governance skills (`step-contract`, `step-validator`, `runtime-matrix-tester`,
 and `legacy-html-exporter`) are called as needed by the orchestrator, skill
