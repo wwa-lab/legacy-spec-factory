@@ -22,6 +22,9 @@ evidence. Program and flow analysis remain valid starting points for building
 or validating that module model; they are not the only required entry path when
 the module context is already known.
 
+For RAG construction details, see
+[`docs/rag-setup-detail.md`](docs/rag-setup-detail.md).
+
 ## Visual Overview
 
 ![Legacy Spec Factory x Atlas Engineering Delivery Hub](docs/assets/legacy-spec-factory-atlas-overview-v2.png)
