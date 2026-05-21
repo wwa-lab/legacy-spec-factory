@@ -1,7 +1,7 @@
 ---
 skill: legacy-module-context-intake
 scorecard_version: v0.1.0
-static_score: 9.20
+static_score: 9.33
 decision: repo-ready
 status: current
 last_verified: 2026-05-21
@@ -44,17 +44,17 @@ yet executed in Codex, Claude Code, and OpenCode smoke scenarios.
 | Category | Weight | Score | Weighted |
 | --- | ---: | ---: | ---: |
 | Purpose and trigger clarity | 10% | 9.5 | 0.95 |
-| Workflow completeness | 12% | 9.2 | 1.10 |
+| Workflow completeness | 12% | 9.4 | 1.13 |
 | IBM i / domain correctness | 14% | 9.1 | 1.27 |
-| Evidence and anti-hallucination | 12% | 9.4 | 1.13 |
-| Output contract | 10% | 9.3 | 0.93 |
-| Progressive disclosure | 8% | 9.2 | 0.74 |
-| Runtime portability | 10% | 9.0 | 0.90 |
-| Reviewability and testability | 10% | 9.1 | 0.91 |
-| Engineering handoff value | 8% | 9.2 | 0.74 |
-| Maintainability | 6% | 9.0 | 0.54 |
+| Evidence and anti-hallucination | 12% | 9.5 | 1.14 |
+| Output contract | 10% | 9.4 | 0.94 |
+| Progressive disclosure | 8% | 9.3 | 0.74 |
+| Runtime portability | 10% | 9.1 | 0.91 |
+| Reviewability and testability | 10% | 9.4 | 0.94 |
+| Engineering handoff value | 8% | 9.3 | 0.74 |
+| Maintainability | 6% | 9.3 | 0.56 |
 
-Final score before cap: **9.20 / 10**
+Final score before cap: **9.33 / 10**
 
 Final score after cap: **9.0 / 10**
 
@@ -76,6 +76,11 @@ Repo-ready, not field-pilot ready.
   refuses to promote RAG candidates into approved `BR-*`.
 - Concrete output contract for `00_context_packages/<MODULE-SLUG>/`, including
   provenance, contradiction visibility, and open-question carry-forward.
+- Frozen positive example package covers the synthetic CREDIT-CHECK RAG bundle
+  and demonstrates all eight required files.
+- Bundled stdlib validator checks required files, status vocabulary,
+  view-to-evidence-map linkage, contradiction completeness, and candidate
+  promotion status without external dependencies.
 - Good progressive disclosure: the main skill stays procedural while
   field-level details live in `references/output-contract.md`.
 - Portable canonical layout under `skills/` with no runtime-specific
@@ -83,9 +88,9 @@ Repo-ready, not field-pilot ready.
 
 ## Improvement Notes
 
-- Add a frozen positive example package after the first runtime smoke pass.
-- Consider a small parser/checker script if context package validation becomes
-  repetitive across field pilots.
+- Runtime smoke remains the main blocker for 9.5+.
+- Future hardening can add a negative fixture package if field pilots reveal
+  repeated blocked-package review patterns.
 
 ## Runtime Smoke Tests
 

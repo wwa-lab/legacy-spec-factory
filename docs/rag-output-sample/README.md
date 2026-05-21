@@ -24,8 +24,8 @@ rag_runs/CREDIT-CHECK/RAG-20260521-001/
 
 ## Intended Consumer
 
-Legacy Spec Factory should ingest this package as context for a module-first
-run and normalize it into:
+`legacy-module-context-intake` should ingest this package as context for a
+module-first run and normalize it into:
 
 ```text
 00_context_packages/CREDIT-CHECK/

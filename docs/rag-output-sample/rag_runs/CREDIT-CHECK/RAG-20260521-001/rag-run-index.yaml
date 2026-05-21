@@ -74,7 +74,7 @@ outputs:
 
 handoff:
   target_repo_path: 00_context_packages/CREDIT-CHECK/
-  next_step: legacy-ibmi-module-analyzer
+  next_step: legacy-module-context-intake
   recommended_brd_mode: module_first_rag_hydrated
   required_downstream_review:
     - confirm_flow_against_sme

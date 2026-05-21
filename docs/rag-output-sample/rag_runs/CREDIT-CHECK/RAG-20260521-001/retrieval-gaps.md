@@ -21,8 +21,8 @@ RAG must expose missing context explicitly. These gaps should become
 ## Recommended Next Prompt
 
 ```text
-Use legacy-ibmi-module-analyzer with the CREDIT-CHECK RAG output package.
-Treat source snippets and runtime observations as evidence context only.
-Create or update the four module flows, preserve retrieval gaps as open
-questions, and do not promote candidate business rules without SME review.
+Use legacy-module-context-intake with the CREDIT-CHECK RAG output package.
+Normalize it into 00_context_packages/CREDIT-CHECK/, preserve retrieval gaps
+as open questions, and do not promote candidate business rules without SME
+review.
 ```

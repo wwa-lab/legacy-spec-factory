@@ -578,8 +578,10 @@ status: needs_review
 
 目标：
 
-- RAG bundle 进入 `00_context_packages/<MODULE>/`。
-- BRD writer 可以基于 module-first + RAG evidence 生成 BRD Package。
+- `legacy-module-context-intake` 将 RAG bundle 归一化进入
+  `00_context_packages/<MODULE>/`。
+- module analyzer / BRD writer 可以基于 module-first + RAG evidence 生成
+  reviewable downstream package。
 
 完成标准：
 
