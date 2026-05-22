@@ -14,9 +14,11 @@ Before initiating a review session, verify:
    - If no SME owner: BLOCK, emit `blocked-findings.yaml`, stop
 
 2. **Artifact Status**
-   - Artifact must be at `approved_with_non_blocking_tbd` or higher
-   - If artifact is `draft` or `in_review`: ROUTE BACK to generating skill
-   - If artifact is below required status: STOP
+   - Artifact may be `in_review`, `approved`, or
+     `approved_with_non_blocking_tbd` when stable IDs and evidence links are
+     present
+   - If artifact is `draft` or lacks stable IDs / evidence links: ROUTE BACK
+     to generating skill
 
 3. **Evidence Manifest Complete**
    - All linked `EV-*` IDs in the artifact must appear in evidence manifest
@@ -120,14 +122,19 @@ inserting opinion or inference.
 
 ---
 
-### Phase 3: SME Interview (30-90 minutes, varies by scope)
+### Phase 3: Chat-Driven SME Interview (30-90 minutes, varies by scope)
 
 **Goal:** Collect SME decisions, record verbatim answers, capture decision
 outcomes.
 
-**Format Options:**
-- **Synchronous**: Live meeting (Zoom, conference call, in-person)
-- **Asynchronous**: SME emails answers; facilitator records in decision log
+**Default Format:**
+- **Conversation Review Mode**: SME answers guided questions directly in the
+  current chat; facilitator records decisions and writes them back to artifacts.
+
+**Optional Export Formats:**
+- **Synchronous**: Live meeting with transcript or facilitator notes.
+- **Asynchronous**: Email/checklist only when the user explicitly wants an
+  external review channel.
 
 **Steps:**
 
@@ -136,11 +143,16 @@ outcomes.
    - Explain decision log format (how answers will be recorded)
    - Confirm SME understands they will be asked to sign off on decisions
 
-2. **Present Each Question in Order**
+2. **Present Questions in Batches**
+
+   Default to 3-7 questions per chat batch. Sort by blocking risk:
+   blocking `TBD-*`, contradictions, low-confidence `BR-*`, high-risk rules,
+   `VAL-*` boundary / exception scenarios, then remaining behavior checks.
 
    For each question:
-   - Read the question and context aloud (or have SME read it)
-   - Ask SME to provide their answer
+   - Show target ID, question, evidence IDs, confidence, and AI suggestion
+   - Offer compact choices plus optional comment
+   - Ask SME to answer in chat
    - Record verbatim response
    - Ask clarifying questions if needed (but keep SME's core answer intact)
 
@@ -178,12 +190,15 @@ outcomes.
    - Ask SME if they want to revisit any decision
 
 **Output:** Decision log ready for transcription into `sme-decision-log.yaml`
+and, when reviewing a BRD Package, `05_brds/<CAPABILITY-SLUG>/review-decision.yaml`
 
 **Quality Checks:**
 - [ ] Every question in pack has an SME answer (even if deferred)
 - [ ] Every "confirmed" or "rejected" decision has SME name and date
 - [ ] Every "deferred" decision has owner and target date
 - [ ] SME answers are recorded verbatim (not paraphrased or edited)
+- [ ] Chat shorthand has been parsed into structured decisions and confirmed
+      when ambiguous
 - [ ] No invented facts or corrections by facilitator
 
 ---

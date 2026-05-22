@@ -226,6 +226,53 @@ system. Batch is simpler but less responsive.
 
 ---
 
+### 6. Validation Scenario Seeds (`VAL-*`)
+
+**Purpose:** Confirm whether BRD-stage validation scenario seeds are useful,
+accurate, and ready to feed acceptance criteria, golden master planning, or SOW
+scope discussion.
+
+**Characteristics:**
+- Item represents a review scenario, not a formal `TC-*` test case
+- Scenario links to existing `BR-*`, `BEH-*`, and `EV-*`
+- Scenario may be `ready_for_spec`, `needs_sme_review`, or
+  `needs_runtime_evidence`
+
+**Questions to Ask:**
+- "Is this a valid business scenario for reviewing the BRD?"
+- "Should this become an acceptance-criteria candidate, golden-master
+  candidate, SOW scope note, or be deferred?"
+- "What evidence is missing before this can become a formal test case?"
+
+**SME Outcomes:**
+- `confirmed`: Scenario is valid and can feed downstream planning
+- `rejected`: Scenario is not meaningful for this capability
+- `needs_more_evidence`: Scenario is valid but needs runtime/sample evidence
+- `deferred`: Scenario depends on another owner or later scope decision
+- `split_into_follow_ups`: Scenario should be split into smaller cases
+
+**Recording in Question Pack:**
+```markdown
+### VAL-CREDIT-004: Order Amount Equals Credit Limit
+
+**Scenario Summary:**
+> Confirm the inclusive/exclusive boundary for the credit limit comparison.
+
+**Related BR/BEH:** `BR-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-001`
+**Evidence:** `EV-CREDIT-LIMIT-001`
+**AI Suggested Decision:** `needs_sme_review`
+
+**Question for SME:**
+> If order amount equals credit limit, is the order allowed, rejected, or
+> conditionally allowed?
+
+**SME Answer:**
+
+(Space for response)
+```
+
+---
+
 ### 6. Evidence Strength Assessment
 
 **Purpose:** Validate that evidence strength assessment is accurate before

@@ -21,7 +21,8 @@ specification phase.
 3. Is the **scope and boundary** correct?
 4. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
 5. Are the **TBDs** correctly categorized and achievable?
-6. Is the BRD ready for **spec-writing** without re-interrogating you?
+6. Do the **validation scenario seeds** cover the important business cases?
+7. Is the BRD ready for **spec-writing** without re-interrogating you?
 
 ---
 
@@ -114,6 +115,36 @@ specification phase.
 
 ```
 <Space for SME to list missing business context>
+```
+
+---
+
+## Validation Scenario Seeds
+
+### Do the `VAL-*` scenarios cover the important business cases for this BRD?
+
+- [ ] **Yes** — happy path, exception, boundary, and manual-review scenarios are
+      sufficient for spec-writing and downstream test planning
+- [ ] **Partial** — coverage is directionally right, but scenarios need
+      additions or clarification (see notes)
+- [ ] **No** — scenario coverage misses material business behavior
+
+**Reviewer Notes:**
+
+```
+<Space for SME feedback on validation scenario coverage>
+```
+
+### Are any scenarios overstated as formal tests?
+
+- [ ] **No** — scenarios are business validation seeds only
+- [ ] **Yes** — remove or rewrite formal acceptance criteria, formal test case
+      language, target implementation detail, or invented expected output
+
+**Reviewer Notes:**
+
+```
+<Space for SME feedback on scenario boundaries>
 ```
 
 ---

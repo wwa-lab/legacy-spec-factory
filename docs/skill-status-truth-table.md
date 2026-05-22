@@ -8,7 +8,7 @@ The table is built from scorecard frontmatter under `docs/reviews/`. Run
 `scripts/verify-skill-claims.py` to detect drift between this table,
 README, runtime-matrix, and scorecard frontmatter.
 
-Last regenerated: 2026-05-16
+Last regenerated: 2026-05-22
 
 ## How to Read This Table
 
@@ -31,6 +31,7 @@ Last regenerated: 2026-05-16
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
 | `legacy-modernization-orchestrator` | v0.2.0 | 9.34 | repo-ready | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) |
+| `legacy-module-context-intake` | v0.1.0 | 9.33 | repo-ready | synced | synced | synced | 2026-05-21 | [link](reviews/legacy-module-context-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
@@ -39,10 +40,10 @@ Last regenerated: 2026-05-16
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.1.1 | 9.61 | repo-ready (provisional) | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.1-scorecard.md) |
 | `legacy-ibmi-module-analyzer` | v0.1.1 | 9.27 | repo-ready | executed | executed | executed | 2026-05-14 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.1-scorecard.md) |
-| `legacy-brd-writer` | v0.1.1 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-brd-writer-v0.1.1-scorecard.md) |
+| `legacy-brd-writer` | v0.1.2 | 9.36 | repo-ready | synced | synced | synced | 2026-05-22 | [link](reviews/legacy-brd-writer-v0.1.2-scorecard.md) |
 | `legacy-spec-writer` | v0.1.0 | 9.24 | repo-ready | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-spec-writer-v0.1.0-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |
-| `legacy-sme-review-facilitator` | v0.1.0 | 9.55 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-sme-review-facilitator-v0.1.0-scorecard.md) |
+| `legacy-sme-review-facilitator` | v0.1.1 | 9.39 | repo-ready | synced | synced | synced | 2026-05-22 | [link](reviews/legacy-sme-review-facilitator-v0.1.1-scorecard.md) |
 | `legacy-brd-to-sdd-handoff` | v0.1.0 | 9.63 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) |
 | `legacy-traceability-packager` | v0.1.1 | 9.51 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-traceability-packager-v0.1.1-scorecard.md) |
 | `legacy-runtime-matrix-tester` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) |
@@ -56,9 +57,9 @@ Last regenerated: 2026-05-16
 | Decision | Count |
 | --- | ---: |
 | `field-pilot ready` (all three runtimes `passed`) | 10 |
-| `repo-ready` (runtime cap or partial coverage) | 10 |
+| `repo-ready` (runtime cap or partial coverage) | 11 |
 
-**20 skills total** in canonical source; **9 superseded scorecards** kept
+**21 skills total** in canonical source; **9 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

@@ -107,7 +107,20 @@ confirm whether each is actually a business rule (vs. implementation artifact).
 
 ---
 
-## 4. Open Questions & Gaps (TBDs)
+## 4. Validation Scenario Summary
+
+See `validation-scenarios.md` for SME-reviewable `VAL-*` scenario seeds.
+These scenarios help validate BRD scope and coverage, but they are not formal
+`AC-*` acceptance criteria or formal `TC-*` test cases.
+
+| Scenario ID | Scenario Type | Related BR/BEH | Evidence | Readiness | SME Focus |
+| --- | --- | --- | --- | --- | --- |
+| `VAL-<CAPABILITY-SLUG>-001` | `happy_path` | `BR-<CAPABILITY-SLUG>-001`, `BEH-<CAPABILITY-SLUG>-001` | `EV-<CAPABILITY-SLUG>-001` | `ready_for_spec` | Confirm the business outcome and coverage |
+| `VAL-<CAPABILITY-SLUG>-002` | `exception` | `BR-<CAPABILITY-SLUG>-002` | `EV-<CAPABILITY-SLUG>-004` | `needs_sme_review` | Confirm policy interpretation |
+
+---
+
+## 5. Open Questions & Gaps (TBDs)
 
 Questions that remain unresolved and must be answered before the next phase
 (spec-writing).
@@ -134,7 +147,7 @@ Questions that remain unresolved and must be answered before the next phase
 
 ---
 
-## 5. Evidence Index
+## 6. Evidence Index
 
 Summary of all evidence collected for this capability.
 
@@ -147,13 +160,14 @@ Summary of all evidence collected for this capability.
 
 ---
 
-## 6. Traceability Summary
+## 7. Traceability Summary
 
 See `traceability.md` for the full cross-reference table.
 
 **Quick Summary:**
 - X observed behaviors documented
 - Y inferred business rules identified (all `needs_sme_review`)
+- V validation scenario seeds drafted (no formal `AC-*` or `TC-*`)
 - Z open questions (A blocking, B non-blocking)
 - All claims trace to supporting evidence
 

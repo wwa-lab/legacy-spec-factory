@@ -1,6 +1,6 @@
 ---
 name: legacy-brd-writer
-description: Produce evidence-backed Business Requirements Document from approved module analysis, making inferred rules, observed behaviors, and open gaps visible to stakeholders. Business-facing, SME-reviewable artifact positioned between reverse engineering and technical spec-writing. Does not produce acceptance criteria or modernization decisions (legacy-spec-writer's job). Layer 1.5 business-synthesis skill.
+description: Use when an approved module analysis needs an evidence-backed BRD package with SME-reviewable business rules, observed behaviors, open gaps, traceability, and BRD-stage validation scenario seeds before spec-writing.
 ---
 
 <!--
@@ -18,10 +18,11 @@ Retain this notice in substantial copies or derived versions.
 
 ## Purpose
 
-Synthesize one **Business Requirements Document (BRD)** from an approved module
-analysis, making the distinction between observed behaviors, inferred rules, SME
-decisions, and open gaps **visible and reviewable** by non-technical stakeholders
-before technical spec-writing.
+Synthesize one **Business Requirements Document (BRD) Package** from an
+approved module analysis, making the distinction between observed behaviors,
+inferred rules, SME decisions, open gaps, and BRD-stage validation scenarios
+**visible and reviewable** by non-technical stakeholders before technical
+spec-writing.
 
 The BRD is a **business synthesis layer**, not a technical specification. It shows:
 
@@ -30,10 +31,14 @@ The BRD is a **business synthesis layer**, not a technical specification. It sho
   `needs_sme_review` or `draft`)
 - What questions remain **unresolved** (`TBD-*`)
 - **How confident** each claim is, derived from linked evidence records
+- Which **business validation scenarios** (`VAL-*`) SMEs and downstream teams
+  should use to review the BRD scope
 
 The BRD consumes module analysis, flow analyses, and program analyses. It does
-**not** produce acceptance criteria, modernization decisions, or target-platform
-choices — those are the responsibility of `legacy-spec-writer`.
+**not** produce formal acceptance criteria, formal `TC-*` test cases,
+modernization decisions, or target-platform choices. `VAL-*` entries are
+scenario seeds only; `AC-*` belongs to `legacy-spec-writer`, and formal `TC-*`
+belongs to `legacy-golden-master-test-planner`.
 
 ## When to Use
 
@@ -43,6 +48,9 @@ Trigger on any of these signals:
   stakeholders need a **business-readable artifact** for scope review
 - SME owner wants to **validate business scope and rules** before forwarding to
   `legacy-spec-writer`
+- SME / BA / vendor stakeholders need **test-aware scenario seeds** to discuss
+  coverage, SOW scope, and missing runtime evidence without creating formal
+  test cases yet
 - You are **orchestrating a discovery phase** and need a non-technical bridge
   artifact between reverse engineering and forward SDLC
 - Legal, compliance, or product stakeholders need **clear visibility** into what
@@ -63,8 +71,9 @@ Do not trigger when:
   back to `legacy-ibmi-module-analyzer`)
 
 This skill is a **business synthesis layer**. If you find yourself writing
-acceptance criteria, minting `DEC-*` ids, or specifying target architecture,
-you are in the wrong skill. Route to `legacy-spec-writer`.
+formal acceptance criteria, minting formal `TC-*` test cases, minting `DEC-*`
+ids, or specifying target architecture, you are in the wrong skill. Route to
+`legacy-spec-writer` or `legacy-golden-master-test-planner` as appropriate.
 
 ## Role
 
@@ -81,8 +90,12 @@ You must:
   recorded in the evidence index per
   `docs/evidence-and-knowledge-taxonomy.md`
 - surface unresolved items (`TBD-*`) with category and resolver
-- refuse to produce acceptance criteria, modernization decisions, or platform
-  choices — those belong in `legacy-spec-writer`
+- draft BRD-stage validation scenario seeds (`VAL-*`) that map to existing
+  `BEH-*`, `BR-*`, and `EV-*` references
+- refuse to produce formal acceptance criteria, modernization decisions, or
+  platform choices — those belong in `legacy-spec-writer`
+- refuse to produce formal `TC-*` test cases or invented exact expected outputs
+  — those belong in `legacy-golden-master-test-planner` after spec approval
 - require SME sign-off before the BRD leaves `in_review` status
 
 You must not:
@@ -92,7 +105,8 @@ You must not:
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
   recorded as review input, and `legacy-spec-writer` performs the final rule
   promotion in `spec.yaml`
-- generate acceptance criteria (spec-writer's job)
+- generate formal acceptance criteria (spec-writer's job)
+- generate formal `TC-*` test cases or exact expected outputs
 - include target platform or modernization decisions
 - collapse observed behavior into inferred rules without marking the
   distinction
@@ -128,13 +142,15 @@ Produce a directory `05_brds/<CAPABILITY-SLUG>/`:
 05_brds/<CAPABILITY-SLUG>/
 ├── brd.md                    ← canonical business requirements document
 ├── brd-review.md            ← SME review checklist and sign-off page
-└── traceability.md          ← cross-reference report (BRD req → EV/BEH/TBD)
+├── validation-scenarios.md  ← SME-reviewable VAL-* scenario seeds
+└── traceability.md          ← cross-reference report (BRD req → EV/BEH/VAL/TBD)
 ```
 
 Use:
 
-- `templates/brd.md`, `templates/brd-review.md`, `templates/traceability.md` as
-  starting structure
+- `templates/brd.md`, `templates/brd-review.md`,
+  `templates/validation-scenarios.md`, `templates/traceability.md` as starting
+  structure
 - `references/synthesis-rules.md` for how to extract behaviors and aggregate
   rules
 - `references/anti-hallucination.md` for what the BRD must refuse to invent
@@ -142,7 +158,7 @@ Use:
 Follow:
 
 - `../../docs/id-conventions.md` for stable IDs (`CAP-*`, `BEH-*`, `BR-*`,
-  `TBD-*`, etc.)
+  `TBD-*`, `VAL-*`, etc.)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for knowledge-type /
   evidence-strength distinction
   - Use only these evidence strength values in evidence records:
@@ -197,7 +213,7 @@ The summary below is normative for this skill.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (7 ordered steps).
+- **Procedure**: see the Workflow section below (8 ordered steps).
 - **Allowed inference**: lifting `BEH-*` from flow control flow, program branch
   points, and error handling (factual statements about what the legacy system
   does); aggregating `BR-*` seeds from module overview and cross-checking
@@ -205,7 +221,8 @@ The summary below is normative for this skill.
   strength; surfacing contradictions as TBDs.
 - **Forbidden assumptions**: inventing business rules beyond module BR-* seeds +
   SME confirmation; promoting a BR-* seed to `approved` status (only
-  `legacy-spec-writer` may do that); generating acceptance criteria;
+  `legacy-spec-writer` may do that); generating formal acceptance criteria;
+  generating formal `TC-*` test cases or invented exact expected outputs;
   specifying target platform or modernization decisions; reading raw IBM i
   source code (consume upstream analyses only); treating weak inferences as
   facts.
@@ -217,11 +234,12 @@ The summary below is normative for this skill.
 ### Output
 
 - **Canonical directory**: `05_brds/<CAPABILITY-SLUG>/` containing `brd.md`,
-  `brd-review.md`, `traceability.md`.
+  `brd-review.md`, `validation-scenarios.md`, `traceability.md`.
 - **Required sections/fields** (see `templates/brd.md`): capability overview,
   scope statement, observed behaviors, inferred business rules (with status),
-  open questions (TBDs), evidence index.
-- **Required IDs**: mints `BRD-*` for the document and `TBD-*` for open
+  validation scenario summary, open questions (TBDs), evidence index.
+- **Required IDs**: mints `BRD-*` for the document, `VAL-*` for BRD-stage
+  validation scenario seeds, and `TBD-*` for open
   questions. Reuses `CAP-*`, `OBJ-*`, `EV-*`, `BEH-*`, `BR-*` seeds,
   `MODULE-*`, `FLOW-*` from upstream. If a new candidate rule appears during
   BRD review and has no upstream `BR-*`, record it as a `TBD-*` requiring
@@ -241,7 +259,7 @@ What can be checked by a script, schema, or deterministic linter:
 
 - required files exist at expected paths
 - all referenced IDs resolve (no dangling `EV-*`, `BEH-*`, `BR-*`, `CAP-*`,
-  `TBD-*`)
+  `VAL-*`, `TBD-*`)
 - ID prefixes match `docs/id-conventions.md`
 - every claim has at least one linked evidence item (`EV-*` or `BEH-*`)
 - no `sensitivity: unknown` in evidence references
@@ -249,6 +267,7 @@ What can be checked by a script, schema, or deterministic linter:
   `traceability.md`)
 - BRD does not include acceptance criteria, modernization decisions, or target
   platform details
+- `validation-scenarios.md` does not mint `AC-*` or `TC-*`
 
 Mechanical validation **must** be reproducible. If it depends on judgment, move
 it to AI semantic review.
@@ -269,6 +288,8 @@ upstream evidence:
 - no invented IBM i facts (object names, fields, programs, jobs)
 - no scope creep into other capabilities
 - no acceptance criteria or platform decisions hidden in prose
+- validation scenarios map to existing `BEH-*`, `BR-*`, and `EV-*` references
+  without introducing new rules
 - TBDs are explicit, not hidden inside prose
 
 AI semantic review **must** call out uncertainty rather than smooth it over.
@@ -282,6 +303,8 @@ What only a domain expert can decide:
   artifacts?
 - is the capability scope and boundary correct?
 - are there unspoken business rules the code doesn't show?
+- do the `VAL-*` scenario seeds cover the important happy path, exception,
+  boundary, and manual review cases for this BRD?
 - are TBDs blocking or non-blocking for the next step (spec-writer)?
 - is the BRD safe to promote to `approved` and forward to spec-writer?
 
@@ -323,21 +346,37 @@ decision.
      - Reference ≥1 `EV-*` that supports it
      - Be marked `knowledge_type: inferred_business_rule`
 
-5. **Surface Open Questions (TBD-*)**
+5. **Draft Validation Scenario Seeds (VAL-*)**
+   - Convert approved observed behaviors and inferred rule candidates into
+     SME-reviewable business validation scenarios
+   - Each `VAL-*` must map to at least one existing `BEH-*` or `BR-*` and at
+     least one `EV-*`
+   - Cover happy path, exception, boundary, and manual-review cases where the
+     evidence supports them
+   - Mark readiness as `ready_for_spec`, `needs_sme_review`, or
+     `needs_runtime_evidence`
+   - Do not invent exact expected outputs, formal `AC-*`, formal `TC-*`, target
+     system behavior, or new business rules
+   - If a useful scenario cannot be drafted safely, put it in Deferred
+     Scenarios with the evidence gap and resolver
+
+6. **Surface Open Questions (TBD-*)**
    - Contradictory evidence → `TBD-*` with category `contradictory_evidence`
    - Missing context → `TBD-*` with category `sme_questions`
    - Ambiguous scope → `TBD-*` with category `sme_questions`
    - Each TBD must name a resolver and indicate whether it blocks spec-writing
 
-6. **Build Traceability**
+7. **Build Traceability**
    - Generate `traceability.md` cross-reference table
    - Every BEH-* and BR-* must have ≥1 supporting EV-*
+   - Every VAL-* must map back to BEH-* or BR-* and supporting EV-*
    - Every TBD must be listed with category and resolver
    - Verify complete coverage (no claim is missing from the table)
 
-7. **Prepare for SME Approval**
+8. **Prepare for SME Approval**
    - Mark `status: in_review`
    - Generate `brd-review.md` checklist
+   - Generate `validation-scenarios.md` for SME scenario coverage review
    - Capability owner SME approves the BRD; BRD is then `status: approved`
    - Keep `BR-*` review status as `needs_sme_review` in the BRD even when SME
      notes confirm it for later spec promotion
@@ -360,7 +399,7 @@ history:
     skill: legacy-brd-writer
     capability_id: <CAP-* from current_focus>
     stage_after: <UNCHANGED stage_id>
-    artifact: <path to brd.md, e.g. 08_business-understanding/<CAP-*>/brd.md>
+    artifact: <path to brd.md, e.g. 05_brds/<CAPABILITY-SLUG>/brd.md>
     note: "BRD authored for <CAP-*> — status: draft | in_review | approved"
 ```
 
@@ -392,7 +431,9 @@ grounded in:
 - **Invent business rules** beyond what module BR-* seeds suggest + SME
   confirmation
 - **Promote a BR-* seed to `approved`** (only `legacy-spec-writer` may do that)
-- **Generate acceptance criteria** (spec-writer's job)
+- **Generate formal acceptance criteria** (spec-writer's job)
+- **Generate formal `TC-*` test cases or invented expected outputs**
+  (golden-master planner's job after spec approval and runtime evidence review)
 - **Include target platform or modernization decisions** (spec-writer's job)
 - **Claim behavior from field names or comments alone** (factual evidence
   required)
@@ -408,15 +449,21 @@ grounded in:
   a resolver
 - If a field's meaning is unclear → create a `TBD-*` on semantics; do not guess
 - If scope is contested → create a `TBD-*` on boundary; let SME decide
+- If a test-like scenario needs runtime data or expected output evidence →
+  create a `VAL-*` with `readiness: needs_runtime_evidence` or defer it; do not
+  invent the expected result
 
 ## Quality Checklist
 
 Before marking the BRD `approved`, confirm:
 
-- [ ] All three files exist at correct paths (`brd.md`, `brd-review.md`,
-      `traceability.md`)
+- [ ] All four files exist at correct paths (`brd.md`, `brd-review.md`,
+      `validation-scenarios.md`, `traceability.md`)
 - [ ] Every claim in `brd.md` appears in `traceability.md`
 - [ ] Every `BEH-*` and `BR-*` links to ≥1 `EV-*`
+- [ ] Every `VAL-*` maps to existing `BEH-*` or `BR-*` and ≥1 `EV-*`
+- [ ] `validation-scenarios.md` contains no formal `AC-*`, formal `TC-*`,
+      target architecture, or invented exact expected output
 - [ ] No invented IBM i facts; all object names come from upstream artifacts
 - [ ] Knowledge type (observed_behavior / inferred_business_rule) is marked for
       every claim
@@ -434,8 +481,12 @@ Before marking the BRD `approved`, confirm:
   BR-* seeds and capability seeds. BRD consumes this output.
 - **`legacy-spec-writer`** (downstream): consumes module analysis directly OR
   module + approved BRD. If BRD is provided, spec-writer uses it as the
-  business context layer for rule promotion. BRD is an optional artifact in
-  the workflow.
+  business context layer for rule promotion and acceptance criteria. BRD is an
+  optional artifact in the workflow.
+- **`legacy-golden-master-test-planner`** (downstream verification): consumes
+  approved spec acceptance criteria, runtime evidence, and approved scenario
+  context to mint formal `TC-*` golden master cases. BRD `VAL-*` entries are
+  planning seeds, not final test cases.
 - **`legacy-step-contract`** (parallel): defines the Step Contract shape that
   this skill conforms to.
 - **`legacy-modernization-orchestrator`** (meta): may route to BRD-writer as an
@@ -467,6 +518,13 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.2 (2026-05-21): BRD-stage validation scenario seeds
+  - Added `validation-scenarios.md` as a fourth BRD Package artifact
+  - Introduced `VAL-*` scenario seeds for SME review, SOW discussion, and
+    downstream acceptance/golden-master planning
+  - Kept formal `AC-*` ownership with `legacy-spec-writer` and formal `TC-*`
+    ownership with `legacy-golden-master-test-planner`
 
 - v0.1.1 (2026-05-16): Runtime smoke test hardening
   - Clarified BRD writer reuses upstream `BR-*` seeds only; new candidate

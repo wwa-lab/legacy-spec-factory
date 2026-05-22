@@ -100,6 +100,7 @@ Step 0.b resolves the project root before this table is consulted.
 | --- | --- | --- |
 | `05_specs/CAP-*/spec.yaml` | `capability_id` + `spec.yaml.status` | `8a` / `8b` / `8c` |
 | `04_modules/<MODULE>/module-overview.md` | `module_slug` + `CAP-*` seeds + view count | `3e` / `3f` |
+| `00_context_packages/<MODULE>/context-index.yaml` | `module_slug` + intake status + RAG run IDs | `0m` / `0n` |
 | `03_flows/<MODULE>/flow-*.md` | `module_slug` + flow count + `status` | `3c` / `3d` |
 | `02_programs/<MODULE>/<OBJ>/program-analysis.md` | `module_slug` + per-program coverage | `3a` / `3b` |
 | `01_inventory/inventory.yaml` | `module_slug` + `sme_review.decision` + `coverage_gaps[]` | `2a` / `2b` / `2c` |

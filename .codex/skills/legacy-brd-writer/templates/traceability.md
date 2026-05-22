@@ -9,11 +9,13 @@
 ## Overview
 
 This report shows the complete traceability between BRD elements (observed
-behaviors, inferred rules, open questions) and their supporting evidence.
+behaviors, inferred rules, validation scenario seeds, open questions) and their
+supporting evidence.
 
 **Coverage:**
 - **Observed Behaviors:** X documented
 - **Inferred Business Rules:** Y identified (all `needs_sme_review`)
+- **Validation Scenarios:** V drafted (all `VAL-*`; no formal `AC-*` or `TC-*`)
 - **Open Questions (TBDs):** Z defined (A blocking, B non-blocking)
 - **Evidence Items:** N collected
 
@@ -46,7 +48,21 @@ at least one evidence item.
 
 ---
 
-## 3. Open Questions (TBDs)
+## 3. Validation Scenarios → Rules / Behaviors / Evidence
+
+Every validation scenario seed must trace to an existing rule or behavior and
+at least one evidence item. `VAL-*` entries do not introduce new requirements.
+
+| VAL ID | Scenario | Type | Related BR/BEH | Evidence | Readiness |
+| --- | --- | --- | --- | --- | --- |
+| `VAL-<CAPABILITY-SLUG>-001` | `<Scenario title>` | `happy_path` | `BR-<CAPABILITY-SLUG>-001`, `BEH-<CAPABILITY-SLUG>-001` | `EV-<CAPABILITY-SLUG>-001` | `ready_for_spec` |
+| `VAL-<CAPABILITY-SLUG>-002` | `<Scenario title>` | `exception` | `BR-<CAPABILITY-SLUG>-002` | `EV-<CAPABILITY-SLUG>-004` | `needs_sme_review` |
+
+**Validation:** All VAL-* items map to BR/BEH and EV; none mint AC-* or TC-* ✓ / ✗
+
+---
+
+## 4. Open Questions (TBDs)
 
 Every open question is categorized and assigned to a resolver.
 
@@ -67,7 +83,7 @@ Every open question is categorized and assigned to a resolver.
 
 ---
 
-## 4. Evidence Items
+## 5. Evidence Items
 
 Complete list of evidence collected for this capability.
 
@@ -82,7 +98,7 @@ Complete list of evidence collected for this capability.
 
 ---
 
-## 5. Cross-Reference Matrix
+## 6. Cross-Reference Matrix
 
 Quick lookup: for each BRD element, what evidence backs it?
 
@@ -112,6 +128,21 @@ Quick lookup: for each BRD element, what evidence backs it?
   - Backed by: `EV-<CAPABILITY-SLUG>-004`
   - Confidence: `low` — needs SME confirmation before spec-writer
 
+### Validation Scenarios
+
+- **`VAL-<CAPABILITY-SLUG>-001`**
+  - Mentioned in: `validation-scenarios.md`, section 2.1; `brd.md`, section 4
+  - Validates review coverage for: `BR-<CAPABILITY-SLUG>-001`,
+    `BEH-<CAPABILITY-SLUG>-001`
+  - Backed by: `EV-<CAPABILITY-SLUG>-001`
+  - Readiness: `ready_for_spec`
+
+- **`VAL-<CAPABILITY-SLUG>-002`**
+  - Mentioned in: `validation-scenarios.md`, section 2.2; `brd.md`, section 4
+  - Validates review coverage for: `BR-<CAPABILITY-SLUG>-002`
+  - Backed by: `EV-<CAPABILITY-SLUG>-004`
+  - Readiness: `needs_sme_review`
+
 ### Questions
 
 - **`TBD-<CAPABILITY-SLUG>-001`**
@@ -126,12 +157,14 @@ Quick lookup: for each BRD element, what evidence backs it?
 
 ---
 
-## 6. Validation Checklist
+## 7. Validation Checklist
 
 Run before SME approval:
 
 - [ ] **All BEH-* items have ≥1 supporting EV-***
 - [ ] **All BR-* items have ≥1 supporting BEH-* and ≥1 supporting EV-***
+- [ ] **All VAL-* items map to existing BR-* or BEH-* and ≥1 EV-***
+- [ ] **No VAL-* item mints AC-* or TC-* or invents exact expected output**
 - [ ] **No dangling references** (all IDs in brd.md appear here)
 - [ ] **All TBD-* items have a category and resolver**
 - [ ] **No `sensitivity: unknown` in evidence items**
@@ -151,6 +184,9 @@ Run before SME approval:
 
 **Open Questions:**
 - `TBD-<CAPABILITY-SLUG>-001` through `TBD-<CAPABILITY-SLUG>-<N>`
+
+**Validation Scenarios:**
+- `VAL-<CAPABILITY-SLUG>-001` through `VAL-<CAPABILITY-SLUG>-<N>`
 
 **Evidence:**
 - `EV-<CAPABILITY-SLUG>-001` through `EV-<CAPABILITY-SLUG>-<N>`

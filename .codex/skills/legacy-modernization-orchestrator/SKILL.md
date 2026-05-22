@@ -1,6 +1,6 @@
 ---
 name: legacy-modernization-orchestrator
-description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user says "what should I do next?", "which skill should I use?", "where am I in the pipeline?", "我有 AS400 / RPGLE / CLLE / COBOL / DDS 代码要分析", "帮我做反向工程", "I just inherited a legacy project", "我刚接了 PPCR XXX...", "modernize legacy", "现代化", "reverse engineer this", "spec out this system", "我手上有 inventory.yaml / spec.yaml 下一步怎么办" — or any natural-language request for end-to-end guidance through IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization, including multi-project repos under `docs/<PPCR-name>/`. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
+description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across module-first RAG/context intake, legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user says "what should I do next?", "which skill should I use?", "where am I in the pipeline?", "我有 AS400 / RPGLE / CLLE / COBOL / DDS 代码要分析", "帮我做反向工程", "I just inherited a legacy project", "我刚接了 PPCR XXX...", "modernize legacy", "现代化", "reverse engineer this", "spec out this system", "我手上有 inventory.yaml / spec.yaml 下一步怎么办", "我有 RAG output / context package 下一步怎么办" — or any natural-language request for end-to-end guidance through IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization, including multi-project repos under `docs/<PPCR-name>/`. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
 ---
 
 <!--
@@ -24,14 +24,20 @@ This skill is the **entry point** for users who are new to Legacy Spec
 Factory, who do not know which skill to call next, or who want a guided path
 through the chain.
 
-For the full grouping of all 18 skills into 6 families (routing, Layer 1
-extraction, Layer 2 synthesis, bridge/handoff, governance, verification),
+For the full grouping of all 21 skills into 7 families (routing, module-first
+context intake, Layer 1 extraction, Layer 2 synthesis, bridge/handoff,
+governance, verification),
 see [`docs/skill-families.md`](../../docs/skill-families.md). That document
 also records which skill pairs were intentionally **not** merged and why.
 
 ## Reverse Chain Map
 
 ```
+Module-First Entry (external RAG bundle + human-confirmed four-view context)
+   ↓ legacy-module-context-intake
+00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
+   ↓ legacy-ibmi-module-analyzer
+
 Raw Legacy Evidence (IBM i source, DDS, DB2, job log, spool, screen, SME notes)
    ↓ legacy-ibmi-evidence-intake
 Evidence Manifest + Redaction Log + Redacted Evidence Bundle

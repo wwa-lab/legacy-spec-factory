@@ -13,6 +13,7 @@ Complete traceability for the Credit Limit Enforcement BRD.
 **Coverage:**
 - **Observed Behaviors:** 4 documented
 - **Inferred Business Rules:** 3 identified (all confirmed by SME)
+- **Validation Scenarios:** 4 drafted (all `VAL-*`; no formal `AC-*` or `TC-*`)
 - **Open Questions (TBDs):** 3 defined (0 blocking, 3 non-blocking)
 - **Evidence Items:** 5 collected
 
@@ -45,7 +46,20 @@ recorded for spec-writer promotion
 
 ---
 
-## 3. Open Questions (TBDs)
+## 3. Validation Scenarios → Rules / Behaviors / Evidence
+
+| VAL ID | Scenario | Type | Related BR/BEH | Evidence | Readiness |
+| --- | --- | --- | --- | --- | --- |
+| `VAL-CREDIT-LIMIT-001` | Order within credit limit | `happy_path` | `BR-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-001` | `EV-CREDIT-LIMIT-001`, `EV-CREDIT-LIMIT-004` | `ready_for_spec` |
+| `VAL-CREDIT-LIMIT-002` | Order exceeds credit limit | `exception` | `BR-CREDIT-LIMIT-001`, `BR-CREDIT-LIMIT-002`, `BEH-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-002` | `EV-CREDIT-LIMIT-001`, `EV-CREDIT-LIMIT-002`, `EV-CREDIT-LIMIT-003` | `ready_for_spec` |
+| `VAL-CREDIT-LIMIT-003` | Customer record not found | `exception` | `BR-CREDIT-LIMIT-003`, `BEH-CREDIT-LIMIT-003` | `EV-CREDIT-LIMIT-004` | `needs_sme_review` |
+| `VAL-CREDIT-LIMIT-004` | Order amount equals credit limit | `boundary` | `BR-CREDIT-LIMIT-001`, `BEH-CREDIT-LIMIT-001` | `EV-CREDIT-LIMIT-001` | `needs_sme_review` |
+
+**Validation:** ✓ All VAL-* items map to existing BR/BEH and EV; no AC-* or TC-* minted
+
+---
+
+## 4. Open Questions (TBDs)
 
 | TBD ID | Question | Category | Resolver | Blocking |
 | --- | --- | --- | --- | --- |
@@ -57,7 +71,7 @@ recorded for spec-writer promotion
 
 ---
 
-## 4. Evidence Items
+## 5. Evidence Items
 
 | EV ID | Type | Source | Sensitivity | Strength | Used By |
 | --- | --- | --- | --- | --- | --- |
@@ -71,7 +85,7 @@ recorded for spec-writer promotion
 
 ---
 
-## 5. Cross-Reference Matrix
+## 6. Cross-Reference Matrix
 
 ### Behaviors
 
@@ -140,14 +154,16 @@ recorded for spec-writer promotion
 
 ---
 
-## 6. Validation Checklist
+## 7. Validation Checklist
 
 - [x] **All BEH-* items have ≥1 supporting EV-***
 - [x] **All BR-* items have ≥1 supporting BEH-* and ≥1 supporting EV-***
+- [x] **All VAL-* items map to existing BR-* or BEH-* and ≥1 EV-***
+- [x] **No VAL-* item mints AC-* or TC-* or invents exact expected output**
 - [x] **No dangling references** (all IDs in brd.md appear here)
 - [x] **All TBD-* items have a category and resolver**
 - [x] **No `sensitivity: unknown` in evidence items**
-- [x] **Traceability table is consistent** with brd.md section 5
+- [x] **Traceability table is consistent** with brd.md section 6
 
 ---
 
@@ -158,6 +174,8 @@ recorded for spec-writer promotion
 **Readiness for Spec-Writer:**
 - All three business rules are confirmed by SME and remain `needs_sme_review`
   until spec-writer promotes them in `spec.yaml`
+- Four validation scenario seeds provide SME-visible coverage for downstream
+  acceptance and golden-master planning
 - Three TBDs identified: zero blocking, three non-blocking / deferred
 - No silent gaps — spec-writer has complete visibility
 
