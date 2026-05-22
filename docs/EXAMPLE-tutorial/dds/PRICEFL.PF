@@ -1,0 +1,4 @@
+A          R PRICEFLR                  PFILE(PRICEFL)
+     A            PRCPRD      10A         COLHDG('Product')
+     A            PRCTIE       3P 0       COLHDG('Tier')
+     A            PRCPRC       9P 2       COLHDG('Price')
