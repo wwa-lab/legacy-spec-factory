@@ -303,6 +303,38 @@ def decision_basis(evidence_ids: list[str], evidence_index: dict[str, dict[str, 
     return "source_only"
 
 
+TEXT_EXTS = {".md", ".yaml", ".yml", ".json", ".txt", ".csv"}
+MAX_EXCERPT_LINES = 40
+
+
+def extract_evidence_excerpt(rel_path: str | None, project_root: Path, max_lines: int = MAX_EXCERPT_LINES) -> dict[str, Any]:
+    """Read a evidence file and return a preview excerpt with metadata."""
+    if not rel_path:
+        return {"available": False, "reason": "no path recorded", "lines": [], "truncated": False}
+    file_path = project_root / rel_path
+    if not file_path.exists():
+        return {"available": False, "reason": f"file not found ({rel_path})", "lines": [], "truncated": False}
+
+    try:
+        raw_lines = file_path.read_text(encoding="utf-8").splitlines()
+    except Exception as exc:
+        return {"available": False, "reason": f"read error: {exc}", "lines": [], "truncated": False}
+
+    ext = file_path.suffix.lower()
+    is_text = ext in TEXT_EXTS
+    truncated = len(raw_lines) > max_lines
+    lines = raw_lines[:max_lines]
+    return {
+        "available": True,
+        "is_text": is_text,
+        "file_type": ext.lstrip(".") or "unknown",
+        "total_lines": len(raw_lines),
+        "lines": lines,
+        "truncated": truncated,
+        "truncated_note": f"... {len(raw_lines) - max_lines} more lines" if truncated else "",
+    }
+
+
 def evidence_cards(
     evidence_ids: list[str],
     evidence_index: dict[str, dict[str, Any]],
@@ -313,6 +345,7 @@ def evidence_cards(
     for ev_id in evidence_ids:
         meta = evidence_index.get(ev_id, {})
         rel_path = meta.get("relative_path") or meta.get("source_path")
+        excerpt_info = extract_evidence_excerpt(rel_path, project_root)
         cards.append(
             {
                 "id": ev_id,
@@ -323,6 +356,7 @@ def evidence_cards(
                 "strength": meta.get("strength", "approved_evidence"),
                 "artifact_path": rel_path,
                 "approval": (meta.get("sme_approval") or {}).get("decision"),
+                "excerpt": excerpt_info,
             }
         )
     return cards
@@ -922,9 +956,67 @@ def render_html(payload: dict[str, Any]) -> str:
       color: var(--accent);
       text-decoration: none;
     }}
+    .link-list a:hover {{ text-decoration: underline; }}
     .empty {{
       color: var(--muted);
       font-size: 14px;
+    }}
+    .evidence-card {{ position: relative; }}
+    .evidence-preview-btn {{
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      background: #f0f4ff;
+      color: var(--accent);
+      border-radius: 7px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }}
+    .evidence-preview-btn:hover {{ background: #e4ecff; }}
+    .evidence-preview {{
+      display: none;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }}
+    .evidence-preview.open {{ display: block; }}
+    .evidence-preview-header {{
+      padding: 6px 12px;
+      background: #eef1f8;
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--muted);
+    }}
+    .evidence-preview pre {{
+      margin: 0;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.65;
+      max-height: 320px;
+      overflow-y: auto;
+      background: #fafbfd;
+    }}
+    .evidence-preview .not-available {{
+      padding: 12px;
+      color: var(--muted);
+      font-style: italic;
+      font-size: 13px;
+    }}
+    .evidence-file-link {{
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      float: right;
+    }}
+    .evidence-file-link:hover {{
+      text-decoration: underline;
+      color: var(--accent);
     }}
     @media (max-width: 1080px) {{
       .workspace, .detail-grid, .summary {{ grid-template-columns: 1fr; }}
@@ -963,6 +1055,38 @@ def render_html(payload: dict[str, Any]) -> str:
       return status.replaceAll("_", " ");
     }}
 
+    function escapeHtml(value) {{
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }}
+
+    function buildElement(tagName, attributes, textContent) {{
+      const element = document.createElement(tagName);
+      for (const [key, value] of Object.entries(attributes || {{}})) {{
+        if (key === "className") {{
+          element.className = value;
+        }} else if (key === "dataset") {{
+          for (const [dataKey, dataValue] of Object.entries(value)) {{
+            element.dataset[dataKey] = dataValue;
+          }}
+        }} else {{
+          element.setAttribute(key, value);
+        }}
+      }}
+      if (textContent !== undefined) {{
+        element.textContent = textContent;
+      }}
+      return element;
+    }}
+
+    function appendTextBlock(parent, className, text) {{
+      parent.appendChild(buildElement("div", {{ className }}, text));
+    }}
+
     function renderSummary() {{
       const meta = document.getElementById("hero-meta");
       meta.innerHTML = "";
@@ -989,7 +1113,7 @@ def render_html(payload: dict[str, Any]) -> str:
       for (const [label, value] of cards) {{
         const card = document.createElement("article");
         card.className = "summary-card";
-        card.innerHTML = `<span class="label">${{label}}</span><strong>${{value}}</strong>`;
+        card.innerHTML = `<span class="label">${{escapeHtml(label)}}</span><strong>${{escapeHtml(value)}}</strong>`;
         summary.appendChild(card);
       }}
     }}
@@ -1039,13 +1163,13 @@ def render_html(payload: dict[str, Any]) -> str:
         const gapCount = item.gaps ? item.gaps.length : 0;
         button.innerHTML = `
           <div class="queue-meta">
-            <span>${{statusLabel(item.status)}}</span>
-            <span>${{item.priority}} priority</span>
+            <span>${{escapeHtml(statusLabel(item.status))}}</span>
+            <span>${{escapeHtml(item.priority)}} priority</span>
           </div>
-          <div class="queue-question">${{item.question}}</div>
+          <div class="queue-question">${{escapeHtml(item.question)}}</div>
           <div class="queue-meta">
-            <span>${{evidenceCount}} evidence card${{evidenceCount === 1 ? "" : "s"}}</span>
-            <span>${{gapCount}} gap${{gapCount === 1 ? "" : "s"}}</span>
+            <span>${{escapeHtml(evidenceCount)}} evidence card${{evidenceCount === 1 ? "" : "s"}}</span>
+            <span>${{escapeHtml(gapCount)}} gap${{gapCount === 1 ? "" : "s"}}</span>
           </div>
         `;
         root.appendChild(button);
@@ -1054,8 +1178,100 @@ def render_html(payload: dict[str, Any]) -> str:
 
     function artifactLink(path) {{
       if (!path) return "";
-      const href = `../${{path}}`;
-      return `<a href="${{href}}">${{path}}</a>`;
+      const href = encodeURI(`../${{path}}`);
+      return `<a href="${{escapeHtml(href)}}" target="_blank" rel="noopener">${{escapeHtml(path)}}</a>`;
+    }}
+
+    function evidenceFileHref(source) {{
+      if (!source || source === "source not indexed") return null;
+      return "../" + source;
+    }}
+
+    function renderEvidenceCard(card) {{
+      const article = buildElement("article", {{ className: "evidence-card" }});
+      const href = evidenceFileHref(card.source);
+      if (href) {{
+        article.appendChild(buildElement("a", {{ className: "evidence-file-link", href, target: "_blank", rel: "noopener" }}, "open file"));
+      }} else {{
+        article.appendChild(buildElement("span", {{ className: "evidence-file-link" }}, "file not available"));
+      }}
+
+      article.appendChild(buildElement("strong", {{}}, `${{card.id}} — ${{card.title || card.type || ""}}`));
+      appendTextBlock(
+        article,
+        "meta",
+        `${{card.type || "unknown"}} · ${{card.strength || "evidence"}} · ${{card.approval || "approval not recorded"}}`,
+      );
+      appendTextBlock(article, "", card.supports || "");
+
+      const button = buildElement(
+        "button",
+        {{ className: "evidence-preview-btn", type: "button", dataset: {{ previewToggle: "true" }} }},
+        "▼ show evidence preview",
+      );
+      article.appendChild(button);
+
+      const preview = buildElement("div", {{ className: "evidence-preview" }});
+      const excerpt = card.excerpt || {{}};
+      const lines = excerpt.lines || [];
+      const headerInfo = excerpt.available
+        ? `${{excerpt.file_type || "file"}} · ${{excerpt.total_lines || lines.length}} lines · ${{card.source}}`
+        : card.source;
+      preview.appendChild(buildElement("div", {{ className: "evidence-preview-header" }}, headerInfo));
+
+      if (excerpt.available === false) {{
+        appendTextBlock(preview, "not-available", excerpt.reason || "preview not available");
+      }} else if (lines.length === 0) {{
+        appendTextBlock(preview, "not-available", "(empty file)");
+      }} else {{
+        const pre = document.createElement("pre");
+        for (let index = 0; index < lines.length; index += 1) {{
+          const line = lines[index];
+          if (excerpt.is_text) {{
+            pre.appendChild(buildElement("div", {{ className: "line-text" }}, line));
+          }} else {{
+            const row = buildElement("div", {{ className: "code-line" }});
+            row.appendChild(buildElement("span", {{ className: "line-num" }}, String(index + 1)));
+            row.appendChild(buildElement("span", {{ className: "line-text" }}, line));
+            pre.appendChild(row);
+          }}
+        }}
+        preview.appendChild(pre);
+        if (excerpt.truncated_note) {{
+          preview.appendChild(buildElement("div", {{ className: "truncated-note" }}, excerpt.truncated_note));
+        }}
+      }}
+
+      article.appendChild(preview);
+      button.addEventListener("click", () => {{
+        preview.classList.toggle("open");
+        button.textContent = preview.classList.contains("open") ? "▲ collapse preview" : "▼ show evidence preview";
+      }});
+      return article;
+    }}
+
+    function renderList(values, emptyMessage) {{
+      if (!values || values.length === 0) {{
+        return buildElement("div", {{ className: "empty" }}, emptyMessage);
+      }}
+      const list = document.createElement("ul");
+      for (const value of values) {{
+        list.appendChild(buildElement("li", {{}}, value));
+      }}
+      return list;
+    }}
+
+    function appendDetailBlock(parent, title, child) {{
+      const block = buildElement("div", {{ className: "detail-block" }});
+      block.appendChild(buildElement("h3", {{}}, title));
+      block.appendChild(child);
+      parent.appendChild(block);
+    }}
+
+    function appendTextDetailBlock(parent, title, text) {{
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text;
+      appendDetailBlock(parent, title, paragraph);
     }}
 
     function renderDetail() {{
@@ -1066,14 +1282,7 @@ def render_html(payload: dict[str, Any]) -> str:
         root.textContent = "No review item selected.";
         return;
       }}
-      const evidenceHtml = (item.evidence || []).map(card => `
-        <article class="evidence-card">
-          <strong>${{card.id}} — ${{card.title || card.type}}</strong>
-          <div class="meta">${{card.type}} · ${{card.strength || "evidence"}} · ${{card.approval || "approval not recorded"}}</div>
-          <div>${{card.supports || ""}}</div>
-          <div class="meta">${{card.source || "source not indexed"}}</div>
-        </article>
-      `).join("");
+      const evidenceHtml = (item.evidence || []).map(renderEvidenceCard).join("");
       const subQuestions = (item.sub_questions || []).length
         ? `<ul>${{item.sub_questions.map(text => `<li>${{text}}</li>`).join("")}}</ul>`
         : `<div class="empty">No sub-questions recorded.</div>`;
@@ -1090,20 +1299,20 @@ def render_html(payload: dict[str, Any]) -> str:
       root.className = "";
       root.innerHTML = `
         <div>
-          <span class="badge status-${{item.status}}">${{statusLabel(item.status)}}</span>
-          <span class="badge status-${{item.status}}">${{item.review_action}}</span>
-          <span class="badge status-${{item.status}}">${{item.confidence}}</span>
+          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(statusLabel(item.status))}}</span>
+          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(item.review_action)}}</span>
+          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(item.confidence)}}</span>
         </div>
-        <h3 style="margin: 6px 0 10px; font-size: 24px; line-height: 1.3;">${{item.question}}</h3>
-        <p style="margin: 0 0 14px; color: var(--muted);">Theme: ${{item.theme}} · Basis: ${{item.decision_basis}} · Type: ${{item.type}}</p>
+        <h3 style="margin: 6px 0 10px; font-size: 24px; line-height: 1.3;">${{escapeHtml(item.question)}}</h3>
+        <p style="margin: 0 0 14px; color: var(--muted);">Theme: ${{escapeHtml(item.theme)}} · Basis: ${{escapeHtml(item.decision_basis)}} · Type: ${{escapeHtml(item.type)}}</p>
         <div class="detail-grid">
           <div class="detail-block">
             <h3>Current Conclusion</h3>
-            <p>${{item.current_conclusion}}</p>
+            <p>${{escapeHtml(item.current_conclusion)}}</p>
           </div>
           <div class="detail-block">
             <h3>Decision Needed Now</h3>
-            <p>${{item.review_action}} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.</p>
+            <p>${{escapeHtml(item.review_action)}} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.</p>
           </div>
           <div class="detail-block">
             <h3>Sub-Questions</h3>
@@ -1127,10 +1336,17 @@ def render_html(payload: dict[str, Any]) -> str:
             <h3>Source Artifacts</h3>
             <div class="link-list">${{sources || '<span class="empty">No source artifacts recorded.</span>'}}</div>
             <h3 style="margin-top: 18px;">Source Excerpt</h3>
-            <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; color: var(--muted);">${{JSON.stringify(item.source_excerpt || {{}}, null, 2)}}</pre>
+            <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; color: var(--muted);">${{escapeHtml(JSON.stringify(item.source_excerpt || {{}}, null, 2))}}</pre>
           </div>
         </div>
       `;
+      for (const button of root.querySelectorAll('[data-preview-toggle="true"]')) {{
+        button.addEventListener('click', () => {{
+          const preview = button.nextElementSibling;
+          preview.classList.toggle('open');
+          button.textContent = preview.classList.contains('open') ? '▲ collapse preview' : '▼ show evidence preview';
+        }});
+      }}
     }}
 
     renderSummary();
