@@ -12,8 +12,9 @@ relationships, table metadata, and the enterprise data dictionary.
 
 The goal is not to translate RPG, CL, COBOL, or DDS source directly into Java.
 The goal is to recover the business intent hidden inside the legacy system,
-produce a trusted `spec.yaml` / `spec.md` pair, and then use that spec package
-as the source of truth for AI-native SDLC on the new cloud platform.
+produce a reviewed BRD Package first, and then promote the approved knowledge
+into a trusted `spec.yaml` / `spec.md` pair for AI-native SDLC on the new cloud
+platform.
 
 The preferred enterprise scenario is **module-first**: the team supplies a
 business module or subsystem context, including four reviewed flows (Operation /
@@ -29,6 +30,35 @@ file-based output example, see
 For the chat-driven SME review experience, see
 [`docs/conversation-review-mode.md`](docs/conversation-review-mode.md).
 
+## Current Operating Model
+
+The current field workflow assumes the team already has enough context to start
+from a **module**, not from a blank source-code excavation.
+
+| Layer | Owner | Role |
+| --- | --- | --- |
+| External RAG / code knowledge graph | Outside this repo | Retrieves source snippets, ARCAD REF relationships, table / field impact, data dictionary context, contradictions, and retrieval gaps |
+| Human-confirmed flows | BA / SME / engineering team | Provides Operation / Business Flow, System Flow, Program Flow, and Data Flow for the module |
+| Legacy Spec Factory | This repo | Normalizes the RAG bundle + four flows into a context package, synthesizes module understanding, drafts the BRD Package, and records SME decisions |
+| SME chat review | SME + assistant | Reviews focused questions in chat; AI may suggest, but SME decides |
+| Downstream SDLC | Atlas / forward delivery agents | Consumes the approved BRD/spec/handoff package to produce implementation artifacts |
+
+The primary near-term output is a **reviewable BRD Package**:
+
+```text
+05_brds/<CAPABILITY-SLUG>/
+  brd.md
+  brd-review.md
+  validation-scenarios.md      # BRD-stage VAL-* seeds, not formal TC-* tests
+  traceability.md
+  review-decision.yaml         # SME chat review write-back
+```
+
+`VAL-*` items are business validation scenario seeds for SME, QA, and SOW
+discussion. Formal `AC-*` acceptance criteria are produced later by
+`legacy-spec-writer`; formal `TC-*` golden-master cases are produced later by
+`legacy-golden-master-test-planner`.
+
 ## Operating Paths
 
 Legacy Spec Factory now has two explicit operating paths:
@@ -39,7 +69,8 @@ Default path — RAG-assisted module-first
         -> module-context-intake
         -> module-analyzer
         -> brd-writer
-        -> BRD + Validation Package / spec / handoff
+        -> BRD Package + chat SME review
+        -> spec / handoff after approval
 
 Verification path — source-first discovery and evidence repair
   evidence intake / inventory / program / flow / data / screen analysis
@@ -106,7 +137,7 @@ Evidence-backed BRD + validation package
         |
         v
 Human Review Gate
-  SME validation, confidence levels, acceptance criteria, modernization decisions
+  SME validation, review decisions, validation scenarios, open questions
         |
         v
 AI-native SDLC
