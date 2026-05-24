@@ -1,0 +1,248 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Skill support map for Module-First BRD Factory</title>
+  <desc id="desc">A supplemental diagram showing which Legacy Spec Factory skills support module-first BRD generation, selective verification, module synthesis, BRD assembly, SME review, and downstream spec handoff.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06131f"/>
+      <stop offset="100%" stop-color="#071b29"/>
+    </linearGradient>
+    <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10283a"/>
+      <stop offset="100%" stop-color="#071724"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#12382f"/>
+      <stop offset="100%" stop-color="#071724"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d2813"/>
+      <stop offset="100%" stop-color="#071724"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#24204a"/>
+      <stop offset="100%" stop-color="#071724"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.32"/>
+    </filter>
+    <marker id="arrowCyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#20c8ff"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4bd39c"/>
+    </marker>
+    <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f4a83a"/>
+    </marker>
+    <style>
+      .bg { fill: url(#bgGrad); }
+      .grid { stroke: #12324a; stroke-width: 1; opacity: 0.32; }
+      .panel { fill: url(#panelGrad); stroke: #089fd4; stroke-width: 2; }
+      .panelSoft { fill: #091d2d; stroke: #14506d; stroke-width: 1.5; }
+      .skill { fill: #0f2b3e; stroke: #20c8ff; stroke-width: 1.6; }
+      .skillGreen { fill: url(#greenGrad); stroke: #4bd39c; stroke-width: 1.6; }
+      .skillGold { fill: url(#goldGrad); stroke: #f4a83a; stroke-width: 1.6; }
+      .skillPurple { fill: url(#purpleGrad); stroke: #ad95ff; stroke-width: 1.6; }
+      .artifact { fill: #081927; stroke: #315b72; stroke-width: 1.2; }
+      .title { font: 800 43px Arial, Helvetica, sans-serif; fill: #f2f8ff; }
+      .subtitle { font: 700 17px Arial, Helvetica, sans-serif; fill: #a9bdd0; letter-spacing: 1px; }
+      .kicker { font: 800 21px Arial, Helvetica, sans-serif; fill: #f4b04c; }
+      .h1 { font: 800 23px Arial, Helvetica, sans-serif; fill: #23c8ff; }
+      .h2 { font: 800 18px Arial, Helvetica, sans-serif; fill: #f2f8ff; }
+      .h3 { font: 800 14px Arial, Helvetica, sans-serif; fill: #f2f8ff; }
+      .body { font: 600 12.5px Arial, Helvetica, sans-serif; fill: #b8c7d5; }
+      .small { font: 600 10.8px Arial, Helvetica, sans-serif; fill: #8fa4b6; }
+      .tiny { font: 600 9.5px Arial, Helvetica, sans-serif; fill: #8196a8; }
+      .cn { font: 700 14px Arial, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #b9c9d7; }
+      .cnSmall { font: 600 11px Arial, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #9fb3c5; }
+      .greenText { fill: #70e2ad; }
+      .goldText { fill: #f4b04c; }
+      .purpleText { fill: #c7b7ff; }
+      .line { fill: none; stroke: #20c8ff; stroke-width: 3; marker-end: url(#arrowCyan); }
+      .lineGreen { fill: none; stroke: #4bd39c; stroke-width: 2.5; marker-end: url(#arrowGreen); }
+      .lineGold { fill: none; stroke: #f4a83a; stroke-width: 2.5; marker-end: url(#arrowGold); }
+      .dash { fill: none; stroke: #4bd39c; stroke-width: 2.4; stroke-dasharray: 7 7; marker-end: url(#arrowGreen); }
+      .rail { fill: none; stroke: #f4a83a; stroke-width: 2.3; stroke-dasharray: 9 7; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1120" class="bg"/>
+  <g opacity="0.35">
+    <path class="grid" d="M40 150 H1760 M40 310 H1760 M40 470 H1760 M40 630 H1760 M40 790 H1760 M40 950 H1760"/>
+    <path class="grid" d="M180 40 V1080 M360 40 V1080 M540 40 V1080 M720 40 V1080 M900 40 V1080 M1080 40 V1080 M1260 40 V1080 M1440 40 V1080 M1620 40 V1080"/>
+  </g>
+
+  <g>
+    <path d="M606 18 H1194 L1170 66 H630 Z" fill="#0b2030" stroke="#164a68" stroke-width="1.2"/>
+    <text x="900" y="49" text-anchor="middle" class="kicker">Diagram B - Key Skills Supporting Diagram A</text>
+    <text x="900" y="103" text-anchor="middle" class="title">KEY SKILLS SUPPORT MAP</text>
+    <text x="900" y="132" text-anchor="middle" class="subtitle">EACH COLUMN SUPPORTS THE MATCHING A1-A4 STAGE IN DIAGRAM A</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="42" y="172" width="300" height="558" rx="8" class="panel"/>
+    <text x="70" y="210" class="h1">A0 Router / Focus</text>
+    <text x="70" y="235" class="cn">选择当前最安全的下一步</text>
+    <rect x="70" y="278" width="244" height="92" rx="7" class="skillGold"/>
+    <text x="92" y="310" class="h3">legacy-modernization-orchestrator</text>
+    <text x="92" y="337" class="small">detects stage, gates, focus</text>
+    <text x="92" y="357" class="small">routes to the right skill</text>
+
+    <rect x="70" y="410" width="244" height="94" rx="7" class="artifact"/>
+    <text x="92" y="441" class="h3">Routing Output</text>
+    <text x="92" y="468" class="small">current stage</text>
+    <text x="92" y="488" class="small">next_skill + remediation</text>
+
+    <rect x="70" y="548" width="244" height="128" rx="7" class="artifact"/>
+    <text x="92" y="579" class="h3">Role Boundary</text>
+    <text x="92" y="606" class="small">does not create BRD</text>
+    <text x="92" y="626" class="small">does not invent facts</text>
+    <text x="92" y="646" class="small">keeps work scoped to module</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="382" y="172" width="310" height="558" rx="8" class="panel"/>
+    <text x="410" y="210" class="h1">A1 Known Flow Support</text>
+    <text x="410" y="235" class="cn">把已有 flow 和 RAG 包成上下文</text>
+
+    <rect x="410" y="278" width="252" height="102" rx="7" class="skill"/>
+    <text x="432" y="309" class="h3">legacy-module-context-intake</text>
+    <text x="432" y="336" class="small">normalizes RAG / code graph</text>
+    <text x="432" y="356" class="small">preserves gaps and conflicts</text>
+
+    <rect x="410" y="412" width="252" height="118" rx="7" class="artifact"/>
+    <text x="432" y="443" class="h3">Primary Artifact</text>
+    <text x="432" y="470" class="small">00_context_packages/&lt;MODULE&gt;</text>
+    <text x="432" y="490" class="small">context-index.yaml</text>
+    <text x="432" y="510" class="small">rag-evidence-map.md</text>
+
+    <rect x="410" y="570" width="252" height="92" rx="7" class="skillGreen"/>
+    <text x="432" y="601" class="h3">Evidence Authorization Gate</text>
+    <text x="432" y="628" class="small">no unknown sensitivity</text>
+    <text x="432" y="648" class="small">no approved rule from RAG alone</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="730" y="172" width="380" height="558" rx="8" class="panel"/>
+    <text x="758" y="210" class="h1">A2 Gap + Evidence</text>
+    <text x="758" y="235" class="cn">针对 gap / conflict / high-risk 做补证</text>
+
+    <rect x="758" y="276" width="150" height="80" rx="7" class="skillGreen"/>
+    <text x="776" y="305" class="h3">evidence-intake</text>
+    <text x="776" y="332" class="small">manifest + redaction</text>
+
+    <rect x="932" y="276" width="150" height="80" rx="7" class="skillGreen"/>
+    <text x="950" y="305" class="h3">inventory</text>
+    <text x="950" y="332" class="small">OBJ-* + object map</text>
+
+    <rect x="758" y="382" width="150" height="90" rx="7" class="skill"/>
+    <text x="776" y="411" class="h3">program-analyzer</text>
+    <text x="776" y="438" class="small">BEH-* / I/O / calls</text>
+    <text x="776" y="456" class="tiny">per program</text>
+
+    <rect x="932" y="382" width="150" height="90" rx="7" class="skill"/>
+    <text x="950" y="411" class="h3">flow-analyzer</text>
+    <text x="950" y="438" class="small">call chain + DATA-*</text>
+    <text x="950" y="456" class="tiny">per transaction</text>
+
+    <rect x="758" y="498" width="150" height="90" rx="7" class="skill"/>
+    <text x="776" y="527" class="h3">runtime-miner</text>
+    <text x="776" y="554" class="small">job log / spool</text>
+    <text x="776" y="572" class="tiny">observed_in_runtime</text>
+
+    <rect x="932" y="498" width="150" height="90" rx="7" class="skill"/>
+    <text x="950" y="527" class="h3">data + screen</text>
+    <text x="950" y="554" class="small">DDS, reports, UI</text>
+    <text x="950" y="572" class="tiny">as triggered</text>
+
+    <rect x="758" y="628" width="324" height="56" rx="7" class="artifact"/>
+    <text x="920" y="653" text-anchor="middle" class="h3">Evidence Repair Pack</text>
+    <text x="920" y="674" text-anchor="middle" class="small">new EV / BEH / DATA / TBD links for the workbench</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1148" y="172" width="290" height="558" rx="8" class="panel"/>
+    <text x="1176" y="210" class="h1">A3 IEOV Support</text>
+    <text x="1176" y="235" class="cn">聚合成四视图模块理解</text>
+
+    <rect x="1176" y="278" width="232" height="106" rx="7" class="skill"/>
+    <text x="1198" y="309" class="h3">legacy-ibmi-module-analyzer</text>
+    <text x="1198" y="336" class="small">synthesizes four views</text>
+    <text x="1198" y="356" class="small">does not re-read every program</text>
+
+    <rect x="1176" y="424" width="232" height="154" rx="7" class="artifact"/>
+    <text x="1198" y="455" class="h3">04_modules/&lt;MODULE&gt;</text>
+    <text x="1198" y="482" class="small">01-operation-flow.md</text>
+    <text x="1198" y="502" class="small">02-system-flow.md</text>
+    <text x="1198" y="522" class="small">03-program-flow.md</text>
+    <text x="1198" y="542" class="small">04-data-flow.md</text>
+    <text x="1198" y="562" class="small">module-overview.md</text>
+
+    <rect x="1176" y="620" width="232" height="64" rx="7" class="skillGreen"/>
+    <text x="1198" y="647" class="h3">Module Approval Gate</text>
+    <text x="1198" y="670" class="small">all four views signed or carried</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1476" y="172" width="282" height="558" rx="8" class="panel"/>
+    <text x="1504" y="210" class="h1">A4 Trusted BRD</text>
+    <text x="1504" y="235" class="cn">形成业务可审阅交付包</text>
+
+    <rect x="1504" y="274" width="224" height="86" rx="7" class="skillPurple"/>
+    <text x="1526" y="305" class="h3">legacy-brd-writer</text>
+    <text x="1526" y="332" class="small">BEH -> BR seeds -> VAL</text>
+
+    <rect x="1504" y="388" width="224" height="86" rx="7" class="artifact"/>
+    <text x="1526" y="419" class="h3">05_brds/&lt;CAPABILITY&gt;</text>
+    <text x="1526" y="446" class="small">brd, review, scenarios, trace</text>
+
+    <rect x="1504" y="502" width="224" height="92" rx="7" class="skillGreen"/>
+    <text x="1526" y="533" class="h3">sme-review-facilitator</text>
+    <text x="1526" y="560" class="small">decision log + sign-off</text>
+    <text x="1526" y="580" class="small">follow-up findings</text>
+
+    <rect x="1504" y="622" width="224" height="62" rx="7" class="skillPurple"/>
+    <text x="1526" y="649" class="h3">legacy-spec-writer</text>
+    <text x="1526" y="672" class="small">downstream hint after approved BRD</text>
+  </g>
+
+  <path d="M342 451 H382" class="lineGold"/>
+  <path d="M692 451 H730" class="line"/>
+  <path d="M1110 451 H1148" class="line"/>
+  <path d="M1438 451 H1476" class="line"/>
+  <path d="M920 628 C920 760 536 760 536 662" class="dash"/>
+  <path d="M920 628 C920 760 1292 760 1292 684" class="dash"/>
+
+  <g filter="url(#shadow)">
+    <rect x="42" y="782" width="1716" height="184" rx="8" class="panelSoft"/>
+    <text x="70" y="821" class="h1">Governance Rail Across Every Skill</text>
+    <text x="70" y="846" class="cn">每一步都遵守同一个 IEOV / Step Contract，不靠口头信心推进</text>
+
+    <rect x="110" y="884" width="300" height="56" rx="7" class="skillGold"/>
+    <text x="130" y="916" class="h3">legacy-step-contract</text>
+    <text x="130" y="934" class="tiny">INPUT -> EXECUTION -> OUTPUT -> VALIDATION</text>
+
+    <rect x="496" y="884" width="300" height="56" rx="7" class="skillGold"/>
+    <text x="516" y="916" class="h3">legacy-step-validator</text>
+    <text x="516" y="934" class="tiny">mechanical + semantic + SME result</text>
+
+    <rect x="882" y="884" width="300" height="56" rx="7" class="artifact"/>
+    <text x="902" y="916" class="h3">Step Validation Report</text>
+    <text x="902" y="934" class="tiny">pass | pass_with_warnings | blocked</text>
+
+    <rect x="1268" y="884" width="380" height="56" rx="7" class="skillGreen"/>
+    <text x="1288" y="916" class="h3">SME as Control Point</text>
+    <text x="1288" y="934" class="tiny">approves intent, blocking status, and promotion readiness</text>
+
+    <path d="M410 912 H496" class="lineGold"/>
+    <path d="M796 912 H882" class="lineGold"/>
+    <path d="M1182 912 H1268" class="lineGold"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="42" y="988" width="1716" height="92" rx="8" class="panel"/>
+    <text x="70" y="1020" class="h2">How This Complements Diagram A</text>
+    <text x="70" y="1048" class="body">Diagram A explains the transformation logic. Diagram B maps A1-A4 to the skills, artifacts, and gates that execute and verify each stage.</text>
+    <text x="70" y="1072" class="cnSmall">图 A 讲“怎么转化”；图 B 按 A1-A4 映射对应 skills、产物和审批 gate。</text>
+  </g>
+</svg>
