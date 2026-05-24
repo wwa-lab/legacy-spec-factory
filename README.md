@@ -83,6 +83,81 @@ skills remain available as selective verification tools: use them when RAG
 output conflicts with human flow, when a high-risk rule needs source evidence,
 or when the module boundary is not yet understood.
 
+## Module-First BRD Factory
+
+BRD generation is **module-first, program-grounded, and capability-output**.
+The workflow does not produce one mini-BRD per program and then merge them.
+It also does not send an entire module to AI for one-shot BRD generation.
+
+The granularity model is:
+
+```text
+Module      = business understanding boundary
+Flow        = transaction / behavior-chain slice
+Program     = evidence granularity
+Capability  = BRD output unit
+```
+
+In practice, teams start with the known module flow and the four-view context
+(Operation / Business Flow, System Flow, Program Flow, and Data Flow). RAG,
+runtime logs, reports, dictionaries, ARCAD REF, screens, source snippets, and
+sample transactions are supplemental evidence used to fill gaps, expose
+contradictions, and verify high-risk behavior. They are not final truth by
+themselves.
+
+Program-level and flow-level skills produce evidence-backed analysis, not
+BRDs. A program analysis captures facts such as calls, branches, I/O, object
+dependencies, error handling, and observed behaviors. A flow analysis connects
+multiple programs into one business transaction from trigger to outcome. The
+module analyzer then synthesizes those materials into a four-view module
+analysis, and the BRD writer selects a specific `CAP-*` capability from that
+approved module context to create a capability-level BRD Package.
+
+The evidence-to-BRD transformation is:
+
+```text
+EV-* evidence
+  -> BEH-* observed behavior
+  -> BR-* business rule seed
+  -> VAL-* validation scenario seed
+  -> BRD section + traceability
+```
+
+Code and runtime evidence can prove what the legacy system does; they do not
+automatically prove business intent. For that reason, `BEH-*` items can be
+lifted from evidence, but `BR-*` business rule seeds remain
+`needs_sme_review` until an SME confirms that the behavior reflects business
+policy rather than a technical workaround, historical patch, exception, or bug.
+Unclear, missing, or conflicting evidence becomes `TBD-*` with a resolver and
+blocking status instead of being smoothed into prose.
+
+The main skill sequence is:
+
+```text
+legacy-module-context-intake
+  -> normalize known module flow, RAG, dictionary, runtime hints
+
+selective verification as needed:
+  -> legacy-ibmi-program-analyzer
+  -> legacy-ibmi-flow-analyzer
+  -> legacy-ibmi-runtime-evidence-miner
+  -> legacy-ibmi-data-model-analyzer / legacy-ibmi-screen-report-analyzer
+
+legacy-ibmi-module-analyzer
+  -> synthesize approved 4-view module analysis
+
+legacy-brd-writer
+  -> produce capability-level BRD Package
+
+legacy-sme-review-facilitator
+  -> record SME decisions, TBD status, and sign-off
+```
+
+Every step follows the same `INPUT -> EXECUTION -> OUTPUT -> VALIDATION`
+contract from `legacy-step-contract`, and `legacy-step-validator` reports
+whether the output can move forward as `pass`, `pass_with_warnings`, or
+`blocked`.
+
 ## Conversation Review Mode
 
 The default SME experience is chat-driven. The assistant pre-fills review
@@ -103,7 +178,35 @@ primary workflow.
 
 ## Visual Overview
 
-### BRD Generation Process
+### Diagram A - BRD Factory Logic
+
+![Module-first BRD Factory logic](docs/assets/module-first-brd-factory-ieov.png)
+
+Diagram A explains how known module flow, supplemental evidence, and IEOV
+validation become a trusted BRD Package. Its key message is that RAG does not
+generate the BRD. Known module flow defines the backbone; RAG, runtime, and
+reports fill gaps; IEOV and SME review make every BRD claim traceable.
+
+Editable source and review-friendly variants are kept together:
+[`module-first-brd-factory-ieov.drawio`](docs/assets/module-first-brd-factory-ieov.drawio),
+[`module-first-brd-factory-ieov.svg`](docs/assets/module-first-brd-factory-ieov.svg),
+and [`module-first-brd-factory-ieov.png`](docs/assets/module-first-brd-factory-ieov.png).
+
+### Diagram B - Key Skills Supporting Diagram A
+
+![Key skills supporting the module-first BRD Factory](docs/assets/module-first-brd-factory-skills.png)
+
+Diagram B maps the A1-A4 stages in Diagram A to the skills, artifacts, and
+gates that execute and verify each stage. It distinguishes the main path from
+selective evidence repair and shows the governance rail that applies across
+every skill.
+
+Editable source and review-friendly variants are kept together:
+[`module-first-brd-factory-skills.drawio`](docs/assets/module-first-brd-factory-skills.drawio),
+[`module-first-brd-factory-skills.svg`](docs/assets/module-first-brd-factory-skills.svg),
+and [`module-first-brd-factory-skills.png`](docs/assets/module-first-brd-factory-skills.png).
+
+### Earlier BRD Generation Process
 
 ![BRD generation process](docs/assets/brd-generation-process.png)
 
@@ -143,6 +246,25 @@ Human Review Gate
 AI-native SDLC
   Java services, APIs, tests, migration scripts, deployment artifacts
 ```
+
+## BRD And Confluence Collateral
+
+The BRD Factory narrative is supported by a few stakeholder-facing drafts and
+review aids:
+
+- [Conversation Review Mode](docs/conversation-review-mode.md) explains the
+  chat-first SME review loop for BRD Packages.
+- [RAG setup detail](docs/rag-setup-detail.md) explains how external RAG /
+  code-knowledge-graph output supports module-first BRD work without becoming
+  the final truth.
+- [Confluence playbook draft](docs/confluence-legacy-spec-factory-playbook-draft.md)
+  and [English version](docs/confluence-legacy-spec-factory-playbook-draft.en.md)
+  provide the full internal knowledge-base structure.
+- [Concise Confluence playbook draft](docs/confluence-legacy-spec-factory-playbook-concise-draft.md)
+  and [English version](docs/confluence-legacy-spec-factory-playbook-concise-draft.en.md)
+  provide a shorter publishable version.
+- [Weekly retro draft](docs/2026-05-22-legacy-spec-factory-weekly-retro-design-and-delivery-draft.md)
+  captures the design and delivery story behind the module-first BRD Factory.
 
 ## Why This Exists
 
