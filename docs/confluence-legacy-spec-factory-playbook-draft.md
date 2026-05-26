@@ -243,7 +243,7 @@ Related Acceptance Criteria
 建议包含：
 
 - Job / scheduler inventory
-- Program call chain
+- Program call-chain evidence (supporting trace, not business narrative)
 - Submitted jobs
 - Message queues / data queues
 - File exchange

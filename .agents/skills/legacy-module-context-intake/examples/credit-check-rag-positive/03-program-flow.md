@@ -27,13 +27,13 @@ and returns a decision.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-ASM-CREDIT-CHECK-001 | `CRDTCMD` is operational glue, not the business rule owner. | SME-CREDIT-CHECK-001 | IBM i developer / SME |
-| RAG-ASM-CREDIT-CHECK-002 | `CREDITCHK` should be prioritized for full program analysis. | SNP-CREDIT-CHECK-004 | IBM i developer |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-ASM-CREDIT-CHECK-001 | Business-rule ownership appears to sit in the credit decision routine rather than the operational wrapper. | Modernization scope should focus the component that determines approval, denial, and amount behavior. | `CRDTCMD`; SME-CREDIT-CHECK-001 | IBM i developer / SME |
+| RAG-ASM-CREDIT-CHECK-002 | Full program analysis should prioritize the credit decision routine. | Approval, denial, over-limit, and returned-amount behavior appear concentrated in one routine. | `CREDITCHK`; SNP-CREDIT-CHECK-004 | IBM i developer |
 
 ## Gaps For Module Analyzer
 
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CREDIT-CHECK-003 | pending_source | Are there any additional callers of `CREDITCHK` outside the synthetic fixture? | RAG-GAP-CREDIT-CHECK-003 | IT SME | no |
+| TBD-CREDIT-CHECK-003 | pending_source | Are there any additional callers of the credit decision routine outside the synthetic fixture? | RAG-GAP-CREDIT-CHECK-003; `CREDITCHK` | IT SME | no |

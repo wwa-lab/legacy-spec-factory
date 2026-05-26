@@ -23,6 +23,35 @@ not a confident statement in the BRD.**
 
 ## Hallucination Traps
 
+### 0. Treating the Runtime Chain as the BRD
+
+**Trap:**
+```
+Flow analysis lists programs A -> B -> C.
+BRD author copies that sequence into "As-Is Summary" and adds file names,
+commit/rollback behavior, and interface-library movement.
+```
+
+**Why it's wrong:**
+- A call sequence proves technical execution order, not business meaning
+- SMEs need to validate purpose, outcomes, controls, exceptions, and policy
+- Program names and file names are evidence anchors, not the conversation model
+
+**What to do instead:**
+1. Translate the chain into business phases such as intake, eligibility,
+   execution, external handoff, response reconciliation, exception reporting
+2. State what business object changes state in each phase
+3. Move program/object names to evidence, traceability, or appendix notes
+4. If the business purpose of a handoff is unclear, create a `TBD-*`:
+   ```yaml
+   id: TBD-<CAPABILITY-SLUG>-001
+   category: sme_questions
+   statement: "What business decision, control, or handoff does this technical
+              step represent?"
+   resolver: SME
+   blocking: yes
+   ```
+
 ### 1. Inventing Business Rules from Naming
 
 **Trap:**

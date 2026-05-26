@@ -24,9 +24,9 @@ referenced in the SME note but not yet confirmed in source snippets.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-GAP-PAYMENT-MATCH-002 | AR balance table target is mentioned by SME but not found in source snippets. | SME-PAYMENT-MATCH-001 | needs_sme_review |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-GAP-PAYMENT-MATCH-002 | The AR balance write target must be confirmed before data-flow approval. | Posting accuracy and reconciliation ownership depend on the exact ledger target. | SME-PAYMENT-MATCH-001 | needs_sme_review |
 
 ## Gaps For Module Analyzer
 

@@ -184,7 +184,7 @@ After all four views are built, run these checks:
 | --- | --- |
 | Actor → Code Path | Every ACTOR-* in View 1 must map to at least one entry node in View 3 OR be tagged `manual_actor: yes`. |
 | System → Flow | Every SYS-* in View 2 must appear in View 3 as the source/target of at least one flow. |
-| Rule Seed → Program | Every BR-* in View 1 must reference at least one program from View 3 or one object from View 4. |
+| Rule Seed → Evidence | Every BR-* in View 1 must reference evidence from View 3, View 4, or SME notes; do not frame the rule around program/file names unless the technical object is itself the business term. |
 | Data Object → Flow | Every object row in View 4 must reference at least one flow in View 3. |
 | Flow → Data | Every flow in View 3 should touch at least one object in View 4 (otherwise the flow is pure compute — possible but unusual). |
 

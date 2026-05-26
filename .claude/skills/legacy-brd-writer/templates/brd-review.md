@@ -15,14 +15,34 @@ specification phase.
 
 **What to check:**
 
-1. Are the **observed behaviors** accurate to legacy system reality?
-2. Are the **inferred business rules** actually business rules (not
+1. Is the **as-is business process summary** understandable and accurate enough
+   for business discussion?
+2. Are the **observed behaviors** accurate to legacy system reality?
+3. Are the **inferred business rules** actually business rules (not
    implementation artifacts)?
-3. Is the **scope and boundary** correct?
-4. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
-5. Are the **TBDs** correctly categorized and achievable?
-6. Do the **validation scenario seeds** cover the important business cases?
-7. Is the BRD ready for **spec-writing** without re-interrogating you?
+4. Is the **scope and boundary** correct?
+5. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
+6. Are the **TBDs** correctly categorized and achievable?
+7. Do the **validation scenario seeds** cover the important business cases?
+8. Is the BRD ready for **spec-writing** without re-interrogating you?
+
+---
+
+## As-Is Business Process Summary
+
+### Can a business reviewer discuss this section without relying on program names?
+
+- [ ] **Yes** — business trigger, parties, outcomes, controls, and exceptions
+      are clear
+- [ ] **Partial** — directionally useful, but needs clearer business language
+      or missing process context
+- [ ] **No** — reads like a technical call chain or object inventory
+
+**Reviewer Notes:**
+
+```
+<Space for SME feedback>
+```
 
 ---
 

@@ -26,12 +26,12 @@ derived, so the derivation remains open for data owner review.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| DD-CREDIT-AVAILABLE-AMOUNT | Available Credit Amount is approved dictionary terminology. | field-dictionary-context.md | Data owner confirmation in target project |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| DD-CREDIT-AVAILABLE-AMOUNT | Available Credit Amount is approved dictionary terminology. | Business users need a stable term for the maximum amount that may be approvable. | field-dictionary-context.md | Data owner confirmation in target project |
 
 ## Gaps For Module Analyzer
 
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CREDIT-CHECK-004 | pending_source | How is `CREDITVW.AVAIL_CREDIT` derived from physical fields? | RAG-GAP-CREDIT-CHECK-001 | Data owner | yes |
+| TBD-CREDIT-CHECK-004 | pending_source | How is available credit derived from physical customer credit fields? | RAG-GAP-CREDIT-CHECK-001; `CREDITVW.AVAIL_CREDIT` | Data owner | yes |

@@ -34,7 +34,41 @@ minimize shipping cost and delivery time.
 
 ---
 
-## 2. Observed Behaviors
+## 2. As-Is Business Process Summary
+
+### Business Trigger
+
+An order is submitted and needs assignment to a fulfillment path.
+
+### Business Participants and Systems
+
+- **Primary business party:** Customer awaiting fulfillment
+- **System role:** Selects or proposes a fulfillment center and shipping method
+- **External / downstream party:** Fulfillment center and shipping operations
+
+### Current-State Flow
+
+1. The order enters the routing capability.
+2. The system appears to select a fulfillment center.
+3. The business basis for the selection is not confirmed from available
+   evidence.
+
+### Business Outcomes and Controls
+
+- **Normal outcome:** Not safe to state; available evidence does not confirm the
+  routing decision logic.
+- **Exception outcome:** Not confirmed from available evidence.
+- **Control or audit point:** Not confirmed from available evidence.
+
+### Implementation Evidence Boundary
+
+Available evidence exposes routine names and comments but not enough business
+meaning. The unresolved business purpose is captured as blocking TBDs instead
+of being filled in from technical names.
+
+---
+
+## 3. Observed Behaviors
 
 ### BEH-ORDER-ROUTING-001: Fulfillment Center Selection
 
@@ -67,7 +101,7 @@ documented. See TBD-002.
 
 ---
 
-## 3. Inferred Business Rules
+## 4. Inferred Business Rules
 
 ### BR-ORDER-ROUTING-001: Fulfillment Center Optimization
 
@@ -88,7 +122,7 @@ aspiration?
 
 ---
 
-## 4. Validation Scenario Summary
+## 5. Validation Scenario Summary
 
 See `validation-scenarios.md` for deferred scenario notes. No `VAL-*` scenario
 seed is safe to draft yet because the available evidence does not support a
@@ -96,7 +130,7 @@ business validation scenario without inventing routing logic.
 
 ---
 
-## 5. Open Questions & Gaps (TBDs)
+## 6. Open Questions & Gaps (TBDs)
 
 ### TBD-ORDER-ROUTING-001: Missing Program Flow Details
 
@@ -183,7 +217,7 @@ approved.
 
 ---
 
-## 6. Evidence Index
+## 7. Evidence Index
 
 | ID | Source | Type | Sensitivity | Strength | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -192,7 +226,7 @@ approved.
 
 ---
 
-## 7. Traceability Summary
+## 8. Traceability Summary
 
 **Status:** `BLOCKED — cannot proceed to SME review**
 

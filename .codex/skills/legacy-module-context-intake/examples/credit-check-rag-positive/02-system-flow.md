@@ -27,12 +27,12 @@ source.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-ASM-CREDIT-CHECK-002 | `CREDITCHK` is the first downstream target for full program analysis. | SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | IBM i developer |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-ASM-CREDIT-CHECK-002 | Full program analysis should confirm where the credit decision is made and whether the wrapper preserves that decision. | Credit approval behavior may be owned downstream of the operational wrapper. | `CREDITCHK`, `CRDTCMD`; SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | IBM i developer |
 
 ## Gaps For Module Analyzer
 
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CREDIT-CHECK-002 | pending_source | Does the wrapper use or discard the returned decision from `CREDITCHK`? | RAG-GAP-CREDIT-CHECK-005 | IBM i developer | yes |
+| TBD-CREDIT-CHECK-002 | pending_source | Does the wrapper use or discard the returned credit decision? | RAG-GAP-CREDIT-CHECK-005; `CREDITCHK` | IBM i developer | yes |

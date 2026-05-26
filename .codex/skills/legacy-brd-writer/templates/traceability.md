@@ -168,7 +168,7 @@ Run before SME approval:
 - [ ] **No dangling references** (all IDs in brd.md appear here)
 - [ ] **All TBD-* items have a category and resolver**
 - [ ] **No `sensitivity: unknown` in evidence items**
-- [ ] **Traceability table is consistent** with brd.md section 4 (Evidence Index)
+- [ ] **Traceability table is consistent** with brd.md section 7 (Evidence Index)
 
 ---
 

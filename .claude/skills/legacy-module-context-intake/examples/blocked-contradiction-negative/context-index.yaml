@@ -11,7 +11,7 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.0"
+  version: "v0.1.1"
   generated_at: "2026-05-21T10:00:00+08:00"
   status: "blocked_pending_contradiction_review"
   decision_reason: "RAG-CONFLICT-PAYMENT-MATCH-001 is blocking: SME states daily EOD matching, runtime job log shows weekly batch. Cannot approve system flow or program flow until contradiction is resolved."

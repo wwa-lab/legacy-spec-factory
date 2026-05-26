@@ -87,12 +87,12 @@ Evidence:
 These are retrieval candidates only. Legacy Spec Factory must re-check them
 against source analysis, runtime evidence, and SME review before promotion.
 
-| Candidate ID | Statement | Supporting evidence | Promotion status |
-| --- | --- | --- | --- |
-| `RAG-CAND-CREDIT-CHECK-001` | Missing customers are denied by default. | `SNP-CREDIT-CHECK-003`, `SNP-CREDIT-CHECK-004` | needs_sme_review |
-| `RAG-CAND-CREDIT-CHECK-002` | Inactive customers are denied even if credit exists. | `SNP-CREDIT-CHECK-004`, `SME-CREDIT-CHECK-001` | needs_sme_review |
-| `RAG-CAND-CREDIT-CHECK-003` | Requests at or below available credit are approved for the requested amount. | `SNP-CREDIT-CHECK-004` | needs_sme_review |
-| `RAG-CAND-CREDIT-CHECK-004` | Requests over available credit are denied and return the available amount as the maximum approvable amount. | `SNP-CREDIT-CHECK-004`, `RUN-CREDIT-CHECK-SPOOL-001`, `SME-CREDIT-CHECK-001` | needs_sme_review |
+| Candidate ID | Statement | Business Signal | Evidence Basis | Promotion status |
+| --- | --- | --- | --- | --- |
+| `RAG-CAND-CREDIT-CHECK-001` | Missing customers are denied by default. | Customer service cannot continue order release when the account cannot be resolved. | `SNP-CREDIT-CHECK-003`, `SNP-CREDIT-CHECK-004` | needs_sme_review |
+| `RAG-CAND-CREDIT-CHECK-002` | Inactive customers are denied even if credit exists. | Customer eligibility status can override available credit. | `SNP-CREDIT-CHECK-004`, `SME-CREDIT-CHECK-001` | needs_sme_review |
+| `RAG-CAND-CREDIT-CHECK-003` | Requests at or below available credit are approved for the requested amount. | In-limit orders may proceed without a credit exception. | `SNP-CREDIT-CHECK-004` | needs_sme_review |
+| `RAG-CAND-CREDIT-CHECK-004` | Requests over available credit are denied and return the available amount as the maximum approvable amount. | Over-limit orders are blocked, but the response exposes the amount that may be approvable. | `SNP-CREDIT-CHECK-004`, `RUN-CREDIT-CHECK-SPOOL-001`, `SME-CREDIT-CHECK-001` | needs_sme_review |
 
 ## Handoff Notes
 

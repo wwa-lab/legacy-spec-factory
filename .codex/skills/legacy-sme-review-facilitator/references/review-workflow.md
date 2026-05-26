@@ -556,7 +556,7 @@ sign_off_flag: "JDM 2026-05-16"
 **Wrong:**
 ```
 item_id: TBD-CREDIT-004
-question_posed: "Does the system validate against a blacklist or whitelist?"
+question_posed: "Is customer validation based on a blocked-customer list, an approved-customer list, or another policy?"
 sme_answer: <missing>
 facilitator_note: "Code inspection shows blacklist logic in VALJOB"
 decision_outcome: confirmed
@@ -565,7 +565,7 @@ decision_outcome: confirmed
 **Right:**
 ```
 item_id: TBD-CREDIT-004
-question_posed: "Does the system validate against a blacklist or whitelist?"
+question_posed: "Is customer validation based on a blocked-customer list, an approved-customer list, or another policy?"
 sme_answer: "I need to check with Operations; will respond by EOW."
 decision_outcome: deferred
 escalation:

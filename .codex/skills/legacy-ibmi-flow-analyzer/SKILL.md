@@ -348,8 +348,11 @@ to the orchestrator.
    - Extract `SEED-*` candidates (business rule seeds) that this flow
      plausibly enforces — **without inventing rules**.
    - Each seed is a *question* for SME review (e.g., "Does the rule
-     'credit limit must not be exceeded' live in this flow?"), with
-     pointers to the program(s) and field(s) that suggest it.
+     'credit limit must not be exceeded' live in this flow?").
+   - Phrase the candidate and SME question in business terms first:
+     business event, business object, decision, outcome, control, or
+     exception. Put program names, node IDs, field names, and file names in
+     `Evidence Basis`, not in the candidate statement.
    - The spec-writer skill will resolve seeds into approved rules; the
      flow analyzer never approves rules itself.
    - **Note:** flow analysis does not mint `BR-*` IDs. Branch points are

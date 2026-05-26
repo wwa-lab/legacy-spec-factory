@@ -11,7 +11,7 @@
 - [X] Cross-view consistency verified
   - [X] Every actor (View 1) maps to a node (View 3) OR `manual_actor: yes` — Cardholder/Merchant → ACTOR-01/02 → Visa entry in View 3; CSR → ACTOR-04 → MANAUTH; Risk/Ops/Finance → manual_actor
   - [X] Every system (View 2) appears in View 3 — Visa, Mastercard, CSR Workstation, Scheduler, GL, Risk Monitoring, Compliance — all match flow triggers/exits
-  - [X] Every BR seed (View 1) references program/file (View 3/4) — all 6 seeds traced
+  - [X] Every BR seed (View 1) references supporting evidence (View 3/4 or SME note) — all 6 seeds traced
   - [X] Every data object (View 4) traces to a flow (View 3) — all 8 objects traced
   - [X] Every flow (View 3) touches at least one data object (View 4) — confirmed
 

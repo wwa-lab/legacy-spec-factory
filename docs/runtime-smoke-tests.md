@@ -166,6 +166,8 @@ Pass criteria:
 - status is `ready_for_module_analysis` or `ready_with_warnings`
 - recommended next skill is `legacy-ibmi-module-analyzer`
 - keeps `RAG-CAND-*` facts as `needs_sme_review`, not approved `BR-*`
+- candidate seeds and candidate facts include `Business Signal` and
+  `Evidence Basis`, with program/file/field names kept in evidence context
 - no files are written during the smoke run
 
 #### Scenario (Negative - Unauthorized Evidence)
@@ -1094,7 +1096,7 @@ The response must include all of the following:
 - **Business Rules (BR-*):** At least 2 business rules lifted from module View 1 seeds, each with review_status (draft or approved based on SME confirmation), linked to supporting BEH-*
 - **Modernization Decisions (DEC-*):** At least 1 decision (e.g., "store transaction audit in append-only table"), referencing BR-* or target_platform
 - **Data model:** Target entities (e.g., CreditTransaction, CustomerCreditLimit) mapped to legacy OBJ-* with field mappings
-- **Process flow & I/O:** process_flow.steps from the ONUS-AUTH flow analysis, inputs (e.g., transaction), outputs (e.g., hold_decision)
+- **Process flow & I/O:** process_flow.steps are business-visible phases and outcomes from the ONUS-AUTH flow analysis, not one step per legacy program; inputs (e.g., transaction), outputs (e.g., hold_decision)
 - **Acceptance criteria:** AC-* items validating approved BRs; no ACs for draft or needs_sme_review BRs
 - **Open questions:** No blocking TBDs for a complete spec; status = draft or in_review (not blocked)
 - **spec.md outline:** Human-readable rendering of the same content

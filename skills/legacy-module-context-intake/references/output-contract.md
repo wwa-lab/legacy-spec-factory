@@ -37,7 +37,7 @@ module:
 
 intake:
   skill: legacy-module-context-intake
-  version: v0.1.0
+  version: v0.1.1
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: ready_for_module_analysis
   decision_reason: "Short reason."
@@ -127,8 +127,8 @@ Each view file must include:
 | --- | --- | --- | --- | --- | --- |
 
 ## Candidate Seeds
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
 
 ## Gaps For Module Analyzer
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
@@ -145,6 +145,18 @@ View-specific guidance:
   runtime trigger model, suggested program-analysis focus.
 - **View 4, Data Flow**: data objects, field dictionary mappings, lifecycle,
   derivation gaps, data ownership, cross-module dependencies.
+
+Candidate seed rules:
+
+- `Candidate Statement` is the business-language candidate or the analysis
+  action whose business meaning must be resolved.
+- `Business Signal` explains the business behavior, decision, SLA, exception,
+  ownership, or control affected by the candidate.
+- `Evidence Basis` carries program names, file names, field names, source
+  snippets, runtime observations, dictionary IDs, and RAG IDs.
+- For View 3 technical candidates, name the business decision that depends on
+  the program-analysis focus; do not make a program name the capability
+  boundary.
 
 ## `rag-evidence-map.md`
 
@@ -169,7 +181,8 @@ Required sections:
 | Target | Impact Type | Evidence | Confidence | Used In |
 
 ## Candidate Facts
-| Candidate ID | Statement | Evidence | Promotion Status | Required Review |
+| Candidate ID | Statement | Business Signal | Evidence Basis | Promotion Status | Required Review |
+| --- | --- | --- | --- | --- | --- |
 ```
 
 Rules:
@@ -178,6 +191,9 @@ Rules:
   `RAG-CAND-*`, or `RAG-CONFLICT-*`.
 - `Candidate Facts` may not use `approved` as `Promotion Status`; use
   `needs_sme_review`, `blocked`, or `deferred`.
+- Program names, files, fields, and source snippets belong in `Evidence Basis`.
+  The `Statement` and `Business Signal` columns must remain readable without
+  knowing the raw object names.
 - If a view cites an evidence ID, that ID must appear here.
 
 ## `contradiction-log.md`

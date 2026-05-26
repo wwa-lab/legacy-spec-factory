@@ -33,11 +33,11 @@
 
 ## Candidate Facts
 
-| Candidate ID | Statement | Evidence | Promotion Status | Required Review |
-| --- | --- | --- | --- | --- |
-| RAG-CAND-PAYMENT-MATCH-001 | Matching frequency is daily EOD. | SME-PAYMENT-MATCH-001 | blocked_pending_contradiction_review | AR Operations SME |
-| RAG-CAND-PAYMENT-MATCH-002 | Suspense items must be cleared within 2 business days. | SME-PAYMENT-MATCH-001 | needs_sme_review | AR Operations SME |
-| RAG-CAND-PAYMENT-MATCH-003 | Trigger model is scheduled batch (not event-driven). | RUN-PAYMENT-JOBLOG-001 | blocked_pending_contradiction_review | AR Operations SME |
-| RAG-CONFLICT-PAYMENT-MATCH-001 | BLOCKED: Matching frequency conflict between SME note (daily) and runtime (weekly). | SME-PAYMENT-MATCH-001, RUN-PAYMENT-JOBLOG-001 | blocked | AR Operations SME |
-| RAG-ASM-PAYMENT-MATCH-001 | No sub-program calls identified; `PMTMATCH` contains all matching logic inline. | SNP-PAYMENT-001 | needs_sme_review | IBM i developer |
-| RAG-GAP-PAYMENT-MATCH-002 | AR balance table target is mentioned by SME but not found in source snippets. | SME-PAYMENT-MATCH-001 | deferred | Data owner |
+| Candidate ID | Statement | Business Signal | Evidence Basis | Promotion Status | Required Review |
+| --- | --- | --- | --- | --- | --- |
+| RAG-CAND-PAYMENT-MATCH-001 | Matching frequency is daily EOD. | Payment posting SLA and operational staffing depend on how often matching runs. | SME-PAYMENT-MATCH-001; RUN-PAYMENT-JOBLOG-001 | blocked_pending_contradiction_review | AR Operations SME |
+| RAG-CAND-PAYMENT-MATCH-002 | Suspense items must be cleared within 2 business days. | Exception backlog timing affects AR follow-up and customer account accuracy. | SME-PAYMENT-MATCH-001 | needs_sme_review | AR Operations SME |
+| RAG-CAND-PAYMENT-MATCH-003 | Trigger model is scheduled batch rather than event-driven. | Payment posting timeliness, interface design, and SLA expectations depend on the trigger model. | RUN-PAYMENT-JOBLOG-001; `PMTMATCH` | blocked_pending_contradiction_review | AR Operations SME |
+| RAG-CONFLICT-PAYMENT-MATCH-001 | BLOCKED: matching frequency conflict between SME note and runtime evidence. | The business process cadence cannot be approved until daily vs weekly operation is resolved. | SME-PAYMENT-MATCH-001, RUN-PAYMENT-JOBLOG-001 | blocked | AR Operations SME |
+| RAG-ASM-PAYMENT-MATCH-001 | Full program analysis should confirm whether matching logic is inline or delegated elsewhere. | Modernization scope depends on whether invoice matching, posting, and suspense routing are isolated or spread across callers. | `PMTMATCH`; SNP-PAYMENT-001 | needs_sme_review | IBM i developer |
+| RAG-GAP-PAYMENT-MATCH-002 | The AR balance write target must be confirmed before data-flow approval. | Posting accuracy and reconciliation ownership depend on the exact ledger target. | SME-PAYMENT-MATCH-001 | deferred | Data owner |

@@ -21,17 +21,17 @@ flow and cannot be assumed.
 
 | Claim ID | Knowledge Type | Statement | Evidence | Strength | Review Status |
 | --- | --- | --- | --- | --- | --- |
-| VIEW1-PMATCH-001 | observed_behavior | Incoming payment records are read from flat-file `PMTINPUT`. | SNP-PAYMENT-001 | confirmed_from_code | needs_sme_review |
-| VIEW1-PMATCH-002 | observed_behavior | Unmatched payments are written to suspense file `PMTSUSP`. | SNP-PAYMENT-002 | confirmed_from_code | needs_sme_review |
+| VIEW1-PMATCH-001 | observed_behavior | Incoming bank payment records are received for matching. | SNP-PAYMENT-001 | confirmed_from_code | needs_sme_review |
+| VIEW1-PMATCH-002 | observed_behavior | Unmatched payments are routed to suspense for manual review. | SNP-PAYMENT-002 | confirmed_from_code | needs_sme_review |
 | VIEW1-PMATCH-003 | sme_stated | SME states all payments must be matched and posted before EOD each business day. | SME-PAYMENT-MATCH-001 | sme_unconfirmed | contradicted_by_runtime |
 | VIEW1-PMATCH-004 | observed_behavior | Runtime job log shows batch job `PMTMATCH` scheduled weekly, not daily. | RUN-PAYMENT-JOBLOG-001 | confirmed_from_runtime | contradicts_sme |
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-CAND-PAYMENT-MATCH-001 | Matching frequency is daily EOD. | SME-PAYMENT-MATCH-001 | blocked_pending_contradiction_review |
-| RAG-CAND-PAYMENT-MATCH-002 | Suspense items must be cleared within 2 business days. | SME-PAYMENT-MATCH-001 | needs_sme_review |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-CAND-PAYMENT-MATCH-001 | Matching frequency is daily EOD. | Payment posting SLA and operational staffing depend on how often matching runs. | SME-PAYMENT-MATCH-001; RUN-PAYMENT-JOBLOG-001 | blocked_pending_contradiction_review |
+| RAG-CAND-PAYMENT-MATCH-002 | Suspense items must be cleared within 2 business days. | Exception backlog timing affects AR follow-up and customer account accuracy. | SME-PAYMENT-MATCH-001 | needs_sme_review |
 
 ## Gaps For Module Analyzer
 

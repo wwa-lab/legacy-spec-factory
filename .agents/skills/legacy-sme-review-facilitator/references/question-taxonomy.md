@@ -32,12 +32,13 @@ missed or miscategorized.
 ### TBD-CREDIT-004: Validation Against Blacklist or Whitelist
 
 **Context:**  
-The CRDJOB program appears to validate customer accounts. We don't know if it
-checks against a blacklist (is this customer blocked?) or a whitelist (is this
-customer on an approved list?).
+Customer-account validation occurs before the request can continue. Evidence
+shows the validation path, but not whether the business policy is a blocked
+customer list or an approved customer list.
 
 **Question for SME:**  
-> Does CRDJOB validate against a blacklist or a whitelist?
+> Is customer-account validation based on a blocked-customer list, an
+> approved-customer list, or another policy?
 
 **SME Answer:**
 
@@ -161,8 +162,8 @@ workaround.
 ### BEH-CREDIT-006: Transaction Blocking When Limit Exceeded
 
 **Claim:**  
-> When a customer's balance exceeds their credit limit, the CREDCHK program
-> blocks any new transactions.
+> When a customer's balance exceeds their credit limit, the system blocks any
+> new transactions.
 
 **Evidence:**
 - `EV-CREDIT-015`: Job log showing "TRANSACTION BLOCKED - LIMIT EXCEEDED"
@@ -409,10 +410,11 @@ are there any exceptions?"
 **Right:**
 ```
 (First question)
-"Does the system validate against a blacklist or a whitelist?"
+"Is customer validation based on a blocked-customer list, an
+approved-customer list, or another policy?"
 
 (If SME answers "blacklist", follow up with:)
-"Are there any exceptions or edge cases to the blacklist validation?"
+"Are there any exceptions or edge cases to the blocked-customer policy?"
 ```
 
 ### ❌ Asking SME to Code-Read
@@ -424,8 +426,8 @@ are there any exceptions?"
 
 **Right:**
 ```
-"We see validation logic in CRDJOB. What is the system supposed to validate:
-blacklist or whitelist?"
+"The evidence shows a customer-account validation step before the request can
+continue. What business policy is being checked?"
 ```
 
 ### ❌ Collapsing Multiple Artifacts
@@ -461,7 +463,7 @@ in the artifact.
 
 **Example:**
 ```yaml
-question_posed: "Does the system validate against a blacklist or whitelist?"
+question_posed: "Is customer validation based on a blocked-customer list, an approved-customer list, or another policy?"
 sme_answer: |
   Whitelist. But there's also an exception: legacy accounts from before 2010
   are always allowed, blacklist or not.
@@ -501,7 +503,7 @@ suggested_revision: |
 
 **Example:**
 ```yaml
-question_posed: "Does the system enforce the credit limit, and if so, what's the mechanism?"
+question_posed: "Does the system enforce the credit limit, and are there any business exceptions to that enforcement?"
 sme_answer: |
   Yes, it enforces the limit. The CREDCHK program blocks any transaction over
   the limit. As for whether there are any exceptions, I need to check with

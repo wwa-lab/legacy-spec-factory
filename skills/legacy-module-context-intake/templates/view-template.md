@@ -18,9 +18,9 @@
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| [RAG-CAND-* or SEED-*] | [candidate only] | [evidence] | SME review |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| [RAG-CAND-* or SEED-*] | [business-language candidate only] | [business behavior, decision, exception, owner, SLA, or control affected] | [SNP/RUN/DD/EV/SME ID; program/file/field names if needed] | SME review |
 
 ## Gaps For Module Analyzer
 

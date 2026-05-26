@@ -38,7 +38,47 @@ authorized credit threshold.
 
 ---
 
-## 2. Observed Behaviors
+## 2. As-Is Business Process Summary
+
+### Business Trigger
+
+A customer submits an order using credit terms.
+
+### Business Participants and Systems
+
+- **Primary business party:** Customer placing the order
+- **System role:** Checks the order amount against the customer's authorized
+  credit limit before the order is accepted
+- **External / downstream party:** Order fulfillment and audit/reporting
+  consumers that rely on the accept/reject decision
+
+### Current-State Flow
+
+1. The order is received with customer and credit amount information.
+2. The customer's authorized credit limit is retrieved from the customer master
+   record.
+3. The order is either allowed to continue or rejected immediately when the
+   credit amount exceeds the authorized limit.
+4. Rejections are logged so credit policy and operations stakeholders can review
+   exposure-control activity.
+
+### Business Outcomes and Controls
+
+- **Normal outcome:** The order proceeds only when it is within the customer's
+  authorized credit limit.
+- **Exception outcome:** The order is rejected with a credit-limit error when
+  the amount exceeds the authorized threshold.
+- **Control or audit point:** Credit-limit rejections are written to the audit
+  file with the customer, amount, limit, timestamp, and return code.
+
+### Implementation Evidence Boundary
+
+Program and file details are retained in the observed behaviors and evidence
+index only where they support traceability.
+
+---
+
+## 3. Observed Behaviors
 
 ### BEH-CREDIT-LIMIT-001: Order Amount Validation
 
@@ -97,7 +137,7 @@ customer ID, order amount, credit limit, and return code.
 
 ---
 
-## 3. Inferred Business Rules
+## 4. Inferred Business Rules
 
 ### BR-CREDIT-LIMIT-001: Credit Limit Ceiling
 
@@ -165,7 +205,7 @@ TBD-002 covers this.
 
 ---
 
-## 4. Validation Scenario Summary
+## 5. Validation Scenario Summary
 
 See `validation-scenarios.md` for SME-reviewable `VAL-*` scenario seeds.
 These are not formal `AC-*` acceptance criteria or formal `TC-*` test cases.
@@ -179,7 +219,7 @@ These are not formal `AC-*` acceptance criteria or formal `TC-*` test cases.
 
 ---
 
-## 5. Open Questions & Gaps (TBDs)
+## 6. Open Questions & Gaps (TBDs)
 
 ### TBD-CREDIT-LIMIT-001: Partial Credit Scenarios
 
@@ -235,7 +275,7 @@ this results in order rejection or a different flow.
 
 ---
 
-## 6. Evidence Index
+## 7. Evidence Index
 
 | ID | Source | Type | Sensitivity | Strength | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -247,7 +287,7 @@ this results in order rejection or a different flow.
 
 ---
 
-## 7. Traceability Summary
+## 8. Traceability Summary
 
 See `traceability.md` for the full cross-reference table.
 
