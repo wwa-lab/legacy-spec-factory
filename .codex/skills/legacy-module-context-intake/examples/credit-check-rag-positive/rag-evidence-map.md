@@ -42,14 +42,14 @@
 
 ## Candidate Facts
 
-| Candidate ID | Statement | Evidence | Promotion Status | Required Review |
-| --- | --- | --- | --- | --- |
-| RAG-CAND-CREDIT-CHECK-001 | Missing customers are denied by default. | SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | needs_sme_review | Credit Operations SME |
-| RAG-CAND-CREDIT-CHECK-002 | Inactive customers are denied even if credit exists. | SNP-CREDIT-CHECK-004, SME-CREDIT-CHECK-001 | needs_sme_review | Credit Operations SME |
-| RAG-CAND-CREDIT-CHECK-004 | Requests over available credit are denied and return available credit as the maximum approvable amount. | SNP-CREDIT-CHECK-004, RUN-CREDIT-CHECK-SPOOL-001 | needs_sme_review | Credit Operations SME |
-| RAG-ASM-CREDIT-CHECK-001 | `CRDTCMD` is operational glue, not the business rule owner. | SME-CREDIT-CHECK-001 | deferred | IBM i developer / SME |
-| RAG-ASM-CREDIT-CHECK-002 | `CREDITCHK` should be prioritized for full program analysis. | SNP-CREDIT-CHECK-004 | deferred | IBM i developer |
-| RAG-GAP-CREDIT-CHECK-001 | `CREDITVW.AVAIL_CREDIT` derivation is not proven by the supplied DDS. | DDS-CREDIT-CHECK-CUSTMAST-001, DDS-CREDIT-CHECK-CREDITVW-001 | deferred | Data owner |
-| RAG-GAP-CREDIT-CHECK-003 | No real ARCAD REF export is included in the synthetic fixture. | SNP-CREDIT-CHECK-001 | deferred | IT SME |
-| RAG-GAP-CREDIT-CHECK-004 | No evidence shows whether over-limit denials are queued, audited, or rejected inline. | SME-CREDIT-CHECK-001 | deferred | Credit Operations SME |
-| RAG-GAP-CREDIT-CHECK-005 | The supplied wrapper does not visibly capture the return decision. | SNP-CREDIT-CHECK-001, SNP-CREDIT-CHECK-004 | deferred | IBM i developer |
+| Candidate ID | Statement | Business Signal | Evidence Basis | Promotion Status | Required Review |
+| --- | --- | --- | --- | --- | --- |
+| RAG-CAND-CREDIT-CHECK-001 | Missing customers are denied by default. | Customer service cannot continue order release when the account cannot be resolved. | SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | needs_sme_review | Credit Operations SME |
+| RAG-CAND-CREDIT-CHECK-002 | Inactive customers are denied even if credit exists. | Customer eligibility status can override available credit. | SNP-CREDIT-CHECK-004, SME-CREDIT-CHECK-001 | needs_sme_review | Credit Operations SME |
+| RAG-CAND-CREDIT-CHECK-004 | Requests over available credit are denied and return available credit as the maximum approvable amount. | Over-limit orders are blocked, but the response exposes the amount that may be approvable. | SNP-CREDIT-CHECK-004, RUN-CREDIT-CHECK-SPOOL-001 | needs_sme_review | Credit Operations SME |
+| RAG-ASM-CREDIT-CHECK-001 | Business-rule ownership appears to sit in the credit decision routine rather than the operational wrapper. | Modernization scope should focus the component that determines approval, denial, and amount behavior. | `CRDTCMD`; SME-CREDIT-CHECK-001 | deferred | IBM i developer / SME |
+| RAG-ASM-CREDIT-CHECK-002 | Full program analysis should prioritize the credit decision routine. | Approval, denial, over-limit, and returned-amount behavior appear concentrated in one routine. | `CREDITCHK`; SNP-CREDIT-CHECK-004 | deferred | IBM i developer |
+| RAG-GAP-CREDIT-CHECK-001 | Available credit derivation is not proven by the supplied DDS. | Data ownership and calculation semantics must be clear before approving credit-amount behavior. | `CREDITVW.AVAIL_CREDIT`; DDS-CREDIT-CHECK-CUSTMAST-001, DDS-CREDIT-CHECK-CREDITVW-001 | deferred | Data owner |
+| RAG-GAP-CREDIT-CHECK-003 | The full caller scope for the credit decision routine is not proven by the synthetic fixture. | Reuse outside the sampled path could expand modernization scope. | `CREDITCHK`; SNP-CREDIT-CHECK-001 | deferred | IT SME |
+| RAG-GAP-CREDIT-CHECK-004 | No evidence shows whether over-limit denials are queued, audited, or rejected inline. | Exception handling affects operations, auditability, and customer follow-up. | SME-CREDIT-CHECK-001 | deferred | Credit Operations SME |
+| RAG-GAP-CREDIT-CHECK-005 | The supplied wrapper does not visibly capture the return decision. | The calling path may ignore or transform the approval decision. | `CRDTCMD`, `CREDITCHK`; SNP-CREDIT-CHECK-001, SNP-CREDIT-CHECK-004 | deferred | IBM i developer |

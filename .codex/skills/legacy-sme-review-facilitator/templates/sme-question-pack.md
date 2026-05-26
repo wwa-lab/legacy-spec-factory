@@ -25,6 +25,11 @@ All answers will be recorded in the decision log with your name, role, and date.
 AI suggestions are prefilled only to reduce review effort; they are not SME
 approval until you confirm or revise them.
 
+Questions should be phrased in business language first. Program names, file
+names, field names, and node IDs may appear under evidence, but the question
+itself should ask about business intent, policy, outcome, exception handling, or
+control ownership unless the SME explicitly owns the technical implementation.
+
 ---
 
 ## Open TBDs

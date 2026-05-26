@@ -80,14 +80,14 @@ Source: Anna Chen 2026-05-12.
 
 ## Business Rule Seeds (Module-Level)
 
-| Seed ID | Candidate Rule | Suggested By | SME Question |
-| --- | --- | --- | --- |
-| BR-CARD-AUTH-01 | Credit limit must be respected for every on-us auth | FLOW-ONUS-AUTH SEED-01 | Regulatory (PBOC) or operational policy? |
-| BR-CARD-AUTH-02 | CVV verification required | FLOW-ONUS-AUTH SEED-02 | All transactions or only ATMP? |
-| BR-CARD-AUTH-03 | Audit row must persist before response | FLOW-ONUS-AUTH SEED-03 | Hard requirement (compliance) or best-effort? |
-| BR-CARD-AUTH-04 | Manual override requires supervisor approval | FLOW-MANUAL-AUTH (DSPF F-key handling) | Always required, or threshold-based? |
-| BR-CARD-AUTH-05 | Reconciliation must complete before 06:00 cut-off | FLOW-NIGHTLY-RECON SEED-01 | Hard regulatory deadline or downstream SLA? |
-| BR-CARD-AUTH-06 | Exception threshold gates GL posting | FLOW-NIGHTLY-RECON SEED-02 | Threshold value + ownership? |
+| Seed ID | Candidate Rule | Business Signal | Evidence Basis | SME Question |
+| --- | --- | --- | --- | --- |
+| BR-CARD-AUTH-01 | Credit limit must be respected for every on-us auth | Authorization approval depends on cardholder exposure staying within limit | FLOW-ONUS-AUTH SEED-01 | Regulatory (PBOC) or operational policy? |
+| BR-CARD-AUTH-02 | CVV verification required | Security validation affects whether a transaction may proceed | FLOW-ONUS-AUTH SEED-02 | All transactions or only ATMP? |
+| BR-CARD-AUTH-03 | Audit row must persist before response | Authorization decision is recorded before external response | FLOW-ONUS-AUTH SEED-03 | Hard requirement (compliance) or best-effort? |
+| BR-CARD-AUTH-04 | Manual override requires supervisor approval | Manual approval path includes a control point before override completion | FLOW-MANUAL-AUTH (DSPF F-key handling) | Always required, or threshold-based? |
+| BR-CARD-AUTH-05 | Reconciliation must complete before 06:00 cut-off | Finance/GL readiness depends on daily reconciliation completion | FLOW-NIGHTLY-RECON SEED-01 | Hard regulatory deadline or downstream SLA? |
+| BR-CARD-AUTH-06 | Exception threshold gates GL posting | Exception volume can stop or defer GL posting | FLOW-NIGHTLY-RECON SEED-02 | Threshold value + ownership? |
 
 ## TBDs
 

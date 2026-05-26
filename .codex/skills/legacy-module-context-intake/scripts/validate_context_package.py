@@ -62,6 +62,10 @@ def section(text: str, heading: str) -> str:
     return text[start : start + next_match.start()]
 
 
+def markdown_cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
 def ids_in_view_files(package_dir: Path) -> set[str]:
     ids: set[str] = set()
     for name in REQUIRED_FILES[1:5]:
@@ -103,7 +107,16 @@ def validate(package_dir: Path, allow_blocked: bool) -> list[str]:
         )
 
     candidate_section = section(evidence_map, "Candidate Facts")
-    approved_candidate = re.search(r"^\|[^|\n]*RAG-CAND-[^|\n]*\|\s*approved\s*\|", candidate_section, re.M)
+    approved_candidate = False
+    for line in candidate_section.splitlines():
+        if not line.startswith("|") or "---" in line:
+            continue
+        cells = markdown_cells(line)
+        if cells and cells[0].startswith("RAG-CAND-") and any(
+            cell.lower() == "approved" for cell in cells[1:]
+        ):
+            approved_candidate = True
+            break
     if approved_candidate:
         findings.append("RAG candidate facts must not use Promotion Status 'approved'")
 

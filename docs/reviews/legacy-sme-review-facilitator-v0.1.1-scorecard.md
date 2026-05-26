@@ -3,7 +3,7 @@ skill: legacy-sme-review-facilitator
 scorecard_version: v0.1.1
 static_score: 9.39
 decision: repo-ready
-status: current
+status: superseded_by_v0.1.2
 last_verified: 2026-05-22
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-05-22 }
@@ -89,4 +89,3 @@ OpenCode.
 - Without smoke fixtures, terse chat parsing may drift across runtimes.
 - Review write-back must stay conservative so `VAL-*` seeds do not become
   formal `TC-*` test cases prematurely.
-

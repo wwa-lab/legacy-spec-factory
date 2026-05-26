@@ -10,14 +10,14 @@
 
 | TBD ID | Source ID | Question | Owner | Carry Forward To |
 | --- | --- | --- | --- | --- |
-| TBD-PAYMENT-MATCH-002 | RAG-GAP-PAYMENT-MATCH-001 | Are there other programs that post to the AR balance table outside `PMTMATCH`? | IT SME | 03-program-flow.md |
+| TBD-PAYMENT-MATCH-002 | RAG-GAP-PAYMENT-MATCH-001 | Are there other programs that post to the AR balance table outside the identified matching path? | IT SME | 03-program-flow.md |
 | TBD-PAYMENT-MATCH-003 | RAG-GAP-PAYMENT-MATCH-002 | Which physical file or table is the AR balance write target? | Data owner | 04-data-flow.md |
 
 ## Non-Blocking Assumptions
 
 | Assumption ID | Statement | Evidence | Review Status |
 | --- | --- | --- | --- |
-| RAG-ASM-PAYMENT-MATCH-001 | `PMTMATCH` contains all matching logic inline with no sub-programs. | SNP-PAYMENT-001 | needs_sme_review |
+| RAG-ASM-PAYMENT-MATCH-001 | Full program analysis should confirm whether matching logic is inline or delegated elsewhere. | SNP-PAYMENT-001; `PMTMATCH` | needs_sme_review |
 
 ## Recommended Next Prompt
 

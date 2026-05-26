@@ -172,7 +172,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   routing destination.
 - **Semantic**: no RAG candidate is promoted to an approved business rule; all
   claims preserve knowledge type and evidence strength; contradictory evidence
-  remains visible.
+  remains visible; candidate seeds explain the business signal first and keep
+  program names, file names, field names, snippet IDs, and runtime object names
+  in evidence context unless the view is explicitly technical.
 - **SME / human approval**: module owner confirms business name and scope;
   data owner or dictionary owner confirms approved dictionary mappings where
   they are used as business terminology.
@@ -197,6 +199,12 @@ This skill conforms to the Legacy Spec Factory Step Contract.
    - Create one Markdown file per view using the supplied module context.
    - Every factual claim must include a source row, evidence ID, or SME note.
    - Keep candidate rules as candidates or seeds, never approved rules.
+   - Phrase candidate seeds with business meaning first. In View 1 this means a
+     business rule / capability / exception candidate; in Views 2-4 this may be
+     a system, program, or data analysis focus, but it must still say what
+     business behavior or decision depends on the technical check.
+   - Keep program names, file names, field names, node IDs, source paths, and
+     raw RAG IDs in `Evidence Basis`, not as the main candidate statement.
 
 5. **Build evidence map**
    - Convert source snippets, runtime observations, dictionary mappings, and
@@ -230,6 +238,8 @@ Use legacy-ibmi-module-analyzer with
 Treat RAG snippets and runtime observations as evidence context only.
 Preserve contradiction-log.md and open-questions.md as TBD inputs.
 Do not promote candidate rules without SME review.
+Preserve business-signal-first candidate seeds; do not turn evidence object
+names into capability boundaries.
 ```
 
 ## References
@@ -244,3 +254,9 @@ Do not promote candidate rules without SME review.
 - `../../docs/module-analysis-model.md` - downstream four-view module model.
 - `../../docs/evidence-and-knowledge-taxonomy.md` - knowledge type and evidence
   strength vocabulary.
+
+## Version History
+
+- v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
+  RAG/program/file evidence does not become the business-facing statement.
+- v0.1.0 (2026-05-21): Initial module context intake skill.

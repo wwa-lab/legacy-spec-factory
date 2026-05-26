@@ -22,9 +22,12 @@
 (Aggregate of `pending_source` and `pending_sme_judgment` from all views.)
 
 ## Capability Seeds For spec-writer
-| CAP Seed | Suggested By | SME Question |
-| --- | --- | --- |
-| CAP-[SLUG]-001 | [view + reason] | [question] |
+| CAP Seed | Business Signal | Evidence Basis | SME Question |
+| --- | --- | --- | --- |
+| CAP-[SLUG]-001 | [business event / outcome / rule cluster suggesting a capability] | [view / flow / program evidence refs] | [business-language boundary question] |
+
+Capability seeds are business capability candidates, not program-entry
+wrappers. Use program flow only as evidence for boundaries and dependencies.
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`

@@ -26,11 +26,11 @@ shows a denied request with the available credit amount returned for reference.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-CAND-CREDIT-CHECK-001 | Missing customers are denied by default. | SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | Credit Operations SME |
-| RAG-CAND-CREDIT-CHECK-002 | Inactive customers are denied even if credit exists. | SNP-CREDIT-CHECK-004, SME-CREDIT-CHECK-001 | Credit Operations SME |
-| RAG-CAND-CREDIT-CHECK-004 | Requests over available credit are denied and return available credit as the maximum approvable amount. | SNP-CREDIT-CHECK-004, RUN-CREDIT-CHECK-SPOOL-001 | Credit Operations SME |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-CAND-CREDIT-CHECK-001 | Missing customers are denied by default. | Customer service cannot continue order release when the account cannot be resolved. | SNP-CREDIT-CHECK-003, SNP-CREDIT-CHECK-004 | Credit Operations SME |
+| RAG-CAND-CREDIT-CHECK-002 | Inactive customers are denied even if credit exists. | Customer eligibility status can override available credit. | SNP-CREDIT-CHECK-004, SME-CREDIT-CHECK-001 | Credit Operations SME |
+| RAG-CAND-CREDIT-CHECK-004 | Requests over available credit are denied and return available credit as the maximum approvable amount. | Over-limit orders are blocked, but the response exposes the amount that may be approvable. | SNP-CREDIT-CHECK-004, RUN-CREDIT-CHECK-SPOOL-001 | Credit Operations SME |
 
 ## Gaps For Module Analyzer
 

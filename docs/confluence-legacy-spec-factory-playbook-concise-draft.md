@@ -176,7 +176,7 @@ RAG / Source Evidence / SME Knowledge
 |---|---|
 | Business Flow | 业务触发、参与角色、主路径、例外路径和业务结果。 |
 | System Flow | 系统交互、接口调用、批处理触发和外部依赖。 |
-| Program Flow | 程序调用链、入口点、关键分支和错误路径。 |
+| Program Flow | 支撑性技术追踪：入口点、关键分支、错误路径和调用链证据；不要把它当作主业务流程叙事。 |
 | Data Flow | 输入、输出、文件读写、关键字段和数据状态变化。 |
 | Controls / Workarounds | 人工检查、补跑、对账、报表核验和操作惯例。 |
 

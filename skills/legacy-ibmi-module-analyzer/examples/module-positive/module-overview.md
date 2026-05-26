@@ -30,11 +30,11 @@
 
 ## Capability Seeds For spec-writer
 
-| CAP Seed | Suggested By | SME Question |
-| --- | --- | --- |
-| CAP-CARD-AUTH-001 | View 1 actors + View 3 entry programs | Is "On-Us Authorization" a distinct capability or part of broader "Authorization"? |
-| CAP-CARD-AUTH-002 | View 1 BAU + View 3 nightly recon flow | Is "Daily Reconciliation" a separate capability or part of "Authorization"? |
-| CAP-CARD-AUTH-003 | View 1 BR seeds | Is "Credit Limit Enforcement" its own capability or a rule within "Authorization"? |
+| CAP Seed | Business Signal | Evidence Basis | SME Question |
+| --- | --- | --- | --- |
+| CAP-CARD-AUTH-001 | On-us authorization has distinct actors, decision outcome, and real-time response obligation | View 1 actors/events + View 3 entry-flow evidence | Is "On-Us Authorization" a distinct capability or part of broader "Authorization"? |
+| CAP-CARD-AUTH-002 | Daily reconciliation has a separate BAU rhythm, cut-off, exception review, and finance owner | View 1 BAU + View 3 nightly recon evidence | Is "Daily Reconciliation" a separate capability or part of "Authorization"? |
+| CAP-CARD-AUTH-003 | Credit limit enforcement is a policy cluster reused across authorization channels | View 1 BR seeds + supporting behavior/evidence | Is "Credit Limit Enforcement" its own capability or a rule within "Authorization"? |
 
 ## Module Review Checklist
 
@@ -42,7 +42,7 @@
 - [ ] Cross-view consistency check passed
   - [X] Every actor in View 1 maps to entry node in View 3 — Cardholder/Merchant → Visa MQ entry, Risk Officer → manual_actor: yes
   - [X] Every system in View 2 appears in View 3 — Visa, GL, Risk Monitoring all referenced
-  - [X] Every BR seed in View 1 references program/file — all 4 seeds traced
+  - [X] Every BR seed in View 1 references supporting evidence — all 4 seeds traced
   - [X] Every data object in View 4 traces to flow in View 3 — all traced
 - [ ] No blocking TBDs remain — 3 blocking TBDs pending
 - [ ] Capability seeds list is complete and SME-confirmed

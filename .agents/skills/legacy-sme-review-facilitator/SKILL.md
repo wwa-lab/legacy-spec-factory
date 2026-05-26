@@ -438,6 +438,9 @@ Fail validation if:
 3. **Show each item** with target ID, question, evidence IDs, confidence,
    and `ai_suggested_decision`. Make clear that the suggestion is not SME
    approval.
+   - Phrase the question in business language first. Keep program names,
+     file names, field names, and node IDs in the evidence context unless
+     the SME is being asked specifically as a technical owner.
 4. **Parse SME replies** such as:
 
    ```text
@@ -506,7 +509,7 @@ decisions:
 
   - item_id: TBD-CREDIT-004
     item_type: tbd
-    question_posed: "Does CRDJOB validate against a blacklist or whitelist?"
+    question_posed: "When customer-account validation runs, is the business check based on a blocked-customer list or an approved-customer list?"
     sme_answer: "That's from a different era. I need to check with the Operations team. Will update by EOW."
     decision_outcome: deferred
     referenced_evidence: []
@@ -594,7 +597,7 @@ findings:
     source_item_id: TBD-CREDIT-004
     category: deferred_tbd
     severity: critical
-    description: "Blacklist vs. whitelist validation in CRDJOB"
+    description: "Customer-account validation policy is unresolved: blocked-customer list vs. approved-customer list"
     owner: Operations Manager
     target_date: "2026-05-23"
     next_step: "Gather evidence, update decision log, route to spec-writer"

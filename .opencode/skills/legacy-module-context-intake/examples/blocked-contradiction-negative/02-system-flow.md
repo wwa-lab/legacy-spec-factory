@@ -26,9 +26,9 @@ Trigger model (scheduled batch vs event-driven) affects interface and SLA design
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-CAND-PAYMENT-MATCH-003 | Trigger model is scheduled batch (not event-driven). | RUN-PAYMENT-JOBLOG-001 | blocked_pending_contradiction_review |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-CAND-PAYMENT-MATCH-003 | Trigger model is scheduled batch rather than event-driven. | Payment posting timeliness, interface design, and SLA expectations depend on the trigger model. | RUN-PAYMENT-JOBLOG-001; `PMTMATCH` | blocked_pending_contradiction_review |
 
 ## Gaps For Module Analyzer
 

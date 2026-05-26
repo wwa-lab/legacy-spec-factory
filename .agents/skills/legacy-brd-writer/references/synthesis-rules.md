@@ -6,6 +6,66 @@ module analysis.
 
 ---
 
+## 0. Business-First Translation Gate
+
+Before drafting the BRD body, convert technical evidence into business-process
+language. The BRD may be evidence-backed by program / flow analysis, but it
+must be reviewable by people who do not know IBM i program names.
+
+### Required Translation
+
+For each capability, identify:
+
+- **Business trigger:** what event starts the work
+- **Business object:** what customer, account, order, claim, payment, card,
+  case, or record is affected
+- **Business state change:** what becomes pending, approved, rejected,
+  fulfilled, reconciled, reported, or exceptioned
+- **Business participants:** customer, operations user, partner, processor,
+  downstream consumer, or control function
+- **Business outcome:** what success / failure means outside the code
+- **Control point:** approval, validation, reconciliation, audit, reporting, or
+  exception handling point
+
+### Program Chain Anti-Pattern
+
+Do not use the direct runtime chain as the as-is summary.
+
+**Wrong:**
+
+1. `@PGMA` selects records from `FILEA` and calls `@PGMB`.
+2. `@PGMB` updates `FILEB`.
+3. `@PGMC` copies `FILEC` to an interface library.
+
+**Right:**
+
+1. The capability identifies pending customer requests that are eligible for
+   processing.
+2. Eligible requests are applied to the customer/account record and staged for
+   external validation.
+3. External responses are received, normalized, reconciled, and routed into
+   normal or exception reporting.
+
+Program names may remain in evidence notes, traceability, or a short appendix
+when necessary for auditability. They should not carry the main BRD narrative.
+
+### If Business Meaning Is Unknown
+
+If evidence only shows that one program calls another, but does not reveal why
+the business cares, create a `TBD-*` instead of padding the BRD with technical
+detail:
+
+```yaml
+id: TBD-<CAPABILITY-SLUG>-001
+category: sme_questions
+statement: "What business decision or control is represented by this handoff?"
+evidence: "Flow analysis shows the handoff; business purpose is not confirmed."
+resolver: SME
+blocking: yes
+```
+
+---
+
 ## 1. Extracting Observed Behaviors (BEH-*)
 
 An **observed behavior** is a factual statement about what the legacy system
@@ -32,15 +92,17 @@ raw IBM i source directly.
 
 ### Extraction Steps
 
-1. **Review the module analysis's View 3 (Program Flow)** — this aggregates all
-   program logic into one view
-2. **For each major branch or decision point**, ask: "What does the system do
-   here?"
-3. **Extract as a declarative statement** without interpretation:
+1. **Review the module analysis's business / operation view first** — identify
+   the business trigger, parties, state changes, outcomes, and controls
+2. **Review the module analysis's View 3 (Program Flow)** only as supporting
+   evidence for what the system does
+3. **For each major branch or decision point**, ask: "What business-visible
+   effect does the system create here?"
+4. **Extract as a declarative statement** without interpretation:
    - WRONG: "The system intelligently handles credit limits" (interpretation)
    - RIGHT: "If credit amount exceeds limit, the system rejects the transaction
      and writes error code 42 to the response"
-4. **Link to upstream evidence**:
+5. **Link to upstream evidence**:
    - If from program analysis: cite line number in `program-analysis-<OBJ-ID>.md`
    - If from flow: cite section in `flow-<FLOW-SLUG>.md`
    - If from runtime: cite evidence ID `EV-...-N`
@@ -232,11 +294,13 @@ These situations call for TBDs instead of confident claims:
 See `templates/brd.md` for the structure. Fill in:
 
 1. **Capability Overview** (from module boundary definition)
-2. **Observed Behaviors** (BEH-* with evidence links)
-3. **Inferred Business Rules** (BR-* seeds with evidence links; all
+2. **As-Is Business Process Summary** (business trigger, participants, phases,
+   outcomes, controls, and evidence boundary)
+3. **Observed Behaviors** (BEH-* with evidence links)
+4. **Inferred Business Rules** (BR-* seeds with evidence links; all
    `needs_sme_review`)
-4. **Open Questions** (TBD-* with categories and resolvers)
-5. **Evidence Index** (summary table)
+5. **Open Questions** (TBD-* with categories and resolvers)
+6. **Evidence Index** (summary table)
 
 All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 
@@ -245,6 +309,7 @@ All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 ## 7. Checklist Before SME Review
 
 - [ ] Every BEH-* statement is factual (no interpretation)
+- [ ] The as-is summary is business-first and not a direct program call chain
 - [ ] Every BEH-* links to ≥1 EV-*
 - [ ] Every BR-* abstracts ≥1 BEH-* (not invented)
 - [ ] Every BR-* links to ≥1 EV-*

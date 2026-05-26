@@ -27,5 +27,5 @@
 
 ## Candidate Facts
 
-| Candidate ID | Statement | Evidence | Promotion Status | Required Review |
-| --- | --- | --- | --- | --- |
+| Candidate ID | Statement | Business Signal | Evidence Basis | Promotion Status | Required Review |
+| --- | --- | --- | --- | --- | --- |

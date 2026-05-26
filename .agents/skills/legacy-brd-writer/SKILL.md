@@ -26,6 +26,9 @@ spec-writing.
 
 The BRD is a **business synthesis layer**, not a technical specification. It shows:
 
+- The **business process story** in SME language: triggering event, actors,
+  customer/account impact, business state changes, normal path, exception paths,
+  controls, and unresolved policy questions
 - What the legacy system **demonstrably does** (`BEH-*`)
 - What business rules we **infer from evidence** (`BR-*` seeds from module, status
   `needs_sme_review` or `draft`)
@@ -75,12 +78,22 @@ formal acceptance criteria, minting formal `TC-*` test cases, minting `DEC-*`
 ids, or specifying target architecture, you are in the wrong skill. Route to
 `legacy-spec-writer` or `legacy-golden-master-test-planner` as appropriate.
 
+It is also the wrong output shape if the BRD reads like a program walkthrough.
+Runtime chains, object lists, file-copy details, and call-sequence summaries are
+evidence, not the main BRD narrative. Keep program names in evidence references,
+traceability, or a short appendix when needed; do not make them the reader's
+primary path through the business requirement.
+
 ## Role
 
 You are the **business requirements synthesizer** for one capability.
 
 You must:
 
+- translate module / flow / program evidence into business-process language
+  before drafting the BRD body
+- write an as-is business narrative that a SME, BA, operations owner, product
+  owner, or compliance reviewer can discuss without knowing IBM i object names
 - extract observed behaviors (`BEH-*`) from flow and program analyses without
   invention or inference
 - aggregate inferred rules (`BR-*` seeds) from the module analysis; keep their
@@ -100,6 +113,8 @@ You must:
 
 You must not:
 
+- present the BRD as a direct runtime chain, call graph, program inventory, file
+  movement list, or object-by-object analysis
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
@@ -236,8 +251,9 @@ The summary below is normative for this skill.
 - **Canonical directory**: `05_brds/<CAPABILITY-SLUG>/` containing `brd.md`,
   `brd-review.md`, `validation-scenarios.md`, `traceability.md`.
 - **Required sections/fields** (see `templates/brd.md`): capability overview,
-  scope statement, observed behaviors, inferred business rules (with status),
-  validation scenario summary, open questions (TBDs), evidence index.
+  scope statement, as-is business process summary, observed behaviors, inferred
+  business rules (with status), validation scenario summary, open questions
+  (TBDs), evidence index.
 - **Required IDs**: mints `BRD-*` for the document, `VAL-*` for BRD-stage
   validation scenario seeds, and `TBD-*` for open
   questions. Reuses `CAP-*`, `OBJ-*`, `EV-*`, `BEH-*`, `BR-*` seeds,
@@ -279,6 +295,9 @@ upstream evidence:
 
 - observed behaviors (`BEH-*`) are factual statements about what the code / data /
   logs show, not inferences
+- the as-is summary is a business process narrative, not a program call chain;
+  program and file names appear only when they are essential identifiers or
+  evidence references
 - inferred business rules (`BR-*` seeds) are supported by `BEH-*` and linked
   `EV-*` content (not just ID reference)
 - knowledge type (observed_behavior / inferred_business_rule) is correctly
@@ -327,13 +346,30 @@ decision.
    - Confirm `sensitive` flag is set on all evidence; if any `sensitive:
      unknown`, stop and request redaction review
 
-3. **Lift Observed Behaviors (BEH-*)**
+3. **Translate Technical Evidence into Business Process Language**
+   - Create a short as-is business process summary before writing `BEH-*`
+   - Describe the triggering business event, primary actor or system party,
+     business object/state affected, normal outcome, exception outcomes,
+     operational controls, and handoffs
+   - Use domain nouns (`cardholder`, `replacement request`, `address
+     verification response`, `exception queue`) before implementation nouns
+     (`program`, `file`, `library`, `commit`, `copy`)
+   - If the only available description is a runtime chain, convert it into 3-6
+     business phases and create `TBD-*` questions for any phase whose business
+     purpose is unclear
+   - Keep program names, file names, and object IDs in evidence references,
+     traceability, or appendix notes unless a SME must recognize the object to
+     confirm scope
+
+4. **Lift Observed Behaviors (BEH-*)**
    - From flow analyses' control flow points, branch conditions, error handlers
      (factual statements about legacy system behavior)
    - Each BEH must trace to ≥1 `EV-*`
    - These are *factual* — what the system does, not why or whether it's correct
+   - Phrase each BEH as business-visible behavior first; implementation details
+     may appear after the business behavior only as supporting context
 
-4. **Aggregate Business Rules (BR-*)**
+5. **Aggregate Business Rules (BR-*)**
    - From module analysis's `BR-*` seeds (View 1 / Capability Seeds)
    - Cross-check against flow / program analyses
    - Keep each BR-* at status `needs_sme_review` (do NOT promote to `approved`);
@@ -346,7 +382,7 @@ decision.
      - Reference ≥1 `EV-*` that supports it
      - Be marked `knowledge_type: inferred_business_rule`
 
-5. **Draft Validation Scenario Seeds (VAL-*)**
+6. **Draft Validation Scenario Seeds (VAL-*)**
    - Convert approved observed behaviors and inferred rule candidates into
      SME-reviewable business validation scenarios
    - Each `VAL-*` must map to at least one existing `BEH-*` or `BR-*` and at
@@ -360,20 +396,20 @@ decision.
    - If a useful scenario cannot be drafted safely, put it in Deferred
      Scenarios with the evidence gap and resolver
 
-6. **Surface Open Questions (TBD-*)**
+7. **Surface Open Questions (TBD-*)**
    - Contradictory evidence → `TBD-*` with category `contradictory_evidence`
    - Missing context → `TBD-*` with category `sme_questions`
    - Ambiguous scope → `TBD-*` with category `sme_questions`
    - Each TBD must name a resolver and indicate whether it blocks spec-writing
 
-7. **Build Traceability**
+8. **Build Traceability**
    - Generate `traceability.md` cross-reference table
    - Every BEH-* and BR-* must have ≥1 supporting EV-*
    - Every VAL-* must map back to BEH-* or BR-* and supporting EV-*
    - Every TBD must be listed with category and resolver
    - Verify complete coverage (no claim is missing from the table)
 
-8. **Prepare for SME Approval**
+9. **Prepare for SME Approval**
    - Mark `status: in_review`
    - Generate `brd-review.md` checklist
    - Generate `validation-scenarios.md` for SME scenario coverage review
@@ -460,6 +496,8 @@ Before marking the BRD `approved`, confirm:
 - [ ] All four files exist at correct paths (`brd.md`, `brd-review.md`,
       `validation-scenarios.md`, `traceability.md`)
 - [ ] Every claim in `brd.md` appears in `traceability.md`
+- [ ] The as-is summary is business-readable and does not read as a direct
+      runtime chain, object inventory, or call graph
 - [ ] Every `BEH-*` and `BR-*` links to ≥1 `EV-*`
 - [ ] Every `VAL-*` maps to existing `BEH-*` or `BR-*` and ≥1 `EV-*`
 - [ ] `validation-scenarios.md` contains no formal `AC-*`, formal `TC-*`,
@@ -518,6 +556,14 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.3 (2026-05-26): Business-readable BRD hardening
+  - Added an explicit technical-evidence-to-business-process translation step
+  - Required an as-is business process summary before BEH / BR extraction
+  - Prohibited direct runtime-chain, program-inventory, and file-movement prose
+    as the primary BRD narrative
+  - Clarified that program/object details belong in evidence, traceability, or
+    appendix context unless essential for SME review
 
 - v0.1.2 (2026-05-21): BRD-stage validation scenario seeds
   - Added `validation-scenarios.md` as a fourth BRD Package artifact

@@ -41,9 +41,13 @@ document defines the *file format*; that document defines the *intent*.
 (Module-level capability candidates; one row per CAP-*; the spec-writer
 resolves each into one or more `spec.yaml` artifacts.)
 
-| CAP Seed | Suggested By | SME Question |
-| --- | --- | --- |
-| CAP-AUTH-MODULE-001 | View 1 + View 3 | Is the primary authorization flow a distinct capability or part of a broader authorization capability? |
+| CAP Seed | Business Signal | Evidence Basis | SME Question |
+| --- | --- | --- | --- |
+| CAP-AUTH-MODULE-001 | Primary authorization event has its own business outcome, actors, and policy cluster | View 1 business event + View 3 entry flow evidence | Is the primary authorization flow a distinct business capability or part of a broader authorization capability? |
+
+Capability seeds must be framed around business events, outcomes, policy
+clusters, or operational ownership. Program flow and data flow are evidence for
+the boundary; they are not the boundary itself.
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
@@ -105,10 +109,10 @@ through to resolution. Often a small flowchart.]
 ## Business Rule Seeds
 (Module-level seeds aggregating across all in-scope flows.)
 
-| Seed ID | Candidate Rule | Suggested By | SME Question |
-| --- | --- | --- | --- |
-| BR-AUTH-MODULE-01 | Eligibility threshold must be respected for every primary event | FLOW-AUTH-001 SEED-01 | Regulatory or operational? |
-| BR-AUTH-MODULE-02 | Audit row must persist before response | FLOW-AUTH-001 SEED-03 | Hard requirement or best-effort? |
+| Seed ID | Candidate Rule | Business Signal | Evidence Basis | SME Question |
+| --- | --- | --- | --- | --- |
+| BR-AUTH-MODULE-01 | Eligibility threshold must be respected for every primary event | Primary event is allowed/blocked based on threshold decision | FLOW-AUTH-001 SEED-01 | Regulatory or operational? |
+| BR-AUTH-MODULE-02 | Audit row must persist before response | Business decision is recorded before the response is returned | FLOW-AUTH-001 SEED-03 | Hard requirement or best-effort? |
 | ... | ... | ... | ... |
 
 ## TBDs

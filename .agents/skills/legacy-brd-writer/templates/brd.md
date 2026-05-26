@@ -34,10 +34,50 @@ revenue, compliance, operational efficiency, etc.). Keep to 2-3 sentences.
 
 ---
 
-## 2. Observed Behaviors
+## 2. As-Is Business Process Summary
+
+Describe the current-state capability in business terms. This section is for
+SMEs, BAs, operations, product, compliance, and delivery stakeholders; it must
+not read as a program call chain or object inventory.
+
+### Business Trigger
+
+`<What business event starts this capability? Example: a customer requests a card replacement, an address-verification response is received, a daily reconciliation window opens.>`
+
+### Business Participants and Systems
+
+- **Primary business party:** `<Customer / account holder / operations team / partner>`
+- **System role:** `<What the legacy platform does in business terms>`
+- **External / downstream party:** `<Network, processor, regulator, reporting consumer, etc. if applicable>`
+
+### Current-State Flow
+
+1. `<Business phase 1: selection / intake / eligibility / initiation>`
+2. `<Business phase 2: execution / decision / fulfillment / handoff>`
+3. `<Business phase 3: response / reconciliation / exception handling / reporting>`
+
+### Business Outcomes and Controls
+
+- **Normal outcome:** `<What successful completion means to the business>`
+- **Exception outcome:** `<What happens when the capability cannot complete normally>`
+- **Control or audit point:** `<Business-visible control, reconciliation, approval, or reporting point>`
+
+### Implementation Evidence Boundary
+
+Program, file, library, and object names are evidence references, not the
+primary BRD narrative. Include them here only when the SME must recognize a
+legacy object to confirm scope; otherwise keep them in the evidence index and
+traceability report.
+
+---
+
+## 3. Observed Behaviors
 
 Factual statements about what the legacy system demonstrably does, derived from
 approved program / flow analyses, data flows, and runtime evidence.
+
+Write each behavior as a business-visible fact first. If implementation context
+is needed, keep it secondary and link it through evidence.
 
 ### BEH-<CAPABILITY-SLUG>-001: `<Behavior Title>`
 
@@ -62,7 +102,7 @@ analysis, spool output, etc.)
 
 ---
 
-## 3. Inferred Business Rules
+## 4. Inferred Business Rules
 
 Rules we infer from the observed system behavior. These are candidates for
 promotion to approved requirements in the specification phase.
@@ -107,7 +147,7 @@ confirm whether each is actually a business rule (vs. implementation artifact).
 
 ---
 
-## 4. Validation Scenario Summary
+## 5. Validation Scenario Summary
 
 See `validation-scenarios.md` for SME-reviewable `VAL-*` scenario seeds.
 These scenarios help validate BRD scope and coverage, but they are not formal
@@ -120,7 +160,7 @@ These scenarios help validate BRD scope and coverage, but they are not formal
 
 ---
 
-## 5. Open Questions & Gaps (TBDs)
+## 6. Open Questions & Gaps (TBDs)
 
 Questions that remain unresolved and must be answered before the next phase
 (spec-writing).
@@ -147,7 +187,7 @@ Questions that remain unresolved and must be answered before the next phase
 
 ---
 
-## 6. Evidence Index
+## 7. Evidence Index
 
 Summary of all evidence collected for this capability.
 
@@ -160,7 +200,7 @@ Summary of all evidence collected for this capability.
 
 ---
 
-## 7. Traceability Summary
+## 8. Traceability Summary
 
 See `traceability.md` for the full cross-reference table.
 

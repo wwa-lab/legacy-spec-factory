@@ -243,7 +243,7 @@ Capture interfaces, batch jobs, scheduling, reports, and asynchronous flows.
 Recommended content:
 
 - Job / scheduler inventory
-- Program call chain
+- Program call-chain evidence (supporting trace, not business narrative)
 - Submitted jobs
 - Message queues / data queues
 - File exchange
@@ -359,4 +359,3 @@ The first version of this Confluence knowledge base is done when:
 - At least one SME review has been completed.
 - At least one traceability chain from evidence to business rule to acceptance criteria can be demonstrated.
 - The team knows which template to use when starting a new module.
-

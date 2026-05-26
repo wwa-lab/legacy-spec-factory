@@ -3,7 +3,7 @@ skill: legacy-brd-writer
 scorecard_version: v0.1.2
 static_score: 9.36
 decision: repo-ready
-status: current
+status: superseded_by_v0.1.3
 last_verified: 2026-05-22
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-05-22 }
@@ -92,4 +92,3 @@ OpenCode.
 - Without runtime smoke, adapter behavior is not yet proven.
 - `VAL-*` can be mistaken for formal `TC-*` if callers skip the boundary rules;
   smoke tests should include this negative case.
-

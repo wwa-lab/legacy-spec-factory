@@ -22,12 +22,12 @@ suspense. No sub-programs have been identified in the synthetic fixture.
 
 ## Candidate Seeds
 
-| Candidate ID | Candidate Statement | Suggested By | Required Review |
-| --- | --- | --- | --- |
-| RAG-ASM-PAYMENT-MATCH-001 | No sub-program calls identified; `PMTMATCH` contains all matching logic inline. | SNP-PAYMENT-001 | needs_sme_review |
+| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
+| --- | --- | --- | --- | --- |
+| RAG-ASM-PAYMENT-MATCH-001 | Full program analysis should confirm whether matching logic is inline or delegated elsewhere. | Modernization scope depends on whether invoice matching, posting, and suspense routing are isolated or spread across callers. | `PMTMATCH`; SNP-PAYMENT-001 | needs_sme_review |
 
 ## Gaps For Module Analyzer
 
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
 | --- | --- | --- | --- | --- | --- |
-| TBD-PAYMENT-MATCH-002 | program_scope | Are there other programs that post to the AR balance outside `PMTMATCH`? | SNP-PAYMENT-001 | IT SME | no |
+| TBD-PAYMENT-MATCH-002 | program_scope | Are there other programs that post to the AR balance outside the identified matching path? | SNP-PAYMENT-001; `PMTMATCH` | IT SME | no |
