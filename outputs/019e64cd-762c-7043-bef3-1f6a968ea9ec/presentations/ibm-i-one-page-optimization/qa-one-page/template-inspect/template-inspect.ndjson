@@ -1,0 +1,56 @@
+{"kind":"slide","id":"sl/2x4nap4r","slide":2,"title":"DELIVERY VALUE","textShapes":27}
+{"kind":"shape","id":"sh/cvixczed","slide":2,"name":"Shape 0","bbox":[0,0,1279.97,72]}
+{"kind":"shape","id":"sh/5gbq1ory","slide":2,"name":"Shape 1","bbox":[64.32,44.16,7.68,19.2]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":2,"name":"Text 2","text":"DELIVERY VALUE","textPreview":"DELIVERY VALUE","textChars":14,"textLines":1,"bbox":[82.56,45.12,240,15.36]}
+{"kind":"shape","id":"sh/nyd0z610","slide":2,"name":"Shape 3","bbox":[64.32,132.48,1150.08,0]}
+{"kind":"shape","id":"sh/cj6tovah","slide":2,"name":"Shape 4","bbox":[64.32,666.24,1150.08,0]}
+{"kind":"shape","id":"sh/54zidony","slide":2,"name":"Shape 5","bbox":[1012.8,0,187.2,720]}
+{"kind":"shape","id":"sh/u9knih4b","slide":2,"name":"Shape 6","bbox":[1082.88,0,155.52,720]}
+{"kind":"textbox","id":"sh/judg7ads","slide":2,"name":"Text 7","text":"AI-powered IBM i delivery accelerator: faster delivery with controlled evidence","textPreview":"AI-powered IBM i delivery accelerator: faster delivery with controlled evidence","textChars":79,"textLines":1,"bbox":[64.32,90.24,1080,34.56]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":2,"name":"Text 8","text":"Standardized AS400 skill chains turn scarce expert judgment into repeatable delivery workflows.","textPreview":"Standardized AS400 skill chains turn scarce expert judgment into repeatable delivery workflows.","textChars":95,"textLines":1,"bbox":[66.24,149.76,844.8,23.04]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":2,"name":"Text 9","text":"Executive brief","textPreview":"Executive brief","textChars":15,"textLines":1,"bbox":[1032,148.8,177.6,21.12]}
+{"kind":"shape","id":"sh/54zidony","slide":2,"name":"Shape 10","bbox":[80.64,199.68,360,289.92]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":2,"name":"Text 11","text":"Developer onboarding","textPreview":"Developer onboarding","textChars":20,"textLines":1,"bbox":[111.36,232.32,302.4,24.96]}
+{"kind":"textbox","id":"sh/nap4r65w","slide":2,"name":"Text 12","text":"1 month","textPreview":"1 month","textChars":7,"textLines":1,"bbox":[111.36,292.8,120,40.32]}
+{"kind":"shape","id":"sh/upwb2hwf","slide":2,"name":"Shape 13","bbox":[237.12,314.88,65.28,0]}
+{"kind":"textbox","id":"sh/5gbq1ory","slide":2,"name":"Text 14","text":"1 week","textPreview":"1 week","textChars":6,"textLines":1,"bbox":[305.28,292.8,103.68,40.32]}
+{"kind":"textbox","id":"sh/cvixczed","slide":2,"name":"Text 15","text":"AS400 developers learn the delivery path through reusable requirements, specs, review gates and test assets.","textPreview":"AS400 developers learn the delivery path through reusable requirements, specs, review gates and test assets.","textChars":108,"textLines":1,"bbox":[113.28,362.88,292.8,59.52]}
+{"kind":"textbox","id":"sh/jm1cfa9w","slide":2,"name":"Text 16","text":"Outcome: onboarding cycle reduced from 1 month to 1 week.","textPreview":"Outcome: onboarding cycle reduced from 1 month to 1 week.","textChars":57,"textLines":1,"bbox":[113.28,436.8,297.6,21.12]}
+{"kind":"shape","id":"sh/u18jqh0f","slide":2,"name":"Shape 17","bbox":[474.24,199.68,262.08,289.92]}
+{"kind":"textbox","id":"sh/25kb6xkf","slide":2,"name":"Text 18","text":"+10%","textPreview":"+10%","textChars":4,"textLines":1,"bbox":[521.28,275.52,168,52.8]}
+{"kind":"textbox","id":"sh/rqd4vmtw","slide":2,"name":"Text 19","text":"Phase-1 delivery speed","textPreview":"Phase-1 delivery speed","textChars":22,"textLines":1,"bbox":[506.88,343.68,195.84,40.32]}
+{"kind":"textbox","id":"sh/kb6xkf6d","slide":2,"name":"Text 20","text":"Faster first-phase execution by reducing manual preparation and repeated SME clarification.","textPreview":"Faster first-phase execution by reducing manual preparation and repeated SME clarification.","textChars":91,"textLines":1,"bbox":[497.28,405.12,216,49.92]}
+{"kind":"shape","id":"sh/9w3m94fu","slide":2,"name":"Shape 21","bbox":[771.84,199.68,357.12,289.92]}
+{"kind":"textbox","id":"sh/2t83itgf","slide":2,"name":"Text 22","text":"Control is preserved","textPreview":"Control is preserved","textChars":20,"textLines":1,"bbox":[803.52,232.32,283.2,24.96]}
+{"kind":"textbox","id":"sh/re1w7mp0","slide":2,"name":"Text 23","text":"Reusable workflow, visible gates","textPreview":"Reusable workflow, visible gates","textChars":32,"textLines":1,"bbox":[803.52,280.32,283.2,21.12]}
+{"kind":"shape","id":"sh/kzupwb2h","slide":2,"name":"Shape 24","bbox":[849.6,340.8,55.68,55.68]}
+{"kind":"textbox","id":"sh/9knih4by","slide":2,"name":"Text 25","text":"Prepare","textPreview":"Prepare","textChars":7,"textLines":1,"bbox":[849.6,360.96,55.68,9.6]}
+{"kind":"shape","id":"sh/2p8nqxs7","slide":2,"name":"Shape 26","bbox":[993.6,340.8,55.68,55.68]}
+{"kind":"textbox","id":"sh/ra5gbq1o","slide":2,"name":"Text 27","text":"Generate","textPreview":"Generate","textChars":8,"textLines":1,"bbox":[993.6,360.96,55.68,9.6]}
+{"kind":"shape","id":"sh/xs72x4na","slide":2,"name":"Shape 28","bbox":[993.6,408,55.68,55.68]}
+{"kind":"textbox","id":"sh/87ed8bat","slide":2,"name":"Text 29","text":"Review","textPreview":"Review","textChars":6,"textLines":1,"bbox":[993.6,428.16,55.68,9.6]}
+{"kind":"shape","id":"sh/fmlkjm1c","slide":2,"name":"Shape 30","bbox":[849.6,408,55.68,55.68]}
+{"kind":"textbox","id":"sh/q1orytsv","slide":2,"name":"Text 31","text":"Evidence","textPreview":"Evidence","textChars":8,"textLines":1,"bbox":[849.6,428.16,55.68,9.6]}
+{"kind":"shape","id":"sh/1gvy90je","slide":2,"name":"Shape 32","bbox":[905.28,368.64,83.52,0]}
+{"kind":"shape","id":"sh/8z25kb6x","slide":2,"name":"Shape 33","bbox":[1021.44,396.48,0,6.72]}
+{"kind":"shape","id":"sh/je9cvixc","slide":2,"name":"Shape 34","bbox":[993.6,435.84,-83.52,0]}
+{"kind":"shape","id":"sh/qtcj6tov","slide":2,"name":"Shape 35","bbox":[877.44,408,0,-6.72]}
+{"kind":"textbox","id":"sh/xczed8v6","slide":2,"name":"Text 36","text":"Human approval remains at the review gates; evidence stays reusable.","textPreview":"Human approval remains at the review gates; evidence stays reusable.","textChars":68,"textLines":1,"bbox":[817.92,476.16,264,17.28]}
+{"kind":"shape","id":"sh/8v6psfil","slide":2,"name":"Shape 37","bbox":[80.64,533.76,1048.32,65.28]}
+{"kind":"shape","id":"sh/w3m94fu1","slide":2,"name":"Shape 38","bbox":[99.84,554.88,17.28,17.28]}
+{"kind":"textbox","id":"sh/loj2t83i","slide":2,"name":"Text 39","text":"Intake & normalize","textPreview":"Intake & normalize","textChars":18,"textLines":1,"bbox":[123.84,548.16,148.8,26.88]}
+{"kind":"shape","id":"sh/ex0nuxc3","slide":2,"name":"Shape 40","bbox":[278.4,563.52,30.72,0]}
+{"kind":"shape","id":"sh/3itgfmlk","slide":2,"name":"Shape 41","bbox":[307.2,554.88,17.28,17.28]}
+{"kind":"textbox","id":"sh/wb2hwfyx","slide":2,"name":"Text 42","text":"Understand & assess","textPreview":"Understand & assess","textChars":19,"textLines":1,"bbox":[331.2,548.16,148.8,26.88]}
+{"kind":"shape","id":"sh/lwval87e","slide":2,"name":"Shape 43","bbox":[485.76,563.52,30.72,0]}
+{"kind":"shape","id":"sh/e9cvixcz","slide":2,"name":"Shape 44","bbox":[514.56,554.88,17.28,17.28]}
+{"kind":"textbox","id":"sh/3q5o7qpg","slide":2,"name":"Text 45","text":"Specify & design","textPreview":"Specify & design","textChars":16,"textLines":1,"bbox":[538.56,548.16,148.8,26.88]}
+{"kind":"shape","id":"sh/sneloj2t","slide":2,"name":"Shape 46","bbox":[693.12,563.52,30.72,0]}
+{"kind":"shape","id":"sh/l87ed8ba","slide":2,"name":"Shape 47","bbox":[721.92,554.88,17.28,17.28]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":2,"name":"Text 48","text":"Generate & review","textPreview":"Generate & review","textChars":17,"textLines":1,"bbox":[745.92,548.16,148.8,26.88]}
+{"kind":"shape","id":"sh/il0rqd4v","slide":2,"name":"Shape 49","bbox":[900.48,563.52,30.72,0]}
+{"kind":"shape","id":"sh/tcj6tova","slide":2,"name":"Shape 50","bbox":[929.28,554.88,17.28,17.28]}
+{"kind":"textbox","id":"sh/0rqd4vmt","slide":2,"name":"Text 51","text":"Test & orchestrate","textPreview":"Test & orchestrate","textChars":18,"textLines":1,"bbox":[953.28,548.16,148.8,26.88]}
+{"kind":"textbox","id":"sh/byhgn29g","slide":2,"name":"Text 52","text":"Skill-family flow: requirement-normalizer / program + impact analyzers / specs / generator-reviewer / UT handoff, with BR-ID continuity.","textPreview":"Skill-family flow: requirement-normalizer / program + impact analyzers / specs / generator-reviewer / UT handoff, with BR-ID continuity.","textChars":136,"textLines":1,"bbox":[107.52,580.8,940.8,15.36]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":2,"name":"Text 53","text":"AI-Powered IBM i Delivery Accelerator | Executive Brief","textPreview":"AI-Powered IBM i Delivery Accelerator | Executive Brief","textChars":55,"textLines":1,"bbox":[64.32,679.68,556.8,14.4]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":2,"name":"Text 54","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1166.4,677.76,48,17.28]}
