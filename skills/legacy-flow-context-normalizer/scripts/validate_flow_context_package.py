@@ -51,6 +51,7 @@ VIEW_FILES = REQUIRED_FILES[2:6]
 VIEW_REQUIRED_HEADINGS = (
     "Normalization Status",
     "Summary",
+    "Mermaid Flow Diagram",
     "Evidence-Linked Flow Steps",
     "Candidate Seeds",
     "Gaps For SME Review",
@@ -100,6 +101,11 @@ def view_has_data_rows(text: str, heading: str) -> bool:
     return len(rows) >= 2
 
 
+def view_has_mermaid_diagram(text: str) -> bool:
+    diagram = section(text, "Mermaid Flow Diagram")
+    return bool(re.search(r"```mermaid\s+flowchart\s+(?:TD|LR|BT|RL)", diagram, re.I))
+
+
 def validate(package_dir: Path, allow_blocked: bool, allow_draft: bool) -> list[str]:
     findings: list[str] = []
 
@@ -144,6 +150,8 @@ def validate(package_dir: Path, allow_blocked: bool, allow_draft: bool) -> list[
         for heading in VIEW_REQUIRED_HEADINGS:
             if f"## {heading}" not in text:
                 findings.append(f"{name} missing required section: {heading}")
+        if not view_has_mermaid_diagram(text):
+            findings.append(f"{name} must include a Mermaid flowchart in Mermaid Flow Diagram")
         if not view_has_data_rows(text, "Evidence-Linked Flow Steps"):
             findings.append(f"{name} must include at least one evidence-linked flow step")
 

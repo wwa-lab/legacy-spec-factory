@@ -9,6 +9,12 @@
 ## Summary
 No operation flow was normalized because evidence authorization is unresolved.
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_PAYMENT_RECON_001["No operation step extracted: evidence authorization blocked"]
+```
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

@@ -80,10 +80,16 @@ Stop and produce only blocking findings if any apply:
 | Any source/runtime evidence has unknown sensitivity or missing authorization | `legacy-ibmi-evidence-intake` |
 | Confidential or production evidence needs redaction and no approved redaction exists | `legacy-ibmi-evidence-intake` |
 | Module slug, business name, or scope is missing | module owner / SME clarification |
-| A proprietary binary file cannot be read and no export is supplied | request PDF/SVG/PNG/CSV/text export |
-| Documents appear to cover multiple modules and the boundary is unclear | SME boundary decision |
+| No supplied document can be read or extracted into text/table/diagram fragments | request PDF/SVG/PNG/CSV/text export |
+| Documents appear to cover multiple modules and no draft boundary can be proposed | SME boundary decision |
 | Contradictions are found but the user asks to hide or smooth them over | block; keep `contradiction-log.md` visible |
 | Draft flows are requested as approved rules, approved module context, or BRD input without SME review | block; route through SME review first |
+
+Missing one or more of the four standard flows is **not** a stop condition.
+Create the missing view file with a placeholder Mermaid node, a `TBD-*`
+question, and `coverage.<view>: absent` or `partial`. The goal is to improve
+user experience by making incomplete inputs reviewable instead of blocking
+unless a downstream step would need to invent facts.
 
 ## Output Contract
 
@@ -95,6 +101,18 @@ For deterministic local validation, run:
 ```bash
 python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
   00_context_packages/<MODULE-SLUG>/flow-normalization
+```
+
+For multi-sheet Excel intake, generate an initial `source-document-index.yaml`
+fragment draft with:
+
+```bash
+python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
+  source-docs/<workbook>.xlsx \
+  --module-slug <MODULE-SLUG> \
+  --title "<Workbook title>" \
+  --owner "<Document owner>" \
+  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
 ```
 
 The package status in `flow-context-index.yaml` must be one of:
@@ -130,8 +148,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
     source files unreadable with no export, or all documents out of scope.
   - `6 minimum_pass`: module identity, authorized readable documents, and at
     least one flow candidate are present.
-  - `7-8 usable`: documents cover most of the four views, with visible source
-    provenance, gaps, and contradictions.
+  - `7-8 usable`: documents cover one or more views with visible source
+    provenance, gaps, and contradictions; missing views are represented as
+    explicit `TBD-*` questions rather than blockers.
   - `9-10 strong`: each view has multiple corroborating sources, data
     dictionary or interface context is present, and SME owner is assigned.
 
@@ -158,7 +177,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   four-view coverage, contradiction visibility, SME review, and no rule
   promotion.
 - **Handoff status**: only `ready_for_context_intake` and
-  `ready_with_warnings` may feed `legacy-module-context-intake`.
+  `ready_with_warnings` may feed `legacy-module-context-intake`. A partial
+  package may use `ready_with_warnings` only when SME explicitly accepts the
+  missing views or gaps as carry-forward TBDs.
 
 ### Validation
 
@@ -173,9 +194,12 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **SME / human approval**: SME or accountable owner confirms module boundary,
   flow sequence, missing or obsolete documents, exception behavior, manual
   steps, and which contradictions block context intake.
-- **Blocking conditions**: authorization gap, unreadable required source,
-  module boundary ambiguity, hidden contradiction, missing evidence links for
-  major flow steps, or absent SME decision when package claims readiness.
+- **Blocking conditions**: authorization gap, no readable source, no usable
+  module boundary, hidden contradiction, missing evidence links for major flow
+  steps that are stated as facts, or absent SME decision when package claims
+  readiness. Missing flow coverage by itself is not blocking when it is
+  captured as `TBD-*` and the package remains draft or SME-accepted
+  `ready_with_warnings`.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with status
@@ -212,6 +236,11 @@ orchestrator.
    - Mint `FRAG-*` IDs for relevant diagram nodes, table rows, paragraphs,
      slide elements, or SME notes.
    - Preserve page, sheet, slide, row, shape, or section references.
+   - For `.xlsx` workbooks, prefer the bundled
+     `scripts/extract_excel_fragments.py` helper. It enumerates every sheet,
+     treats the first non-empty row as headers, emits one `FRAG-*` per
+     non-empty data row, and classifies fragments by sheet/header keywords into
+     Operation / Business, System, Program, Data, or `cross_view`.
 
 5. **Classify fragments into four views**
    - Operation / Business Flow: actors, BAU sequence, approvals, manual steps,
@@ -225,8 +254,19 @@ orchestrator.
 
 6. **Draft each view**
    - Use `templates/view-template.md`.
+   - Include a `Mermaid Flow Diagram` in every view. The diagram is the
+     SME-readable flow surface; the evidence table remains the traceability
+     surface.
+   - Draw Mermaid edges only when the source evidence or SME note supports the
+     sequence. Mark uncertain nodes as `(needs SME review)` instead of making
+     the diagram look approved.
    - Keep every major step evidence-linked and marked `needs_sme_review`.
    - Put technical names in `Evidence Basis` when the view is business-facing.
+   - If a view has no usable source fragments, still create the view file with
+     one Mermaid placeholder node, one evidence-linked placeholder row pointing
+     to the available source set or `TBD-*`, and a blocking or non-blocking SME
+     question. Mark coverage as `absent`, not `blocked`, unless the package
+     would otherwise invent facts.
 
 7. **Build evidence map**
    - Use `templates/evidence-map.md`.
@@ -246,10 +286,10 @@ orchestrator.
 10. **Set handoff status**
     - `draft_needs_sme_review` when flow content is usable but SME decision is
       not recorded.
-    - `ready_for_context_intake` only when SME review confirms the four flows
-      or accepts non-blocking TBDs.
+    - `ready_for_context_intake` only when SME review confirms all four flows.
     - `ready_with_warnings` only when unresolved items are explicitly
-      non-blocking and carried into `open-questions.md`.
+      non-blocking and carried into `open-questions.md`; this is the preferred
+      status for SME-accepted partial packages.
     - `blocked_*` when a downstream skill would need to invent facts.
 
 11. **Validate**
@@ -278,3 +318,9 @@ Do not hand this package directly to `legacy-brd-writer`.
 ## Version
 
 - v0.1.0 (2026-05-27): Initial document-to-four-flow normalization skill.
+- v0.1.1 (2026-05-27): Added deterministic multi-sheet `.xlsx` extraction
+  helper that emits `DOC-*` and `FRAG-*` rows for `source-document-index.yaml`.
+- v0.1.2 (2026-05-27): Required Mermaid flow diagrams in every normalized
+  view while keeping evidence tables as the traceability source of truth.
+- v0.1.3 (2026-05-27): Softened missing-flow handling so partial four-view
+  packages can proceed as drafts or SME-accepted warnings instead of blocking.

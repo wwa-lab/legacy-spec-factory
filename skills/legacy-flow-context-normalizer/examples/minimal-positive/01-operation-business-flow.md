@@ -12,6 +12,12 @@ Branch staff submit a credit application, host credit checking evaluates it,
 and the branch receives an approve or decline recommendation. SME confirmed
 this is the correct high-level business sequence for context intake.
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_CREDIT_CHECK_001["Branch staff submit credit application"]
+```
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

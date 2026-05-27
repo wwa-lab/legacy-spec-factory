@@ -11,6 +11,12 @@
 The branch application channel sends the submitted application to the host
 credit checking function and receives a recommendation result.
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_CREDIT_CHECK_002["Branch application channel hands application to host credit checking"]
+```
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

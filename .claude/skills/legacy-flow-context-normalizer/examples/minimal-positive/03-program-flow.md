@@ -12,6 +12,12 @@ The historical process diagram labels `CCHK100` as the host credit checking
 program. SME confirmed this is enough to carry as a program-analysis focus,
 not as a complete program call chain.
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_CREDIT_CHECK_003["Host credit checking program-analysis focus: CCHK100"]
+```
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

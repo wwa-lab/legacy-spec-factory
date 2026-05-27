@@ -45,7 +45,7 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.0
+  version: v0.1.3
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   decision_reason: "Draft four views generated from authorized historical docs."
@@ -123,6 +123,11 @@ Rules:
   gates. Typical valid combination: `four_view_gate: warning` when one view
   is `partial` coverage but SME confirms the gap does not block context
   intake.
+- Missing view coverage is not a hard block by itself. Use `coverage.<view>:
+  absent` or `partial`, keep `four_view_gate: warning`, and create an explicit
+  `TBD-*` in the missing view and `open-questions.md`. Escalate to
+  `blocked_*` only when the downstream step would have to invent sequence,
+  ownership, system boundary, or data meaning.
 
 ## `source-document-index.yaml`
 
@@ -162,22 +167,33 @@ Rules:
 - Every extracted item used in a view gets a `FRAG-*` ID.
 - `readable_status` is `extracted`, `manual_export_required`, `unreadable`,
   or `not_needed`.
+- For multi-sheet Excel workbooks, use
+  `scripts/extract_excel_fragments.py` to produce a first-pass
+  `source-document-index.yaml`. The script enumerates every sheet, uses the
+  first non-empty row as headers, and emits one `FRAG-*` per non-empty data row
+  with locators such as `Interfaces row 4`.
 
 ## Four View Files
 
 Each view file must include:
 
-```markdown
+````markdown
 # View N: [Name] - [Module Name]
 
 ## Normalization Status
-- status: draft_needs_sme_review | ready_for_context_intake | blocked
+- status: draft_needs_sme_review | ready_for_context_intake | ready_with_warnings | blocked
 - source_state: extracted_documents | mixed | sme_confirmed | draft
 - primary_sources:
   - DOC-... / FRAG-...
 
 ## Summary
 [Concise normalized view. No invented facts.]
+
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_CREDIT_CHECK_001["Branch staff submit application"]
+```
 
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
@@ -190,9 +206,38 @@ Each view file must include:
 ## Gaps For SME Review
 | TBD ID | Category | Question | Evidence | Owner | Blocking |
 | --- | --- | --- | --- | --- | --- |
+````
+
+For a missing or unsupported view, still produce the file:
+
+````markdown
+## Summary
+No source fragment in the supplied package directly describes this view. The
+gap is carried forward for SME review instead of being treated as an inferred
+flow.
+
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  TBD_CREDIT_CHECK_001["Data Flow missing from supplied docs (needs SME review)"]
 ```
 
+## Evidence-Linked Flow Steps
+| STEP-CREDIT-CHECK-001 | 1 | No data-flow step extracted; SME must confirm whether this view is needed before context intake. | TBD-CREDIT-CHECK-001 | low | needs_sme_review |
+````
+
+This placeholder pattern improves reviewability while preserving the rule that
+the agent must not invent the missing flow.
+
 View-specific guidance:
+
+- Every view must include a Mermaid `flowchart` diagram before the evidence
+  table. The diagram is the SME-readable flow view; the table remains the
+  traceable source of truth.
+- Mermaid node IDs should mirror `STEP-*` IDs by replacing hyphens with
+  underscores, for example `STEP_CREDIT_CHECK_001`.
+- Mermaid edges must be backed by evidence rows or explicit `TBD-*` questions.
+  Do not draw inferred sequence arrows just because rows appear adjacent.
 
 - **View 1, Operation / Business Flow**: people, roles, handoffs, approvals,
   BAU rhythm, manual steps, exceptions, business outcomes. Cite `DOC-*` and

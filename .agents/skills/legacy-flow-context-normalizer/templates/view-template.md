@@ -9,6 +9,20 @@
 ## Summary
 <Concise normalized view. No invented facts.>
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_<MODULE-SLUG>_001["<Draft flow step>"]
+```
+
+Diagram rules:
+- Use `flowchart TD` unless the source order is explicitly left-to-right.
+- Use node IDs that mirror `STEP-*`, replacing hyphens with underscores.
+- Keep node labels business-readable for View 1; put technical names in
+  parentheses only when needed.
+- Annotate low-confidence or SME-pending nodes with `(needs SME review)`.
+- Do not add nodes or edges that are not backed by evidence rows below.
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

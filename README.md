@@ -89,12 +89,15 @@ Verification path — source-first discovery and evidence repair
 ```
 
 The default path is the enterprise field workflow. Teams bring a module-level
-context package, four reviewed flows, and RAG-retrieved evidence. If the team
-has only non-standard historical documents, normalize them into a draft
-`flow-normalization/` package and get SME review before module context intake.
-Source-first skills remain available as selective verification tools: use them
-when RAG output conflicts with human flow, when a high-risk rule needs source
-evidence, or when the module boundary is not yet understood.
+context package, four reviewed flows, and RAG-retrieved evidence when they have
+them. If the team has only non-standard historical documents, normalize them
+into a draft `flow-normalization/` package and get SME review before module
+context intake. The normalizer is a user-experience accelerator, not a punitive
+gate: missing flow views become Mermaid placeholders and `TBD-*` questions,
+while available evidence still moves forward as draft context. Source-first
+skills remain available as selective verification tools: use them when RAG
+output conflicts with human flow, when a high-risk rule needs source evidence,
+or when the module boundary is not yet understood.
 
 ## Module-First BRD Factory
 
@@ -592,7 +595,7 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
-| `legacy-flow-context-normalizer` | [v0.1.0 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Initial document-to-four-flow normalizer; runtime smoke pending |
+| `legacy-flow-context-normalizer` | [v0.1.3 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.3-scorecard.md) | 9.44 | 9.0 | Repo-ready | v0.1.3 treats missing flow views as draft placeholders/TBDs instead of hard blocks; runtime smoke pending |
 | `legacy-module-context-intake` | [v0.1.1 scorecard](docs/reviews/legacy-module-context-intake-v0.1.1-scorecard.md) | 9.42 | 9.0 | Repo-ready | v0.1.1 makes RAG candidate seeds business-signal first; runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
@@ -756,7 +759,7 @@ full status matrix and scorecard links.
 | # | Skill | Chain | Status | Review / next action |
 | ---: | --- | --- | --- | --- |
 | 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.0 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
-| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.0; run three-runtime smoke tests for scattered-document to four-flow normalization |
+| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.3; run three-runtime smoke tests for scattered-document, partial-input, and multi-sheet Excel to Mermaid-backed flow normalization |
 | 3 | `legacy-module-context-intake` | Module-first context | Existing | Repo-ready after v0.1.1 business-signal seed hardening; run three-runtime smoke tests for RAG/context package intake |
 | 4 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
 | 5 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
@@ -799,7 +802,7 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / RAG / SME-note documentation into draft evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.0, 9.0 capped; runtime smoke pending) |
+| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support and non-blocking placeholders for missing views | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.3, 9.0 capped; runtime smoke pending) |
 | `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output and human-confirmed four-view module context into a traceable package before module analysis, with RAG candidates framed as business signals backed by evidence | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)

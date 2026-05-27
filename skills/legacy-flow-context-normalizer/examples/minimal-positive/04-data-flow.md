@@ -12,6 +12,12 @@ The application status data object is updated with the approve or decline
 recommendation. Retention is not documented and is carried forward as a
 non-blocking question.
 
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  STEP_CREDIT_CHECK_004["Application status updated with recommendation result"]
+```
+
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |

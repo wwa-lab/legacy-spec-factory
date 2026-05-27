@@ -33,6 +33,19 @@ Use these values in view tables and `evidence-map.md`:
 
 ## View Classification Heuristics
 
+For `.xlsx` files, prefer:
+
+```bash
+python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
+  <workbook>.xlsx \
+  --module-slug <MODULE-SLUG> \
+  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
+```
+
+The helper reads every sheet in the workbook. It uses the first non-empty row
+as headers and emits one `FRAG-*` per non-empty data row with locators like
+`Interfaces row 4` or `Data Dictionary row 12`.
+
 Classify by the question the fragment answers:
 
 | Fragment answers... | View |

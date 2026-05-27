@@ -11,7 +11,7 @@ module:
 
 normalization:
   skill: "legacy-flow-context-normalizer"
-  version: "v0.1.0"
+  version: "v0.1.3"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "draft_needs_sme_review" # draft_needs_sme_review | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
   decision_reason: "<Why this status was selected>"
@@ -49,12 +49,12 @@ gates:
   evidence_authorization_gate: "blocked" # pass | warning | blocked
   readable_source_gate: "blocked"
   module_scope_gate: "blocked"
-  four_view_gate: "blocked"
+  four_view_gate: "warning" # warning when one or more views are absent but represented as TBD placeholders
   contradiction_visibility_gate: "blocked"
   sme_review_gate: "blocked"
   rule_promotion_gate: "blocked"
 
 blocking_items:
   - id: "TBD-<MODULE-SLUG>-001"
-    reason: "<Why this item blocks handoff>"
+    reason: "<Why this item blocks handoff, or why it is carried as a non-blocking warning>"
     owner: "<Skill or role responsible for resolution>"

@@ -148,12 +148,15 @@ Use /legacy-flow-context-normalizer.
 
 User input:
 I have an authorized synthetic module packet for CREDIT-CHECK with these source
-documents: a Visio process diagram, a PowerPoint overview, an Excel data field
-list, and SME notes. The documents are approved for agent review, but they do
-not yet follow the standard Operation / Business Flow, System Flow, Program
+documents: a Visio process diagram, a PowerPoint overview, a multi-sheet Excel
+workbook with Process Steps, Interfaces, Program Inventory, and Data Dictionary
+sheets, and SME notes. The documents are approved for agent review, but they
+do not yet follow the standard Operation / Business Flow, System Flow, Program
 Flow, and Data Flow structure. Normalize them into a draft SME review package.
-Return only the package status, the ten required output filenames, and the
-recommended next skill. Do not approve BR-* rules or generate a BRD.
+Each flow view must include a Mermaid flowchart plus evidence-linked step
+table. Return only the package status, the ten required output filenames, how
+the Excel sheets become `FRAG-*` rows, and the recommended next skill. Do not
+approve BR-* rules or generate a BRD.
 ```
 
 Pass criteria:
@@ -168,9 +171,38 @@ Pass criteria:
   `ready_with_warnings`
 - recommended next skill is `legacy-sme-review-facilitator` for drafts or
   `legacy-module-context-intake` for SME-confirmed packages
+- multi-sheet Excel content is represented as sheet/row-located `FRAG-*`
+  evidence in `source-document-index.yaml`
+- each of the four view files includes a `Mermaid Flow Diagram` section with a
+  Mermaid `flowchart`
 - candidate facts remain `needs_sme_review`, `sme_confirmed`, `blocked`, or
   `deferred`, never approved `BR-*`
 - no files are written during the smoke run
+
+#### Scenario (Positive - Partial Inputs Do Not Block)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have an authorized synthetic CREDIT-CHECK Excel workbook with only
+Interfaces and Data Dictionary sheets. I do not have Operation / Business Flow
+or Program Flow documents yet. Normalize what is available into a draft SME
+review package. Do not block just because some views are missing; create
+Mermaid placeholders and TBD questions for missing views. Do not approve BR-*
+rules or generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `draft_needs_sme_review` or `ready_with_warnings`, not
+  `blocked_pending_source`
+- creates all four view filenames
+- available System/Data evidence is carried into the relevant views
+- missing Operation/Program views contain Mermaid placeholder nodes and
+  `TBD-*` questions
+- routes to SME review, not directly to BRD generation
 
 #### Scenario (Negative - Unknown Evidence Authorization)
 
