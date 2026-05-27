@@ -8,7 +8,7 @@ The table is built from scorecard frontmatter under `docs/reviews/`. Run
 `scripts/verify-skill-claims.py` to detect drift between this table,
 README, runtime-matrix, and scorecard frontmatter.
 
-Last regenerated: 2026-05-26
+Last regenerated: 2026-05-28
 
 ## How to Read This Table
 
@@ -30,8 +30,8 @@ Last regenerated: 2026-05-26
 
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | v0.2.2 | 9.37 | repo-ready | synced | passed | synced | 2026-05-27 | [link](reviews/legacy-modernization-orchestrator-v0.2.2-scorecard.md) |
-| `legacy-flow-context-normalizer` | v0.1.5 | 9.47 | repo-ready | synced | synced | synced | 2026-05-27 | [link](reviews/legacy-flow-context-normalizer-v0.1.5-scorecard.md) |
+| `legacy-modernization-orchestrator` | v0.2.3 | 9.38 | repo-ready | synced | synced | synced | 2026-05-28 | [link](reviews/legacy-modernization-orchestrator-v0.2.3-scorecard.md) |
+| `legacy-flow-context-normalizer` | v0.1.6 | 9.48 | repo-ready | synced | synced | synced | 2026-05-28 | [link](reviews/legacy-flow-context-normalizer-v0.1.6-scorecard.md) |
 | `legacy-module-context-intake` | v0.1.2 | 9.43 | repo-ready | synced | synced | synced | 2026-05-27 | [link](reviews/legacy-module-context-intake-v0.1.2-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
@@ -41,7 +41,7 @@ Last regenerated: 2026-05-26
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.1.2 | 9.62 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) |
 | `legacy-ibmi-module-analyzer` | v0.1.2 | 9.28 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.2-scorecard.md) |
-| `legacy-brd-writer` | v0.1.3 | 9.42 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-brd-writer-v0.1.3-scorecard.md) |
+| `legacy-brd-writer` | v0.1.3+SME-1-9 | 9.42 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-brd-writer-v0.1.3-scorecard.md) |
 | `legacy-spec-writer` | v0.1.1 | 9.25 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-spec-writer-v0.1.1-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |
 | `legacy-sme-review-facilitator` | v0.1.2 | 9.40 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-sme-review-facilitator-v0.1.2-scorecard.md) |
@@ -60,7 +60,7 @@ Last regenerated: 2026-05-26
 | `field-pilot ready` (all three runtimes `passed`) | 10 |
 | `repo-ready` (runtime cap or partial coverage) | 12 |
 
-**22 skills total** in canonical source; **21 superseded scorecards** kept
+**22 skills total** in canonical source; **23 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

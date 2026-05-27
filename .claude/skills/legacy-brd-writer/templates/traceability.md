@@ -13,6 +13,8 @@ behaviors, inferred rules, validation scenario seeds, open questions) and their
 supporting evidence.
 
 **Coverage:**
+- **Business Scenarios:** X documented
+- **Channels / Touchpoints / Interfaces:** X channels, Y touchpoints, Z interfaces
 - **Observed Behaviors:** X documented
 - **Inferred Business Rules:** Y identified (all `needs_sme_review`)
 - **Validation Scenarios:** V drafted (all `VAL-*`; no formal `AC-*` or `TC-*`)
@@ -105,25 +107,25 @@ Quick lookup: for each BRD element, what evidence backs it?
 ### Behaviors
 
 - **`BEH-<CAPABILITY-SLUG>-001`**
-  - Mentioned in: `brd.md`, section 2.1
+  - Mentioned in: `brd.md`, section 7.1
   - Backed by: `EV-<CAPABILITY-SLUG>-001` (confirmed_from_code)
   - Used in rules: `BR-<CAPABILITY-SLUG>-001`
 
 - **`BEH-<CAPABILITY-SLUG>-002`**
-  - Mentioned in: `brd.md`, section 2.2
+  - Mentioned in: `brd.md`, section 7.1
   - Backed by: `EV-<CAPABILITY-SLUG>-002`, `EV-<CAPABILITY-SLUG>-003` (confirmed_from_code, observed_in_runtime)
   - Used in rules: `BR-<CAPABILITY-SLUG>-001`, `BR-<CAPABILITY-SLUG>-002`
 
 ### Rules
 
 - **`BR-<CAPABILITY-SLUG>-001`**
-  - Mentioned in: `brd.md`, section 3.1
+  - Mentioned in: `brd.md`, section 7.2
   - Based on: `BEH-<CAPABILITY-SLUG>-001`, `BEH-<CAPABILITY-SLUG>-002`
   - Backed by: `EV-<CAPABILITY-SLUG>-001`, `EV-<CAPABILITY-SLUG>-002`
   - Confidence: `high` — ready for SME decision before spec promotion
 
 - **`BR-<CAPABILITY-SLUG>-002`**
-  - Mentioned in: `brd.md`, section 3.2
+  - Mentioned in: `brd.md`, section 7.2
   - Based on: `BEH-<CAPABILITY-SLUG>-003`
   - Backed by: `EV-<CAPABILITY-SLUG>-004`
   - Confidence: `low` — needs SME confirmation before spec-writer
@@ -131,14 +133,14 @@ Quick lookup: for each BRD element, what evidence backs it?
 ### Validation Scenarios
 
 - **`VAL-<CAPABILITY-SLUG>-001`**
-  - Mentioned in: `validation-scenarios.md`, section 2.1; `brd.md`, section 4
+  - Mentioned in: `validation-scenarios.md`, section 2.1; `brd.md`, section 14
   - Validates review coverage for: `BR-<CAPABILITY-SLUG>-001`,
     `BEH-<CAPABILITY-SLUG>-001`
   - Backed by: `EV-<CAPABILITY-SLUG>-001`
   - Readiness: `ready_for_spec`
 
 - **`VAL-<CAPABILITY-SLUG>-002`**
-  - Mentioned in: `validation-scenarios.md`, section 2.2; `brd.md`, section 4
+  - Mentioned in: `validation-scenarios.md`, section 2.2; `brd.md`, section 14
   - Validates review coverage for: `BR-<CAPABILITY-SLUG>-002`
   - Backed by: `EV-<CAPABILITY-SLUG>-004`
   - Readiness: `needs_sme_review`
@@ -146,12 +148,12 @@ Quick lookup: for each BRD element, what evidence backs it?
 ### Questions
 
 - **`TBD-<CAPABILITY-SLUG>-001`**
-  - Mentioned in: `brd.md`, section 4.1; `brd-review.md`, section 3
+  - Mentioned in: `brd.md`, section 13; `brd-review.md`
   - Resolver: `SME`
   - Blocking: `yes` for this step (must resolve before BRD is approved)
 
 - **`TBD-<CAPABILITY-SLUG>-002`**
-  - Mentioned in: `brd.md`, section 4.2
+  - Mentioned in: `brd.md`, section 13
   - Resolver: `Source Owner`
   - Blocking: `no` (non-blocking; can proceed with best-effort evidence)
 
@@ -168,7 +170,8 @@ Run before SME approval:
 - [ ] **No dangling references** (all IDs in brd.md appear here)
 - [ ] **All TBD-* items have a category and resolver**
 - [ ] **No `sensitivity: unknown` in evidence items**
-- [ ] **Traceability table is consistent** with brd.md section 7 (Evidence Index)
+- [ ] **Traceability table is consistent** with brd.md section 15
+      (Traceability Summary)
 
 ---
 

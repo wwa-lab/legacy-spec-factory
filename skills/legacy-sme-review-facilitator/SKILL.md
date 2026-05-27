@@ -28,6 +28,9 @@ This skill is a **facilitator and recorder**, not a decision maker. It:
 - **Prepares** review sessions by organizing questions from open items
   (`TBD-*`, `BR-*` seeds needing confirmation, `VAL-*` scenario seeds,
   contradictory evidence)
+- **Checks BRD functional-analysis coverage** when the artifact is a BRD
+  Package, so SME-required sections 1-9 are explicitly reviewed instead of
+  being implied by rule / behavior questions alone
 - **Facilitates** SME sessions by collecting structured answers
 - **Records** decisions so they trace back to stable IDs and evidence
 - **Writes back** recorded decisions to the BRD Package when reviewing BRD
@@ -144,6 +147,10 @@ Accept:
   - List of `BR-*` seeds with evidence links and confidence levels
   - List of `VAL-*` validation scenario seeds with related `BR-*`, `BEH-*`,
     and `EV-*` links
+  - For BRD Package reviews, the required functional-analysis coverage for
+    sections 1-9: function purpose, business scenarios / use cases, channels,
+    user interface / touchpoints, system interfaces, process flow, validation
+    rules, error handling, and dependencies
   - Contradictions discovered during analysis
   - Behavior claims awaiting SME confirmation
   - Modernization decisions (`DEC-*`) awaiting SME acceptance
@@ -352,6 +359,9 @@ Review checklist before emitting:
 
 - [ ] Every `TBD-*`, `BR-*`, `VAL-*`, `DEC-*` in scope appears in decision log
   with outcome
+- [ ] For BRD Package reviews, every required functional-analysis area in BRD
+  sections 1-9 is either accepted by SME or has a routed `TBD-*` / follow-up
+  finding
 - [ ] Every decision has SME name, role, and ISO date
 - [ ] Every chat-driven decision preserves the raw SME chat answer
 - [ ] Contradictions are recorded verbatim, not paraphrased or resolved without
@@ -401,6 +411,10 @@ Fail validation if:
 ### Phase 2: Question Organization
 
 1. **Extract open items** from artifact:
+   - When the artifact is a BRD Package, extract functional-analysis coverage
+     checks for BRD sections 1-9 before item-level questions. Treat missing,
+     empty, unsupported, or SME-disputed required sections as review items;
+     create or reference `TBD-*` items for unresolved content.
    - All `TBD-*` (open questions, unresolved ambiguities)
    - All `BR-*` seeds with `needs_sme_review` status (inferred rules)
    - All `VAL-*` validation scenario seeds needing SME coverage or boundary
@@ -411,6 +425,7 @@ Fail validation if:
    - All `DEC-*` (modernization decisions) awaiting SME acceptance
 
 2. **Organize by type** in question pack:
+   - BRD functional-analysis coverage (sections 1-9, BRD reviews only)
    - TBDs (list category, context, blocking status)
    - Inferred rules (list rule, evidence strength, confidence)
    - Validation scenarios (list scenario type, related BR/BEH, evidence,
@@ -556,6 +571,9 @@ Write-back rules:
 
 - Preserve `ai_suggested_decision` separately from `sme_decision`.
 - Preserve `raw_chat_answer` exactly as the SME wrote it.
+- For BRD Package reviews, write the section 1-9 coverage outcome into
+  `review-decision.yaml.functional_analysis_coverage[]` so handoff and
+  traceability gates can verify SME-required coverage without rereading chat.
 - Update `brd-review.md`, `validation-scenarios.md`, and `traceability.md`
   only when the decision changes an item status or readiness.
 - Do not convert `VAL-*` directly into `AC-*` or `TC-*`; mark it as an input
@@ -684,6 +702,8 @@ Before releasing review artifacts:
 ### Decision Log Validation
 
 - Every item in scope has exactly one decision outcome
+- For BRD Package reviews, sections 1-9 have explicit coverage outcomes:
+  `accepted`, `accepted_with_tbd`, or `blocked`
 - Every decision has SME name, role, and ISO date
 - Contradictions are recorded verbatim; SME judgment is explicit, not erased
 - No invented facts or evidence in questions or decisions
@@ -847,6 +867,11 @@ This skill is **portable** across Codex, Claude Code, and OpenCode:
   validate quality gates
 
 ## Version History
+
+- v0.1.3 (2026-05-28): BRD functional-analysis coverage review
+  - Adds explicit SME review handling for BRD sections 1-9
+  - Writes section coverage to `review-decision.yaml`
+  - Routes missing required BRD coverage to `TBD-*` / follow-up findings
 
 - v0.1.1 (2026-05-22): Conversation Review Mode
   - Makes chat-driven SME review the default interaction model

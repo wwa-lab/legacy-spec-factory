@@ -45,7 +45,7 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.5
+  version: v0.1.6
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   quality_level: L2 partial
@@ -61,7 +61,7 @@ input_documents:
   - doc_id: DOC-CREDIT-CHECK-001
     path: "source-docs/Credit Check Process.vsdx"
     format: vsdx
-    role: process_diagram
+    role: flow_diagram
     authorization_status: approved
     readable_status: extracted
 
@@ -82,6 +82,19 @@ coverage:
   system_flow: partial | usable | strong | absent
   program_flow: partial | usable | strong | absent
   data_flow: partial | usable | strong | absent
+  brd_functional_analysis_hints:
+    function_purpose: absent | partial | usable | strong
+    business_scenarios: absent | partial | usable | strong
+    channels: absent | partial | usable | strong
+    user_touchpoints: absent | partial | usable | strong
+    system_interfaces: absent | partial | usable | strong
+    process_flow: absent | partial | usable | strong
+    validation_rules: absent | partial | usable | strong
+    error_handling: absent | partial | usable | strong
+    dependencies: absent | partial | usable | strong
+    optional_security_auth: absent | partial | usable | strong
+    optional_workflow_design_notes: absent | partial | usable | strong
+    optional_source_document_mapping: absent | partial | usable | strong
   evidence_map_complete: true
   contradictions_carried_forward: true
   sme_review_questions_prepared: true
@@ -143,17 +156,28 @@ Rules:
   `TBD-*` in the missing view and `open-questions.md`. Escalate to
   `blocked_*` only when the downstream step would have to invent sequence,
   ownership, system boundary, or data meaning.
+- `coverage.brd_functional_analysis_hints` is advisory. It records which
+  extracted fragments can later feed the SME-required BRD sections 1-9 and
+  optional sections 10-12. A value of `absent` or `partial` does not block
+  normalization by itself, but it must remain visible so
+  `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, and
+  `legacy-brd-writer` do not invent channels, UI touchpoints, interfaces,
+  dependencies, security, or source-document mappings.
 - When all four views are absent but the source set is authorized, readable,
   and module-relevant, use `normalization.status:
   triage_needs_source_enrichment` with `quality_level: L1 sparse`. The package
   still includes all ten files, but it is a source-quality triage output, not a
   draft flow package for context intake.
-- If the source owner or SME confirms that no additional flow input can be
-  provided, the package may move from `triage_needs_source_enrichment` to
-  `ready_with_warnings` only when `risk_acceptance.status: accepted` includes a
-  named accountable owner, timestamp, rationale, and downstream restrictions.
-  Do not change `quality_level: L1 sparse`, do not mark absent views as usable,
-  and do not remove the `TBD-*` questions.
+- If the source owner or SME confirms that no additional document, spec, or
+  flow input can be provided, the package may move from
+  `triage_needs_source_enrichment` to `ready_with_warnings` only when
+  `risk_acceptance.status: accepted` includes a named accountable owner,
+  timestamp, rationale, and downstream restrictions. Additional Function
+  Specs, Technical Designs, Program Specs, File Specs, interface specs, data
+  dictionaries, RAG summaries, or SME notes may all be valid supplements. Do
+  not change
+  `quality_level: L1 sparse`, do not mark absent views as usable, and do not
+  remove the `TBD-*` questions.
 
 ## `source-document-index.yaml`
 
@@ -166,7 +190,7 @@ documents:
     title: "Credit Check Process"
     path: "source-docs/Credit Check Process.vsdx"
     format: vsdx
-    source_type: diagram
+    source_type: flow_diagram
     owner: "Credit Operations"
     document_date: "2025-11-18"
     sensitivity: internal
@@ -190,6 +214,16 @@ fragments:
 Rules:
 
 - Every input document gets a `DOC-*` ID even when it later proves unusable.
+- `format` records the physical file type (`docx`, `xlsx`, `pdf`, `pptx`,
+  `vsdx`, `md`, `txt`, image, `rag`, or `sme_note`). `source_type` records the
+  document role. Common roles include `flow_diagram`, `function_spec`,
+  `technical_design`, `program_spec`, `file_spec`, `interface_spec`,
+  `batch_layout`, `api_spec`, `data_dictionary`, `mixed_spec_workbook`,
+  `inventory`, `runbook`, `procedure`, `process_deck`, `rag_summary`, and
+  `sme_note`.
+- Function Specs, Technical Designs, Program Specs, File Specs, and interface
+  specs are optional input sources. Treat them as evidence-bearing historical
+  or design artifacts, not as guaranteed current production truth.
 - Every extracted item used in a view gets a `FRAG-*` ID.
 - `readable_status` is `extracted`, `manual_export_required`, `unreadable`,
   or `not_needed`.
@@ -412,10 +446,13 @@ Rules:
 Allowed:
 
 - Source document fragments -> draft flow steps
+- Function / Technical / Program / File Spec fragments -> draft flow steps,
+  candidate system/program/data nodes, or SME questions
 - Flow steps -> SME review checklist items
 - Conflicts -> contradiction log
 - Gaps -> `TBD-*` open questions
-- SME-confirmed four flows -> input to `legacy-module-context-intake`
+- SME-confirmed or risk-accepted normalized flow context -> input to
+  `legacy-module-context-intake`
 
 Forbidden:
 

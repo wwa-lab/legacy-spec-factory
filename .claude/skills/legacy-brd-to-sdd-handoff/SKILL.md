@@ -148,6 +148,7 @@ unless explicitly cleared):
 | --- | --- |
 | spec missing or not `approved` | block; route to `legacy-spec-writer` |
 | BRD missing or not `approved` | block; route to `legacy-brd-writer` |
+| BRD required sections 1-9 missing, placeholder-only, or not SME-reviewed | block; route to `legacy-brd-writer` / `legacy-sme-review-facilitator` |
 | SME sign-off missing on BRD or spec | block; request sign-off |
 | any `TBD-*` with `blocking: true` and unresolved | block; escalate to SME |
 | any approved `BR-*` with no linked `AC-*` | block; route to `legacy-spec-writer` |
@@ -208,6 +209,9 @@ Required structure for `sdd-handoff.yaml`:
 - `capability`: `id`, `name`, `slug`, `owner` (from spec, unchanged)
 - `status`: `approved` | `approved_with_non_blocking_tbd` | `blocked`
 - `gate_checklist`: pass/fail booleans for each gate
+- BRD functional-analysis coverage gate: required sections 1-9 present and
+  SME-reviewed, with any partial area carried as named non-blocking /
+  deferred `TBD-*`
 - `source_artifacts`: BRD + spec paths, status, named approver, ISO date
 - `business_rules[]`, `acceptance_criteria[]`,
   `modernization_decisions[]`, `evidence[]`, `open_questions[]`,
@@ -400,12 +404,16 @@ written.
 
 ## Maintenance and Versioning
 
-- **Current Version**: 0.1.0
-- **Last Updated**: 2026-05-16
+- **Current Version**: 0.1.1
+- **Last Updated**: 2026-05-28
 - **Author**: Leo L Zhang
 - **Status**: field-pilot ready; three-runtime smoke passed
 
 Version history:
+
+- v0.1.1 (2026-05-28): Added BRD functional-analysis coverage gates. Required
+  BRD sections 1-9 must be present, SME-reviewed, and accepted or carried as
+  named non-blocking / deferred `TBD-*` before SDD handoff may proceed.
 
 - v0.1.0 (2026-05-16): Runtime smoke passed in Codex CLI
   (gpt-5.4-mini), Claude Code (haiku), and OpenCode

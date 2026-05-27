@@ -1,6 +1,6 @@
 ---
 name: legacy-flow-context-normalizer
-description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, and SME notes into draft four-view module flows: Operation / Business Flow, System Flow, Program Flow, and Data Flow. Use when a team has historical documents that do not yet conform to the Legacy Spec Factory four-flow standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted flows as approved business rules.
+description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft four-view module flows: Operation / Business Flow, System Flow, Program Flow, and Data Flow. Use when a team has historical documents or specs that do not yet conform to the Legacy Spec Factory four-flow standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted flows as approved business rules.
 ---
 
 <!--
@@ -18,8 +18,8 @@ Retain this notice in substantial copies or derived versions.
 
 ## Purpose
 
-Turn scattered historical documentation into a **draft, evidence-linked
-four-flow review package**:
+Turn scattered historical documentation and specs into a **draft,
+evidence-linked four-flow review package**:
 
 ```text
 00_context_packages/<MODULE-SLUG>/flow-normalization/
@@ -36,9 +36,12 @@ four-flow review package**:
 ```
 
 This skill is the upstream bridge for teams whose knowledge is trapped in
-Visio, Word, Excel, PDF, PowerPoint, exported screenshots, old process decks,
-runbooks, or SME notes. It makes the material reviewable, but it does **not**
-approve flows, mint final `BR-*` rules, or generate a BRD.
+Visio, Word, Excel, PDF, PowerPoint, exported screenshots, Function Specs,
+Technical Designs, Program Specs, File Specs, interface specs, data dictionary
+extracts, old process decks, runbooks, or SME notes. The four flows are the
+normalization target, not a raw-input requirement. This skill makes the
+material reviewable, but it does **not** approve flows, mint final `BR-*`
+rules, or generate a BRD.
 
 ## Boundary
 
@@ -59,11 +62,16 @@ Do not use it as a replacement for:
 ## Required Inputs
 
 - Module slug, business name, draft scope statement, and owner or SME role.
-- One or more source documents or exported readable forms:
+- One or more source documents, specs, or exported readable forms:
   - Visio / diagram exports (`.vsdx`, PDF, SVG, PNG, or image export)
   - Word / runbook / procedure docs
   - Excel / CSV process, application, interface, data dictionary, or CRUD lists
   - PDF / PPT / PPTX decks
+  - Function Specs / Functional Specs / requirement catalogues
+  - Technical Designs / architecture or integration designs
+  - Program Specs / job specs / screen-report specs
+  - File Specs / record layouts / table specs / field dictionaries
+  - Interface Specs / batch layout specs / API message specs
   - RAG or code-knowledge summaries
   - SME notes, meeting notes, or annotated screenshots
 - Evidence authorization signal for every source:
@@ -109,12 +117,13 @@ flow should be inferred, which source types would unlock the next pass, and
 which SME questions can resolve the gap fastest.
 
 If the team has already attempted supplement collection and the source owner
-or SME confirms that no additional flow input can be provided, do not loop
-forever asking for more. Record an explicit risk-acceptance decision. Only a
-named accountable owner may convert `triage_needs_source_enrichment` to
-`ready_with_warnings`; the package must remain `quality_level: L1 sparse`,
-carry every missing view as `TBD-*`, and tell downstream skills to treat all
-context as low-confidence review material, not confirmed facts.
+or SME confirms that no additional document, spec, or flow input can be
+provided, do not loop forever asking for more. Record an explicit
+risk-acceptance decision. Only a named accountable owner may convert
+`triage_needs_source_enrichment` to `ready_with_warnings`; the package must
+remain `quality_level: L1 sparse`, carry every missing view as `TBD-*`, and
+tell downstream skills to treat all context as low-confidence review material,
+not confirmed facts.
 
 ## Output Contract
 
@@ -168,9 +177,10 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **Required**: module identity, source document list, evidence authorization,
   and enough readable content to identify either candidate flow evidence or
   module-relevant triage clues.
-- **Optional**: existing RAG output, ARCAD / application inventory extracts,
-  data dictionary exports, screen/report samples, meeting notes, known SME
-  owner, and reviewed module glossary.
+- **Optional**: existing RAG output, Function Specs, Technical Designs,
+  Program Specs, File Specs, interface specs, ARCAD / application inventory
+  extracts, data dictionary exports, screen/report samples, meeting notes,
+  known SME owner, and reviewed module glossary.
 - **Input readiness scoring**:
   - `0-5 blocked`: evidence authorization unresolved, module scope missing,
     source files unreadable with no export, or all documents out of scope.
@@ -222,7 +232,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **Semantic**: no draft flow is presented as approved; contradictions are not
   hidden; View 1 uses business language first; View 2 captures system and
   integration behavior; View 3 captures application/program/job behavior;
-  View 4 captures data movement and ownership questions.
+  View 4 captures data movement and ownership questions; BRD functional
+  analysis hints record which extracted fragments can feed SME-required BRD
+  areas without treating missing hints as invented facts.
 - **SME / human approval**: SME or accountable owner confirms module boundary,
   flow sequence, missing or obsolete documents, exception behavior, manual
   steps, and which contradictions block context intake.
@@ -263,8 +275,11 @@ orchestrator.
 
 3. **Inventory source documents**
    - Create `source-document-index.yaml`.
-   - Assign stable `DOC-*` IDs and record path, format, readable extraction
-     method, sensitivity, owner, date, and confidence.
+   - Assign stable `DOC-*` IDs and record path, format, source document role,
+     readable extraction method, sensitivity, owner, date, and confidence.
+   - Keep `format` (file type such as `.xlsx` or `.docx`) separate from
+     `source_type` (document role such as `function_spec`, `technical_design`,
+     `program_spec`, `file_spec`, `interface_spec`, or `flow_diagram`).
    - Follow `references/source-classification.md` for format-specific notes.
 
 4. **Extract candidate fragments**
@@ -276,7 +291,9 @@ orchestrator.
      `scripts/extract_excel_fragments.py` helper. It enumerates every sheet,
      treats the first non-empty row as headers, emits one `FRAG-*` per
      non-empty data row, and classifies fragments by sheet/header keywords into
-     Operation / Business, System, Program, Data, or `cross_view`.
+     Operation / Business, System, Program, Data, or `cross_view`. Sheet names
+     such as `Function Spec`, `Technical Design`, `Program Spec`, and
+     `File Spec` are classification signals, not mandatory sheets.
 
 5. **Classify input quality**
    - Set `quality_level` to `L3 strong`, `L2 partial`, `L1 sparse`, or
@@ -335,8 +352,9 @@ orchestrator.
       and module-relevant, but no flow sequence should be generated. Route to
       source owner / SME supplement request, not BRD or context intake.
     - Convert `triage_needs_source_enrichment` to `ready_with_warnings` only
-      when a named SME/source owner records that no additional flow input can
-      be provided and accepts carrying the gaps forward. Preserve
+      when a named SME/source owner records that no additional document, spec,
+      or flow input can be provided and accepts carrying the gaps forward.
+      Preserve
       `quality_level: L1 sparse`; do not upgrade coverage or confidence.
     - `ready_for_context_intake` only when SME review confirms all four flows.
     - `ready_with_warnings` only when unresolved items are explicitly
@@ -393,3 +411,10 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
   additional flow input cannot be provided; sparse triage may proceed as
   `ready_with_warnings` only with explicit sign-off and low-confidence
   downstream restrictions.
+- v0.1.6 (2026-05-28): Expanded raw input coverage beyond existing flow
+  artifacts to Function Specs, Technical Designs, Program Specs, File Specs,
+  interface specs, and data dictionaries while keeping all such sources
+  optional and evidence-linked.
+- v0.1.7 (2026-05-28): Added advisory BRD functional-analysis hints so raw
+  flow/context fragments can surface likely inputs for BRD sections 1-9 and
+  optional sections 10-12 without making absent facts look confirmed.

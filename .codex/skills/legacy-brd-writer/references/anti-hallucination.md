@@ -354,6 +354,59 @@ BRD author: "No feedback means approval; I'll mark it approved"
 
 ---
 
+### 13. Treating Document Readiness as BRD Success Criteria
+
+**Trap:**
+```
+BRD author adds section "2.4 Success Criteria":
+- The BRD clearly explains the business boundary and actors.
+- SMEs can use the BRD to confirm scope and rule direction.
+```
+
+**Why it's wrong:**
+- These are artifact-quality checks, not business requirements
+- SMEs need to validate the capability, rules, behaviors, gaps, and scenarios
+- A generic success-criteria section adds review noise and can be mistaken for
+  business acceptance criteria
+
+**What to do instead:**
+1. Put document-readiness checks in `brd-review.md`
+2. Put source-to-section mapping checks in `traceability.md`
+3. If a statement is a true business acceptance criterion, defer it to
+   `legacy-spec-writer` as `AC-*`
+4. Do not include `Success Criteria`, `Success Criiteria`, or similar generic
+   document-quality sections in `brd.md`
+
+---
+
+### 14. Inventing Optional Functional-Analysis Details
+
+**Trap:**
+```
+BRD author sees the template has optional sections for security, workflow
+notes, and source documents, then fills them with plausible but unevidenced
+content.
+```
+
+**Why it's wrong:**
+- Optional sections 10-12 are useful only when evidence-backed
+- Invented channels, screens, auth rules, diagrams, or source names create
+  false confidence and waste SME review time
+- Missing optional evidence is a gap to track, not a blank to decorate
+
+**What to do instead:**
+1. Fill required sections 1-9 using evidence, SME input, or explicit `TBD-*`
+   markers
+2. Include Security / Authentication only when evidence identifies roles,
+   access control, authentication, authorization, audit, or sensitive actions
+3. Include Supporting Workflow or Design Notes only when real diagrams, sequence
+   descriptions, or design notes exist in the evidence bundle
+4. Include Source Document Mapping only for actual source names, sections,
+   pages, or paths
+5. If the optional information is expected but missing, create a `TBD-*`
+
+---
+
 ## Checklist: Before Handing BRD to SME
 
 - [ ] Every BEH-* statement is observable fact (not interpretation)
@@ -364,6 +417,12 @@ BRD author: "No feedback means approval; I'll mark it approved"
 - [ ] No acceptance criteria in BRD (that's spec-writer)
 - [ ] No modernization decisions in BRD (that's spec-writer)
 - [ ] No target platform or architecture in BRD (that's spec-writer)
+- [ ] No generic `Success Criteria` or document-quality/readiness section in
+      `brd.md`
+- [ ] Required sections 1-9 are present and do not rely on invented channels,
+      interfaces, touchpoints, rules, errors, or dependencies
+- [ ] Optional sections 10-12 are included only when evidence-backed or
+      explicitly SME-confirmed
 - [ ] Every uncertain claim is surfaced as TBD-*, not hidden in prose
 - [ ] No IBM i facts invented (all programs, fields, files come from upstream)
 - [ ] Traceability is complete (every claim traces to evidence)

@@ -84,6 +84,19 @@ coverage:
   dictionary_context_mapped: true
   contradictions_carried_forward: true
   open_questions_carried_forward: true
+  brd_functional_analysis_hints:
+    function_purpose: absent | partial | usable | strong
+    business_scenarios: absent | partial | usable | strong
+    channels: absent | partial | usable | strong
+    user_touchpoints: absent | partial | usable | strong
+    system_interfaces: absent | partial | usable | strong
+    process_flow: absent | partial | usable | strong
+    validation_rules: absent | partial | usable | strong
+    error_handling: absent | partial | usable | strong
+    dependencies: absent | partial | usable | strong
+    optional_security_auth: absent | partial | usable | strong
+    optional_workflow_design_notes: absent | partial | usable | strong
+    optional_source_document_mapping: absent | partial | usable | strong
 
 gates:
   evidence_authorization_gate: pass | warning | blocked
@@ -114,6 +127,10 @@ Rules:
   `quality_level: L1 sparse`, and `risk_acceptance_status: accepted`. Preserve
   all missing views as low-confidence `TBD-*`; do not convert sparse context to
   approved facts.
+- `coverage.brd_functional_analysis_hints` is advisory. It tells downstream
+  module analysis and BRD preparation which normalized context can feed the
+  SME-required BRD sections 1-9 and optional sections 10-12. Missing or partial
+  hints must stay visible as gaps; this skill must not fill them by inference.
 
 ## View Files
 

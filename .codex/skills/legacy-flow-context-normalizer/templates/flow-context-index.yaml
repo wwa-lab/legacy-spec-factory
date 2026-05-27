@@ -11,7 +11,7 @@ module:
 
 normalization:
   skill: "legacy-flow-context-normalizer"
-  version: "v0.1.5"
+  version: "v0.1.6"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "draft_needs_sme_review" # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
   quality_level: "L2 partial" # L3 strong | L2 partial | L1 sparse | L0 blocked
@@ -42,6 +42,19 @@ coverage:
   system_flow: "absent"
   program_flow: "absent"
   data_flow: "absent"
+  brd_functional_analysis_hints:
+    function_purpose: "absent"
+    business_scenarios: "absent"
+    channels: "absent"
+    user_touchpoints: "absent"
+    system_interfaces: "absent"
+    process_flow: "absent"
+    validation_rules: "absent"
+    error_handling: "absent"
+    dependencies: "absent"
+    optional_security_auth: "absent"
+    optional_workflow_design_notes: "absent"
+    optional_source_document_mapping: "absent"
   evidence_map_complete: false
   contradictions_carried_forward: false
   sme_review_questions_prepared: false

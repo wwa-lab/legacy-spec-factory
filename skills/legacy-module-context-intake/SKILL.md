@@ -182,7 +182,10 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   claims preserve knowledge type and evidence strength; contradictory evidence
   remains visible; candidate seeds explain the business signal first and keep
   program names, file names, field names, snippet IDs, and runtime object names
-  in evidence context unless the view is explicitly technical.
+  in evidence context unless the view is explicitly technical; BRD functional
+  analysis hints preserve which context can feed SME-required BRD areas without
+  inventing channels, touchpoints, interfaces, dependencies, security, or
+  source-document mappings.
 - **Sparse-input restriction**: if the upstream package is
   `quality_level: L1 sparse`, preserve every missing view as a `TBD-*`, mark
   evidence strength low, and do not create approved facts, `BR-*`, or BRD-ready
@@ -276,6 +279,9 @@ names into capability boundaries.
 
 ## Version History
 
+- v0.1.3 (2026-05-28): Added advisory BRD functional-analysis coverage hints
+  to `context-index.yaml` so downstream module analysis can preserve channel,
+  UI, interface, validation, error, and dependency gaps without inventing them.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
 - v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse

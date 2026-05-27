@@ -149,8 +149,8 @@ Use /legacy-flow-context-normalizer.
 User input:
 I have an authorized synthetic module packet for CREDIT-CHECK with these source
 documents: a Visio process diagram, a PowerPoint overview, a multi-sheet Excel
-workbook with Process Steps, Interfaces, Program Inventory, and Data Dictionary
-sheets, and SME notes. The documents are approved for agent review, but they
+workbook with Function Spec, Technical Design, Program Spec, and File Spec
+sheets, plus SME notes. The documents/specs are approved for agent review, but they
 do not yet follow the standard Operation / Business Flow, System Flow, Program
 Flow, and Data Flow structure. Normalize them into a draft SME review package.
 Each flow view must include a Mermaid flowchart plus evidence-linked step
@@ -1606,10 +1606,13 @@ EV-CREDIT-CHECK-012 sensitivity internal redaction_status not_required, and
 EV-CREDIT-CHECK-018 sensitivity internal redaction_status not_required.
 
 Review items:
+- BRD sections 1-9 are present; section 3 Channels is accepted with
+  TBD-CREDIT-CHECK-004 carried as non-blocking
 - BEH-CREDIT-CHECK-001 should be confirmed
 - BR-CREDIT-CHECK-003 should be rejected because interest compounds daily only
   above the configured balance threshold
-- TBD-CREDIT-CHECK-004 should be deferred to Operations by 2026-05-23
+- TBD-CREDIT-CHECK-004 should be deferred to Digital Channels SME by
+  2026-05-23
 
 Return only:
 - skill_invoked
@@ -1634,8 +1637,11 @@ Return only:
 - records decisions for `BEH-CREDIT-CHECK-001` as `confirmed`,
   `BR-CREDIT-CHECK-003` as `rejected`, and `TBD-CREDIT-CHECK-004` as
   `deferred`
+- records BRD functional-analysis coverage for sections 1-9, with section 3
+  accepted with a named `TBD-*`
 - routes the rule revision to `legacy-spec-writer`
-- routes the deferred TBD to Operations with target date `2026-05-23`
+- routes the deferred channel TBD to Digital Channels SME with target date
+  `2026-05-23`
 - confirms no files were created or edited
 
 #### Scenario (Negative — Missing SME And Unknown Evidence)

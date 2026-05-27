@@ -93,6 +93,8 @@ process_flow:
       evidence_ids:
         - EV-<CAP-SLUG>-001
 
+# If an approved BRD Package exists, cross-check inputs/outputs/exceptions
+# against BRD sections 3-5 and 8 plus review-decision.yaml section coverage.
 inputs:
   - id: IN-<CAP-SLUG>-001
     name: "<input name>"

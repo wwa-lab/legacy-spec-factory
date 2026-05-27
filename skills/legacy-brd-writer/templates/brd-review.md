@@ -15,24 +15,72 @@ specification phase.
 
 **What to check:**
 
-1. Is the **as-is business process summary** understandable and accurate enough
-   for business discussion?
-2. Are the **observed behaviors** accurate to legacy system reality?
-3. Are the **inferred business rules** actually business rules (not
+1. Are required BRD sections 1-9 present and useful: function purpose, business
+   scenarios, channels, user touchpoints, system interfaces, process flow,
+   validation rules, error handling, and dependencies?
+2. Is the **process flow** understandable and accurate enough for business
+   discussion?
+3. Are the **observed behaviors** accurate to legacy system reality?
+4. Are the **inferred business rules** actually business rules (not
    implementation artifacts)?
-4. Is the **scope and boundary** correct?
-5. If a scope clarification is present, does it ask the right SME boundary
+5. Is the **scope and boundary** correct?
+6. If a scope clarification is present, does it ask the right SME boundary
    question instead of describing document-analysis difficulty?
-6. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
-7. Are the **TBDs** correctly categorized and achievable?
-8. Do the **validation scenario seeds** cover the important business cases?
-9. Is the BRD ready for **spec-writing** without re-interrogating you?
+7. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
+8. Are optional sections 10-12 included only when useful and evidence-backed?
+9. Are the **TBDs** correctly categorized and achievable?
+10. Do the **validation scenario seeds** cover the important business cases?
+11. Is the BRD ready for **spec-writing** without re-interrogating you?
 
 ---
 
-## As-Is Business Process Summary
+## Author/Synthesizer Preflight
 
-### Can a business reviewer discuss this section without relying on program names?
+Complete this before requesting SME review. These are artifact-readiness checks;
+do not copy them into `brd.md` as a `Success Criteria`, `Success Criiteria`, or
+similar document-quality section.
+
+- [ ] The BRD clearly explains the business boundary, primary actors, trigger
+      events, key states, business outcomes, and major exceptions.
+- [ ] Required sections 1-9 are present: Function Purpose, Business Scenarios /
+      Use Cases, Channels, User Interface / User Touchpoints, System
+      Interfaces, Process Flow, Validation Rules, Error Handling, Dependencies.
+- [ ] Optional sections 10-12 are included only when evidence-backed or
+      SME-confirmed: Security / Authentication Requirements, Supporting
+      Workflow or Design Notes, Source Document Mapping.
+- [ ] Input-package artifacts such as module analysis, flow diagrams,
+      functional specifications, technical design notes, runtime evidence, and
+      program analyses map to BRD sections or traceability entries instead of
+      remaining disconnected references.
+- [ ] Business owners and SMEs can use the BRD to confirm initial scope and
+      inferred rule direction.
+- [ ] `brd.md` contains no generic document-success criteria, formal `AC-*`
+      acceptance criteria, formal `TC-*` test cases, or target-platform
+      decisions.
+
+---
+
+## Required Functional Analysis Coverage
+
+### Do sections 1-9 cover the SME-required functional analysis areas?
+
+- [ ] **Yes** — function purpose, business scenarios, channels, user
+      touchpoints, system interfaces, process flow, validation rules, error
+      handling, and dependencies are covered
+- [ ] **Partial** — one or more required areas need clarification or evidence
+- [ ] **No** — the BRD is missing required functional-analysis coverage
+
+**Reviewer Notes:**
+
+```
+<Space for SME feedback on missing or weak required sections>
+```
+
+---
+
+## Process Flow
+
+### Can a business reviewer discuss section 6 without relying on program names?
 
 - [ ] **Yes** — business trigger, parties, outcomes, controls, and exceptions
       are clear

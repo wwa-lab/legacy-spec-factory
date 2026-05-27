@@ -16,9 +16,16 @@ must be reviewable by people who do not know IBM i program names.
 
 For each capability, identify:
 
+- **Function purpose:** why this business function exists
+- **Business scenario / use case:** which real-world case the function supports
 - **Business trigger:** what event starts the work
 - **Business object:** what customer, account, order, claim, payment, card,
   case, or record is affected
+- **Channels:** which entry points, channels, or consumers participate
+- **User touchpoints:** screens, notifications, reports, messages, queues, or
+  manual review surfaces visible to business users
+- **System interfaces:** upstream and downstream systems, APIs, file handoffs,
+  external processors, or reporting consumers
 - **Business state change:** what becomes pending, approved, rejected,
   fulfilled, reconciled, reported, or exceptioned
 - **Business participants:** customer, operations user, partner, processor,
@@ -26,6 +33,13 @@ For each capability, identify:
 - **Business outcome:** what success / failure means outside the code
 - **Control point:** approval, validation, reconciliation, audit, reporting, or
   exception handling point
+- **Dependencies:** data, policy, system, operational, or reporting
+  dependencies that materially affect the function
+
+When the upstream `module-overview.md` includes a BRD Functional Analysis Input
+Crosswalk, use it as the first source map for the SME-required BRD sections.
+Do not ignore crosswalk gaps: a required area marked `partial` or `missing`
+must become a visible `TBD-*` or a BRD review question.
 
 ### Program Chain Anti-Pattern
 
@@ -71,6 +85,54 @@ delivery concerns, not the capability's business problem.
   sme_questions`.
 - Keep evidence-source fragmentation in the evidence index, traceability notes,
   or review-session notes instead of the BRD's business narrative.
+
+### Document Success Criteria Anti-Pattern
+
+Do not add generic `Success Criteria`, `Success Criiteria`, `Document Success
+Criteria`, or similar sections to `brd.md`. Statements such as "the BRD clearly
+explains the first-phase boundary" or "SMEs can use this BRD to confirm scope"
+evaluate the document, not the business capability.
+
+**Wrong:**
+
+- "The BRD clearly explains the business boundary, actors, triggers, key
+  states, and major exceptions."
+- "Business owners and SMEs can use this BRD to confirm scope and rule
+  direction."
+
+**Right:**
+
+- Put artifact-readiness checks in `brd-review.md` under the
+  author/synthesizer preflight or handoff readiness sections.
+- Put input-package mapping checks in `traceability.md`.
+- If the statement is actually a business acceptance criterion, defer it to
+  `legacy-spec-writer` as `AC-*`; do not mint it in the BRD.
+
+### Optional Section Invention Anti-Pattern
+
+SME-requested sections 10-12 are useful only when grounded in available
+evidence. Do not invent security/authentication rules, sequence diagrams,
+workflow descriptions, system design notes, or source document names to make
+the BRD look complete.
+
+**Wrong:**
+
+- "Mobile users must use MFA" when no channel/auth evidence says so.
+- "Sequence diagram: customer -> API -> core system -> notification service"
+  when the source package does not contain that sequence.
+- "Source document: legacy-auth-design.docx" when the document was not in the
+  input package.
+
+**Right:**
+
+- Include section 10 only when security, authentication, authorization, role,
+  audit, or access-control evidence exists.
+- Include section 11 only when actual workflow diagrams, sequence diagrams, or
+  design notes exist and help explain business behavior.
+- Include section 12 only for real source document names, sections, pages, or
+  paths in the evidence bundle.
+- If optional information is expected but missing, create a `TBD-*` with the
+  right resolver instead of filling the gap with plausible text.
 
 ### If Business Meaning Is Unknown
 
@@ -316,16 +378,25 @@ These situations call for TBDs instead of confident claims:
 
 See `templates/brd.md` for the structure. Fill in:
 
-1. **Capability Overview** (from module boundary definition)
-2. **Scope Clarification Need** (only when SME boundary confirmation is needed;
-   never as a standalone `Problem Statement`)
-3. **As-Is Business Process Summary** (business trigger, participants, phases,
-   outcomes, controls, and evidence boundary)
-4. **Observed Behaviors** (BEH-* with evidence links)
-5. **Inferred Business Rules** (BR-* seeds with evidence links; all
-   `needs_sme_review`)
-6. **Open Questions** (TBD-* with categories and resolvers)
-7. **Evidence Index** (summary table)
+1. **Function Purpose** (including business value and scope boundary)
+2. **Business Scenarios / Use Cases**
+3. **Channels**
+4. **User Interface / User Touchpoints**
+5. **System Interfaces**
+6. **Process Flow** (business trigger, phases, states, outcomes, controls)
+7. **Validation Rules** (observed `BEH-*` plus inferred `BR-*`, all
+   evidence-backed)
+8. **Error Handling**
+9. **Dependencies**
+10. **Security / Authentication Requirements** (optional; evidence-backed only)
+11. **Supporting Workflow or Design Notes** (optional; evidence-backed only)
+12. **Source Document Mapping** (optional; evidence-backed only)
+13. **Open Questions & Gaps** (TBD-* with categories and resolvers)
+14. **Validation Scenario Summary**
+15. **Traceability Summary**
+
+Do not add a `Success Criteria` section to `brd.md`; keep document-readiness
+criteria in `brd-review.md`.
 
 All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 
@@ -334,9 +405,15 @@ All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 ## 7. Checklist Before SME Review
 
 - [ ] Every BEH-* statement is factual (no interpretation)
-- [ ] The as-is summary is business-first and not a direct program call chain
+- [ ] Section 6 Process Flow is business-first and not a direct program call chain
 - [ ] No standalone `Problem Statement` mixes business scope, evidence gaps,
       and delivery/rework risk
+- [ ] No generic `Success Criteria` or document-quality/readiness section
+      appears in `brd.md`
+- [ ] Required SME sections 1-9 are present and evidence-backed or explicitly
+      marked with `TBD-*` where evidence/SME confirmation is missing
+- [ ] Optional sections 10-12 are omitted unless evidence-backed or explicitly
+      SME-confirmed
 - [ ] Every BEH-* links to ≥1 EV-*
 - [ ] Every BR-* abstracts ≥1 BEH-* (not invented)
 - [ ] Every BR-* links to ≥1 EV-*

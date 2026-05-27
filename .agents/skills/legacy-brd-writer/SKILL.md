@@ -43,6 +43,18 @@ modernization decisions, or target-platform choices. `VAL-*` entries are
 scenario seeds only; `AC-*` belongs to `legacy-spec-writer`, and formal `TC-*`
 belongs to `legacy-golden-master-test-planner`.
 
+The BRD body follows the SME-required functional analysis shape. Sections 1-9
+are mandatory in `brd.md`: Function Purpose, Business Scenarios / Use Cases,
+Channels, User Interface / User Touchpoints, System Interfaces, Process Flow,
+Validation Rules, Error Handling, and Dependencies. Sections 10-12 are optional
+and evidence-backed only: Security / Authentication Requirements, Supporting
+Workflow or Design Notes, and Source Document Mapping.
+
+Document-quality or readiness criteria do **not** belong in `brd.md`. Checks
+such as "the BRD clearly explains the business boundary" evaluate the artifact,
+not the business capability; keep them in `brd-review.md` or traceability
+validation instead of adding a generic `Success Criteria` section to the BRD.
+
 ## When to Use
 
 Trigger on any of these signals:
@@ -98,6 +110,11 @@ You must:
   invention or inference
 - aggregate inferred rules (`BR-*` seeds) from the module analysis; keep their
   status as `needs_sme_review` (do not promote to `approved`)
+- fill all SME-required BRD sections 1-9, using `TBD-*` where required evidence
+  or SME confirmation is missing
+- include optional sections 10-12 only when security/auth details, workflow or
+  design notes, or source document mappings are available from evidence or SME
+  input
 - distinguish **knowledge type** (observed_behavior / inferred_business_rule)
   on every claim, and link each claim to evidence records whose strength is
   recorded in the evidence index per
@@ -107,6 +124,8 @@ You must:
   `BEH-*`, `BR-*`, and `EV-*` references
 - frame unclear scope as SME-answerable boundary questions, not as a generic
   problem statement about document fragmentation or analysis-process risk
+- keep artifact-readiness checks in `brd-review.md`; do not put generic
+  document-quality criteria in the BRD body
 - refuse to produce formal acceptance criteria, modernization decisions, or
   platform choices — those belong in `legacy-spec-writer`
 - refuse to produce formal `TC-*` test cases or invented exact expected outputs
@@ -119,6 +138,11 @@ You must not:
   movement list, or object-by-object analysis
 - create a standalone `Problem Statement` section that mixes business scope,
   evidence gaps, technical coupling, and downstream rework risk
+- create a generic `Success Criteria`, `Success Criiteria`, `Document Success
+  Criteria`, or similar section in `brd.md`; those checks belong in
+  `brd-review.md`, not the BRD body
+- invent channels, user interfaces, system interfaces, security requirements,
+  diagrams, source documents, or dependencies just to satisfy the BRD shape
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
@@ -137,6 +161,10 @@ Accept:
 
 - **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four views
   at `approved` or `approved_with_non_blocking_tbd`)
+  - Prefer module analyses whose `module-overview.md` includes the BRD
+    Functional Analysis Input Crosswalk. Use that crosswalk to populate SME
+    required sections 1-9 and to carry missing / partial areas as `TBD-*`
+    instead of rediscovering them from program or flow details.
 - **One or more capability seeds** — selected from the module overview's
   Capability Seeds; the SME has confirmed each is a distinct, in-scope business
   capability
@@ -254,10 +282,12 @@ The summary below is normative for this skill.
 
 - **Canonical directory**: `05_brds/<CAPABILITY-SLUG>/` containing `brd.md`,
   `brd-review.md`, `validation-scenarios.md`, `traceability.md`.
-- **Required sections/fields** (see `templates/brd.md`): capability overview,
-  scope statement, as-is business process summary, observed behaviors, inferred
-  business rules (with status), validation scenario summary, open questions
-  (TBDs), evidence index.
+- **Required sections/fields** (see `templates/brd.md`): sections 1-9 in the
+  SME functional-analysis shape: Function Purpose, Business Scenarios / Use
+  Cases, Channels, User Interface / User Touchpoints, System Interfaces,
+  Process Flow, Validation Rules, Error Handling, and Dependencies. Sections
+  10-12 (Security / Authentication Requirements, Supporting Workflow or Design
+  Notes, Source Document Mapping) are optional and evidence-backed only.
 - **Required IDs**: mints `BRD-*` for the document, `VAL-*` for BRD-stage
   validation scenario seeds, and `TBD-*` for open
   questions. Reuses `CAP-*`, `OBJ-*`, `EV-*`, `BEH-*`, `BR-*` seeds,
@@ -299,9 +329,9 @@ upstream evidence:
 
 - observed behaviors (`BEH-*`) are factual statements about what the code / data /
   logs show, not inferences
-- the as-is summary is a business process narrative, not a program call chain;
-  program and file names appear only when they are essential identifiers or
-  evidence references
+- the section 6 process flow is a business process narrative, not a program
+  call chain; program and file names appear only when they are essential
+  identifiers or evidence references
 - inferred business rules (`BR-*` seeds) are supported by `BEH-*` and linked
   `EV-*` content (not just ID reference)
 - knowledge type (observed_behavior / inferred_business_rule) is correctly
@@ -351,7 +381,7 @@ decision.
      unknown`, stop and request redaction review
 
 3. **Translate Technical Evidence into Business Process Language**
-   - Create a short as-is business process summary before writing `BEH-*`
+   - Create a short business-first process flow before writing `BEH-*`
    - Describe the triggering business event, primary actor or system party,
      business object/state affected, normal outcome, exception outcomes,
      operational controls, and handoffs
@@ -363,6 +393,17 @@ decision.
      needed under `Scope Clarification Need` and create explicit `TBD-*` items
      for actors, triggers, state transitions, handoffs, or in/out-of-scope
      boundaries.
+   - Do not add `Success Criteria` or document-readiness bullets to `brd.md`.
+     If those checks are useful, place them in the author/synthesizer preflight
+     section of `brd-review.md`.
+   - Populate the SME-required sections explicitly:
+     Function Purpose, Business Scenarios / Use Cases, Channels, User
+     Interface / User Touchpoints, System Interfaces, Process Flow, Validation
+     Rules, Error Handling, and Dependencies.
+   - Include Security / Authentication Requirements, Supporting Workflow or
+     Design Notes, and Source Document Mapping only when evidence or SME input
+     supports them; otherwise omit the optional section or create a `TBD-*` if
+     confirmation is required.
    - If the only available description is a runtime chain, convert it into 3-6
      business phases and create `TBD-*` questions for any phase whose business
      purpose is unclear
@@ -480,6 +521,10 @@ grounded in:
 - **Generate formal `TC-*` test cases or invented expected outputs**
   (golden-master planner's job after spec approval and runtime evidence review)
 - **Include target platform or modernization decisions** (spec-writer's job)
+- **Add generic BRD success criteria to `brd.md`**; artifact-readiness checks
+  belong in `brd-review.md`, not in the business requirements document
+- **Invent optional functional-analysis details** such as channels, UI screens,
+  security rules, diagrams, or source documents when they are not evidenced
 - **Claim behavior from field names or comments alone** (factual evidence
   required)
 - **Pretend ambiguity is resolved** by picking one interpretation when SME
@@ -505,10 +550,18 @@ Before marking the BRD `approved`, confirm:
 - [ ] All four files exist at correct paths (`brd.md`, `brd-review.md`,
       `validation-scenarios.md`, `traceability.md`)
 - [ ] Every claim in `brd.md` appears in `traceability.md`
-- [ ] The as-is summary is business-readable and does not read as a direct
+- [ ] Section 6 Process Flow is business-readable and does not read as a direct
       runtime chain, object inventory, or call graph
 - [ ] No standalone `Problem Statement` section mixes business scope,
       evidence gaps, technical coupling, and delivery/rework risk
+- [ ] No generic `Success Criteria` or document-quality/readiness section is
+      included in `brd.md`
+- [ ] Required sections 1-9 are present: Function Purpose, Business Scenarios /
+      Use Cases, Channels, User Interface / User Touchpoints, System
+      Interfaces, Process Flow, Validation Rules, Error Handling, Dependencies
+- [ ] Optional sections 10-12 are included only when evidence-backed or
+      explicitly SME-confirmed; missing optional details are omitted or tracked
+      as `TBD-*`
 - [ ] Every `BEH-*` and `BR-*` links to ≥1 `EV-*`
 - [ ] Every `VAL-*` maps to existing `BEH-*` or `BR-*` and ≥1 `EV-*`
 - [ ] `validation-scenarios.md` contains no formal `AC-*`, formal `TC-*`,
@@ -567,6 +620,12 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.4 (2026-05-27): SME functional-analysis alignment
+  - Reframed `brd.md` around required SME sections 1-9
+  - Made security/auth, workflow/design notes, and source document mapping
+    optional evidence-backed sections
+  - Kept document-readiness checks in `brd-review.md` instead of BRD body
 
 - v0.1.3 (2026-05-26): Business-readable BRD hardening
   - Added an explicit technical-evidence-to-business-process translation step

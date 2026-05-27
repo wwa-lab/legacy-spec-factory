@@ -179,7 +179,8 @@ field-level rules. The summary below is normative for this skill.
   `module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
   `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
 - **Required sections**: 4-view index with per-view status, top blocking
-  TBDs, module-level capability seeds, per-view review checklists.
+  TBDs, module-level capability seeds, BRD Functional Analysis Input
+  Crosswalk, per-view review checklists.
 - **Required IDs**: mints `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`,
   module-level `BR-*` **seeds**, module-level `CAP-*` **seeds**, and
   `TBD-*`. Reuses `OBJ-*`, `EV-*`, `FLOW-*`, `NODE-*`, `EDGE-*`,
@@ -201,7 +202,8 @@ field-level rules. The summary below is normative for this skill.
   actor appears in View 3 or is tagged manual; every View 2 system
   appears in View 3; every View 4 data object traces to a flow); seeds
   are questions, not approved rules; tier-2 claims contradicting tier-1
-  are surfaced as TBDs.
+  are surfaced as TBDs; BRD sections 1-9 are either covered by named
+  module evidence or carry explicit `TBD-*` gaps.
 - **SME / human approval**: View 1 by business owner, View 2 by
   integration architect, View 3 by dev lead, View 4 by data analyst.
   All four sign-offs are required to promote the module past
@@ -418,6 +420,14 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.1.2 (2026-05-28): BRD functional-analysis crosswalk
+  - Added a module-level crosswalk for SME-required BRD sections 1-9 and
+    optional sections 10-12
+  - Required missing or partial BRD inputs to be carried as named `TBD-*`
+    gaps instead of being inferred downstream
+  - Updated the positive module example and output contract so
+    `legacy-brd-writer` can consume module analysis without remapping sources
 
 - v0.1.1 (2026-05-14): Post-review hardening
   - Fixed broken reference links in SKILL.md (nonexistent per-view methodology files)

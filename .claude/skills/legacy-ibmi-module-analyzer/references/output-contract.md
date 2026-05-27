@@ -49,9 +49,41 @@ Capability seeds must be framed around business events, outcomes, policy
 clusters, or operational ownership. Program flow and data flow are evidence for
 the boundary; they are not the boundary itself.
 
+## BRD Functional Analysis Input Crosswalk
+
+This table is the module-level handoff to `legacy-brd-writer`. It does not make
+the module analysis a BRD; it tells the BRD writer where the SME-required BRD
+sections can safely draw evidence from, and where a `TBD-*` must be carried.
+
+| BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Coverage Status | Carry-Forward TBD |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Function Purpose | View 1 Business Scope + module Scope Statement | ACTOR-* / EVENT-* / EV-* | covered / partial / missing | TBD-* or none |
+| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm | EVENT-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
+| 3 | Channels | View 1 Actors + View 2 Upstream Systems + flow Trigger Context | ACTOR-* / SYS-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
+| 4 | User Interface / User Touchpoints | View 1 Manual Intervention + triggered screen/report analysis | ACTOR-* / OBJ-* / EV-* | covered / partial / missing | TBD-* or none |
+| 5 | System Interfaces | View 2 Upstream / Downstream Systems + External Interfaces | SYS-* / IF-* / EV-* | covered / partial / missing | TBD-* or none |
+| 6 | Process Flow | View 1 Business Events + View 3 Flow Inventory | EVENT-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
+| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch/error evidence | BR-* / SEED-* / EV-* | covered / partial / missing | TBD-* or none |
+| 8 | Error Handling | View 1 Exception Lifecycle + flow Error Propagation | TBD-* / EV-* / FLOW-* | covered / partial / missing | TBD-* or none |
+| 9 | Dependencies | View 2 System Flow + View 4 Data Flow + View 3 Cross-Flow Dependencies | SYS-* / DATA-* / OBJ-* / EV-* | covered / partial / missing | TBD-* or none |
+| 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | SYS-* / IF-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
+| 11 | Workflow / Design Notes (optional) | View 3 Call Topology or supplied workflow docs | FLOW-* / DOC-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
+| 12 | Source Document Mapping (optional) | Context package / evidence map / source document index | DOC-* / FRAG-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
+
+Rules:
+
+- Sections 1-9 should be `covered` or `partial` before BRD drafting; `missing`
+  creates a BRD input gap and must name a `TBD-*`.
+- Optional sections 10-12 are `not_evidenced` unless actual source evidence or
+  SME input exists. Do not invent them.
+- Coverage status is not approval. SME review still happens in
+  `legacy-brd-writer` / `legacy-sme-review-facilitator`.
+
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
 - [ ] Cross-view consistency check passed (see view 3 ↔ view 1 actor mapping, etc.)
+- [ ] BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries a
+      named `TBD-*` for every missing / partial area
 - [ ] No blocking TBDs remain
 - [ ] Capability seeds reviewed by spec-writer SME
 
