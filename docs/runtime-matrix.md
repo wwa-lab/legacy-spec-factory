@@ -48,6 +48,7 @@ score at 9.0.
 | Skill | Version | Codex | Claude Code | OpenCode | Evidence | Last Verified | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `legacy-modernization-orchestrator` | v0.2.0 | synced | passed | synced | [scorecard](reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 2026-05-14 | Evidence-ready and inventory-blocked scenarios passed in Claude Code. Codex/OpenCode and expanded-route execution still needed. |
+| `legacy-flow-context-normalizer` | v0.1.0 | synced | synced | synced | [scorecard](reviews/legacy-flow-context-normalizer-v0.1.0-scorecard.md) | 2026-05-27 | Initial document-to-four-flow normalizer; adapter copies are synced, positive/negative no-write execution smoke pending. |
 | `legacy-module-context-intake` | v0.1.1 | synced | synced | synced | [scorecard](reviews/legacy-module-context-intake-v0.1.1-scorecard.md) | 2026-05-26 | v0.1.1 makes RAG candidate seeds business-signal first; positive/negative no-write execution smoke still pending. |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | passed | passed | passed | [scorecard](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 2026-05-15 | Full positive and negative smoke rerun. Claude Code initially hung in default Codex sandbox (EPERM on Claude config); rerun with auth/config/network access passed. |
 | `legacy-ibmi-inventory` | v0.1.0 | synced | synced | synced | [scorecard](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | not-yet-tested | Runtime copies created with `scripts/sync-skills.sh`; loading/execution not yet verified. |

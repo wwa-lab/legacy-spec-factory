@@ -8,6 +8,7 @@ upstream stage that fits — do not "round up" maturity.
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
+| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed |
 | 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
 | 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
@@ -63,7 +64,7 @@ artifacts live at `docs/XXX260004-demo/01_inventory/`.
 
 | Stage | Lives Under (relative to project.root) |
 | --- | --- |
-| 0m, 0n | `00_context_packages/` |
+| 0d, 0m, 0n | `00_context_packages/` |
 | 1 | `evidence/redacted/` (raw never committed) |
 | 2 | `01_inventory/` |
 | 3a, 3b | `02_programs/` |

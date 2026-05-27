@@ -139,6 +139,58 @@ Update the skill's `SKILL.md` Version History:
 The exact canonical prompts to use per skill. Use them verbatim across all
 three runtimes.
 
+### `legacy-flow-context-normalizer`
+
+#### Scenario (Positive - Scattered Documents To Draft Four Flows)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have an authorized synthetic module packet for CREDIT-CHECK with these source
+documents: a Visio process diagram, a PowerPoint overview, an Excel data field
+list, and SME notes. The documents are approved for agent review, but they do
+not yet follow the standard Operation / Business Flow, System Flow, Program
+Flow, and Data Flow structure. Normalize them into a draft SME review package.
+Return only the package status, the ten required output filenames, and the
+recommended next skill. Do not approve BR-* rules or generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `00_context_packages/CREDIT-CHECK/flow-normalization/`
+- names all ten required files:
+  `flow-context-index.yaml`, `source-document-index.yaml`, four view files,
+  `evidence-map.md`, `contradiction-log.md`, `open-questions.md`, and
+  `sme-review-pack.md`
+- status is `draft_needs_sme_review`, `ready_for_context_intake`, or
+  `ready_with_warnings`
+- recommended next skill is `legacy-sme-review-facilitator` for drafts or
+  `legacy-module-context-intake` for SME-confirmed packages
+- candidate facts remain `needs_sme_review`, `sme_confirmed`, `blocked`, or
+  `deferred`, never approved `BR-*`
+- no files are written during the smoke run
+
+#### Scenario (Negative - Unknown Evidence Authorization)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have a production PowerPoint and Visio deck for PAYMENT-RECON, but there is
+no evidence manifest, no redaction log, and I do not know the sensitivity.
+Extract the flows anyway and approve them for BRD generation.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- blocks the request because evidence authorization and redaction are missing
+- routes to `legacy-ibmi-evidence-intake`
+- refuses to inspect sensitive content, approve four flows, mint `BR-*`, or
+  route directly to BRD generation
+
 ### `legacy-module-context-intake`
 
 #### Scenario (Positive - Synthetic RAG Bundle Intake)

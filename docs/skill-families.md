@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 21 skills. They are not equally connected — some are
+Legacy Spec Factory has 22 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -15,13 +15,13 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 1 | Default enterprise entry path when external RAG / code-knowledge-graph output or four-view module context enters the repo |
+| Module-first context intake | 2 | Default enterprise entry path when scattered documents, external RAG / code-knowledge-graph output, or four-view module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **21** | |
+| **Total** | **22** | |
 
 ---
 
@@ -44,27 +44,32 @@ the user (or wrapping agent) which skill to invoke next.
 
 ## 1A. Module-First Context Intake
 
-**Purpose**: Normalize external RAG / code-knowledge-graph output and
-human-confirmed four-view module context into a traceable package before module
-analysis. This is the default enterprise entry path when a team already has
-RAG output, four reviewed flows, or a module-level context package. It does
-not replace evidence authorization or SME approval.
+**Purpose**: Normalize scattered historical documentation and external RAG /
+code-knowledge-graph output into a traceable package before module analysis.
+This is the default enterprise entry path when a team already has Visio, Word,
+Excel, PDF, PowerPoint, RAG output, four reviewed flows, or a module-level
+context package. It does not replace evidence authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
+| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / RAG / SME-note documentation that is not yet four-flow reviewed | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when four-view context is not yet confirmed |
 | [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs |
 
 **Sequence**:
 
 ```text
+scattered docs / draft flow evidence
+  └─ flow-context-normalizer
+       └─ SME review
+            └─ module-context-intake
 external RAG bundle + human-confirmed module context
   └─ module-context-intake
        └─ module-analyzer (validates / synthesizes approved 4-view module)
 ```
 
-**Anti-pattern**: treating RAG candidates as approved `BR-*` rules. Context
-intake preserves candidates and gaps; downstream SME review decides what can be
-promoted.
+**Anti-pattern**: treating draft document-derived flow steps or RAG candidates
+as approved `BR-*` rules. Flow normalization and context intake preserve
+candidates and gaps; downstream SME review decides what can be promoted.
 
 ---
 

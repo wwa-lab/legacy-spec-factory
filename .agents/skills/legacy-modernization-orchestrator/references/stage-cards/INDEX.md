@@ -29,6 +29,7 @@ orchestrator points to them when applicable.
 
 | Skill | When to add | Card |
 | --- | --- | --- |
+| `legacy-flow-context-normalizer` | Scattered Visio / Word / Excel / PDF / PowerPoint / SME-note docs exist, but four standard flows are not yet normalized or SME-reviewed | See SKILL.md |
 | `legacy-module-context-intake` | External RAG bundle or human-confirmed four-view module context is supplied before module analysis | See SKILL.md |
 | `legacy-ibmi-runtime-evidence-miner` | Job logs / spool / reports available alongside source | See SKILL.md (no dedicated card yet) |
 | `legacy-ibmi-screen-report-analyzer` | DSPF / PRTF / subfile / menu samples available | See SKILL.md |

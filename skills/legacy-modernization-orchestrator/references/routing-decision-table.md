@@ -16,6 +16,7 @@ Skill statuses:
 | Current Stage | Desired Outcome | Route To | Skill Status | Note |
 | --- | --- | --- | --- | --- |
 | 0 — Evidence Intake | Any | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 | Register metadata, assign `EV-*` IDs, govern redaction, and produce the manifest. The agent must not inspect unredacted sensitive content. |
+| 0d — Flow Context Normalization | Convert scattered documents into SME-reviewable four-flow context | `legacy-flow-context-normalizer` | Implemented v0.1.0 | Use when Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, or SME notes exist but the four standard flows are not yet normalized or SME-reviewed. Blocks on evidence authorization and does not promote draft flow steps to approved rules. |
 | 0m — Module Context Intake | Normalize RAG/context package | `legacy-module-context-intake` | Implemented v0.1.0 | Use when the user has external RAG output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context. Blocks on unapproved evidence and does not promote RAG candidates to approved rules. |
 | 0n — Module Context Ready | Synthesize or validate module | `legacy-ibmi-module-analyzer` | Implemented v0.1.1 | Use when `00_context_packages/<MODULE-SLUG>/context-index.yaml` is `ready_for_module_analysis` or `ready_with_warnings`; preserve open questions as TBDs. |
 | 1 — Evidence Ready (IBM i) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented | First call after redaction |

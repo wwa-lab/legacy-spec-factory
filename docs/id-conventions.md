@@ -30,6 +30,8 @@ AC-CREDIT-CHECK-002
 | `PKG` | Governance or traceability package | `PKG-CREDIT-CHECK-001` |
 | `OBJ` | Legacy object, file, program, job, screen, or report | `OBJ-CREDIT-CHECK-003` |
 | `EV` | Evidence item | `EV-CREDIT-CHECK-012` |
+| `DOC` | Source document in a flow-normalization package | `DOC-CREDIT-CHECK-001` |
+| `FRAG` | Extracted document fragment in a flow-normalization package | `FRAG-CREDIT-CHECK-001` |
 | `BEH` | Observed behavior | `BEH-CREDIT-CHECK-006` |
 | `BR` | Business rule | `BR-CREDIT-CHECK-004` |
 | `DEC` | Modernization decision | `DEC-CREDIT-CHECK-002` |
@@ -41,6 +43,7 @@ AC-CREDIT-CHECK-002
 | `EDGE` | Call, dispatch, or handoff between flow nodes | `EDGE-CREDIT-CHECK-001` |
 | `DATA` | Cross-program or cross-step data exchange | `DATA-CREDIT-CHECK-001` |
 | `SEED` | Candidate rule or capability question awaiting SME review | `SEED-CREDIT-CHECK-001` |
+| `CAND` | Draft candidate extracted from non-standard source context | `CAND-CREDIT-CHECK-001` |
 | `MODULE` | Business module synthesized from related flows | `MODULE-CREDIT-CHECK-001` |
 | `VIEW` | Module analysis view | `VIEW-CREDIT-CHECK-001` |
 | `ACTOR` | Human or organizational actor in a module view | `ACTOR-CREDIT-CHECK-001` |
