@@ -37,7 +37,7 @@ module:
 
 intake:
   skill: legacy-module-context-intake
-  version: v0.1.1
+  version: v0.1.2
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: ready_for_module_analysis
   decision_reason: "Short reason."
@@ -55,6 +55,13 @@ rag_runs:
     dictionary_version: "dict-v34"
     arcad_ref_snapshot: "arcad-ref-2026-05-21"
     sensitivity: synthetic_non_production
+
+flow_normalization_input:
+  path: "00_context_packages/CREDIT-CHECK/flow-normalization/flow-context-index.yaml"
+  status: ready_with_warnings
+  quality_level: L1 sparse
+  risk_acceptance_status: accepted
+  accepted_by: "Credit Operations Owner"
 
 input_files:
   - role: flow_hydration_summary
@@ -102,6 +109,11 @@ Rules:
 - `downstream_next_step` is `legacy-ibmi-module-analyzer` unless blocked.
 - `blocking_items[]` is empty only when all gates pass or all remaining items
   are explicitly non-blocking.
+- Owner-accepted sparse flow-normalization input is allowed only when
+  `flow_normalization_input.status: ready_with_warnings`,
+  `quality_level: L1 sparse`, and `risk_acceptance_status: accepted`. Preserve
+  all missing views as low-confidence `TBD-*`; do not convert sparse context to
+  approved facts.
 
 ## View Files
 
@@ -268,6 +280,8 @@ Forbidden:
 - One runtime sample -> normal operating frequency
 - No contradiction found -> approval
 - `ready_with_warnings` -> downstream approval
+- Owner-accepted sparse context -> approved facts, approved `BR-*`, or BRD
+  claims without later corroboration
 
 ## Local Validation
 

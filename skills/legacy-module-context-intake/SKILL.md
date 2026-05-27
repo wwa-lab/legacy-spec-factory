@@ -1,6 +1,6 @@
 ---
 name: legacy-module-context-intake
-description: Normalize external RAG or code-knowledge-graph output and human-confirmed four-view module context into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team already has module-first context, RAG hydration output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, or four reviewed module flows and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, missing module scope, hidden contradictions, or attempts to promote RAG candidates into approved business rules.
+description: Normalize external RAG or code-knowledge-graph output, human-confirmed four-view module context, or owner-accepted sparse flow-normalization output into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team already has module-first context, RAG hydration output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, four reviewed module flows, or `legacy-flow-context-normalizer` output accepted as `ready_with_warnings` and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, missing module scope, hidden contradictions, or attempts to promote RAG candidates or sparse-context TBDs into approved business rules.
 ---
 
 <!--
@@ -43,6 +43,9 @@ analysis, or bypass SME review.
   usual program-by-program reverse chain.
 - External RAG output includes `rag-run-index.yaml`, source snippets, field
   dictionary mappings, impact scope, contradictions, or retrieval gaps.
+- `legacy-flow-context-normalizer` produced `ready_with_warnings` with
+  `quality_level: L1 sparse` and a named `risk_acceptance.status: accepted`
+  because no additional flow input can be provided.
 - The user asks to ingest, normalize, package, or prepare a RAG output bundle
   under `00_context_packages/<MODULE-SLUG>/`.
 - A BRD or module analysis should start from human-confirmed four-view context
@@ -87,7 +90,7 @@ Stop and produce only blocking findings / requested remediation if any apply:
 | Source/runtime evidence sensitivity is unknown | `legacy-ibmi-evidence-intake` |
 | Confidential evidence is present without approved redaction | `legacy-ibmi-evidence-intake` |
 | Module slug, business name, or scope is missing | module owner / SME clarification |
-| Four-view context is absent and cannot be reconstructed from supplied files | requester must provide module context or route to normal inventory/program/flow chain |
+| Four-view context is absent and there is no owner-accepted sparse flow-normalization package | requester must provide module context, accept sparse-input risk, or route to normal inventory/program/flow chain |
 | RAG contradictions are missing, blank without evaluated checks, or hidden in prose | rerun / repair RAG bundle before intake |
 | RAG candidate rules are requested as approved `BR-*` | block; candidates stay `needs_sme_review` seeds only |
 | Source paths, snippet IDs, or dictionary IDs cannot be traced | record `TBD-*` in `open-questions.md`; do not smooth over |
@@ -126,16 +129,19 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 ### Input
 
 - **Required**: module slug, module business name, scope statement, four-view
-  context or a RAG hydration summary that contains all four views, and evidence
+  context, a RAG hydration summary that contains all four views, or an
+  owner-accepted sparse `legacy-flow-context-normalizer` package; evidence
   authorization for every source/runtime artifact referenced.
 - **Optional**: approved evidence manifest, inventory, program analyses, flow
   analyses, SME notes, architecture diagrams, dictionary export, ARCAD REF
   export, runtime sample index.
 - **Input readiness scoring**:
   - `0-5 blocked`: evidence authorization unresolved, module scope missing,
-    contradictions missing, or no usable four-view context.
+    contradictions missing, no usable four-view context, and no accepted sparse
+    package.
   - `6 minimum_pass`: module identity, four views, RAG provenance, and explicit
-    open questions are present.
+    open questions are present; or sparse flow-normalization output has named
+    owner risk acceptance and all missing views carried as TBDs.
   - `7-8 usable`: source snippets, dictionary mappings, impact scope, and
     contradiction checks are traceable.
   - `9-10 strong`: approved evidence manifest, SME-reviewed four-view context,
@@ -162,7 +168,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **Required gates**: evidence authorization, provenance completeness,
   contradiction visibility, four-view coverage, and open-question carry-forward.
 - **Handoff status**: only `ready_for_module_analysis` and
-  `ready_with_warnings` may feed `legacy-ibmi-module-analyzer`.
+  `ready_with_warnings` may feed `legacy-ibmi-module-analyzer`. For
+  owner-accepted sparse input, `ready_with_warnings` means low-confidence
+  context only, not approval of any missing flow.
 
 ### Validation
 
@@ -175,6 +183,10 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   remains visible; candidate seeds explain the business signal first and keep
   program names, file names, field names, snippet IDs, and runtime object names
   in evidence context unless the view is explicitly technical.
+- **Sparse-input restriction**: if the upstream package is
+  `quality_level: L1 sparse`, preserve every missing view as a `TBD-*`, mark
+  evidence strength low, and do not create approved facts, `BR-*`, or BRD-ready
+  claims from the sparse context alone.
 - **SME / human approval**: module owner confirms business name and scope;
   data owner or dictionary owner confirms approved dictionary mappings where
   they are used as business terminology.
@@ -194,6 +206,10 @@ This skill conforms to the Legacy Spec Factory Step Contract.
    - Record each supplied input in `context-index.yaml`.
    - Capture run ID, source snapshot, dictionary version, ARCAD REF snapshot,
      corpus root, and generation timestamp when present.
+   - If input comes from `legacy-flow-context-normalizer`, record
+     `flow-normalization/flow-context-index.yaml`, `quality_level`, and
+     `risk_acceptance` status. If `quality_level: L1 sparse` lacks accepted
+     risk, route back to source-owner supplement request.
 
 4. **Normalize four views**
    - Create one Markdown file per view using the supplied module context.
@@ -205,6 +221,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
      business behavior or decision depends on the technical check.
    - Keep program names, file names, field names, node IDs, source paths, and
      raw RAG IDs in `Evidence Basis`, not as the main candidate statement.
+   - For owner-accepted sparse input, copy placeholder views forward as
+     low-confidence context and preserve missing sequence, actor, system,
+     program, and data questions as carry-forward `TBD-*`.
 
 5. **Build evidence map**
    - Convert source snippets, runtime observations, dictionary mappings, and
@@ -259,4 +278,8 @@ names into capability boundaries.
 
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
+- v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse
+  `legacy-flow-context-normalizer` packages as low-confidence
+  `ready_with_warnings` input while preserving TBDs and forbidding approved
+  facts from sparse context alone.
 - v0.1.0 (2026-05-21): Initial module context intake skill.

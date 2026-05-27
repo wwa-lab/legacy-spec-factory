@@ -8,7 +8,7 @@ upstream stage that fits — do not "round up" maturity.
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
-| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed |
+| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
 | 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
 | 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
@@ -48,6 +48,19 @@ When evidence authorization is incomplete:
   or requires redaction without approval, the stage is **0 (Evidence Intake)**
   regardless of how much other progress exists. The Evidence Authorization Gate
   is non-bypassable.
+
+When flow-normalization output is sparse:
+
+- `triage_needs_source_enrichment` remains stage **0d**, not stage 0m or 0n.
+  Route to source-owner supplement collection or SME clarification before
+  `legacy-module-context-intake`.
+- `ready_with_warnings` with `quality_level: L1 sparse` and
+  `risk_acceptance.status: accepted` remains stage **0d** for identification,
+  but its next route is `legacy-module-context-intake` with low-confidence
+  carry-forward TBDs.
+- `draft_needs_sme_review` remains stage **0d** until SME review confirms the
+  package or explicitly accepts non-blocking gaps.
+  Do not round it up to module context ready.
 
 When only forward chain artifacts exist:
 

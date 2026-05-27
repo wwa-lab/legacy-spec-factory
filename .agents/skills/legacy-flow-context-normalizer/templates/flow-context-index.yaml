@@ -11,9 +11,10 @@ module:
 
 normalization:
   skill: "legacy-flow-context-normalizer"
-  version: "v0.1.3"
+  version: "v0.1.5"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
-  status: "draft_needs_sme_review" # draft_needs_sme_review | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
+  status: "draft_needs_sme_review" # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
+  quality_level: "L2 partial" # L3 strong | L2 partial | L1 sparse | L0 blocked
   decision_reason: "<Why this status was selected>"
   downstream_next_step: "legacy-sme-review-facilitator" # legacy-module-context-intake when ready
 
@@ -53,6 +54,15 @@ gates:
   contradiction_visibility_gate: "blocked"
   sme_review_gate: "blocked"
   rule_promotion_gate: "blocked"
+
+risk_acceptance:
+  status: "none" # none | requested | accepted | rejected
+  accepted_by: null
+  accepted_at: null
+  rationale: null
+  downstream_restrictions:
+    - "No approved BR-* or BRD claim may be generated from sparse context alone."
+    - "All missing views remain carry-forward TBDs until corroborated."
 
 blocking_items:
   - id: "TBD-<MODULE-SLUG>-001"

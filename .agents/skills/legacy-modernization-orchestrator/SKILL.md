@@ -34,8 +34,10 @@ also records which skill pairs were intentionally **not** merged and why.
 
 ```
 Module-First Entry (scattered docs / external RAG / four-view context)
-   ↓ legacy-flow-context-normalizer (only when four flows are not SME-reviewed)
-00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft, SME review first)
+   ↓ legacy-flow-context-normalizer
+      - L3/L2: draft Mermaid-backed flows for SME review
+      - L1: source-quality triage when no safe flow can be generated
+00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft or triage, SME/source review first)
    ↓ legacy-module-context-intake
 00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
    ↓ legacy-ibmi-module-analyzer
@@ -246,6 +248,9 @@ the full table. Common cases:
 
 | Current Input | Stage |
 | --- | --- |
+| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / SME-note docs without SME-reviewed flows | Flow Context Normalization |
+| `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Flow Context Normalization — source enrichment needed |
+| `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Flow Context Normalization — SME review needed |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
 | Redacted evidence bundle with sensitivity recorded | Evidence Ready |
 | `inventory.yaml` with `sme_review.decision: blocked` | Inventory Blocked |
@@ -289,6 +294,7 @@ for the full table. Common routes:
 
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
+| Scattered docs / sparse module notes, no reviewed four-flow context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.5 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -330,6 +336,31 @@ substance the skipped layer would have contributed.
 - Any stage where evidence has `sensitivity: unknown` → any downstream
 
 If a skip is unsafe, say so and route to the missing prerequisite.
+
+### Module-First Document Routing
+
+When the user has historical documents but no SME-reviewed module context,
+route to `legacy-flow-context-normalizer` even when the material looks weak.
+The router must not require perfect four-flow input before starting.
+
+Use this quality-aware routing:
+
+| Input Quality | Route | Expected Status |
+| --- | --- | --- |
+| Documents appear able to support all four views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` or later `ready_for_context_intake` |
+| Documents support only some views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` with placeholders, or SME-accepted `ready_with_warnings` |
+| Documents are authorized/readable but too sparse to form a safe sequence | `legacy-flow-context-normalizer` | `triage_needs_source_enrichment` |
+| Sparse package already has named owner risk acceptance and no additional inputs can be provided | `legacy-module-context-intake` | `ready_with_warnings` only; preserve `quality_level: L1 sparse` and carry-forward TBDs |
+| Documents are unauthorized, unreadable, out of scope, or lack any module boundary | Evidence intake, readable export, or SME boundary clarification | `blocked_*` remediation |
+
+Do not route a `triage_needs_source_enrichment` package to
+`legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or
+`legacy-brd-writer`. Route it to source-owner supplement collection or SME
+clarification first. If the owner explicitly accepts that no more flow input
+can be provided, route the resulting `ready_with_warnings` package to
+`legacy-module-context-intake`, not to module analysis or BRD generation.
+State that all sparse facts remain low-confidence and cannot become approved
+rules without later corroboration.
 
 ### Step 4B — Apply Hard Gates
 
@@ -1049,6 +1080,17 @@ runtime copies.
   Stage Card) with a stage → card mapping table. Tightened the Mechanical
   Validation and Quality Checklist to enforce the new footer and card
   pointer.
+- v0.2.1 (2026-05-27): Aligned module-first routing with
+  `legacy-flow-context-normalizer` v0.1.4. Added quality-aware routing for
+  strong, partial, sparse, and blocked document inputs, including
+  `triage_needs_source_enrichment` handling so sparse authorized documents
+  route to source-quality triage instead of being rounded up or blocked
+  unnecessarily.
+- v0.2.2 (2026-05-27): Added the risk-accepted sparse-input route. If the
+  source owner/SME confirms no further flow input can be provided, the router
+  may send an owner-accepted `ready_with_warnings` package to
+  `legacy-module-context-intake` while preserving low confidence and blocking
+  direct module-analysis or BRD routing.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

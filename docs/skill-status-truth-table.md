@@ -30,9 +30,9 @@ Last regenerated: 2026-05-26
 
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | v0.2.0 | 9.34 | repo-ready | synced | passed | synced | 2026-05-14 | [link](reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) |
-| `legacy-flow-context-normalizer` | v0.1.3 | 9.44 | repo-ready | synced | synced | synced | 2026-05-27 | [link](reviews/legacy-flow-context-normalizer-v0.1.3-scorecard.md) |
-| `legacy-module-context-intake` | v0.1.1 | 9.42 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-module-context-intake-v0.1.1-scorecard.md) |
+| `legacy-modernization-orchestrator` | v0.2.2 | 9.37 | repo-ready | synced | passed | synced | 2026-05-27 | [link](reviews/legacy-modernization-orchestrator-v0.2.2-scorecard.md) |
+| `legacy-flow-context-normalizer` | v0.1.5 | 9.47 | repo-ready | synced | synced | synced | 2026-05-27 | [link](reviews/legacy-flow-context-normalizer-v0.1.5-scorecard.md) |
+| `legacy-module-context-intake` | v0.1.2 | 9.43 | repo-ready | synced | synced | synced | 2026-05-27 | [link](reviews/legacy-module-context-intake-v0.1.2-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
@@ -60,7 +60,7 @@ Last regenerated: 2026-05-26
 | `field-pilot ready` (all three runtimes `passed`) | 10 |
 | `repo-ready` (runtime cap or partial coverage) | 12 |
 
-**22 skills total** in canonical source; **16 superseded scorecards** kept
+**22 skills total** in canonical source; **21 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

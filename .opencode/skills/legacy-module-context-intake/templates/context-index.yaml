@@ -11,7 +11,7 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.1"
+  version: "v0.1.2"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "blocked_pending_evidence" # ready_for_module_analysis | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_contradiction_review
   decision_reason: "<Why this status was selected>"
@@ -23,6 +23,13 @@ evidence_authorization:
   redaction_notes: "<authorization / redaction note>"
 
 rag_runs: []
+
+flow_normalization_input:
+  path: null
+  status: null # ready_with_warnings only when accepted sparse package is used
+  quality_level: null # L1 sparse when sparse input is accepted
+  risk_acceptance_status: null # accepted required for sparse input
+  accepted_by: null
 
 input_files: []
 

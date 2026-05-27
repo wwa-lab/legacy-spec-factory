@@ -1,6 +1,6 @@
 ---
 name: legacy-flow-context-normalizer
-description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, and SME notes into draft four-view module flows: Operation / Business Flow, System Flow, Program Flow, and Data Flow. Use when a team has historical documents that do not yet conform to the Legacy Spec Factory four-flow standard and needs a traceable SME review package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted flows as approved business rules.
+description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, and SME notes into draft four-view module flows: Operation / Business Flow, System Flow, Program Flow, and Data Flow. Use when a team has historical documents that do not yet conform to the Legacy Spec Factory four-flow standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted flows as approved business rules.
 ---
 
 <!--
@@ -87,9 +87,34 @@ Stop and produce only blocking findings if any apply:
 
 Missing one or more of the four standard flows is **not** a stop condition.
 Create the missing view file with a placeholder Mermaid node, a `TBD-*`
-question, and `coverage.<view>: absent` or `partial`. The goal is to improve
-user experience by making incomplete inputs reviewable instead of blocking
-unless a downstream step would need to invent facts.
+question, and `coverage.<view>: absent` or `partial`. If no flow can be safely
+generated but the authorized documents contain module-relevant clues, produce a
+source-quality triage package instead of failing silently. The goal is to
+improve user experience by making incomplete inputs reviewable instead of
+blocking unless a downstream step would need to invent facts.
+
+## Input Quality Ladder
+
+Classify the input set before drafting flows:
+
+| Level | Signal | Required response |
+| --- | --- | --- |
+| `L3 strong` | The documents support all four views with visible evidence. | Produce four substantive view files, each with Mermaid flowchart, evidence-linked steps, candidate seeds, and SME questions. |
+| `L2 partial` | The documents support one to three views. | Produce substantive views where evidence exists; create Mermaid placeholders and `TBD-*` questions for missing views; route to SME review. |
+| `L1 sparse` | Documents are authorized and readable, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
+| `L0 blocked` | Evidence is unauthorized, unreadable, out of scope, or lacks a usable module boundary. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
+
+`L1 sparse` is still useful output. It should identify what was found, why no
+flow should be inferred, which source types would unlock the next pass, and
+which SME questions can resolve the gap fastest.
+
+If the team has already attempted supplement collection and the source owner
+or SME confirms that no additional flow input can be provided, do not loop
+forever asking for more. Record an explicit risk-acceptance decision. Only a
+named accountable owner may convert `triage_needs_source_enrichment` to
+`ready_with_warnings`; the package must remain `quality_level: L1 sparse`,
+carry every missing view as `TBD-*`, and tell downstream skills to treat all
+context as low-confidence review material, not confirmed facts.
 
 ## Output Contract
 
@@ -118,6 +143,7 @@ python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py
 The package status in `flow-context-index.yaml` must be one of:
 
 - `draft_needs_sme_review`
+- `triage_needs_source_enrichment`
 - `ready_for_context_intake`
 - `ready_with_warnings`
 - `blocked_pending_evidence`
@@ -128,6 +154,7 @@ The package status in `flow-context-index.yaml` must be one of:
 Allowed handoff:
 
 - `draft_needs_sme_review` -> SME review or `legacy-sme-review-facilitator`
+- `triage_needs_source_enrichment` -> source owner / SME supplement request
 - `ready_for_context_intake` / `ready_with_warnings` -> `legacy-module-context-intake`
 - any `blocked_*` -> do not route downstream; record exact remediation in
   `open-questions.md` and `flow-context-index.yaml`
@@ -139,7 +166,8 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 ### Input
 
 - **Required**: module identity, source document list, evidence authorization,
-  and enough readable content to identify at least one candidate flow view.
+  and enough readable content to identify either candidate flow evidence or
+  module-relevant triage clues.
 - **Optional**: existing RAG output, ARCAD / application inventory extracts,
   data dictionary exports, screen/report samples, meeting notes, known SME
   owner, and reviewed module glossary.
@@ -147,7 +175,8 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   - `0-5 blocked`: evidence authorization unresolved, module scope missing,
     source files unreadable with no export, or all documents out of scope.
   - `6 minimum_pass`: module identity, authorized readable documents, and at
-    least one flow candidate are present.
+    least one module-relevant clue are present; if no flow can be produced,
+    emit `triage_needs_source_enrichment`.
   - `7-8 usable`: documents cover one or more views with visible source
     provenance, gaps, and contradictions; missing views are represented as
     explicit `TBD-*` questions rather than blockers.
@@ -179,7 +208,10 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **Handoff status**: only `ready_for_context_intake` and
   `ready_with_warnings` may feed `legacy-module-context-intake`. A partial
   package may use `ready_with_warnings` only when SME explicitly accepts the
-  missing views or gaps as carry-forward TBDs.
+  missing views or gaps as carry-forward TBDs. `triage_needs_source_enrichment`
+  must not feed context intake unless it is converted to
+  `ready_with_warnings` by a named owner risk-acceptance decision after
+  supplement collection has been attempted or declared impossible.
 
 ### Validation
 
@@ -199,7 +231,11 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   steps that are stated as facts, or absent SME decision when package claims
   readiness. Missing flow coverage by itself is not blocking when it is
   captured as `TBD-*` and the package remains draft or SME-accepted
-  `ready_with_warnings`.
+  `ready_with_warnings`. If all flow coverage is absent but authorized
+  module-relevant clues exist, use `triage_needs_source_enrichment` rather than
+  a blocked status. If the owner explicitly accepts sparse-input risk, convert
+  to `ready_with_warnings` with `quality_level: L1 sparse`, all flow gaps still
+  visible, and downstream restrictions recorded.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with status
@@ -242,7 +278,16 @@ orchestrator.
      non-empty data row, and classifies fragments by sheet/header keywords into
      Operation / Business, System, Program, Data, or `cross_view`.
 
-5. **Classify fragments into four views**
+5. **Classify input quality**
+   - Set `quality_level` to `L3 strong`, `L2 partial`, `L1 sparse`, or
+     `L0 blocked`.
+   - Record the reason in `flow-context-index.yaml.normalization.
+     decision_reason`.
+   - For `L1 sparse`, do not invent sequence or edges. Continue to create the
+     ten-file package as a triage artifact with all four views marked
+     `absent`, placeholder Mermaid nodes, and prioritized supplement requests.
+
+6. **Classify fragments into four views**
    - Operation / Business Flow: actors, BAU sequence, approvals, manual steps,
      exceptions, customer or operational outcome.
    - System Flow: upstream/downstream systems, interfaces, batches, queues,
@@ -252,7 +297,7 @@ orchestrator.
    - Data Flow: files/tables, business data objects, fields, read/write/update
      direction, derivation, retention, ownership.
 
-6. **Draft each view**
+7. **Draft each view**
    - Use `templates/view-template.md`.
    - Include a `Mermaid Flow Diagram` in every view. The diagram is the
      SME-readable flow surface; the evidence table remains the traceability
@@ -268,31 +313,38 @@ orchestrator.
      question. Mark coverage as `absent`, not `blocked`, unless the package
      would otherwise invent facts.
 
-7. **Build evidence map**
+8. **Build evidence map**
    - Use `templates/evidence-map.md`.
    - Map every `DOC-*` / `FRAG-*` / source row to the views that use it.
 
-8. **Carry contradictions and gaps**
+9. **Carry contradictions and gaps**
    - Use `templates/contradiction-log.md` and `templates/open-questions.md`.
    - Keep obsolete-document signals visible rather than deleting them.
    - Ask SME to decide whether a contradiction is blocking, obsolete, or a real
      alternate path.
 
-9. **Prepare SME review package**
+10. **Prepare SME review package**
    - Use `templates/sme-review-pack.md`.
    - Group questions by view and prioritize blockers first.
    - Include explicit approval choices; do not ask SME to review raw dumps.
 
-10. **Set handoff status**
+11. **Set handoff status**
     - `draft_needs_sme_review` when flow content is usable but SME decision is
       not recorded.
+    - `triage_needs_source_enrichment` when authorized documents are readable
+      and module-relevant, but no flow sequence should be generated. Route to
+      source owner / SME supplement request, not BRD or context intake.
+    - Convert `triage_needs_source_enrichment` to `ready_with_warnings` only
+      when a named SME/source owner records that no additional flow input can
+      be provided and accepts carrying the gaps forward. Preserve
+      `quality_level: L1 sparse`; do not upgrade coverage or confidence.
     - `ready_for_context_intake` only when SME review confirms all four flows.
     - `ready_with_warnings` only when unresolved items are explicitly
       non-blocking and carried into `open-questions.md`; this is the preferred
       status for SME-accepted partial packages.
     - `blocked_*` when a downstream skill would need to invent facts.
 
-11. **Validate**
+12. **Validate**
     - Run the bundled validator:
       ```bash
       python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
@@ -315,6 +367,16 @@ After SME approval, run `legacy-module-context-intake` with:
 
 Do not hand this package directly to `legacy-brd-writer`.
 
+For sparse packages that were owner-accepted as `ready_with_warnings`, tell
+`legacy-module-context-intake`:
+
+- this is `quality_level: L1 sparse`,
+- missing flows are accepted carry-forward TBDs, not confirmed absence,
+- no candidate may become an approved fact, `BR-*`, or BRD claim from this
+  package alone,
+- downstream module analysis must keep confidence low until corroborated by
+  source, runtime evidence, or SME decision.
+
 ## Version
 
 - v0.1.0 (2026-05-27): Initial document-to-four-flow normalization skill.
@@ -324,3 +386,10 @@ Do not hand this package directly to `legacy-brd-writer`.
   view while keeping evidence tables as the traceability source of truth.
 - v0.1.3 (2026-05-27): Softened missing-flow handling so partial four-view
   packages can proceed as drafts or SME-accepted warnings instead of blocking.
+- v0.1.4 (2026-05-27): Added an input quality ladder and
+  `triage_needs_source_enrichment` status for authorized sparse inputs where no
+  flow can be safely generated.
+- v0.1.5 (2026-05-27): Added the owner risk-acceptance path for cases where
+  additional flow input cannot be provided; sparse triage may proceed as
+  `ready_with_warnings` only with explicit sign-off and low-confidence
+  downstream restrictions.

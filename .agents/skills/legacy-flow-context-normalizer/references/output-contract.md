@@ -45,9 +45,10 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.3
+  version: v0.1.5
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
+  quality_level: L2 partial
   decision_reason: "Draft four views generated from authorized historical docs."
   downstream_next_step: legacy-sme-review-facilitator
 
@@ -94,6 +95,15 @@ gates:
   sme_review_gate: pass | warning | blocked
   rule_promotion_gate: pass | warning | blocked
 
+risk_acceptance:
+  status: none | requested | accepted | rejected
+  accepted_by: null
+  accepted_at: null
+  rationale: null
+  downstream_restrictions:
+    - "No approved BR-* or BRD claim may be generated from sparse context alone."
+    - "All missing views remain carry-forward TBDs until corroborated."
+
 blocking_items:
   - id: TBD-CREDIT-CHECK-001
     reason: "Data retention flow is not visible in supplied documents."
@@ -104,6 +114,7 @@ Rules:
 
 - `status` must be one of:
   - `draft_needs_sme_review`
+  - `triage_needs_source_enrichment`
   - `ready_for_context_intake`
   - `ready_with_warnings`
   - `blocked_pending_evidence`
@@ -111,8 +122,12 @@ Rules:
   - `blocked_pending_readable_source`
   - `blocked_pending_contradiction_review`
 - `downstream_next_step` is `legacy-sme-review-facilitator` for drafts,
+  `source_owner_supplement_request` or SME clarification for sparse triage,
   `legacy-module-context-intake` for ready packages, and the remediation route
   for blocked packages.
+- `quality_level` must be one of `L3 strong`, `L2 partial`, `L1 sparse`, or
+  `L0 blocked`. Use `L1 sparse` when input is authorized and readable but no
+  flow sequence can be safely generated.
 - `blocking_items[]` is empty only when all gates pass or all remaining items
   are explicitly non-blocking.
 - Gate/status compatibility: `warning` gates are compatible with
@@ -128,6 +143,17 @@ Rules:
   `TBD-*` in the missing view and `open-questions.md`. Escalate to
   `blocked_*` only when the downstream step would have to invent sequence,
   ownership, system boundary, or data meaning.
+- When all four views are absent but the source set is authorized, readable,
+  and module-relevant, use `normalization.status:
+  triage_needs_source_enrichment` with `quality_level: L1 sparse`. The package
+  still includes all ten files, but it is a source-quality triage output, not a
+  draft flow package for context intake.
+- If the source owner or SME confirms that no additional flow input can be
+  provided, the package may move from `triage_needs_source_enrichment` to
+  `ready_with_warnings` only when `risk_acceptance.status: accepted` includes a
+  named accountable owner, timestamp, rationale, and downstream restrictions.
+  Do not change `quality_level: L1 sparse`, do not mark absent views as usable,
+  and do not remove the `TBD-*` questions.
 
 ## `source-document-index.yaml`
 
@@ -181,7 +207,7 @@ Each view file must include:
 # View N: [Name] - [Module Name]
 
 ## Normalization Status
-- status: draft_needs_sme_review | ready_for_context_intake | ready_with_warnings | blocked
+- status: draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked
 - source_state: extracted_documents | mixed | sme_confirmed | draft
 - primary_sources:
   - DOC-... / FRAG-...

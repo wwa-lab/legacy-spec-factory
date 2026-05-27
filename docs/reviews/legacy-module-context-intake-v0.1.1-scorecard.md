@@ -3,7 +3,7 @@ skill: legacy-module-context-intake
 scorecard_version: v0.1.1
 static_score: 9.42
 decision: repo-ready
-status: current
+status: superseded
 last_verified: 2026-05-26
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-05-26 }

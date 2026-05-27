@@ -1,7 +1,7 @@
 # View N: <View Name> - <Module Name>
 
 ## Normalization Status
-- status: draft_needs_sme_review
+- status: draft_needs_sme_review # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked
 - source_state: extracted_documents
 - primary_sources:
   - DOC-<MODULE-SLUG>-001

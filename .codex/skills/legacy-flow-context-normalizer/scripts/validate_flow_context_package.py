@@ -29,6 +29,7 @@ READY_STATUSES = {
 
 DRAFT_STATUSES = {
     "draft_needs_sme_review",
+    "triage_needs_source_enrichment",
 }
 
 BLOCKED_STATUSES = {
