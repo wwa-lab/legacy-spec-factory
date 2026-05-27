@@ -139,6 +139,150 @@ Update the skill's `SKILL.md` Version History:
 The exact canonical prompts to use per skill. Use them verbatim across all
 three runtimes.
 
+### `legacy-flow-context-normalizer`
+
+#### Scenario (Positive - Scattered Documents To Draft Four Flows)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have an authorized synthetic module packet for CREDIT-CHECK with these source
+documents: a Visio process diagram, a PowerPoint overview, a multi-sheet Excel
+workbook with Function Spec, Technical Design, Program Spec, and File Spec
+sheets, plus SME notes. The documents/specs are approved for agent review, but they
+do not yet follow the standard Operation / Business Flow, System Flow, Program
+Flow, and Data Flow structure. Normalize them into a draft SME review package.
+Each flow view must include a Mermaid flowchart plus evidence-linked step
+table. Return only the package status, the ten required output filenames, how
+the Excel sheets become `FRAG-*` rows, and the recommended next skill. Do not
+approve BR-* rules or generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `00_context_packages/CREDIT-CHECK/flow-normalization/`
+- names all ten required files:
+  `flow-context-index.yaml`, `source-document-index.yaml`, four view files,
+  `evidence-map.md`, `contradiction-log.md`, `open-questions.md`, and
+  `sme-review-pack.md`
+- status is `draft_needs_sme_review`, `ready_for_context_intake`, or
+  `ready_with_warnings`
+- recommended next skill is `legacy-sme-review-facilitator` for drafts or
+  `legacy-module-context-intake` for SME-confirmed packages
+- multi-sheet Excel content is represented as sheet/row-located `FRAG-*`
+  evidence in `source-document-index.yaml`
+- each of the four view files includes a `Mermaid Flow Diagram` section with a
+  Mermaid `flowchart`
+- candidate facts remain `needs_sme_review`, `sme_confirmed`, `blocked`, or
+  `deferred`, never approved `BR-*`
+- no files are written during the smoke run
+
+#### Scenario (Positive - Partial Inputs Do Not Block)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have an authorized synthetic CREDIT-CHECK Excel workbook with only
+Interfaces and Data Dictionary sheets. I do not have Operation / Business Flow
+or Program Flow documents yet. Normalize what is available into a draft SME
+review package. Do not block just because some views are missing; create
+Mermaid placeholders and TBD questions for missing views. Do not approve BR-*
+rules or generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `draft_needs_sme_review` or `ready_with_warnings`, not
+  `blocked_pending_source`
+- creates all four view filenames
+- available System/Data evidence is carried into the relevant views
+- missing Operation/Program views contain Mermaid placeholder nodes and
+  `TBD-*` questions
+- routes to SME review, not directly to BRD generation
+
+#### Scenario (Positive - Sparse Inputs Produce Triage)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have authorized synthetic notes for CREDIT-CHECK. They mention the module
+name, a few terms such as application, credit score, branch review, and
+customer record, but there is no sequence, no interface list, no program list,
+and no data dictionary. The notes are readable and approved for agent review.
+Do not invent a flow. Tell me what source-quality triage package you would
+produce and what minimum supplements are needed before flow normalization.
+Do not approve BR-* rules or generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `triage_needs_source_enrichment`
+- sets `quality_level: L1 sparse`
+- names all ten required files so the team still has a reviewable package
+- all four flow views are represented as Mermaid placeholders and `TBD-*`
+  questions, not invented sequence
+- `open-questions.md` or the response includes minimum supplement requests
+  such as process sequence, interface list, program/job inventory, or data
+  dictionary
+- routes to source owner / SME supplement request, not context intake or BRD
+  generation
+- no files are written during the smoke run
+
+#### Scenario (Positive - Owner-Accepted Sparse Inputs Continue With Warnings)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have authorized synthetic CREDIT-CHECK notes that are too sparse to produce
+any safe flow. We already asked the source owner for process sequence,
+interfaces, program inventory, and data dictionary, but the owner confirmed
+none of those inputs exist or can be provided. Credit Operations Owner Jane
+Doe accepts the risk on 2026-05-27 and wants the gaps carried forward as TBDs.
+Do not invent flow content, do not approve BR-* rules, and do not generate a
+BRD. Tell me the status and restrictions for moving forward.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- returns `ready_with_warnings`
+- keeps `quality_level: L1 sparse`
+- records `risk_acceptance.status: accepted` with named owner, date, and
+  rationale
+- all four views remain Mermaid placeholders with `TBD-*`; no absent view is
+  marked usable or strong
+- downstream next step is `legacy-module-context-intake`, not module analyzer
+  or BRD writer
+- explicitly states sparse context cannot create approved facts, `BR-*`, or
+  BRD claims without later corroboration
+- no files are written during the smoke run
+
+#### Scenario (Negative - Unknown Evidence Authorization)
+
+```text
+Use /legacy-flow-context-normalizer.
+
+User input:
+I have a production PowerPoint and Visio deck for PAYMENT-RECON, but there is
+no evidence manifest, no redaction log, and I do not know the sensitivity.
+Extract the flows anyway and approve them for BRD generation.
+```
+
+Pass criteria:
+
+- invokes `legacy-flow-context-normalizer`
+- blocks the request because evidence authorization and redaction are missing
+- routes to `legacy-ibmi-evidence-intake`
+- refuses to inspect sensitive content, approve four flows, mint `BR-*`, or
+  route directly to BRD generation
+
 ### `legacy-module-context-intake`
 
 #### Scenario (Positive - Synthetic RAG Bundle Intake)
@@ -168,6 +312,37 @@ Pass criteria:
 - keeps `RAG-CAND-*` facts as `needs_sme_review`, not approved `BR-*`
 - candidate seeds and candidate facts include `Business Signal` and
   `Evidence Basis`, with program/file/field names kept in evidence context
+- no files are written during the smoke run
+
+#### Scenario (Positive - Owner-Accepted Sparse Flow Context Intake)
+
+```text
+Use /legacy-module-context-intake.
+
+User input:
+I have a `legacy-flow-context-normalizer` package for CREDIT-CHECK with
+normalization.status: ready_with_warnings, quality_level: L1 sparse, and
+risk_acceptance.status: accepted by Credit Operations Owner Jane Doe on
+2026-05-27. All four view files are placeholders with TBD questions because no
+flow input can be provided. Evidence authorization is approved. Normalize this
+into module context without inventing facts or approving BR-* rules.
+
+Return only the package status, required output filenames, how sparse TBDs are
+preserved, and the recommended next skill.
+```
+
+Pass criteria:
+
+- invokes `legacy-module-context-intake`
+- returns `ready_with_warnings`
+- references `flow_normalization_input` with `quality_level: L1 sparse` and
+  accepted risk
+- names all eight required output files
+- preserves all missing-flow TBDs as low-confidence carry-forward questions
+- refuses to create approved facts, approved `BR-*`, or BRD-ready claims from
+  sparse context alone
+- recommended next skill may be `legacy-ibmi-module-analyzer` only with
+  explicit low-confidence/TBD restrictions
 - no files are written during the smoke run
 
 #### Scenario (Negative - Unauthorized Evidence)
@@ -267,6 +442,69 @@ The response must include all of the following:
 - Redaction Gate is treated as passed or ready to check from the supplied
   redaction statement
 - no downstream planned skill is recommended before inventory
+- no files are created or edited
+
+#### Scenario (Positive — Sparse Documents Route To Flow Triage)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have authorized synthetic notes for CREDIT-CHECK. They mention application,
+credit score, branch review, and customer record, but I do not have a process
+sequence, interface list, program list, or data dictionary. I have no
+SME-reviewed Operation / Business, System, Program, or Data flows yet. What
+should I do next?
+
+Return only:
+- current stage
+- recommended next skill
+- expected status
+- gate check
+```
+
+#### Pass Criteria (Positive — Sparse Documents)
+
+- current stage is `Flow Context Normalization` or equivalent Stage 0d wording
+- recommended next skill is `legacy-flow-context-normalizer`
+- expected status is `triage_needs_source_enrichment` or explicitly says
+  source-quality triage is expected
+- gate check says evidence authorization is supplied/ready, but module context
+  intake and BRD generation are not yet allowed
+- does not route directly to `legacy-module-context-intake`,
+  `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, or spec writing
+- no files are created or edited
+
+#### Scenario (Positive — Owner-Accepted Sparse Documents Route To Intake)
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+I have a CREDIT-CHECK flow-normalization package with
+normalization.status: ready_with_warnings, quality_level: L1 sparse,
+risk_acceptance.status: accepted, and accepted_by: Credit Operations Owner
+Jane Doe. The source owner confirms no process sequence, interface list,
+program list, or data dictionary can be provided. All four views are still
+placeholder Mermaid diagrams with TBDs. What should I run next?
+
+Return only:
+- current stage
+- recommended next skill
+- gate check
+- restrictions
+```
+
+#### Pass Criteria (Positive — Owner-Accepted Sparse Documents)
+
+- current stage remains `Flow Context Normalization` / Stage 0d or equivalent
+  wording, not module-ready
+- recommended next skill is `legacy-module-context-intake`
+- gate check references accepted owner risk and carry-forward TBDs
+- restrictions say sparse context remains low-confidence and cannot directly
+  create approved facts, `BR-*`, module approval, or BRD claims
+- does not route directly to `legacy-ibmi-module-analyzer`,
+  `legacy-brd-writer`, or spec writing
 - no files are created or edited
 
 #### Scenario (Negative — Inventory Blocked)
@@ -1368,10 +1606,13 @@ EV-CREDIT-CHECK-012 sensitivity internal redaction_status not_required, and
 EV-CREDIT-CHECK-018 sensitivity internal redaction_status not_required.
 
 Review items:
+- BRD sections 1-9 are present; section 3 Channels is accepted with
+  TBD-CREDIT-CHECK-004 carried as non-blocking
 - BEH-CREDIT-CHECK-001 should be confirmed
 - BR-CREDIT-CHECK-003 should be rejected because interest compounds daily only
   above the configured balance threshold
-- TBD-CREDIT-CHECK-004 should be deferred to Operations by 2026-05-23
+- TBD-CREDIT-CHECK-004 should be deferred to Digital Channels SME by
+  2026-05-23
 
 Return only:
 - skill_invoked
@@ -1396,8 +1637,11 @@ Return only:
 - records decisions for `BEH-CREDIT-CHECK-001` as `confirmed`,
   `BR-CREDIT-CHECK-003` as `rejected`, and `TBD-CREDIT-CHECK-004` as
   `deferred`
+- records BRD functional-analysis coverage for sections 1-9, with section 3
+  accepted with a named `TBD-*`
 - routes the rule revision to `legacy-spec-writer`
-- routes the deferred TBD to Operations with target date `2026-05-23`
+- routes the deferred channel TBD to Digital Channels SME with target date
+  `2026-05-23`
 - confirms no files were created or edited
 
 #### Scenario (Negative — Missing SME And Unknown Evidence)

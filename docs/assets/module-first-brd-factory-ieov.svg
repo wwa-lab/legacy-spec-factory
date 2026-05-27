@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" role="img" aria-labelledby="title desc">
   <title id="title">Module-First BRD Factory with IEOV validation</title>
-  <desc id="desc">A module-first IBM i modernization BRD factory diagram showing known module flow, gap enrichment, IEOV conversion, supplemental evidence, and trusted BRD package output.</desc>
+  <desc id="desc">A module-first IBM i modernization BRD factory diagram showing module context from reviewed flows or normalized documents/specs, gap enrichment, IEOV conversion, supplemental evidence, and trusted BRD package output.</desc>
   <defs>
     <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b2638"/>
@@ -73,13 +73,13 @@
     <path d="M592 18 H1208 L1184 66 H616 Z" class="tag"/>
     <text x="900" y="49" text-anchor="middle" class="kicker">Diagram A - BRD Factory Logic</text>
     <text x="900" y="103" text-anchor="middle" class="title">MODULE-FIRST BRD FACTORY</text>
-    <text x="900" y="132" text-anchor="middle" class="subtitle">KNOWN MODULE FLOW + SUPPLEMENTAL EVIDENCE + IEOV VALIDATION TO TRUSTED BRD PACKAGE</text>
+    <text x="900" y="132" text-anchor="middle" class="subtitle">MODULE DOCS / FLOWS + SUPPLEMENTAL EVIDENCE + IEOV VALIDATION TO TRUSTED BRD PACKAGE</text>
   </g>
 
   <g filter="url(#softShadow)">
     <rect x="42" y="168" width="330" height="590" rx="8" class="panel"/>
-    <text x="70" y="206" class="h1">A1 Known Module Flow</text>
-    <text x="70" y="231" class="cn">已知业务模块主干</text>
+    <text x="70" y="206" class="h1">A1 Module Context</text>
+    <text x="70" y="231" class="cn">模块上下文主干</text>
 
     <g transform="translate(70 266)">
       <rect width="260" height="62" rx="6" class="tileGold"/>
@@ -103,8 +103,8 @@
     </g>
     <g transform="translate(70 594)">
       <rect width="260" height="62" rx="6" class="tileGold"/>
-      <text x="20" y="25" class="h3">Code Evidence</text>
-      <text x="20" y="46" class="small">current IBM i behavior, not intent</text>
+      <text x="20" y="25" class="h3">Docs / Specs / Code</text>
+      <text x="20" y="46" class="small">evidence context, not intent</text>
     </g>
 
     <rect x="70" y="690" width="260" height="42" rx="6" class="tileDark"/>
@@ -310,7 +310,7 @@
   <g filter="url(#softShadow)">
     <rect x="42" y="988" width="1716" height="78" rx="8" class="panel"/>
     <text x="70" y="1023" class="h2">Key Message</text>
-    <text x="246" y="1024" class="body">We do not let RAG generate the BRD. Known module flow defines the backbone; RAG/runtime/reports fill gaps; IEOV + SME review make every BRD claim traceable.</text>
+    <text x="246" y="1024" class="body">We do not let RAG generate the BRD. Reviewed module context defines the backbone; docs/specs/RAG/runtime/reports fill gaps; IEOV + SME review make every BRD claim traceable.</text>
     <text x="246" y="1051" class="cnSmall">A1-A4 的执行支撑见 Diagram B：每个阶段都有对应 skills、产物和 gate。</text>
   </g>
 </svg>

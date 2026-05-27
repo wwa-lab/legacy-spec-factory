@@ -21,7 +21,37 @@ summary:
   deferred: 0
   needs_more_evidence: 0
   blocking_items: 0
+  required_functional_sections:
+    total: 9
+    accepted: 0
+    accepted_with_tbd: 0
+    blocked: 0
   ready_for_spec_writer: false
+
+functional_analysis_coverage:
+  - target_id: "BRD-<CAPABILITY-SLUG>-001#section-01"
+    section_number: 1
+    section_name: "Function Purpose"
+    coverage_decision: "accepted"
+    # One of: accepted, accepted_with_tbd, blocked, needs_more_evidence
+    raw_chat_answer: "<raw SME answer from chat>"
+    related_tbd_ids: []
+    referenced_evidence:
+      - "EV-<CAPABILITY-SLUG>-001"
+    reviewed_by: "<SME initials>"
+    reviewed_at: "YYYY-MM-DD"
+
+  - target_id: "BRD-<CAPABILITY-SLUG>-001#section-03"
+    section_number: 3
+    section_name: "Channels"
+    coverage_decision: "accepted_with_tbd"
+    raw_chat_answer: "<raw SME answer from chat>"
+    related_tbd_ids:
+      - "TBD-<CAPABILITY-SLUG>-001"
+    referenced_evidence:
+      - "EV-<CAPABILITY-SLUG>-002"
+    reviewed_by: "<SME initials>"
+    reviewed_at: "YYYY-MM-DD"
 
 decisions:
   - target_id: "BR-<CAPABILITY-SLUG>-001"

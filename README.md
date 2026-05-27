@@ -17,11 +17,16 @@ into a trusted `spec.yaml` / `spec.md` pair for AI-native SDLC on the new cloud
 platform.
 
 The preferred enterprise scenario is **module-first**: the team supplies a
-business module or subsystem context, including four reviewed flows (Operation /
-Business Flow, System Flow, Program Flow, and Data Flow), plus RAG-retrieved
-evidence. Program and flow analysis remain valid starting points for building
-or validating that module model; they are not the only required entry path when
-the module context is already known.
+business module or subsystem context, ideally including four reviewed flows
+(Operation / Business Flow, System Flow, Program Flow, and Data Flow), plus
+RAG-retrieved evidence. In practice, that knowledge may instead be scattered
+across Visio, Word, Excel, PDF, PowerPoint, Function Specs, Technical Designs,
+Program Specs, File Specs, interface specs, data dictionaries, or SME-note
+artifacts. `legacy-flow-context-normalizer` first turns those materials into
+draft flow context for SME review, or a source-quality triage package when the
+input is too sparse to support even one safe flow. Program and flow analysis
+remain valid starting points for building or validating that module model; they
+are not the only required entry path when the module context is already known.
 
 For RAG construction details, see
 [`docs/rag-setup-detail.md`](docs/rag-setup-detail.md). For a concrete
@@ -37,9 +42,10 @@ from a **module**, not from a blank source-code excavation.
 
 | Layer | Owner | Role |
 | --- | --- | --- |
+| Historical documents and specs | BA / SME / engineering team | Supplies Visio, Word, Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, data dictionaries, RAG summaries, screenshots, or SME notes when standard four-flow context does not yet exist |
 | External RAG / code knowledge graph | Outside this repo | Retrieves source snippets, ARCAD REF relationships, table / field impact, data dictionary context, contradictions, and retrieval gaps |
-| Human-confirmed flows | BA / SME / engineering team | Provides Operation / Business Flow, System Flow, Program Flow, and Data Flow for the module |
-| Legacy Spec Factory | This repo | Normalizes the RAG bundle + four flows into a context package, synthesizes module understanding, drafts the BRD Package, and records SME decisions |
+| Human-confirmed flows | BA / SME / engineering team | Provides Operation / Business Flow, System Flow, Program Flow, and Data Flow for the module when available |
+| Legacy Spec Factory | This repo | Normalizes scattered documents/specs into draft flow review packages or sparse-input triage when needed, then normalizes the RAG bundle + reviewed or risk-accepted flow context into a context package, synthesizes module understanding, drafts the BRD Package, and records SME decisions |
 | SME chat review | SME + assistant | Reviews focused questions in chat; AI may suggest, but SME decides |
 | Downstream SDLC | Atlas / forward delivery agents | Consumes the approved BRD/spec/handoff package to produce implementation artifacts |
 
@@ -61,9 +67,18 @@ discussion. Formal `AC-*` acceptance criteria are produced later by
 
 ## Operating Paths
 
-Legacy Spec Factory now has two explicit operating paths:
+Legacy Spec Factory now has two explicit operating paths, plus one optional
+pre-step for teams whose flow knowledge is not yet in the standard four-view
+shape:
 
 ```text
+Optional pre-step — scattered documents/specs to SME-reviewable flows or triage
+  Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design
+  Program Spec / File Spec / interface spec / data dictionary / SME notes
+        -> flow-context-normalizer
+        -> SME review
+        -> four reviewed flows
+
 Default path — RAG-assisted module-first
   RAG evidence bundle + four confirmed flows
         -> module-context-intake
@@ -78,10 +93,15 @@ Verification path — source-first discovery and evidence repair
 ```
 
 The default path is the enterprise field workflow. Teams bring a module-level
-context package, four reviewed flows, and RAG-retrieved evidence. Source-first
-skills remain available as selective verification tools: use them when RAG
-output conflicts with human flow, when a high-risk rule needs source evidence,
-or when the module boundary is not yet understood.
+context package, reviewed flows, historical specs, and RAG-retrieved evidence
+when they have them. If the team has only non-standard historical documents or specs,
+normalize them into a draft `flow-normalization/` package and get SME review
+before module context intake. The normalizer is a user-experience accelerator,
+not a punitive gate: missing flow views become Mermaid placeholders and
+`TBD-*` questions, while available evidence still moves forward as draft
+context. Source-first skills remain available as selective verification tools:
+use them when RAG output conflicts with human flow, when a high-risk rule needs
+source evidence, or when the module boundary is not yet understood.
 
 ## Module-First BRD Factory
 
@@ -98,12 +118,13 @@ Program     = evidence granularity
 Capability  = BRD output unit
 ```
 
-In practice, teams start with the known module flow and the four-view context
-(Operation / Business Flow, System Flow, Program Flow, and Data Flow). RAG,
-runtime logs, reports, dictionaries, ARCAD REF, screens, source snippets, and
-sample transactions are supplemental evidence used to fill gaps, expose
-contradictions, and verify high-risk behavior. They are not final truth by
-themselves.
+In practice, teams start with the best module context they have: reviewed
+flows when available, or historical documents/specs that can be normalized
+into the four-view context (Operation / Business Flow, System Flow, Program
+Flow, and Data Flow). RAG, runtime logs, reports, dictionaries, ARCAD REF,
+screens, source snippets, and sample transactions are supplemental evidence
+used to fill gaps, expose contradictions, and verify high-risk behavior. They
+are not final truth by themselves.
 
 Program-level and flow-level skills produce evidence-backed analysis, not
 BRDs. A program analysis captures facts such as calls, branches, I/O, object
@@ -134,8 +155,13 @@ blocking status instead of being smoothed into prose.
 The main skill sequence is:
 
 ```text
+legacy-flow-context-normalizer (optional)
+  -> normalize scattered docs/specs into draft Operation / Business, System,
+     Program, and Data flows for SME review, or source-quality triage when
+     no safe flow can be generated
+
 legacy-module-context-intake
-  -> normalize known module flow, RAG, dictionary, runtime hints
+  -> normalize reviewed module flow, RAG, dictionary, runtime hints
 
 selective verification as needed:
   -> legacy-ibmi-program-analyzer
@@ -182,10 +208,11 @@ primary workflow.
 
 ![Module-first BRD Factory logic](docs/assets/module-first-brd-factory-ieov.png)
 
-Diagram A explains how known module flow, supplemental evidence, and IEOV
+Diagram A explains how module context, supplemental evidence, and IEOV
 validation become a trusted BRD Package. Its key message is that RAG does not
-generate the BRD. Known module flow defines the backbone; RAG, runtime, and
-reports fill gaps; IEOV and SME review make every BRD claim traceable.
+generate the BRD. Reviewed module context defines the backbone; historical
+docs/specs, RAG, runtime, and reports fill gaps; IEOV and SME review make
+every BRD claim traceable.
 
 Editable source and review-friendly variants are kept together:
 [`module-first-brd-factory-ieov.drawio`](docs/assets/module-first-brd-factory-ieov.drawio),
@@ -198,8 +225,10 @@ and [`module-first-brd-factory-ieov.png`](docs/assets/module-first-brd-factory-i
 
 Diagram B maps the A1-A4 stages in Diagram A to the skills, artifacts, and
 gates that execute and verify each stage. It distinguishes the main path from
-selective evidence repair and shows the governance rail that applies across
-every skill.
+selective evidence repair, now including `legacy-flow-context-normalizer` for
+scattered document/spec normalization, sparse triage, and owner risk
+acceptance before `legacy-module-context-intake`. It also shows the governance
+rail that applies across every skill.
 
 Editable source and review-friendly variants are kept together:
 [`module-first-brd-factory-skills.drawio`](docs/assets/module-first-brd-factory-skills.drawio),
@@ -293,10 +322,11 @@ delivery.
   relationships, source snippets, and dictionary mappings help hydrate the
   module context; they do not replace source evidence, human-confirmed flows,
   or SME approval.
-- **Module-first analysis**: when a team already has the business module and
-  four flows, start from that module context and use program / flow analysis to
-  validate and fill gaps. When the module is unclear, start from program and
-  flow analysis and synthesize the module model incrementally.
+- **Module-first analysis**: when a team already has the business module,
+  reviewed flows, or historical specs that can be normalized into module
+  context, start there and use program / flow analysis to validate and fill
+  gaps. When the module is unclear, start from program and flow analysis and
+  synthesize the module model incrementally.
 - **Observed vs inferred vs decided**: legacy behavior, inferred business rules,
   and modernization decisions must not be mixed together.
 - **Traceability by default**: requirements, business rules, tests, and
@@ -580,7 +610,8 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
-| `legacy-module-context-intake` | [v0.1.1 scorecard](docs/reviews/legacy-module-context-intake-v0.1.1-scorecard.md) | 9.42 | 9.0 | Repo-ready | v0.1.1 makes RAG candidate seeds business-signal first; runtime smoke pending |
+| `legacy-flow-context-normalizer` | [v0.1.6 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.6-scorecard.md) | 9.48 | 9.0 | Repo-ready | v0.1.6 adds Function Spec / Technical Design / Program Spec / File Spec input coverage; runtime smoke pending |
+| `legacy-module-context-intake` | [v0.1.2 scorecard](docs/reviews/legacy-module-context-intake-v0.1.2-scorecard.md) | 9.43 | 9.0 | Repo-ready | v0.1.2 accepts owner-risk-approved sparse context as low-confidence input; runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
@@ -589,10 +620,10 @@ even if the static review score is higher.
 | `legacy-ibmi-module-analyzer` | [v0.1.2 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.2-scorecard.md) | 9.28 | 9.0 | Repo-ready | v0.1.2 makes capability seeds business-signal first; three-runtime smoke pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
-| `legacy-brd-writer` | [v0.1.3 scorecard](docs/reviews/legacy-brd-writer-v0.1.3-scorecard.md) | 9.42 | 9.0 | Repo-ready | v0.1.3 adds business-readable as-is process hardening; three-runtime smoke pending |
+| `legacy-brd-writer` | [v0.1.3 scorecard](docs/reviews/legacy-brd-writer-v0.1.3-scorecard.md) | 9.42 | 9.0 | Repo-ready | SME 1-9 functional-analysis alignment added after v0.1.3; three-runtime smoke / rescore pending |
 | `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
 | `legacy-spec-writer` | [v0.1.1 scorecard](docs/reviews/legacy-spec-writer-v0.1.1-scorecard.md) | 9.25 | 9.0 | Repo-ready | v0.1.1 prevents process_flow from copying legacy call chains; three-runtime smoke pending |
-| `legacy-modernization-orchestrator` | [v0.2.0 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | Expanded v0.2.0 smoke prompts are ready; Codex/OpenCode and expanded-route execution remain pending |
+| `legacy-modernization-orchestrator` | [v0.2.3 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.3-scorecard.md) | 9.38 | 9.0 | Repo-ready | v0.2.3 routes historical spec inputs to flow normalization; expanded-route execution remains pending |
 | `legacy-modernization-decision-writer` | [v0.1.0 scorecard](docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional field-style decision package coverage |
 | `legacy-sme-review-facilitator` | [v0.1.2 scorecard](docs/reviews/legacy-sme-review-facilitator-v0.1.2-scorecard.md) | 9.40 | 9.0 | Repo-ready | v0.1.2 makes SME questions business-language first; three-runtime smoke pending |
 | `legacy-traceability-packager` | [v0.1.1 scorecard](docs/reviews/legacy-traceability-packager-v0.1.1-scorecard.md) | 9.51 | 9.51 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
@@ -665,7 +696,7 @@ all agree.
 
 ## Target Skill Family
 
-**See [`docs/skill-families.md`](docs/skill-families.md) for how the 21 skills
+**See [`docs/skill-families.md`](docs/skill-families.md) for how the 22 skills
 group into 7 families, which order they fire in, and which pairs were
 intentionally kept separate.**
 
@@ -686,7 +717,10 @@ For enterprise deployments, the expected starting point is usually the
 module-first operating model:
 
 ```text
-RAG output + human-confirmed 4-flow module context
+scattered docs or RAG output + 4-flow module context
+        |
+        v
+  flow normalization (when docs/specs are not four-flow reviewed yet)
         |
         v
 context intake package (00_context_packages/)
@@ -739,27 +773,28 @@ full status matrix and scorecard links.
 
 | # | Skill | Chain | Status | Review / next action |
 | ---: | --- | --- | --- | --- |
-| 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.0 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
-| 2 | `legacy-module-context-intake` | Module-first context | Existing | Repo-ready after v0.1.1 business-signal seed hardening; run three-runtime smoke tests for RAG/context package intake |
-| 3 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
-| 4 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
-| 5 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
-| 6 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
-| 7 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-readable seed hardening; run three-runtime smoke tests |
-| 8 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-signal seed hardening; run three-runtime smoke tests |
-| 9 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after v0.1.3 business-readable BRD hardening; run three-runtime smoke and rescore before field-pilot label |
-| 10 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.1 process-flow hardening; finish remaining smoke |
-| 11 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
-| 12 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
-| 13 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
-| 14 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
-| 15 | `legacy-sme-review-facilitator` | Governance | Existing | Repo-ready after v0.1.2 business-language question hardening; run three-runtime smoke and rescore before field-pilot label |
-| 16 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
-| 17 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
-| 18 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
-| 19 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
-| 20 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
-| 21 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
+| 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.3 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
+| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.6; run three-runtime smoke tests for scattered docs/specs, partial-input, sparse-triage, owner-accepted sparse, and multi-sheet Excel normalization |
+| 3 | `legacy-module-context-intake` | Module-first context | Existing | Repo-ready after v0.1.2 accepted-sparse intake hardening; run three-runtime smoke tests for RAG/context package intake |
+| 4 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
+| 5 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 6 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
+| 7 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
+| 8 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-readable seed hardening; run three-runtime smoke tests |
+| 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-signal seed hardening; run three-runtime smoke tests |
+| 10 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after business-readable BRD hardening and SME 1-9 alignment; run three-runtime smoke and rescore before field-pilot label |
+| 11 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.1 process-flow hardening; finish remaining smoke |
+| 12 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
+| 13 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
+| 14 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
+| 15 | `legacy-ibmi-screen-report-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.38); positive smoke passed, negative stop-condition smoke still needed for 9.5 |
+| 16 | `legacy-sme-review-facilitator` | Governance | Existing | Repo-ready after v0.1.2 business-language question hardening; run three-runtime smoke and rescore before field-pilot label |
+| 17 | `legacy-brd-to-sdd-handoff` | Bridge | Existing | Field-pilot ready (v0.1.0, 9.63); validates approved BRD + spec and packages Atlas-compatible handoff inputs |
+| 18 | `legacy-traceability-packager` | Governance / bridge | Existing | Field-pilot ready (v0.1.1, 9.51); packages traceability across evidence, BRD, SDD, tests, and code |
+| 19 | `legacy-runtime-matrix-tester` | Governance | Existing | Field-pilot ready (v0.1.0, 9.56); orchestrates runtime smoke evidence, matrix rows, and scorecard decisions across Codex, Claude Code, and OpenCode |
+| 20 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
+| 21 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
+| 22 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
 
 Downstream Atlas skills such as requirements-to-stories, design, task, code,
 and review gates are referenced by the handoff package but are not implemented
@@ -771,7 +806,7 @@ as a placeholder. The remaining work is validation and scorecard hardening:
 1. `legacy-ibmi-runtime-evidence-miner` — optionally run integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes`.
 2. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
 3. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
-4. `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
+4. `legacy-flow-context-normalizer`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
 
 Governance/Infrastructure skills (already implemented):
 - `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
@@ -782,7 +817,8 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output and human-confirmed four-view module context into a traceable package before module analysis, with RAG candidates framed as business signals backed by evidence | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.1, 9.0 capped; runtime smoke pending) |
+| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.6, 9.0 capped; runtime smoke pending) |
+| `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output, human-confirmed four-view module context, or owner-risk-approved sparse flow-normalization output into a traceable package before module analysis, with candidates framed as business signals backed by evidence or carried as low-confidence TBDs | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
@@ -814,10 +850,10 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates | routing decision | v0.2.0 repo-ready (9.0 capped; expanded-route smoke pending) |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates, including quality-aware routing for scattered document/spec normalization, sparse-input triage, and owner-accepted sparse context intake | routing decision | v0.2.3 repo-ready (9.0 capped; expanded-route smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
-| `legacy-brd-writer` | Produce an evidence-backed, business-readable BRD Package from an approved module analysis, including an as-is business process summary, module-first inputs hydrated by RAG evidence, and BRD-stage `VAL-*` validation scenario seeds, while keeping observed behavior, inferred rules, SME decisions, assumptions, and TBDs separate | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | v0.1.3 pending smoke / rescore |
+| `legacy-brd-writer` | Produce an evidence-backed, business-readable BRD Package from an approved module analysis, preserving SME-required functional-analysis sections 1-9, keeping optional sections evidence-backed, and adding BRD-stage `VAL-*` validation scenario seeds while separating observed behavior, inferred rules, SME decisions, assumptions, and TBDs | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | SME 1-9 alignment pending smoke / rescore |
 | `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md`, with process flow steps framed as business-visible capability behavior rather than legacy call chains | `spec.yaml`, `spec.md` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
 | `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
 | `legacy-sme-review-facilitator` | Run chat-driven SME review with business-language-first questions, record decision logs, capture sign-off, write BRD review decisions back to `review-decision.yaml`, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/`, `05_brds/<CAPABILITY-SLUG>/review-decision.yaml` | v0.1.2 pending smoke / rescore |
@@ -954,6 +990,17 @@ knowledge-hub.manifest.yaml
 
 00_context_packages/
   <MODULE-SLUG>/
+    flow-normalization/                 # optional pre-SME package
+      flow-context-index.yaml
+      source-document-index.yaml
+      01-operation-business-flow.md
+      02-system-flow.md
+      03-program-flow.md
+      04-data-flow.md
+      evidence-map.md
+      contradiction-log.md
+      open-questions.md
+      sme-review-pack.md
     context-index.yaml
     01-operation-business-flow.md
     02-system-flow.md
@@ -1283,6 +1330,17 @@ Primary module-first chain:
 ```text
 00_context_packages/
   <MODULE-SLUG>/
+    flow-normalization/                 # optional pre-SME package
+      flow-context-index.yaml
+      source-document-index.yaml
+      01-operation-business-flow.md
+      02-system-flow.md
+      03-program-flow.md
+      04-data-flow.md
+      evidence-map.md
+      contradiction-log.md
+      open-questions.md
+      sme-review-pack.md
     context-index.yaml
     01-operation-business-flow.md
     02-system-flow.md
@@ -1473,13 +1531,21 @@ Default enterprise flow:
    Pick a high-value but bounded module, such as credit check, settlement, or
    reconciliation.
 
-2. **Bring RAG and flow inputs**
-   Provide the RAG evidence bundle plus the four reviewed flows: Operation /
-   Business, System, Program, and Data.
+2. **Bring document, spec, RAG, and flow inputs**
+   Provide the RAG evidence bundle plus reviewed flows when available. If the
+   source material is scattered across Visio, Word, Excel, PDF, PowerPoint,
+   Function Specs, Technical Designs, Program Specs, File Specs, interface
+   specs, data dictionaries, or SME notes and the four flows are not yet
+   reviewed, run `legacy-flow-context-normalizer` first. If the material is
+   too sparse to form even one safe flow, use its
+   `triage_needs_source_enrichment` output to collect the minimum supplements
+   before context intake. If the owner confirms no additional document, spec,
+   or flow input can be provided, record risk acceptance and carry the package
+   forward only as `ready_with_warnings` with low-confidence TBDs.
 
 3. **Normalize module context**
-   Run `legacy-module-context-intake` to create
-   `00_context_packages/<MODULE-SLUG>/`.
+   Run `legacy-module-context-intake` on SME-reviewed or owner-risk-accepted
+   flow context to create `00_context_packages/<MODULE-SLUG>/`.
 
 4. **Synthesize module and BRD + validation scenarios**
    Run module synthesis and BRD writing, keeping RAG evidence, human-confirmed
@@ -1519,7 +1585,9 @@ Current module-first MVP:
 
 - one bounded business module or capability
 - one RAG evidence bundle with `rag-run-index.yaml`
-- four human-confirmed flows: Operation / Business, System, Program, and Data
+- four human-confirmed flows when available: Operation / Business, System,
+  Program, and Data (or a `legacy-flow-context-normalizer` draft package from
+  historical documents/specs awaiting SME review)
 - one `00_context_packages/<MODULE-SLUG>/` package produced by
   `legacy-module-context-intake`
 - one approved module analysis and BRD Package with `validation-scenarios.md`
@@ -1533,8 +1601,9 @@ The broader roadmap becomes:
 
 | Phase | Duration | Goal | Output |
 | --- | --- | --- | --- |
-| Phase 0 | 1 week | Select module and collect RAG / flow inputs | RAG bundle, four flows, SME roster |
-| Phase 1 | 1 week | Normalize module context | `00_context_packages/<MODULE-SLUG>/` |
+| Phase 0 | 1 week | Select module and collect document / spec / RAG / flow inputs | RAG bundle, historical documents/specs or four flows, SME roster |
+| Phase 0.5 | 2-3 days when needed | Normalize scattered documents/specs into draft flow review package, or triage sparse input into supplement requests | `00_context_packages/<MODULE-SLUG>/flow-normalization/` |
+| Phase 1 | 1 week | Normalize SME-reviewed module context | `00_context_packages/<MODULE-SLUG>/` |
 | Phase 2 | 1 week | Synthesize module and BRD | `04_modules/`, `05_brds/` |
 | Phase 3 | 1 week | Run selective source verification | targeted program / flow / data / screen evidence |
 | Phase 4 | 1 week | SME review and spec / handoff | approved BRD, `spec.yaml`, handoff package |
@@ -1605,6 +1674,7 @@ ID conventions, data safety guidance, runtime sync script, and the core Legacy
 Spec Factory skill set:
 
 - `skills/legacy-modernization-orchestrator`
+- `skills/legacy-flow-context-normalizer`
 - `skills/legacy-module-context-intake`
 - `skills/legacy-ibmi-evidence-intake`
 - `skills/legacy-ibmi-inventory`
@@ -1631,7 +1701,7 @@ The next implementation steps are:
 2. Re-score `legacy-ibmi-evidence-intake`, `legacy-ibmi-module-analyzer`, and
    `legacy-spec-writer` after smoke output, since their post-review hardening
    has now been committed.
-3. Smoke-test the expanded `legacy-modernization-orchestrator` v0.2.0 routing
+3. Smoke-test the expanded `legacy-modernization-orchestrator` routing
    scope in Codex CLI, Claude Code, and OpenCode.
 4. Refresh the scorecards after the smoke runs so field-pilot readiness is
    backed by evidence, not just intent.

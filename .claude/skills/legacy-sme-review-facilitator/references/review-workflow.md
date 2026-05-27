@@ -83,6 +83,10 @@ inserting opinion or inference.
 **Steps:**
 
 1. **Extract Open Items from Artifact**
+   - If reviewing a BRD Package, extract functional-analysis coverage for
+     BRD sections 1-9 before item-level review. Missing, empty, unsupported,
+     or SME-disputed required sections become review items and must reference
+     a `TBD-*` or create a follow-up finding.
    - All `TBD-*` with current status (blocking / non-blocking / open)
    - All `BR-*` seeds with status `draft` or `needs_sme_review`
    - All contradictions discovered during analysis
@@ -99,6 +103,7 @@ inserting opinion or inference.
 
    | Item Type | Section | Focus |
    | --- | --- | --- |
+   | `BRD-*#section-*` | "BRD Functional Analysis Coverage" | Ask whether SME-required sections 1-9 are complete, useful, and evidence-backed |
    | `TBD-*` | "Open TBDs" | Ask for SME judgment; record if blocking/non-blocking |
    | `BR-*` seeds | "Inferred Rules" | Ask if rule matches business intent; request corrections |
    | Contradictions | "Contradictions" | Ask SME to choose/clarify when each applies |
@@ -115,6 +120,8 @@ inserting opinion or inference.
 
 **Quality Checks:**
 - [ ] Every open item in artifact appears as a question
+- [ ] For BRD reviews, every required functional-analysis section 1-9 appears
+      as accepted, accepted with a named `TBD-*`, or blocked
 - [ ] No invented facts or inferences in question text
 - [ ] Evidence is cited (not just claimed)
 - [ ] Questions are clear and answerable by SME

@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 21 skills. They are not equally connected — some are
+Legacy Spec Factory has 22 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -15,13 +15,13 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 1 | Default enterprise entry path when external RAG / code-knowledge-graph output or four-view module context enters the repo |
+| Module-first context intake | 2 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or four-view module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **21** | |
+| **Total** | **22** | |
 
 ---
 
@@ -44,27 +44,35 @@ the user (or wrapping agent) which skill to invoke next.
 
 ## 1A. Module-First Context Intake
 
-**Purpose**: Normalize external RAG / code-knowledge-graph output and
-human-confirmed four-view module context into a traceable package before module
-analysis. This is the default enterprise entry path when a team already has
-RAG output, four reviewed flows, or a module-level context package. It does
-not replace evidence authorization or SME approval.
+**Purpose**: Normalize scattered historical documentation and external RAG /
+code-knowledge-graph output into a traceable package before module analysis.
+This is the default enterprise entry path when a team already has Visio, Word,
+Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File
+Specs, interface specs, data dictionaries, RAG output, four reviewed flows, or
+a module-level context package. It does not replace evidence authorization or
+SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
-| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs |
+| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation that is not yet flow-reviewed, including sparse authorized notes that need source-quality triage or owner risk acceptance | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when four-view context is not yet confirmed; sparse triage must collect supplements or named owner risk acceptance before context intake |
+| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes, or owner-risk-approved sparse flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; accepted sparse input remains low-confidence with carry-forward TBDs |
 
 **Sequence**:
 
 ```text
+scattered docs/specs / draft flow evidence / sparse module notes
+  └─ flow-context-normalizer
+       ├─ SME review for draft flows
+       └─ source-owner supplement request or risk acceptance for sparse triage
+            └─ module-context-intake
 external RAG bundle + human-confirmed module context
   └─ module-context-intake
        └─ module-analyzer (validates / synthesizes approved 4-view module)
 ```
 
-**Anti-pattern**: treating RAG candidates as approved `BR-*` rules. Context
-intake preserves candidates and gaps; downstream SME review decides what can be
-promoted.
+**Anti-pattern**: treating draft document-derived flow steps or RAG candidates
+as approved `BR-*` rules. Flow normalization and context intake preserve
+candidates and gaps; downstream SME review decides what can be promoted.
 
 ---
 
@@ -124,8 +132,8 @@ while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
-| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved |
-| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved BRD + module-analysis | `spec.yaml`, `spec.md` | After BRD is SME-approved |
+| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved |
+| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package when produced | `spec.yaml`, `spec.md` | After BRD is SME-approved or when BRD is intentionally skipped |
 | [`legacy-modernization-decision-writer`](../skills/legacy-modernization-decision-writer/SKILL.md) | spec.yaml entries needing expansion | `05_decisions/<CAPABILITY-SLUG>/` | Optional — when a `DEC-*` becomes large or architecture-governed |
 
 **Sequence**:
@@ -143,8 +151,9 @@ status; `observed_behavior` vs `inferred_business_rule` vs
 `modernization_decision` separation.
 
 **Anti-pattern**: writing `BR-*` rules in inventory/program-analysis output —
-those are extraction artifacts, not synthesis. `BR-*` IDs are minted by
-`brd-writer`.
+those are extraction artifacts, not synthesis. Module analysis may create
+`BR-*` seeds; BRD writer reuses and reviews those seeds, and spec-writer owns
+final promotion to approved rules.
 
 ---
 
@@ -228,8 +237,8 @@ implementation. The test plan becomes the equivalence-test contract.
 
 ### Route A — Module-First Enterprise Path
 
-Use this path when the team has an external RAG bundle, four reviewed flows, or
-enough module context to start at the module level:
+Use this path when the team has an external RAG bundle, reviewed flows,
+historical specs, or enough module context to start at the module level:
 
 ```
 1.  orchestrator                   → "stage: module context; next: module-context-intake"

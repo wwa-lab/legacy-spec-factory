@@ -1,6 +1,6 @@
 ---
 name: legacy-modernization-orchestrator
-description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across module-first RAG/context intake, legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user says "what should I do next?", "which skill should I use?", "where am I in the pipeline?", "我有 AS400 / RPGLE / CLLE / COBOL / DDS 代码要分析", "帮我做反向工程", "I just inherited a legacy project", "我刚接了 PPCR XXX...", "modernize legacy", "现代化", "reverse engineer this", "spec out this system", "我手上有 inventory.yaml / spec.yaml 下一步怎么办", "我有 RAG output / context package 下一步怎么办" — or any natural-language request for end-to-end guidance through IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization, including multi-project repos under `docs/<PPCR-name>/`. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
+description: Entry-point router for the Legacy Spec Factory reverse chain. Identifies the user's current artifact stage, desired outcome, and the safest next skill across module-first document/spec/RAG/context intake, legacy inventory, program analysis, runtime evidence, business rule mining, capability mapping, spec writing, spec review, and forward SDLC handoff. Use this skill when the user says "what should I do next?", "which skill should I use?", "where am I in the pipeline?", "我有 AS400 / RPGLE / CLLE / COBOL / DDS 代码要分析", "帮我做反向工程", "I just inherited a legacy project", "我刚接了 PPCR XXX...", "modernize legacy", "现代化", "reverse engineer this", "spec out this system", "我手上有 inventory.yaml / spec.yaml 下一步怎么办", "我有 Visio / Word / Excel / PDF / PPT / Function Spec / Technical Design / Program Spec / File Spec 资料但没有标准四类 flow", "我有 RAG output / context package 下一步怎么办" — or any natural-language request for end-to-end guidance through IBM i / AS400 / RPGLE / CLLE / COBOL legacy modernization, including multi-project repos under `docs/<PPCR-name>/`. This is a routing skill — it does not replace the downstream extraction, synthesis, or review skills.
 ---
 
 <!--
@@ -24,7 +24,7 @@ This skill is the **entry point** for users who are new to Legacy Spec
 Factory, who do not know which skill to call next, or who want a guided path
 through the chain.
 
-For the full grouping of all 21 skills into 7 families (routing, module-first
+For the full grouping of all 22 skills into 7 families (routing, module-first
 context intake, Layer 1 extraction, Layer 2 synthesis, bridge/handoff,
 governance, verification),
 see [`docs/skill-families.md`](../../docs/skill-families.md). That document
@@ -33,7 +33,11 @@ also records which skill pairs were intentionally **not** merged and why.
 ## Reverse Chain Map
 
 ```
-Module-First Entry (external RAG bundle + human-confirmed four-view context)
+Module-First Entry (scattered docs / external RAG / four-view context)
+   ↓ legacy-flow-context-normalizer
+      - L3/L2: draft Mermaid-backed flows for SME review
+      - L1: source-quality triage when no safe flow can be generated
+00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft or triage, SME/source review first)
    ↓ legacy-module-context-intake
 00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
    ↓ legacy-ibmi-module-analyzer
@@ -244,6 +248,9 @@ the full table. Common cases:
 
 | Current Input | Stage |
 | --- | --- |
+| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed flows | Flow Context Normalization |
+| `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Flow Context Normalization — source enrichment needed |
+| `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Flow Context Normalization — SME review needed |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
 | Redacted evidence bundle with sensitivity recorded | Evidence Ready |
 | `inventory.yaml` with `sme_review.decision: blocked` | Inventory Blocked |
@@ -287,6 +294,7 @@ for the full table. Common routes:
 
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
+| Scattered docs, specs, or sparse module notes, no reviewed four-flow context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.6 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -328,6 +336,34 @@ substance the skipped layer would have contributed.
 - Any stage where evidence has `sensitivity: unknown` → any downstream
 
 If a skip is unsafe, say so and route to the missing prerequisite.
+
+### Module-First Document Routing
+
+When the user has historical documents/specs but no SME-reviewed module
+context, route to `legacy-flow-context-normalizer` even when the material
+looks weak. The router must not require perfect four-flow input before
+starting. Function Specs, Technical Designs, Program Specs, File Specs,
+interface specs, data dictionaries, RAG summaries, and SME notes are all valid
+optional starting material.
+
+Use this quality-aware routing:
+
+| Input Quality | Route | Expected Status |
+| --- | --- | --- |
+| Documents/specs appear able to support all four views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` or later `ready_for_context_intake` |
+| Documents/specs support only some views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` with placeholders, or SME-accepted `ready_with_warnings` |
+| Documents/specs are authorized/readable but too sparse to form a safe sequence | `legacy-flow-context-normalizer` | `triage_needs_source_enrichment` |
+| Sparse package already has named owner risk acceptance and no additional inputs can be provided | `legacy-module-context-intake` | `ready_with_warnings` only; preserve `quality_level: L1 sparse` and carry-forward TBDs |
+| Documents are unauthorized, unreadable, out of scope, or lack any module boundary | Evidence intake, readable export, or SME boundary clarification | `blocked_*` remediation |
+
+Do not route a `triage_needs_source_enrichment` package to
+`legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or
+`legacy-brd-writer`. Route it to source-owner supplement collection or SME
+clarification first. If the owner explicitly accepts that no more flow input
+can be provided, route the resulting `ready_with_warnings` package to
+`legacy-module-context-intake`, not to module analysis or BRD generation.
+State that all sparse facts remain low-confidence and cannot become approved
+rules without later corroboration.
 
 ### Step 4B — Apply Hard Gates
 
@@ -1047,6 +1083,21 @@ runtime copies.
   Stage Card) with a stage → card mapping table. Tightened the Mechanical
   Validation and Quality Checklist to enforce the new footer and card
   pointer.
+- v0.2.1 (2026-05-27): Aligned module-first routing with
+  `legacy-flow-context-normalizer` v0.1.4. Added quality-aware routing for
+  strong, partial, sparse, and blocked document inputs, including
+  `triage_needs_source_enrichment` handling so sparse authorized documents
+  route to source-quality triage instead of being rounded up or blocked
+  unnecessarily.
+- v0.2.2 (2026-05-27): Added the risk-accepted sparse-input route. If the
+  source owner/SME confirms no further flow input can be provided, the router
+  may send an owner-accepted `ready_with_warnings` package to
+  `legacy-module-context-intake` while preserving low confidence and blocking
+  direct module-analysis or BRD routing.
+- v0.2.3 (2026-05-28): Expanded module-first routing triggers beyond flow
+  documents to Function Specs, Technical Designs, Program Specs, File Specs,
+  interface specs, and data dictionaries as optional starting material for
+  `legacy-flow-context-normalizer` v0.1.6.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

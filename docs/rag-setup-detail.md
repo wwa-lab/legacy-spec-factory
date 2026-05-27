@@ -14,7 +14,8 @@ Legacy Spec Factory 生成 BRD + Validation Package。
 
 - 基于全量 source、ARCAD REF、表/文件元数据、全域数据字典建立可检索的 legacy knowledge layer。
 - 支持字段、表、程序、调用链、上下游、代码片段、影响范围查询。
-- 围绕人工确认的四条 flow 补充证据和上下文。
+- 围绕人工确认的四条 flow 或历史 Function Spec / Technical Design /
+  Program Spec / File Spec 等资料补充证据和上下文。
 - 输出 Markdown 为主、YAML index 为辅的 evidence bundle，供 Legacy Spec Factory 消费。
 
 它不负责：
@@ -32,7 +33,9 @@ RAG retrieval is evidence context, not final truth.
 Source code is observed behavior.
 Data dictionary is approved business meaning.
 ARCAD REF is relationship seed.
-Human-confirmed four flows are the BRD skeleton.
+Human-confirmed four flows are the preferred BRD skeleton.
+Historical specs and scattered documents can be normalized into that skeleton
+when reviewed flows are not yet available.
 BRD-stage VAL scenarios are review seeds, not final TC cases.
 SME approval remains the rule and test promotion gate.
 ```

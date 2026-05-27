@@ -45,6 +45,12 @@ Accept:
   the SME has confirmed this is a distinct capability worth specifying
 - **Target platform hint** (optional) — Java/Spring, Java/Quarkus,
   serverless, etc. Used to inform `target_platform` and `modernization_decisions`
+- **Approved BRD Package** (optional but preferred when produced) —
+  `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`,
+  `review-decision.yaml`, and `traceability.md`. Use it as reviewed business
+  context for SME-required areas such as channels, user touchpoints, system
+  interfaces, error handling, dependencies, and source-document gaps; do not
+  treat it as a substitute for approved module / flow / program evidence.
 - **SME availability** — capability owner who will approve `business_rules`,
   `acceptance_criteria`, and resolve open `TBD-*`
 - **Conditionally required from inventory triggers:**
@@ -137,8 +143,8 @@ field-level rules. The summary below is normative for this skill.
   - `6 minimum_pass`: approved module/upstream analyses, one SME-confirmed
     `CAP-*`, named SME owner, and required triggered data/screen/report outputs
     are present.
-  - `7-8 usable`: target platform hint, BAU notes, and related BRD/module
-    context are supplied.
+  - `7-8 usable`: target platform hint, BAU notes, approved BRD Package or
+    related BRD/module context are supplied.
   - `9-10 strong`: acceptance examples, negative cases, runtime observations,
     platform constraints, and modernization decision context are also supplied.
   - Missing target platform hint does not block observed-behavior/spec drafting
@@ -267,11 +273,19 @@ to the orchestrator. The Forward Handoff Gate
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
    - `process_flow.steps[]` from the relevant flow's business-visible phases
      and major outcomes, using the Transaction Call Map only as evidence
-   - `inputs[]` from flow analysis Trigger Context + UI surfaces' input fields
-   - `outputs[]` from flow analysis exit nodes + Cross-Program Data Flow
-     carriers with `external handoff`, `creates`, or `updates` state impact
-   - `exceptions[]` from flow analysis Error Propagation + program analyses'
-     error handling
+   - If an approved BRD Package is present, use BRD section 6 as the
+     business-readable process-flow framing and cross-check it against module /
+     flow evidence
+   - `inputs[]` from flow analysis Trigger Context, UI surfaces' input fields,
+     and BRD sections 3-5 (channels, user touchpoints, system interfaces)
+   - `outputs[]` from flow analysis exit nodes, Cross-Program Data Flow
+     carriers with `external handoff`, `creates`, or `updates` state impact,
+     and BRD sections 4-5 where a business-visible response, report, message,
+     or interface result is SME-reviewed
+   - `exceptions[]` from flow analysis Error Propagation, program analyses'
+     error handling, and BRD section 8
+   - `open_questions[]` carries any BRD section 1-9 coverage gaps or
+     accepted-with-TBD review decisions that remain unresolved
    - Do not copy program nodes or call-chain order directly into
      `process_flow.steps[]`; each step should describe the capability behavior
      the target system must preserve or implement
@@ -409,6 +423,11 @@ Canonical: `skills/legacy-spec-writer/SKILL.md`
 Synced to all four runtime adapters.
 
 ## Version History
+
+- v0.1.1 (2026-05-28): Added approved BRD Package consumption rules. Spec
+  synthesis may use SME-reviewed BRD sections 3-6, 8, and 9 for
+  inputs/outputs/process/exceptions/open questions, while blocked or
+  evidence-seeking BRD coverage prevents spec approval.
 
 - v0.1.0 (2026-05-14): Initial release
   - 11-step workflow producing spec.yaml + spec.md + spec-review.md + traceability.md

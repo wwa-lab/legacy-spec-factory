@@ -32,6 +32,42 @@ control ownership unless the SME explicitly owns the technical implementation.
 
 ---
 
+## BRD Functional Analysis Coverage
+
+Use this section only when reviewing a BRD Package. Confirm required BRD
+sections 1-9 before reviewing individual rules and scenarios. Use target IDs
+such as `BRD-<CAPABILITY>-001#section-03`; these are review targets, not new
+repository IDs.
+
+| Target | Required Area | Current Coverage | Evidence / TBD | Decision Needed |
+| --- | --- | --- | --- | --- |
+| `BRD-<CAPABILITY>-001#section-01` | Function Purpose | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-02` | Business Scenarios / Use Cases | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-03` | Channels | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-04` | User Interface / User Touchpoints | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-05` | System Interfaces | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-06` | Process Flow | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-07` | Validation Rules | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-08` | Error Handling | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+| `BRD-<CAPABILITY>-001#section-09` | Dependencies | `<summary>` | `EV-...` / `TBD-...` | accept / revise / block |
+
+**Question for SME:**
+> Are all required functional-analysis areas covered well enough for BRD
+> approval and spec-writing? For any weak area, should we revise it now, carry a
+> named non-blocking `TBD-*`, or block approval?
+
+**Chat Reply Options:**
+- `BRD section 1 accept`
+- `BRD section 3 revise: <missing channel>`
+- `BRD section 5 block: <reason>`
+- `BRD section 9 accept with TBD-<CAPABILITY>-NNN`
+
+**SME Answer:**
+
+(Space for SME response)
+
+---
+
 ## Open TBDs
 
 ### TBD-`<CAPABILITY>`-`<NNN>`: `<question title>`

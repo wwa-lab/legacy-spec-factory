@@ -166,6 +166,9 @@ The full field-level schema lives in [references/output-contract.md](references/
 - `capability` (`id`, `name`, `slug`, `owner` — copied unchanged from the spec)
 - `status` — `pass | pass_with_warnings | blocked`
 - `source_artifacts` — paths, IDs, and statuses for spec, BRD (optional), module, flows, programs, inventory, evidence manifest, and any pre-existing SDD handoff package
+- `brd_functional_coverage` — when a BRD is supplied, section 1-9 coverage
+  copied from BRD review decisions and audited for blocked / missing required
+  areas
 - `id_inventory` — counts and ID lists per prefix (`EV`, `BEH`, `BR`, `AC`, `DEC`, `TC`, `TBD`, `IN`, `OUT`, `EX`, `STEP`, `DATA`, `OBJ`, `FLOW`, `MODULE`, `CAP`)
 - `evidence_coverage` — for every `EV-*`, the IDs that reference it and whether it is orphan
 - `behavior_coverage` — for every `BEH-*`, supporting `EV-*` and the `BR-*` it backs
@@ -306,12 +309,16 @@ Canonical source: `skills/legacy-traceability-packager/`. Runtime adapters under
 
 ## Maintenance and Versioning
 
-- **Current Version**: 0.1.1
-- **Last Updated**: 2026-05-16
+- **Current Version**: 0.1.2
+- **Last Updated**: 2026-05-28
 - **Author**: Leo L Zhang
 - **Status**: field-pilot ready; three-runtime smoke passed in Codex, Claude Code, and OpenCode
 
 Version history:
+
+- v0.1.2 (2026-05-28): Added `brd_functional_coverage` audit output when a
+  BRD is supplied. Required BRD sections 1-9 must appear exactly once, with
+  blocked or missing section coverage raised as traceability findings.
 
 - v0.1.1 (2026-05-16): Tightened status semantics so clean `pass` has no findings, aligned package IDs with shared ID conventions, corrected the positive example to remove open TBDs, clarified AC validation and blocked-run continuation rules, and passed three-runtime smoke in Codex CLI (`gpt-5.4-mini`), Claude Code (`haiku`), and OpenCode (`minimax-m2.5-free`).
 - v0.1.0 (2026-05-16): Initial release. Eight-step audit workflow producing `traceability-package.yaml` + `traceability-package.md` + `coverage-audit.md` + `traceability-review.md`. Strict block-by-default discipline. Reuses upstream IDs; mints only `FIND-*` and `PKG-*`. Three adversarial examples (positive, dangling-id blocked, deferred-TBD warning).
