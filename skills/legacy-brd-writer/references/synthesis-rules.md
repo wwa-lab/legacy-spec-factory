@@ -49,6 +49,29 @@ Do not use the direct runtime chain as the as-is summary.
 Program names may remain in evidence notes, traceability, or a short appendix
 when necessary for auditability. They should not carry the main BRD narrative.
 
+### Problem Statement Anti-Pattern
+
+Do not create a standalone `Problem Statement` section that turns analysis
+friction into the business problem. Source-document fragmentation, technical
+coupling, unclear program chains, or downstream rework risk are evidence and
+delivery concerns, not the capability's business problem.
+
+**Wrong:**
+
+- "Current Card Replacement rules are scattered across functional
+  specifications, flow diagrams, and technical design documents."
+- "If scope, actors, triggers, and rule boundaries are not clarified first,
+  downstream inventory and synthesis work will be prone to repeated rework."
+
+**Right:**
+
+- Put business scope ambiguity in `Scope Clarification Need`, phrased as a
+  decision the SME can answer.
+- Put unresolved boundary questions in `TBD-*` items with `category:
+  sme_questions`.
+- Keep evidence-source fragmentation in the evidence index, traceability notes,
+  or review-session notes instead of the BRD's business narrative.
+
 ### If Business Meaning Is Unknown
 
 If evidence only shows that one program calls another, but does not reveal why
@@ -294,13 +317,15 @@ These situations call for TBDs instead of confident claims:
 See `templates/brd.md` for the structure. Fill in:
 
 1. **Capability Overview** (from module boundary definition)
-2. **As-Is Business Process Summary** (business trigger, participants, phases,
+2. **Scope Clarification Need** (only when SME boundary confirmation is needed;
+   never as a standalone `Problem Statement`)
+3. **As-Is Business Process Summary** (business trigger, participants, phases,
    outcomes, controls, and evidence boundary)
-3. **Observed Behaviors** (BEH-* with evidence links)
-4. **Inferred Business Rules** (BR-* seeds with evidence links; all
+4. **Observed Behaviors** (BEH-* with evidence links)
+5. **Inferred Business Rules** (BR-* seeds with evidence links; all
    `needs_sme_review`)
-5. **Open Questions** (TBD-* with categories and resolvers)
-6. **Evidence Index** (summary table)
+6. **Open Questions** (TBD-* with categories and resolvers)
+7. **Evidence Index** (summary table)
 
 All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 
@@ -310,6 +335,8 @@ All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 
 - [ ] Every BEH-* statement is factual (no interpretation)
 - [ ] The as-is summary is business-first and not a direct program call chain
+- [ ] No standalone `Problem Statement` mixes business scope, evidence gaps,
+      and delivery/rework risk
 - [ ] Every BEH-* links to ≥1 EV-*
 - [ ] Every BR-* abstracts ≥1 BEH-* (not invented)
 - [ ] Every BR-* links to ≥1 EV-*

@@ -32,6 +32,12 @@
 Orders must be routed efficiently to the appropriate fulfillment center to
 minimize shipping cost and delivery time.
 
+### Scope Clarification Need
+
+The SME must confirm whether this BRD covers only fulfillment-center assignment
+or also shipping-method selection, manual override, and exception handling.
+This boundary issue is tracked as `TBD-ORDER-ROUTING-001`.
+
 ---
 
 ## 2. As-Is Business Process Summary

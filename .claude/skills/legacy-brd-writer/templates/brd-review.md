@@ -21,10 +21,12 @@ specification phase.
 3. Are the **inferred business rules** actually business rules (not
    implementation artifacts)?
 4. Is the **scope and boundary** correct?
-5. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
-6. Are the **TBDs** correctly categorized and achievable?
-7. Do the **validation scenario seeds** cover the important business cases?
-8. Is the BRD ready for **spec-writing** without re-interrogating you?
+5. If a scope clarification is present, does it ask the right SME boundary
+   question instead of describing document-analysis difficulty?
+6. Are there **unspoken rules** the code doesn't show (BAU, manual procedures)?
+7. Are the **TBDs** correctly categorized and achievable?
+8. Do the **validation scenario seeds** cover the important business cases?
+9. Is the BRD ready for **spec-writing** without re-interrogating you?
 
 ---
 
@@ -117,6 +119,22 @@ specification phase.
 - [ ] **Yes** — in_scope and out_of_scope are accurate
 - [ ] **Partial** — some items are mis-categorized (see notes)
 - [ ] **No** — boundary is wrong or contested
+
+**Reviewer Notes:**
+
+```
+<Space for SME feedback>
+```
+
+---
+
+### Is any scope clarification framed as a business boundary question?
+
+- [ ] **Yes** — the clarification asks for SME confirmation of actors,
+      triggers, state transitions, handoffs, or in/out-of-scope boundaries
+- [ ] **Not applicable** — no scope clarification is needed
+- [ ] **No** — the section reads like source-document analysis, technical
+      coupling, or delivery rework risk instead of a SME decision point
 
 **Reviewer Notes:**
 

@@ -105,6 +105,8 @@ You must:
 - surface unresolved items (`TBD-*`) with category and resolver
 - draft BRD-stage validation scenario seeds (`VAL-*`) that map to existing
   `BEH-*`, `BR-*`, and `EV-*` references
+- frame unclear scope as SME-answerable boundary questions, not as a generic
+  problem statement about document fragmentation or analysis-process risk
 - refuse to produce formal acceptance criteria, modernization decisions, or
   platform choices — those belong in `legacy-spec-writer`
 - refuse to produce formal `TC-*` test cases or invented exact expected outputs
@@ -115,6 +117,8 @@ You must not:
 
 - present the BRD as a direct runtime chain, call graph, program inventory, file
   movement list, or object-by-object analysis
+- create a standalone `Problem Statement` section that mixes business scope,
+  evidence gaps, technical coupling, and downstream rework risk
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
@@ -354,6 +358,11 @@ decision.
    - Use domain nouns (`cardholder`, `replacement request`, `address
      verification response`, `exception queue`) before implementation nouns
      (`program`, `file`, `library`, `commit`, `copy`)
+   - If source materials are scattered or the capability boundary is unclear,
+     do not write a standalone `Problem Statement`. Capture the SME decision
+     needed under `Scope Clarification Need` and create explicit `TBD-*` items
+     for actors, triggers, state transitions, handoffs, or in/out-of-scope
+     boundaries.
    - If the only available description is a runtime chain, convert it into 3-6
      business phases and create `TBD-*` questions for any phase whose business
      purpose is unclear
@@ -498,6 +507,8 @@ Before marking the BRD `approved`, confirm:
 - [ ] Every claim in `brd.md` appears in `traceability.md`
 - [ ] The as-is summary is business-readable and does not read as a direct
       runtime chain, object inventory, or call graph
+- [ ] No standalone `Problem Statement` section mixes business scope,
+      evidence gaps, technical coupling, and delivery/rework risk
 - [ ] Every `BEH-*` and `BR-*` links to ≥1 `EV-*`
 - [ ] Every `VAL-*` maps to existing `BEH-*` or `BR-*` and ≥1 `EV-*`
 - [ ] `validation-scenarios.md` contains no formal `AC-*`, formal `TC-*`,

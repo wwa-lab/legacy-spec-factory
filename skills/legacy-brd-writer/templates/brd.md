@@ -32,6 +32,15 @@
 Briefly describe why this capability matters to the business (customer impact,
 revenue, compliance, operational efficiency, etc.). Keep to 2-3 sentences.
 
+### Scope Clarification Need
+
+Use this section only when the capability boundary, actors, triggers, state
+transitions, or handoffs require SME confirmation. Do not add a standalone
+`Problem Statement` to describe scattered source documents, technical coupling,
+or downstream analysis/rework risk. If ambiguity exists, state the business
+boundary question and link the corresponding `TBD-*`; otherwise write `None
+identified from approved inputs.`
+
 ---
 
 ## 2. As-Is Business Process Summary

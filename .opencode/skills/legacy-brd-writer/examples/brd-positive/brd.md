@@ -36,6 +36,12 @@ Credit limit enforcement prevents credit exposure on orders. This capability
 protects the company's financial position by ensuring no customer exceeds their
 authorized credit threshold.
 
+### Scope Clarification Need
+
+None identified from approved inputs. The SME has confirmed that this BRD is
+limited to credit-limit validation during order intake and does not include
+credit-limit maintenance or override workflows.
+
 ---
 
 ## 2. As-Is Business Process Summary
