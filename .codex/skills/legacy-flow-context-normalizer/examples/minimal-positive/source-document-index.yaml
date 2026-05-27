@@ -5,7 +5,7 @@ documents:
     title: "Credit Check Process"
     path: "source-docs/credit-check-process.vsdx"
     format: vsdx
-    source_type: diagram
+    source_type: flow_diagram
     owner: "Credit Operations"
     document_date: "2026-04-01"
     sensitivity: synthetic_non_production

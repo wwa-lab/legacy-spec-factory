@@ -6,11 +6,11 @@
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
 
-        <mxCell id="2" value="Diagram A - BRD Factory Logic&#xa;MODULE-FIRST BRD FACTORY&#xa;Known module flow + supplemental evidence + IEOV validation -&gt; trusted BRD package" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#06131f;strokeColor=#089fd4;fontColor=#f2f8ff;fontSize=30;fontStyle=1;spacing=16;" vertex="1" parent="1">
+        <mxCell id="2" value="Diagram A - BRD Factory Logic&#xa;MODULE-FIRST BRD FACTORY&#xa;Module docs / flows + supplemental evidence + IEOV validation -&gt; trusted BRD package" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#06131f;strokeColor=#089fd4;fontColor=#f2f8ff;fontSize=30;fontStyle=1;spacing=16;" vertex="1" parent="1">
           <mxGeometry x="40" y="24" width="1720" height="104" as="geometry"/>
         </mxCell>
 
-        <mxCell id="3" value="A1 Known Module Flow Backbone&#xa;已知业务模块主干" style="swimlane;html=1;whiteSpace=wrap;startSize=44;fillColor=#0b2638;strokeColor=#089fd4;fontColor=#23c8ff;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+        <mxCell id="3" value="A1 Module Context&#xa;模块上下文主干" style="swimlane;html=1;whiteSpace=wrap;startSize=44;fillColor=#0b2638;strokeColor=#089fd4;fontColor=#23c8ff;fontStyle=1;fontSize=18;" vertex="1" parent="1">
           <mxGeometry x="40" y="168" width="330" height="590" as="geometry"/>
         </mxCell>
         <mxCell id="31" value="Operation / Business Flow&#xa;actors, events, exception path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#402914;strokeColor=#f0a43a;fontColor=#f2f8ff;fontSize=13;fontStyle=1;spacing=8;" vertex="1" parent="3">
@@ -25,7 +25,7 @@
         <mxCell id="34" value="Data Flow&#xa;PF/LF CRUD, field semantics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#402914;strokeColor=#f0a43a;fontColor=#f2f8ff;fontSize=13;fontStyle=1;spacing=8;" vertex="1" parent="3">
           <mxGeometry x="30" y="336" width="260" height="62" as="geometry"/>
         </mxCell>
-        <mxCell id="35" value="Code Evidence&#xa;current IBM i behavior, not intent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#402914;strokeColor=#f0a43a;fontColor=#f2f8ff;fontSize=13;fontStyle=1;spacing=8;" vertex="1" parent="3">
+        <mxCell id="35" value="Docs / Specs / Code&#xa;evidence context, not intent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#402914;strokeColor=#f0a43a;fontColor=#f2f8ff;fontSize=13;fontStyle=1;spacing=8;" vertex="1" parent="3">
           <mxGeometry x="30" y="418" width="260" height="62" as="geometry"/>
         </mxCell>
         <mxCell id="36" value="Module is the understanding boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#081927;strokeColor=#2b5369;fontColor=#9fb3c5;fontSize=12;spacing=8;" vertex="1" parent="3">
@@ -118,7 +118,7 @@
           <mxGeometry x="1366" y="824" width="192" height="86" as="geometry"/>
         </mxCell>
 
-        <mxCell id="9" value="Key Message&#xa;We do not let RAG generate the BRD. Known module flow defines the backbone; RAG/runtime/reports fill gaps; IEOV + SME review make every BRD claim traceable.&#xa;A1-A4 的执行支撑见 Diagram B：每个阶段都有对应 skills、产物和 gate。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0b2638;strokeColor=#089fd4;fontColor=#f2f8ff;fontSize=14;fontStyle=1;spacing=14;" vertex="1" parent="1">
+        <mxCell id="9" value="Key Message&#xa;We do not let RAG generate the BRD. Reviewed module context defines the backbone; docs/specs/RAG/runtime/reports fill gaps; IEOV + SME review make every BRD claim traceable.&#xa;A1-A4 的执行支撑见 Diagram B：每个阶段都有对应 skills、产物和 gate。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0b2638;strokeColor=#089fd4;fontColor=#f2f8ff;fontSize=14;fontStyle=1;spacing=14;" vertex="1" parent="1">
           <mxGeometry x="40" y="988" width="1720" height="78" as="geometry"/>
         </mxCell>
 

@@ -3,14 +3,15 @@
 Conversation Review Mode is the default SME interaction model for module-first
 BRD work.
 
-The user should be able to stay in one chat, provide RAG output / four flows /
-SME notes, answer guided review questions, and receive a completed BRD Package.
-Files are the audit record; chat is the interaction surface.
+The user should be able to stay in one chat, provide RAG output, reviewed
+flows when available, historical specs/documents, or SME notes, answer guided
+review questions, and receive a completed BRD Package. Files are the audit
+record; chat is the interaction surface.
 
 ## Default Flow
 
 ```text
-RAG / retrieval output + four flows + SME notes
+RAG / retrieval output + reviewed flows or normalized docs/specs + SME notes
   -> context package
   -> module analysis
   -> draft BRD Package

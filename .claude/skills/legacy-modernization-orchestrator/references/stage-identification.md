@@ -8,7 +8,7 @@ upstream stage that fits — do not "round up" maturity.
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
-| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
+| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
 | 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
 | 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
@@ -64,10 +64,13 @@ When flow-normalization output is sparse:
 
 When only forward chain artifacts exist:
 
-- If the user has only `wwa-lab/build-agent-skill`-style artifacts
-  (Functional Spec, Technical Design, Program Spec) and no reverse-chain
-  evidence, this orchestrator is not the right tool — point them to the
+- If the user has only `wwa-lab/build-agent-skill`-style **target-system**
+  artifacts and wants to generate or modify IBM i code, point them to the
   forward repo's `ibm-i-workflow-orchestrator`.
+- If the user has legacy Function Specs, Technical Designs, Program Specs,
+  File Specs, interface specs, or data dictionaries as historical evidence for
+  understanding the existing system, keep them in this reverse chain and route
+  to Flow Context Normalization.
 
 ## Stage to Output Directory
 

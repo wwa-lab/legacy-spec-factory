@@ -55,6 +55,7 @@ def create_workbook(path: Path) -> None:
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet4.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 </Types>""",
         )
         zf.writestr(
@@ -70,9 +71,10 @@ def create_workbook(path: Path) -> None:
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="Business Steps" sheetId="1" r:id="rId1"/>
-    <sheet name="Interfaces" sheetId="2" r:id="rId2"/>
-    <sheet name="Data Dictionary" sheetId="3" r:id="rId3"/>
+    <sheet name="Function Spec" sheetId="1" r:id="rId1"/>
+    <sheet name="Technical Design" sheetId="2" r:id="rId2"/>
+    <sheet name="Program Spec" sheetId="3" r:id="rId3"/>
+    <sheet name="File Spec" sheetId="4" r:id="rId4"/>
   </sheets>
 </workbook>""",
         )
@@ -83,14 +85,15 @@ def create_workbook(path: Path) -> None:
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
   <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet4.xml"/>
 </Relationships>""",
         )
         zf.writestr(
             "xl/worksheets/sheet1.xml",
             sheet_xml(
                 [
-                    ["Step", "Actor", "Action"],
-                    ["1", "Branch staff", "Submit credit application"],
+                    ["Function", "Actor", "Action"],
+                    ["Credit application", "Branch staff", "Submit credit application"],
                 ]
             ),
         )
@@ -107,7 +110,16 @@ def create_workbook(path: Path) -> None:
             "xl/worksheets/sheet3.xml",
             sheet_xml(
                 [
-                    ["Table", "Field", "Update"],
+                    ["Program", "Trigger", "Called Program"],
+                    ["CCHK100", "credit request", "CCHK200"],
+                ]
+            ),
+        )
+        zf.writestr(
+            "xl/worksheets/sheet4.xml",
+            sheet_xml(
+                [
+                    ["File", "Field", "Update"],
                     ["APPSTAT", "STATUS", "approve or decline"],
                 ]
             ),
@@ -139,11 +151,15 @@ class FlowContextExcelExtractorTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn('pages_or_sheets: "Business Steps, Interfaces, Data Dictionary"', result.stdout)
+            self.assertIn(
+                'pages_or_sheets: "Function Spec, Technical Design, Program Spec, File Spec"',
+                result.stdout,
+            )
             self.assertIn("fragment_id: FRAG-CREDIT-CHECK-001", result.stdout)
-            self.assertIn('locator: "Business Steps row 2"', result.stdout)
+            self.assertIn('locator: "Function Spec row 2"', result.stdout)
             self.assertIn("candidate_view: operation_business_flow", result.stdout)
             self.assertIn("candidate_view: system_flow", result.stdout)
+            self.assertIn("candidate_view: program_flow", result.stdout)
             self.assertIn("candidate_view: data_flow", result.stdout)
 
     def test_writes_output_file(self) -> None:
@@ -171,7 +187,7 @@ class FlowContextExcelExtractorTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             text = output.read_text(encoding="utf-8")
             self.assertIn("doc_id: DOC-CREDIT-CHECK-001", text)
-            self.assertIn("Extracted 3 non-empty data rows across 3 sheet(s).", text)
+            self.assertIn("Extracted 4 non-empty data rows across 4 sheet(s).", text)
 
 
 if __name__ == "__main__":

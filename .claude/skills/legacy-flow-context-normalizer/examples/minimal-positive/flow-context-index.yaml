@@ -26,7 +26,7 @@ input_documents:
   - doc_id: DOC-CREDIT-CHECK-001
     path: "source-docs/credit-check-process.vsdx"
     format: vsdx
-    role: process_diagram
+    role: flow_diagram
     authorization_status: approved
     readable_status: extracted
   - doc_id: DOC-CREDIT-CHECK-002

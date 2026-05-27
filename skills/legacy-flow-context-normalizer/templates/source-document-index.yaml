@@ -4,8 +4,8 @@ documents:
   - doc_id: "DOC-<MODULE-SLUG>-001"
     title: "<Document title>"
     path: "<source path>"
-    format: "<vsdx|docx|xlsx|csv|pdf|pptx|image|rag|sme_note>"
-    source_type: "<diagram|procedure|inventory|data_dictionary|deck|summary|note>"
+    format: "<vsdx|docx|xlsx|csv|pdf|pptx|md|txt|image|rag|sme_note>"
+    source_type: "<flow_diagram|function_spec|technical_design|program_spec|file_spec|interface_spec|data_dictionary|mixed_spec_workbook|procedure|runbook|inventory|process_deck|rag_summary|sme_note>"
     owner: "<Document owner or unknown>"
     document_date: "<YYYY-MM-DD or unknown>"
     sensitivity: "unknown" # public | internal | confidential | restricted | synthetic_non_production | unknown
