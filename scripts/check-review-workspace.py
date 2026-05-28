@@ -3,11 +3,15 @@
 
 Checks:
 - `08_review_workspace/review-items.json` exists and parses
+- `08_review_workspace/index.html` exists and embeds matching review data
 - every review item has stable required fields
+- every review item has business-signal-first review fields
 - statuses and actions come from the allowed enums
 - evidence IDs referenced by review items exist in the evidence manifest
 - impacted IDs exist in the spec or traceability layer
 - every approved rule or error condition has at least one review item
+- generated HTML contains the human-review sections and no obvious object
+  rendering regression
 
 Usage:
   python3 scripts/check-review-workspace.py docs/<project-name>/
@@ -16,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -51,6 +56,35 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(fh) or {}
 
 
+def load_embedded_html_payload(html_path: Path, errors: list[str]) -> dict:
+    if not html_path.exists():
+        errors.append(f"Missing generated review HTML: {html_path}")
+        return {}
+
+    html_text = html_path.read_text(encoding="utf-8")
+    if "[object Object]" in html_text:
+        errors.append("Generated HTML contains '[object Object]', likely from stringifying DOM nodes")
+
+    for required_label in ("Business Signal", "Evidence Basis", "SME Questions"):
+        if required_label not in html_text:
+            errors.append(f"Generated HTML missing review section label: {required_label}")
+
+    match = re.search(
+        r'<script id="review-data" type="application/json">(.*?)</script>',
+        html_text,
+        flags=re.DOTALL,
+    )
+    if not match:
+        errors.append("Generated HTML missing embedded review-data JSON script")
+        return {}
+
+    try:
+        return json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        errors.append(f"Generated HTML embedded review-data JSON does not parse: {exc}")
+        return {}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: python3 scripts/check-review-workspace.py docs/<project-name>/", file=sys.stderr)
@@ -58,6 +92,7 @@ def main() -> int:
 
     project_root = Path(sys.argv[1]).resolve()
     review_path = project_root / "08_review_workspace" / "review-items.json"
+    html_path = project_root / "08_review_workspace" / "index.html"
     if not review_path.exists():
         print(f"Missing generated review workspace: {review_path}", file=sys.stderr)
         return 1
@@ -65,6 +100,12 @@ def main() -> int:
     payload = json.loads(review_path.read_text(encoding="utf-8"))
     items = payload.get("review_items") or []
     errors: list[str] = []
+    html_payload = load_embedded_html_payload(html_path, errors)
+    if html_payload:
+        json_ids = [item.get("id") for item in items]
+        html_ids = [item.get("id") for item in html_payload.get("review_items") or []]
+        if json_ids != html_ids:
+            errors.append("Generated HTML embedded review item IDs do not match review-items.json")
 
     spec_candidates = sorted(project_root.glob("05_specs/*/spec.yaml"))
     spec_path = spec_candidates[0] if spec_candidates else None
@@ -107,6 +148,12 @@ def main() -> int:
             errors.append(f"{item_id}: invalid review_action {item.get('review_action')!r}")
         if not item.get("question"):
             errors.append(f"{item_id}: missing question")
+        if not item.get("business_signal"):
+            errors.append(f"{item_id}: missing business_signal")
+        if not item.get("evidence_basis"):
+            errors.append(f"{item_id}: missing evidence_basis")
+        if not item.get("sme_questions"):
+            errors.append(f"{item_id}: missing sme_questions")
         if not item.get("current_conclusion"):
             errors.append(f"{item_id}: missing current_conclusion")
 

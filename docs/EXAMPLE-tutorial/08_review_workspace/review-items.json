@@ -5,8 +5,8 @@
     "project_root": "docs/EXAMPLE-tutorial",
     "capability_id": "CAP-PRICE-CALCULATION",
     "status": "approved",
-    "source_commit": "2b1d429",
-    "generated_at": "2026-05-21T16:33:23+00:00"
+    "source_commit": "46b574d",
+    "generated_at": "2026-05-28T15:11:51+00:00"
   },
   "summary": {
     "item_count": 11,
@@ -63,7 +63,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify blocked rendering."
-      }
+      },
+      "business_signal": "Should this blocked example stay blocked until the missing source is restored?",
+      "evidence_basis": "No evidence cards recorded yet; reviewer must request stronger evidence before approval.",
+      "sme_questions": [
+        "Can reviewers inspect the intended behavior without the source file?",
+        "Should this remain blocked until the evidence is available?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-101",
@@ -118,7 +124,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify contradicted rendering."
-      }
+      },
+      "business_signal": "Does the runtime evidence contradict the source behavior here?",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Which artifact should the reviewer trust?",
+        "Does the contradiction require SME clarification?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-102",
@@ -175,7 +187,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify SME rendering."
-      }
+      },
+      "business_signal": "Does the silent promo fallback need SME confirmation?",
+      "evidence_basis": "EV-SME-001: sme_note evidence (Pricing Rules SME Walkthrough, approved)",
+      "sme_questions": [
+        "Is the silent behavior intentional business logic?",
+        "Should unknown promo codes be documented as a deliberate rule?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-103",
@@ -229,7 +247,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify preview readability."
-      }
+      },
+      "business_signal": "Is the evidence preview readable enough for a normal review pass?",
+      "evidence_basis": "EV-DDS-001: dds evidence (PRICEFL.PF, approved)",
+      "sme_questions": [
+        "Can the reviewer inspect the file content without leaving the page?",
+        "Does the preview help instead of hiding behind metadata?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-104",
@@ -282,7 +306,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify ready-to-approve rendering."
-      }
+      },
+      "business_signal": "Should this already-approved conclusion be shown as ready to approve?",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Is the review action aligned with the status?",
+        "Can the reviewer approve immediately?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-003",
@@ -298,6 +328,12 @@
       "priority": "high",
       "confidence": "confirmed",
       "decision_basis": "source_only",
+      "business_signal": "Failure behavior for Item / tier combination not found in PRICEFL",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Should this failure behavior be preserved exactly in the modern system?",
+        "Who owns the business decision when this condition occurs?"
+      ],
       "current_conclusion": "status_code='1', final_price=0",
       "evidence": [
         {
@@ -337,7 +373,7 @@
       "source_excerpt": {
         "acceptance_criteria": "Caller receives status='1' and price=0; no exception thrown"
       },
-      "updated_at": "2026-05-21T16:33:23+00:00"
+      "updated_at": "2026-05-28T15:11:51+00:00"
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-900",
@@ -354,6 +390,12 @@
       "priority": "high",
       "confidence": "confirmed",
       "decision_basis": "source_plus_sme",
+      "business_signal": "Approved rules have complete evidence and verification coverage.",
+      "evidence_basis": "EV-SME-001: sme_note evidence (SME walkthrough of tier discount + promotion stacking rules, approved); EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Can reviewers follow each approved rule from business conclusion to evidence and verification?",
+        "Are any evidence links too technical or ambiguous for SME review?"
+      ],
       "current_conclusion": "Coverage checks in traceability.md are complete.",
       "evidence": [
         {
@@ -433,7 +475,7 @@
       "source_excerpt": {
         "coverage_check": "Every spec rule is backed by ≥ 1 `evidence_id`. ✓ | Every `inferred_business_rule` would need SME confirmation — there are | Every approved rule has `acceptance_criteria`. ✓ | No open `TBD-*`. ✓"
       },
-      "updated_at": "2026-05-21T16:33:23+00:00"
+      "updated_at": "2026-05-28T15:11:51+00:00"
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-002",
@@ -450,6 +492,13 @@
       "priority": "medium",
       "confidence": "confirmed",
       "decision_basis": "source_plus_sme",
+      "business_signal": "Promo code stacking: Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved); EV-SME-001: sme_note evidence (SME walkthrough of tier discount + promotion stacking rules, approved)",
+      "sme_questions": [
+        "Does BR-PRICE-002 describe the business behavior SMEs expect users or operations to rely on?",
+        "Is the evidence basis sufficient to promote this conclusion downstream?",
+        "Is silent fallback intentional business behavior, historical tolerance, or a defect to redesign?"
+      ],
       "current_conclusion": "Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)",
       "evidence": [
         {
@@ -529,7 +578,7 @@
         "trace_row": "`program-analysis.md` row P4; SME walkthrough",
         "acceptance_tests": "spec.yaml acceptance row 4–7"
       },
-      "updated_at": "2026-05-21T16:33:23+00:00"
+      "updated_at": "2026-05-28T15:11:51+00:00"
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-001",
@@ -545,6 +594,12 @@
       "priority": "medium",
       "confidence": "confirmed",
       "decision_basis": "source_only",
+      "business_signal": "Final price formula: final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Does BR-PRICE-001 describe the business behavior SMEs expect users or operations to rely on?",
+        "Is the evidence basis sufficient to promote this conclusion downstream?"
+      ],
       "current_conclusion": "final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )",
       "evidence": [
         {
@@ -586,7 +641,7 @@
         "trace_row": "`program-analysis.md` rows P2–P5",
         "acceptance_tests": "spec.yaml acceptance row 1–3"
       },
-      "updated_at": "2026-05-21T16:33:23+00:00"
+      "updated_at": "2026-05-28T15:11:51+00:00"
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-105",
@@ -639,7 +694,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify approved rendering."
-      }
+      },
+      "business_signal": "Does the approved formula still look correct in the final queue?",
+      "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)",
+      "sme_questions": [
+        "Can reviewers see the final approved evidence clearly?",
+        "Does the item render as a closed decision?"
+      ]
     },
     {
       "id": "RI-CAP-PRICE-CALCULATION-106",
@@ -668,7 +729,13 @@
       ],
       "source_excerpt": {
         "note": "This item exists to verify deferred rendering."
-      }
+      },
+      "business_signal": "Should this UI-only validation item be deferred after the preview is verified?",
+      "evidence_basis": "No evidence cards recorded yet; reviewer must request stronger evidence before approval.",
+      "sme_questions": [
+        "Is there any product impact left here?",
+        "Should this be hidden from the active review queue?"
+      ]
     }
   ],
   "evidence_index": {

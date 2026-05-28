@@ -392,6 +392,72 @@ def normalize_conclusion(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
 
 
+def evidence_basis_text(evidence_ids: list[str], evidence_index: dict[str, dict[str, Any]]) -> str:
+    if not evidence_ids:
+        return "No evidence ID is linked yet; reviewer must request stronger evidence before approval."
+    pieces: list[str] = []
+    for ev_id in evidence_ids:
+        meta = evidence_index.get(ev_id) or {}
+        ev_type = meta.get("type", "unknown")
+        title = meta.get("member") or meta.get("note") or meta.get("relative_path") or meta.get("source_path") or ev_id
+        approval = (meta.get("sme_approval") or {}).get("decision")
+        suffix = f", {approval}" if approval else ""
+        pieces.append(f"{ev_id}: {ev_type} evidence ({title}{suffix})")
+    return "; ".join(pieces)
+
+
+def evidence_basis_from_cards(cards: list[dict[str, Any]]) -> str:
+    if not cards:
+        return "No evidence cards recorded yet; reviewer must request stronger evidence before approval."
+    pieces: list[str] = []
+    for card in cards:
+        title = card.get("title") or card.get("source") or card.get("id") or "evidence"
+        ev_type = card.get("type", "unknown")
+        approval = card.get("approval")
+        suffix = f", {approval}" if approval else ""
+        pieces.append(f"{card.get('id', 'EV-UNKNOWN')}: {ev_type} evidence ({title}{suffix})")
+    return "; ".join(pieces)
+
+
+def rule_business_signal(rule: dict[str, Any]) -> str:
+    explicit = rule.get("business_signal")
+    if explicit:
+        return normalize_conclusion(str(explicit))
+    title = rule.get("title") or rule.get("id") or "Business rule"
+    statement = normalize_conclusion(rule.get("statement", ""))
+    if statement:
+        return f"{title}: {statement}"
+    return str(title)
+
+
+def default_sme_questions(rule_id: str, acceptance: list[str], has_trace_row: bool, conclusion: str) -> list[str]:
+    questions = [
+        f"Does {rule_id} describe the business behavior SMEs expect users or operations to rely on?",
+        "Is the evidence basis sufficient to promote this conclusion downstream?",
+    ]
+    if not acceptance:
+        questions.append("What observable scenario would prove this behavior is preserved?")
+    if not has_trace_row:
+        questions.append("Which source or runtime evidence should be linked before approval?")
+    if "silent" in conclusion.lower():
+        questions.append("Is silent fallback intentional business behavior, historical tolerance, or a defect to redesign?")
+    return questions
+
+
+def ensure_review_item_review_fields(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    for item in items:
+        item.setdefault(
+            "business_signal",
+            item.get("question") or item.get("current_conclusion") or "No business signal recorded.",
+        )
+        item.setdefault("evidence_basis", evidence_basis_from_cards(item.get("evidence") or []))
+        item.setdefault(
+            "sme_questions",
+            item.get("sub_questions") or [item.get("question") or "What should the SME decide?"],
+        )
+    return items
+
+
 def parse_traceability_rows(traceability_path: Path | None) -> tuple[dict[str, dict[str, str]], list[str]]:
     if traceability_path is None:
         return {}, []
@@ -481,6 +547,12 @@ def build_rule_items(
         ]
         if "silent" in conclusion.lower():
             sub_questions.append("Is the silent fallback an intentional business rule or a defensive implementation detail?")
+        sme_questions = list(rule.get("sme_questions") or []) or default_sme_questions(
+            rule_id,
+            acceptance,
+            bool(trace_row),
+            conclusion,
+        )
         items.append(
             {
                 "id": f"RI-{capability_id}-{ordinal:03d}",
@@ -493,6 +565,10 @@ def build_rule_items(
                 "priority": "high" if review_status != "approved" else "medium",
                 "confidence": confidence_for_status(status, len(evidence_ids)),
                 "decision_basis": decision_basis(evidence_ids, evidence_index),
+                "business_signal": rule_business_signal(rule),
+                "evidence_basis": rule.get("evidence_basis")
+                or evidence_basis_text(evidence_ids, evidence_index),
+                "sme_questions": sme_questions,
                 "current_conclusion": conclusion,
                 "evidence": evidence_cards(evidence_ids, evidence_index, rule.get("title", rule_id), artifacts.root),
                 "contradictions": [],
@@ -533,6 +609,12 @@ def build_rule_items(
                 "priority": "high",
                 "confidence": confidence_for_status(status, len(evidence_ids)),
                 "decision_basis": decision_basis(evidence_ids, evidence_index),
+                "business_signal": f"Failure behavior for {error.get('condition', error_id)}",
+                "evidence_basis": evidence_basis_text(evidence_ids, evidence_index),
+                "sme_questions": [
+                    "Should this failure behavior be preserved exactly in the modern system?",
+                    "Who owns the business decision when this condition occurs?",
+                ],
                 "current_conclusion": normalize_conclusion(error.get("legacy_behavior", "")),
                 "evidence": evidence_cards(evidence_ids, evidence_index, error.get("condition", error_id), artifacts.root),
                 "contradictions": [],
@@ -578,6 +660,12 @@ def build_traceability_item(
         "priority": "high",
         "confidence": confidence_for_status(status, len(all_evidence)),
         "decision_basis": decision_basis(all_evidence, evidence_index),
+        "business_signal": "Approved rules have complete evidence and verification coverage.",
+        "evidence_basis": evidence_basis_text(all_evidence, evidence_index),
+        "sme_questions": [
+            "Can reviewers follow each approved rule from business conclusion to evidence and verification?",
+            "Are any evidence links too technical or ambiguous for SME review?",
+        ],
         "current_conclusion": "Coverage checks in traceability.md are complete." if not gaps else "Traceability coverage has unresolved gaps.",
         "evidence": evidence_cards(all_evidence, evidence_index, "Traceability coverage", artifacts.root),
         "contradictions": [],
@@ -615,6 +703,9 @@ def build_open_question_items(
                 "priority": "high",
                 "confidence": "low",
                 "decision_basis": "source_only",
+                "business_signal": tbd.get("question") or "An unresolved business decision blocks or qualifies downstream use.",
+                "evidence_basis": "Open TBD recorded in spec.yaml; no approving evidence is linked yet.",
+                "sme_questions": [tbd.get("question", "What decision should the SME make?")],
                 "current_conclusion": tbd.get("resolution") or "Open question remains unresolved.",
                 "evidence": [],
                 "contradictions": [],
@@ -643,6 +734,9 @@ def build_open_question_items(
                 "priority": "medium",
                 "confidence": "low",
                 "decision_basis": "source_plus_sme",
+                "business_signal": "Program analysis found a question that still affects business interpretation.",
+                "evidence_basis": "Open question came from program analysis; source artifacts are listed for reviewer follow-up.",
+                "sme_questions": [question],
                 "current_conclusion": "Program analysis still requires explicit review resolution.",
                 "evidence": [],
                 "contradictions": [],
@@ -669,6 +763,9 @@ def build_open_question_items(
                 "priority": "medium",
                 "confidence": "low",
                 "decision_basis": "source_plus_sme",
+                "business_signal": "Flow analysis found an unresolved meaning or routing question.",
+                "evidence_basis": f"Open question came from {item['artifact']}.",
+                "sme_questions": [item["question"]],
                 "current_conclusion": "Flow analysis still has unresolved meaning or routing questions.",
                 "evidence": [],
                 "contradictions": [],
@@ -929,6 +1026,16 @@ def render_html(payload: dict[str, Any]) -> str:
     .detail-block ul {{
       margin: 0;
       padding-left: 18px;
+    }}
+    .business-signal {{
+      grid-column: 1 / -1;
+      background: #fffaf0;
+      border-color: #f3d08f;
+    }}
+    .business-signal p {{
+      font-size: 16px;
+      line-height: 1.55;
+      margin: 0;
     }}
     .evidence-list {{
       display: grid;
@@ -1266,6 +1373,14 @@ def render_html(payload: dict[str, Any]) -> str:
       block.appendChild(buildElement("h3", {{}}, title));
       block.appendChild(child);
       parent.appendChild(block);
+      return block;
+    }}
+
+    function appendBusinessSignalBlock(parent, text) {{
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text || "No business signal recorded.";
+      const block = appendDetailBlock(parent, "Business Signal", paragraph);
+      block.classList.add("business-signal");
     }}
 
     function appendTextDetailBlock(parent, title, text) {{
@@ -1282,71 +1397,88 @@ def render_html(payload: dict[str, Any]) -> str:
         root.textContent = "No review item selected.";
         return;
       }}
-      const evidenceHtml = (item.evidence || []).map(renderEvidenceCard).join("");
-      const subQuestions = (item.sub_questions || []).length
-        ? `<ul>${{item.sub_questions.map(text => `<li>${{text}}</li>`).join("")}}</ul>`
-        : `<div class="empty">No sub-questions recorded.</div>`;
-      const contradictions = (item.contradictions || []).length
-        ? `<ul>${{item.contradictions.map(text => `<li>${{text}}</li>`).join("")}}</ul>`
-        : `<div class="empty">No contradictions recorded.</div>`;
-      const gaps = (item.gaps || []).length
-        ? `<ul>${{item.gaps.map(text => `<li>${{text}}</li>`).join("")}}</ul>`
-        : `<div class="empty">No gaps recorded.</div>`;
-      const impacts = (item.impacts || []).length
-        ? `<ul>${{item.impacts.map(text => `<li>${{text}}</li>`).join("")}}</ul>`
-        : `<div class="empty">No impacted IDs recorded.</div>`;
-      const sources = (item.source_artifacts || []).map(artifactLink).join("");
       root.className = "";
-      root.innerHTML = `
-        <div>
-          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(statusLabel(item.status))}}</span>
-          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(item.review_action)}}</span>
-          <span class="badge status-${{escapeHtml(item.status)}}">${{escapeHtml(item.confidence)}}</span>
-        </div>
-        <h3 style="margin: 6px 0 10px; font-size: 24px; line-height: 1.3;">${{escapeHtml(item.question)}}</h3>
-        <p style="margin: 0 0 14px; color: var(--muted);">Theme: ${{escapeHtml(item.theme)}} · Basis: ${{escapeHtml(item.decision_basis)}} · Type: ${{escapeHtml(item.type)}}</p>
-        <div class="detail-grid">
-          <div class="detail-block">
-            <h3>Current Conclusion</h3>
-            <p>${{escapeHtml(item.current_conclusion)}}</p>
-          </div>
-          <div class="detail-block">
-            <h3>Decision Needed Now</h3>
-            <p>${{escapeHtml(item.review_action)}} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.</p>
-          </div>
-          <div class="detail-block">
-            <h3>Sub-Questions</h3>
-            ${{subQuestions}}
-          </div>
-          <div class="detail-block">
-            <h3>Impact</h3>
-            ${{impacts}}
-          </div>
-          <div class="detail-block">
-            <h3>Evidence</h3>
-            <div class="evidence-list">${{evidenceHtml || '<div class="empty">No evidence cards recorded.</div>'}}</div>
-          </div>
-          <div class="detail-block">
-            <h3>Gaps</h3>
-            ${{gaps}}
-            <h3 style="margin-top: 18px;">Contradictions</h3>
-            ${{contradictions}}
-          </div>
-          <div class="detail-block" style="grid-column: 1 / -1;">
-            <h3>Source Artifacts</h3>
-            <div class="link-list">${{sources || '<span class="empty">No source artifacts recorded.</span>'}}</div>
-            <h3 style="margin-top: 18px;">Source Excerpt</h3>
-            <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; color: var(--muted);">${{escapeHtml(JSON.stringify(item.source_excerpt || {{}}, null, 2))}}</pre>
-          </div>
-        </div>
-      `;
-      for (const button of root.querySelectorAll('[data-preview-toggle="true"]')) {{
-        button.addEventListener('click', () => {{
-          const preview = button.nextElementSibling;
-          preview.classList.toggle('open');
-          button.textContent = preview.classList.contains('open') ? '▲ collapse preview' : '▼ show evidence preview';
-        }});
+      root.innerHTML = "";
+
+      const badges = document.createElement("div");
+      for (const value of [statusLabel(item.status), item.review_action, item.confidence]) {{
+        badges.appendChild(buildElement("span", {{ className: `badge status-${{item.status}}` }}, value));
       }}
+      root.appendChild(badges);
+
+      const heading = buildElement("h3", {{}}, item.question || "Untitled review item");
+      heading.style.margin = "6px 0 10px";
+      heading.style.fontSize = "24px";
+      heading.style.lineHeight = "1.3";
+      root.appendChild(heading);
+
+      const meta = buildElement(
+        "p",
+        {{}},
+        `Theme: ${{item.theme || "n/a"}} · Basis: ${{item.decision_basis || "n/a"}} · Type: ${{item.type || "n/a"}}`,
+      );
+      meta.style.margin = "0 0 14px";
+      meta.style.color = "var(--muted)";
+      root.appendChild(meta);
+
+      const grid = buildElement("div", {{ className: "detail-grid" }});
+      appendBusinessSignalBlock(grid, item.business_signal);
+      appendTextDetailBlock(grid, "Evidence Basis", item.evidence_basis || "No evidence basis recorded.");
+      appendDetailBlock(grid, "SME Questions", renderList(item.sme_questions || [], "No SME questions recorded."));
+      appendTextDetailBlock(grid, "Current Conclusion", item.current_conclusion || "No conclusion recorded.");
+      appendTextDetailBlock(
+        grid,
+        "Decision Needed Now",
+        `${{item.review_action}} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.`,
+      );
+      appendDetailBlock(grid, "Sub-Questions", renderList(item.sub_questions || [], "No sub-questions recorded."));
+      appendDetailBlock(grid, "Impact", renderList(item.impacts || [], "No impacted IDs recorded."));
+
+      const evidenceList = buildElement("div", {{ className: "evidence-list" }});
+      const evidenceCards = item.evidence || [];
+      if (!evidenceCards.length) {{
+        evidenceList.appendChild(buildElement("div", {{ className: "empty" }}, "No evidence cards recorded."));
+      }} else {{
+        for (const card of evidenceCards) {{
+          evidenceList.appendChild(renderEvidenceCard(card));
+        }}
+      }}
+      appendDetailBlock(grid, "Evidence", evidenceList);
+
+      const gapsBlock = document.createElement("div");
+      gapsBlock.appendChild(renderList(item.gaps || [], "No gaps recorded."));
+      gapsBlock.appendChild(buildElement("h3", {{}}, "Contradictions"));
+      gapsBlock.lastChild.style.marginTop = "18px";
+      gapsBlock.appendChild(renderList(item.contradictions || [], "No contradictions recorded."));
+      appendDetailBlock(grid, "Gaps", gapsBlock);
+
+      const sourceBlock = buildElement("div", {{ className: "detail-block" }});
+      sourceBlock.style.gridColumn = "1 / -1";
+      sourceBlock.appendChild(buildElement("h3", {{}}, "Source Artifacts"));
+      const linkList = buildElement("div", {{ className: "link-list" }});
+      const sourceArtifacts = item.source_artifacts || [];
+      if (!sourceArtifacts.length) {{
+        linkList.appendChild(buildElement("span", {{ className: "empty" }}, "No source artifacts recorded."));
+      }} else {{
+        for (const path of sourceArtifacts) {{
+          if (!path) continue;
+          const href = encodeURI(`../${{path}}`);
+          linkList.appendChild(buildElement("a", {{ href, target: "_blank", rel: "noopener" }}, path));
+        }}
+      }}
+      sourceBlock.appendChild(linkList);
+      const sourceHeading = buildElement("h3", {{}}, "Source Excerpt");
+      sourceHeading.style.marginTop = "18px";
+      sourceBlock.appendChild(sourceHeading);
+      const sourcePre = buildElement("pre", {{}}, JSON.stringify(item.source_excerpt || {{}}, null, 2));
+      sourcePre.style.whiteSpace = "pre-wrap";
+      sourcePre.style.margin = "0";
+      sourcePre.style.fontSize = "13px";
+      sourcePre.style.color = "var(--muted)";
+      sourceBlock.appendChild(sourcePre);
+      grid.appendChild(sourceBlock);
+
+      root.appendChild(grid);
     }}
 
     renderSummary();
@@ -1373,6 +1505,7 @@ def build_payload(project_root: Path) -> dict[str, Any]:
     items.append(build_traceability_item(artifacts, spec, evidence_index, coverage_notes, trace_rows))
     items.extend(build_open_question_items(artifacts, spec, evidence_index, program_support, flow_support))
     items = merge_manual_items(project_root, items)
+    items = ensure_review_item_review_fields(items)
     items = sort_items(items)
 
     return {

@@ -3,7 +3,33 @@
 # Use this when the generated review workspace needs sharper reviewer-facing
 # wording or a business question that cannot yet be safely derived from the
 # current artifacts. This file is intentionally optional.
+#
+# Manual items may omit business_signal, evidence_basis, or sme_questions; the
+# builder will backfill them from question/evidence/sub_questions. Prefer
+# writing them explicitly when the item is meant for real SME review.
 
 overrides: []
 
-items: []
+items:
+  # - id: RI-CAP-MANUAL-001
+  #   capability_id: CAP-EXAMPLE
+  #   type: meaning_review
+  #   theme: "Account opening meaning"
+  #   question: "Does approval count as opening the account?"
+  #   status: needs_sme_review
+  #   priority: high
+  #   confidence: medium
+  #   decision_basis: source_plus_sme
+  #   business_signal: "Code approval and SME account-opening language may not mean the same thing."
+  #   evidence_basis: "Source behavior and SME note are both present but not yet reconciled."
+  #   sme_questions:
+  #     - "When does the business consider the credit card account opened?"
+  #     - "Should approval and activation be separate modern states?"
+  #   current_conclusion: "Code and SME language may disagree."
+  #   evidence: []
+  #   contradictions: []
+  #   gaps: []
+  #   impacts: [BR-EXAMPLE-001]
+  #   review_action: route_to_sme
+  #   source_artifacts:
+  #     - 05_specs/EXAMPLE/spec.yaml
