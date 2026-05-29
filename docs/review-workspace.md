@@ -55,6 +55,9 @@ Required fields:
   "priority": "high | medium | low",
   "confidence": "low | medium | high | confirmed",
   "decision_basis": "source_only | runtime_only | source_plus_runtime | source_plus_sme | source_runtime_sme",
+  "business_signal": "Business-facing meaning reviewers should judge first",
+  "evidence_basis": "Why the current conclusion is supported or still weak",
+  "sme_questions": ["Concrete questions for SME / business review"],
   "current_conclusion": "Current best conclusion",
   "evidence": [],
   "gaps": [],
@@ -65,8 +68,10 @@ Required fields:
 }
 ```
 
-The workspace is deliberately question-first. It should not read like a file
-tree or object inventory.
+The workspace is deliberately question-first and business-signal-first. It
+should not read like a file tree or object inventory. `business_signal`,
+`evidence_basis`, and `sme_questions` are the primary human review surface;
+technical source paths and previews support those fields.
 
 ## First-Pass Extraction Sources
 
@@ -107,6 +112,11 @@ items:
     priority: high
     confidence: medium
     decision_basis: source_plus_sme
+    business_signal: "Opening an account may mean application approval in code, but activation in SME language."
+    evidence_basis: "Source and SME note disagree; both must stay visible until resolved."
+    sme_questions:
+      - "When does the business consider the account open?"
+      - "Should the modern workflow preserve approval and activation as separate states?"
     current_conclusion: "Code and SME language disagree."
     evidence: []
     contradictions:
@@ -131,6 +141,10 @@ Validate the generated output:
 ```bash
 python3 scripts/check-review-workspace.py docs/EXAMPLE-tutorial/
 ```
+
+The validator checks both `review-items.json` and `index.html`: required review
+fields, evidence references, impacted IDs, embedded HTML payload consistency,
+and the presence of the business-signal review sections.
 
 Open the static HTML review surface directly:
 

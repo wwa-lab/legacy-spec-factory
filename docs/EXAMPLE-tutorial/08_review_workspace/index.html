@@ -197,6 +197,16 @@
       margin: 0;
       padding-left: 18px;
     }
+    .business-signal {
+      grid-column: 1 / -1;
+      background: #fffaf0;
+      border-color: #f3d08f;
+    }
+    .business-signal p {
+      font-size: 16px;
+      line-height: 1.55;
+      margin: 0;
+    }
     .evidence-list {
       display: grid;
       gap: 12px;
@@ -311,7 +321,7 @@
       </section>
     </main>
   </div>
-  <script id="review-data" type="application/json">{"schema_version": "0.1", "project": {"name": "EXAMPLE-tutorial", "project_root": "docs/EXAMPLE-tutorial", "capability_id": "CAP-PRICE-CALCULATION", "status": "approved", "source_commit": "2b1d429", "generated_at": "2026-05-21T16:33:23+00:00"}, "summary": {"item_count": 11, "status_counts": {"blocked": 1, "contradicted": 1, "needs_sme_review": 1, "needs_review": 1, "ready_to_approve": 1, "approved": 5, "deferred": 1}, "group_counts": {"Must Resolve": 2, "Needs SME": 1, "Needs Review": 1, "Ready To Approve": 1, "Closed": 6}, "action_counts": {"mark_blocked": 1, "route_to_sme": 2, "request_more_evidence": 1, "approve": 6, "defer": 1}, "evidence_cards": 11}, "review_items": [{"id": "RI-CAP-PRICE-CALCULATION-100", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Blocked sample", "question": "Should this blocked example stay blocked until the missing source is restored?", "sub_questions": ["Can reviewers inspect the intended behavior without the source file?", "Should this remain blocked until the evidence is available?"], "status": "blocked", "priority": "high", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "Evidence is missing from the workspace.", "evidence": [], "contradictions": [], "gaps": ["Source artifact intentionally omitted for this sample"], "impacts": [], "review_action": "mark_blocked", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify blocked rendering."}}, {"id": "RI-CAP-PRICE-CALCULATION-101", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Contradicted sample", "question": "Does the runtime evidence contradict the source behavior here?", "sub_questions": ["Which artifact should the reviewer trust?", "Does the contradiction require SME clarification?"], "status": "contradicted", "priority": "high", "confidence": "medium", "decision_basis": "source_runtime_sme", "current_conclusion": "Source says one thing, runtime note says another.", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Contradicted sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": ["Runtime note says a different fallback path is used."], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "route_to_sme", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify contradicted rendering."}}, {"id": "RI-CAP-PRICE-CALCULATION-102", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Needs SME sample", "question": "Does the silent promo fallback need SME confirmation?", "sub_questions": ["Is the silent behavior intentional business logic?", "Should unknown promo codes be documented as a deliberate rule?"], "status": "needs_sme_review", "priority": "medium", "confidence": "low", "decision_basis": "source_plus_sme", "current_conclusion": "Behavior is documented but still worth SME confirmation in review.", "evidence": [{"id": "EV-SME-001", "type": "sme_note", "title": "Pricing Rules SME Walkthrough", "supports": "Silent fallback confirmation", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Topic:** Tier discount + promotion stacking rules", "", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation"], "truncated": false}}], "contradictions": [], "gaps": ["SME has not re-approved this item inside the workspace"], "impacts": ["BR-PRICE-002"], "review_action": "route_to_sme", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify SME rendering."}}, {"id": "RI-CAP-PRICE-CALCULATION-103", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Needs review sample", "question": "Is the evidence preview readable enough for a normal review pass?", "sub_questions": ["Can the reviewer inspect the file content without leaving the page?", "Does the preview help instead of hiding behind metadata?"], "status": "needs_review", "priority": "medium", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "This is a UI validation item for the review workspace.", "evidence": [{"id": "EV-DDS-001", "type": "dds", "title": "PRICEFL.PF", "supports": "Evidence preview UI validation", "source": "dds/PRICEFL.PF", "strength": "approved_evidence", "artifact_path": "dds/PRICEFL.PF", "approval": "approved", "excerpt": {"available": true, "file_type": "pf", "total_lines": 4, "lines": ["A          R PRICEFLR                  PFILE(PRICEFL)", "     A            PRCPRD      10A         COLHDG('Product')", "     A            PRCTIE       3P 0       COLHDG('Tier')", "     A            PRCPRC       9P 2       COLHDG('Price')"], "truncated": false}}], "contradictions": [], "gaps": ["Needs a manual review pass"], "impacts": ["ERR-PRICE-001"], "review_action": "request_more_evidence", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify preview readability."}}, {"id": "RI-CAP-PRICE-CALCULATION-104", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Ready to approve sample", "question": "Should this already-approved conclusion be shown as ready to approve?", "sub_questions": ["Is the review action aligned with the status?", "Can the reviewer approve immediately?"], "status": "ready_to_approve", "priority": "low", "confidence": "high", "decision_basis": "source_only", "current_conclusion": "The formula matches the spec and evidence is available.", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Ready to approve sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify ready-to-approve rendering."}}, {"id": "RI-CAP-PRICE-CALCULATION-003", "capability_id": "CAP-PRICE-CALCULATION", "type": "error_behavior_review", "theme": "ERR-PRICE-001", "question": "How should the legacy system behave when Item / tier combination not found in PRICEFL?", "sub_questions": ["Is the returned status or error outcome explicit enough for downstream implementation?", "Is there enough evidence to preserve this failure behavior without reinterpretation?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_only", "current_conclusion": "status_code='1', final_price=0", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Item / tier combination not found in PRICEFL", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"acceptance_criteria": "Caller receives status='1' and price=0; no exception thrown"}, "updated_at": "2026-05-21T16:33:23+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-900", "capability_id": "CAP-PRICE-CALCULATION", "type": "traceability_review", "theme": "Traceability coverage", "question": "Is every approved rule traceable to evidence and a reviewable verification path?", "sub_questions": ["Does each approved rule have at least one evidence link?", "Does each approved rule point to a verification path reviewers can audit?", "Are there any open coverage gaps or orphaned references?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "Coverage checks in traceability.md are complete.", "evidence": [{"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Traceability coverage", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "is_text": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Date:** 2026-05-16", "**SME:** Jane Doe (Pricing team lead)", "**Topic:** Tier discount + promotion stacking rules", "", "## Key Understandings", "", "1. **Tier discount** is applied first, based on customer tier (A/B/C).", "2. **Promo code** is applied second, on top of the tier-discounted price.", "3. The promo codes SUMMR and WINTR both give 5%.", "4. VIP customers (tier A) also get an additional 10% via VIP10 code.", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation", "", "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.", "- Promo code stacking is additive, not multiplicative."], "truncated": false, "truncated_note": ""}}, {"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Traceability coverage", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001", "BR-PRICE-002", "ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"coverage_check": "Every spec rule is backed by ≥ 1 `evidence_id`. ✓ | Every `inferred_business_rule` would need SME confirmation — there are | Every approved rule has `acceptance_criteria`. ✓ | No open `TBD-*`. ✓"}, "updated_at": "2026-05-21T16:33:23+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-002", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Promo code stacking", "question": "How should promo code handling behave, and is the silent fallback intentional?", "sub_questions": ["Does evidence support BR-PRICE-002 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?", "Is the silent fallback an intentional business rule or a defensive implementation detail?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Promo code stacking", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}, {"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Promo code stacking", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "is_text": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Date:** 2026-05-16", "**SME:** Jane Doe (Pricing team lead)", "**Topic:** Tier discount + promotion stacking rules", "", "## Key Understandings", "", "1. **Tier discount** is applied first, based on customer tier (A/B/C).", "2. **Promo code** is applied second, on top of the tier-discounted price.", "3. The promo codes SUMMR and WINTR both give 5%.", "4. VIP customers (tier A) also get an additional 10% via VIP10 code.", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation", "", "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.", "- Promo code stacking is additive, not multiplicative."], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-002"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` row P4; SME walkthrough", "acceptance_tests": "spec.yaml acceptance row 4–7"}, "updated_at": "2026-05-21T16:33:23+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-001", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Final price formula", "question": "Should the pricing formula, discount order, and rounding behavior be accepted as the legacy truth?", "sub_questions": ["Does evidence support BR-PRICE-001 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_only", "current_conclusion": "final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Final price formula", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` rows P2–P5", "acceptance_tests": "spec.yaml acceptance row 1–3"}, "updated_at": "2026-05-21T16:33:23+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-105", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Approved sample", "question": "Does the approved formula still look correct in the final queue?", "sub_questions": ["Can reviewers see the final approved evidence clearly?", "Does the item render as a closed decision?"], "status": "approved", "priority": "low", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "final_price = round(base × qty × discounts, 2dp)", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Approved sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify approved rendering."}}, {"id": "RI-CAP-PRICE-CALCULATION-106", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Deferred sample", "question": "Should this UI-only validation item be deferred after the preview is verified?", "sub_questions": ["Is there any product impact left here?", "Should this be hidden from the active review queue?"], "status": "deferred", "priority": "low", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "No further decision is needed after preview validation.", "evidence": [], "contradictions": [], "gaps": ["Only used to verify deferred rendering"], "impacts": [], "review_action": "defer", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify deferred rendering."}}], "evidence_index": {"EV-SRC-001": {"evidence_id": "EV-SRC-001", "type": "source", "member": "PRICECALC.RPGLE", "relative_path": "source/PRICECALC.RPGLE", "sensitivity": "redacted", "redaction_note": "Customer account numbers replaced with C0001..C9999", "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-DDS-001": {"evidence_id": "EV-DDS-001", "type": "dds", "member": "PRICEFL.PF", "relative_path": "dds/PRICEFL.PF", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-SME-001": {"evidence_id": "EV-SME-001", "type": "sme_note", "relative_path": "notes/pricing-rules-walkthrough.md", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}, "note": "SME walkthrough of tier discount + promotion stacking rules"}}}</script>
+  <script id="review-data" type="application/json">{"schema_version": "0.1", "project": {"name": "EXAMPLE-tutorial", "project_root": "docs/EXAMPLE-tutorial", "capability_id": "CAP-PRICE-CALCULATION", "status": "approved", "source_commit": "46b574d", "generated_at": "2026-05-28T15:11:51+00:00"}, "summary": {"item_count": 11, "status_counts": {"blocked": 1, "contradicted": 1, "needs_sme_review": 1, "needs_review": 1, "ready_to_approve": 1, "approved": 5, "deferred": 1}, "group_counts": {"Must Resolve": 2, "Needs SME": 1, "Needs Review": 1, "Ready To Approve": 1, "Closed": 6}, "action_counts": {"mark_blocked": 1, "route_to_sme": 2, "request_more_evidence": 1, "approve": 6, "defer": 1}, "evidence_cards": 11}, "review_items": [{"id": "RI-CAP-PRICE-CALCULATION-100", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Blocked sample", "question": "Should this blocked example stay blocked until the missing source is restored?", "sub_questions": ["Can reviewers inspect the intended behavior without the source file?", "Should this remain blocked until the evidence is available?"], "status": "blocked", "priority": "high", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "Evidence is missing from the workspace.", "evidence": [], "contradictions": [], "gaps": ["Source artifact intentionally omitted for this sample"], "impacts": [], "review_action": "mark_blocked", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify blocked rendering."}, "business_signal": "Should this blocked example stay blocked until the missing source is restored?", "evidence_basis": "No evidence cards recorded yet; reviewer must request stronger evidence before approval.", "sme_questions": ["Can reviewers inspect the intended behavior without the source file?", "Should this remain blocked until the evidence is available?"]}, {"id": "RI-CAP-PRICE-CALCULATION-101", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Contradicted sample", "question": "Does the runtime evidence contradict the source behavior here?", "sub_questions": ["Which artifact should the reviewer trust?", "Does the contradiction require SME clarification?"], "status": "contradicted", "priority": "high", "confidence": "medium", "decision_basis": "source_runtime_sme", "current_conclusion": "Source says one thing, runtime note says another.", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Contradicted sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": ["Runtime note says a different fallback path is used."], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "route_to_sme", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify contradicted rendering."}, "business_signal": "Does the runtime evidence contradict the source behavior here?", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Which artifact should the reviewer trust?", "Does the contradiction require SME clarification?"]}, {"id": "RI-CAP-PRICE-CALCULATION-102", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Needs SME sample", "question": "Does the silent promo fallback need SME confirmation?", "sub_questions": ["Is the silent behavior intentional business logic?", "Should unknown promo codes be documented as a deliberate rule?"], "status": "needs_sme_review", "priority": "medium", "confidence": "low", "decision_basis": "source_plus_sme", "current_conclusion": "Behavior is documented but still worth SME confirmation in review.", "evidence": [{"id": "EV-SME-001", "type": "sme_note", "title": "Pricing Rules SME Walkthrough", "supports": "Silent fallback confirmation", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Topic:** Tier discount + promotion stacking rules", "", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation"], "truncated": false}}], "contradictions": [], "gaps": ["SME has not re-approved this item inside the workspace"], "impacts": ["BR-PRICE-002"], "review_action": "route_to_sme", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify SME rendering."}, "business_signal": "Does the silent promo fallback need SME confirmation?", "evidence_basis": "EV-SME-001: sme_note evidence (Pricing Rules SME Walkthrough, approved)", "sme_questions": ["Is the silent behavior intentional business logic?", "Should unknown promo codes be documented as a deliberate rule?"]}, {"id": "RI-CAP-PRICE-CALCULATION-103", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Needs review sample", "question": "Is the evidence preview readable enough for a normal review pass?", "sub_questions": ["Can the reviewer inspect the file content without leaving the page?", "Does the preview help instead of hiding behind metadata?"], "status": "needs_review", "priority": "medium", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "This is a UI validation item for the review workspace.", "evidence": [{"id": "EV-DDS-001", "type": "dds", "title": "PRICEFL.PF", "supports": "Evidence preview UI validation", "source": "dds/PRICEFL.PF", "strength": "approved_evidence", "artifact_path": "dds/PRICEFL.PF", "approval": "approved", "excerpt": {"available": true, "file_type": "pf", "total_lines": 4, "lines": ["A          R PRICEFLR                  PFILE(PRICEFL)", "     A            PRCPRD      10A         COLHDG('Product')", "     A            PRCTIE       3P 0       COLHDG('Tier')", "     A            PRCPRC       9P 2       COLHDG('Price')"], "truncated": false}}], "contradictions": [], "gaps": ["Needs a manual review pass"], "impacts": ["ERR-PRICE-001"], "review_action": "request_more_evidence", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify preview readability."}, "business_signal": "Is the evidence preview readable enough for a normal review pass?", "evidence_basis": "EV-DDS-001: dds evidence (PRICEFL.PF, approved)", "sme_questions": ["Can the reviewer inspect the file content without leaving the page?", "Does the preview help instead of hiding behind metadata?"]}, {"id": "RI-CAP-PRICE-CALCULATION-104", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Ready to approve sample", "question": "Should this already-approved conclusion be shown as ready to approve?", "sub_questions": ["Is the review action aligned with the status?", "Can the reviewer approve immediately?"], "status": "ready_to_approve", "priority": "low", "confidence": "high", "decision_basis": "source_only", "current_conclusion": "The formula matches the spec and evidence is available.", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Ready to approve sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify ready-to-approve rendering."}, "business_signal": "Should this already-approved conclusion be shown as ready to approve?", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Is the review action aligned with the status?", "Can the reviewer approve immediately?"]}, {"id": "RI-CAP-PRICE-CALCULATION-003", "capability_id": "CAP-PRICE-CALCULATION", "type": "error_behavior_review", "theme": "ERR-PRICE-001", "question": "How should the legacy system behave when Item / tier combination not found in PRICEFL?", "sub_questions": ["Is the returned status or error outcome explicit enough for downstream implementation?", "Is there enough evidence to preserve this failure behavior without reinterpretation?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_only", "business_signal": "Failure behavior for Item / tier combination not found in PRICEFL", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Should this failure behavior be preserved exactly in the modern system?", "Who owns the business decision when this condition occurs?"], "current_conclusion": "status_code='1', final_price=0", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Item / tier combination not found in PRICEFL", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"acceptance_criteria": "Caller receives status='1' and price=0; no exception thrown"}, "updated_at": "2026-05-28T15:11:51+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-900", "capability_id": "CAP-PRICE-CALCULATION", "type": "traceability_review", "theme": "Traceability coverage", "question": "Is every approved rule traceable to evidence and a reviewable verification path?", "sub_questions": ["Does each approved rule have at least one evidence link?", "Does each approved rule point to a verification path reviewers can audit?", "Are there any open coverage gaps or orphaned references?"], "status": "approved", "priority": "high", "confidence": "confirmed", "decision_basis": "source_plus_sme", "business_signal": "Approved rules have complete evidence and verification coverage.", "evidence_basis": "EV-SME-001: sme_note evidence (SME walkthrough of tier discount + promotion stacking rules, approved); EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Can reviewers follow each approved rule from business conclusion to evidence and verification?", "Are any evidence links too technical or ambiguous for SME review?"], "current_conclusion": "Coverage checks in traceability.md are complete.", "evidence": [{"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Traceability coverage", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "is_text": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Date:** 2026-05-16", "**SME:** Jane Doe (Pricing team lead)", "**Topic:** Tier discount + promotion stacking rules", "", "## Key Understandings", "", "1. **Tier discount** is applied first, based on customer tier (A/B/C).", "2. **Promo code** is applied second, on top of the tier-discounted price.", "3. The promo codes SUMMR and WINTR both give 5%.", "4. VIP customers (tier A) also get an additional 10% via VIP10 code.", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation", "", "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.", "- Promo code stacking is additive, not multiplicative."], "truncated": false, "truncated_note": ""}}, {"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Traceability coverage", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001", "BR-PRICE-002", "ERR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"coverage_check": "Every spec rule is backed by ≥ 1 `evidence_id`. ✓ | Every `inferred_business_rule` would need SME confirmation — there are | Every approved rule has `acceptance_criteria`. ✓ | No open `TBD-*`. ✓"}, "updated_at": "2026-05-28T15:11:51+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-002", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Promo code stacking", "question": "How should promo code handling behave, and is the silent fallback intentional?", "sub_questions": ["Does evidence support BR-PRICE-002 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?", "Is the silent fallback an intentional business rule or a defensive implementation detail?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_plus_sme", "business_signal": "Promo code stacking: Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved); EV-SME-001: sme_note evidence (SME walkthrough of tier discount + promotion stacking rules, approved)", "sme_questions": ["Does BR-PRICE-002 describe the business behavior SMEs expect users or operations to rely on?", "Is the evidence basis sufficient to promote this conclusion downstream?", "Is silent fallback intentional business behavior, historical tolerance, or a defect to redesign?"], "current_conclusion": "Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Promo code stacking", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}, {"id": "EV-SME-001", "type": "sme_note", "title": "SME walkthrough of tier discount + promotion stacking rules", "supports": "Promo code stacking", "source": "notes/pricing-rules-walkthrough.md", "strength": "approved_evidence", "artifact_path": "notes/pricing-rules-walkthrough.md", "approval": "approved", "excerpt": {"available": true, "is_text": true, "file_type": "md", "total_lines": 18, "lines": ["# Pricing Rules SME Walkthrough", "", "**Date:** 2026-05-16", "**SME:** Jane Doe (Pricing team lead)", "**Topic:** Tier discount + promotion stacking rules", "", "## Key Understandings", "", "1. **Tier discount** is applied first, based on customer tier (A/B/C).", "2. **Promo code** is applied second, on top of the tier-discounted price.", "3. The promo codes SUMMR and WINTR both give 5%.", "4. VIP customers (tier A) also get an additional 10% via VIP10 code.", "5. **Silent fallback**: unknown promo codes return 0% discount with no error.", "", "## Confirmation", "", "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.", "- Promo code stacking is additive, not multiplicative."], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-002"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` row P4; SME walkthrough", "acceptance_tests": "spec.yaml acceptance row 4–7"}, "updated_at": "2026-05-28T15:11:51+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-001", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Final price formula", "question": "Should the pricing formula, discount order, and rounding behavior be accepted as the legacy truth?", "sub_questions": ["Does evidence support BR-PRICE-001 exactly as written?", "Are the acceptance criteria specific enough to verify the legacy behavior?"], "status": "approved", "priority": "medium", "confidence": "confirmed", "decision_basis": "source_only", "business_signal": "Final price formula: final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Does BR-PRICE-001 describe the business behavior SMEs expect users or operations to rely on?", "Is the evidence basis sufficient to promote this conclusion downstream?"], "current_conclusion": "final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Final price formula", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "is_text": false, "file_type": "rpgle", "total_lines": 4, "lines": ["C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false, "truncated_note": ""}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"trace_row": "`program-analysis.md` rows P2–P5", "acceptance_tests": "spec.yaml acceptance row 1–3"}, "updated_at": "2026-05-28T15:11:51+00:00"}, {"id": "RI-CAP-PRICE-CALCULATION-105", "capability_id": "CAP-PRICE-CALCULATION", "type": "rule_review", "theme": "Approved sample", "question": "Does the approved formula still look correct in the final queue?", "sub_questions": ["Can reviewers see the final approved evidence clearly?", "Does the item render as a closed decision?"], "status": "approved", "priority": "low", "confidence": "confirmed", "decision_basis": "source_plus_sme", "current_conclusion": "final_price = round(base × qty × discounts, 2dp)", "evidence": [{"id": "EV-SRC-001", "type": "source", "title": "PRICECALC.RPGLE", "supports": "Approved sample", "source": "source/PRICECALC.RPGLE", "strength": "approved_evidence", "artifact_path": "source/PRICECALC.RPGLE", "approval": "approved", "excerpt": {"available": true, "file_type": "rpgle", "total_lines": 4, "lines": ["     C     *IN61          IFEQ      *OFF", "     C                   Z-ADD     PRCPRC        FINALPRC", "     C                   LEAVE", "     C                   ENDIF"], "truncated": false}}], "contradictions": [], "gaps": [], "impacts": ["BR-PRICE-001"], "review_action": "approve", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml", "05_specs/CAP-PRICE-CALCULATION/traceability.md"], "source_excerpt": {"note": "This item exists to verify approved rendering."}, "business_signal": "Does the approved formula still look correct in the final queue?", "evidence_basis": "EV-SRC-001: source evidence (PRICECALC.RPGLE, approved)", "sme_questions": ["Can reviewers see the final approved evidence clearly?", "Does the item render as a closed decision?"]}, {"id": "RI-CAP-PRICE-CALCULATION-106", "capability_id": "CAP-PRICE-CALCULATION", "type": "open_question_review", "theme": "Deferred sample", "question": "Should this UI-only validation item be deferred after the preview is verified?", "sub_questions": ["Is there any product impact left here?", "Should this be hidden from the active review queue?"], "status": "deferred", "priority": "low", "confidence": "low", "decision_basis": "source_only", "current_conclusion": "No further decision is needed after preview validation.", "evidence": [], "contradictions": [], "gaps": ["Only used to verify deferred rendering"], "impacts": [], "review_action": "defer", "source_artifacts": ["05_specs/CAP-PRICE-CALCULATION/spec.yaml"], "source_excerpt": {"note": "This item exists to verify deferred rendering."}, "business_signal": "Should this UI-only validation item be deferred after the preview is verified?", "evidence_basis": "No evidence cards recorded yet; reviewer must request stronger evidence before approval.", "sme_questions": ["Is there any product impact left here?", "Should this be hidden from the active review queue?"]}], "evidence_index": {"EV-SRC-001": {"evidence_id": "EV-SRC-001", "type": "source", "member": "PRICECALC.RPGLE", "relative_path": "source/PRICECALC.RPGLE", "sensitivity": "redacted", "redaction_note": "Customer account numbers replaced with C0001..C9999", "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-DDS-001": {"evidence_id": "EV-DDS-001", "type": "dds", "member": "PRICEFL.PF", "relative_path": "dds/PRICEFL.PF", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}}, "EV-SME-001": {"evidence_id": "EV-SME-001", "type": "sme_note", "relative_path": "notes/pricing-rules-walkthrough.md", "sensitivity": false, "sme_approval": {"decision": "approved", "at": "2026-05-16", "by": "Jane Doe"}, "note": "SME walkthrough of tier discount + promotion stacking rules"}}}</script>
   <script>
     const payload = JSON.parse(document.getElementById("review-data").textContent);
     const filters = ["all", "blocked", "contradicted", "needs_sme_review", "needs_review", "ready_to_approve", "approved", "deferred"];
@@ -329,6 +339,29 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    function buildElement(tagName, attributes, textContent) {
+      const element = document.createElement(tagName);
+      for (const [key, value] of Object.entries(attributes || {})) {
+        if (key === "className") {
+          element.className = value;
+        } else if (key === "dataset") {
+          for (const [dataKey, dataValue] of Object.entries(value)) {
+            element.dataset[dataKey] = dataValue;
+          }
+        } else {
+          element.setAttribute(key, value);
+        }
+      }
+      if (textContent !== undefined) {
+        element.textContent = textContent;
+      }
+      return element;
+    }
+
+    function appendTextBlock(parent, className, text) {
+      parent.appendChild(buildElement("div", { className }, text));
     }
 
     function renderSummary() {
@@ -432,53 +465,98 @@
     }
 
     function renderEvidenceCard(card) {
-      var href = evidenceFileHref(card.source);
-      var fileLink = href
-        ? '<a class="evidence-file-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">open file</a>'
-        : '<span class="evidence-file-link">file not available</span>';
-      var excerpt = card.excerpt || {};
-      var lines = excerpt.lines || [];
-      var previewContent = "";
-      if (excerpt.available === false) {
-        previewContent = '<div class="not-available">' + escapeHtml(excerpt.reason || 'preview not available') + '</div>';
-      } else if (lines.length === 0) {
-        previewContent = '<div class="not-available">(empty file)</div>';
+      const article = buildElement("article", { className: "evidence-card" });
+      const href = evidenceFileHref(card.source);
+      if (href) {
+        article.appendChild(buildElement("a", { className: "evidence-file-link", href, target: "_blank", rel: "noopener" }, "open file"));
       } else {
-        var isText = excerpt.is_text;
-        var linesHtml = '';
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          if (isText) {
-            linesHtml += '<div class="line-text">' + line + '</div>';
+        article.appendChild(buildElement("span", { className: "evidence-file-link" }, "file not available"));
+      }
+
+      article.appendChild(buildElement("strong", {}, `${card.id} — ${card.title || card.type || ""}`));
+      appendTextBlock(
+        article,
+        "meta",
+        `${card.type || "unknown"} · ${card.strength || "evidence"} · ${card.approval || "approval not recorded"}`,
+      );
+      appendTextBlock(article, "", card.supports || "");
+
+      const button = buildElement(
+        "button",
+        { className: "evidence-preview-btn", type: "button", dataset: { previewToggle: "true" } },
+        "▼ show evidence preview",
+      );
+      article.appendChild(button);
+
+      const preview = buildElement("div", { className: "evidence-preview" });
+      const excerpt = card.excerpt || {};
+      const lines = excerpt.lines || [];
+      const headerInfo = excerpt.available
+        ? `${excerpt.file_type || "file"} · ${excerpt.total_lines || lines.length} lines · ${card.source}`
+        : card.source;
+      preview.appendChild(buildElement("div", { className: "evidence-preview-header" }, headerInfo));
+
+      if (excerpt.available === false) {
+        appendTextBlock(preview, "not-available", excerpt.reason || "preview not available");
+      } else if (lines.length === 0) {
+        appendTextBlock(preview, "not-available", "(empty file)");
+      } else {
+        const pre = document.createElement("pre");
+        for (let index = 0; index < lines.length; index += 1) {
+          const line = lines[index];
+          if (excerpt.is_text) {
+            pre.appendChild(buildElement("div", { className: "line-text" }, line));
           } else {
-            linesHtml += '<div class="code-line"><span class="line-num">' + (i+1) + '</span><span class="line-text">' + line + '</span></div>';
+            const row = buildElement("div", { className: "code-line" });
+            row.appendChild(buildElement("span", { className: "line-num" }, String(index + 1)));
+            row.appendChild(buildElement("span", { className: "line-text" }, line));
+            pre.appendChild(row);
           }
         }
-        var truncatedNote = excerpt.truncated_note
-          ? '<div style="padding:4px 12px;font-size:11px;color:#8896aa;background:#f0f4ff;border-top:1px solid var(--line);">' + escapeHtml(excerpt.truncated_note) + '</div>'
-          : '';
-        previewContent = '<pre>' + linesHtml + '</pre>' + truncatedNote;
+        preview.appendChild(pre);
+        if (excerpt.truncated_note) {
+          preview.appendChild(buildElement("div", { className: "truncated-note" }, excerpt.truncated_note));
+        }
       }
-      var headerInfo = excerpt.available
-        ? (excerpt.file_type || 'file') + ' · ' + (excerpt.total_lines || lines.length) + ' lines · ' + card.source
-        : card.source;
-      var title = card.title || card.type || '';
-      var type = card.type || 'unknown';
-      var strength = card.strength || 'evidence';
-      var approval = card.approval || 'approval not recorded';
-      var supports = card.supports || '';
-      var btnCaption = '▼ show evidence preview';
-      return '<article class="evidence-card">' +
-        fileLink +
-        '<strong>' + escapeHtml(card.id) + ' — ' + escapeHtml(title) + '</strong>' +
-        '<div class="meta">' + escapeHtml(type) + ' · ' + escapeHtml(strength) + ' · ' + escapeHtml(approval) + '</div>' +
-        '<div>' + escapeHtml(supports) + '</div>' +
-        '<button class="evidence-preview-btn" type="button" data-preview-toggle="true">' + escapeHtml(btnCaption) + '</button>' +
-        '<div class="evidence-preview">' +
-          '<div class="evidence-preview-header">' + escapeHtml(headerInfo) + '</div>' +
-          previewContent +
-        '</div>' +
-      '</article>';
+
+      article.appendChild(preview);
+      button.addEventListener("click", () => {
+        preview.classList.toggle("open");
+        button.textContent = preview.classList.contains("open") ? "▲ collapse preview" : "▼ show evidence preview";
+      });
+      return article;
+    }
+
+    function renderList(values, emptyMessage) {
+      if (!values || values.length === 0) {
+        return buildElement("div", { className: "empty" }, emptyMessage);
+      }
+      const list = document.createElement("ul");
+      for (const value of values) {
+        list.appendChild(buildElement("li", {}, value));
+      }
+      return list;
+    }
+
+    function appendDetailBlock(parent, title, child) {
+      const block = buildElement("div", { className: "detail-block" });
+      block.appendChild(buildElement("h3", {}, title));
+      block.appendChild(child);
+      parent.appendChild(block);
+      return block;
+    }
+
+    function appendBusinessSignalBlock(parent, text) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text || "No business signal recorded.";
+      const block = appendDetailBlock(parent, "Business Signal", paragraph);
+      block.classList.add("business-signal");
+    }
+
+    function appendTextDetailBlock(parent, title, text) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text;
+      appendDetailBlock(parent, title, paragraph);
     }
 
     function renderDetail() {
@@ -489,71 +567,88 @@
         root.textContent = "No review item selected.";
         return;
       }
-      const evidenceHtml = (item.evidence || []).map(renderEvidenceCard).join("");
-      const subQuestions = (item.sub_questions || []).length
-        ? `<ul>${item.sub_questions.map(text => `<li>${text}</li>`).join("")}</ul>`
-        : `<div class="empty">No sub-questions recorded.</div>`;
-      const contradictions = (item.contradictions || []).length
-        ? `<ul>${item.contradictions.map(text => `<li>${text}</li>`).join("")}</ul>`
-        : `<div class="empty">No contradictions recorded.</div>`;
-      const gaps = (item.gaps || []).length
-        ? `<ul>${item.gaps.map(text => `<li>${text}</li>`).join("")}</ul>`
-        : `<div class="empty">No gaps recorded.</div>`;
-      const impacts = (item.impacts || []).length
-        ? `<ul>${item.impacts.map(text => `<li>${text}</li>`).join("")}</ul>`
-        : `<div class="empty">No impacted IDs recorded.</div>`;
-      const sources = (item.source_artifacts || []).map(artifactLink).join("");
       root.className = "";
-      root.innerHTML = `
-        <div>
-          <span class="badge status-${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span>
-          <span class="badge status-${escapeHtml(item.status)}">${escapeHtml(item.review_action)}</span>
-          <span class="badge status-${escapeHtml(item.status)}">${escapeHtml(item.confidence)}</span>
-        </div>
-        <h3 style="margin: 6px 0 10px; font-size: 24px; line-height: 1.3;">${escapeHtml(item.question)}</h3>
-        <p style="margin: 0 0 14px; color: var(--muted);">Theme: ${escapeHtml(item.theme)} · Basis: ${escapeHtml(item.decision_basis)} · Type: ${escapeHtml(item.type)}</p>
-        <div class="detail-grid">
-          <div class="detail-block">
-            <h3>Current Conclusion</h3>
-            <p>${escapeHtml(item.current_conclusion)}</p>
-          </div>
-          <div class="detail-block">
-            <h3>Decision Needed Now</h3>
-            <p>${escapeHtml(item.review_action)} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.</p>
-          </div>
-          <div class="detail-block">
-            <h3>Sub-Questions</h3>
-            ${subQuestions}
-          </div>
-          <div class="detail-block">
-            <h3>Impact</h3>
-            ${impacts}
-          </div>
-          <div class="detail-block">
-            <h3>Evidence</h3>
-            <div class="evidence-list">${evidenceHtml || '<div class="empty">No evidence cards recorded.</div>'}</div>
-          </div>
-          <div class="detail-block">
-            <h3>Gaps</h3>
-            ${gaps}
-            <h3 style="margin-top: 18px;">Contradictions</h3>
-            ${contradictions}
-          </div>
-          <div class="detail-block" style="grid-column: 1 / -1;">
-            <h3>Source Artifacts</h3>
-            <div class="link-list">${sources || '<span class="empty">No source artifacts recorded.</span>'}</div>
-            <h3 style="margin-top: 18px;">Source Excerpt</h3>
-            <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; color: var(--muted);">${escapeHtml(JSON.stringify(item.source_excerpt || {}, null, 2))}</pre>
-          </div>
-        </div>
-      `;
-      for (const button of root.querySelectorAll('[data-preview-toggle="true"]')) {
-        button.addEventListener('click', () => {
-          const preview = button.nextElementSibling;
-          preview.classList.toggle('open');
-          button.textContent = preview.classList.contains('open') ? '▲ collapse preview' : '▼ show evidence preview';
-        });
+      root.innerHTML = "";
+
+      const badges = document.createElement("div");
+      for (const value of [statusLabel(item.status), item.review_action, item.confidence]) {
+        badges.appendChild(buildElement("span", { className: `badge status-${item.status}` }, value));
       }
+      root.appendChild(badges);
+
+      const heading = buildElement("h3", {}, item.question || "Untitled review item");
+      heading.style.margin = "6px 0 10px";
+      heading.style.fontSize = "24px";
+      heading.style.lineHeight = "1.3";
+      root.appendChild(heading);
+
+      const meta = buildElement(
+        "p",
+        {},
+        `Theme: ${item.theme || "n/a"} · Basis: ${item.decision_basis || "n/a"} · Type: ${item.type || "n/a"}`,
+      );
+      meta.style.margin = "0 0 14px";
+      meta.style.color = "var(--muted)";
+      root.appendChild(meta);
+
+      const grid = buildElement("div", { className: "detail-grid" });
+      appendBusinessSignalBlock(grid, item.business_signal);
+      appendTextDetailBlock(grid, "Evidence Basis", item.evidence_basis || "No evidence basis recorded.");
+      appendDetailBlock(grid, "SME Questions", renderList(item.sme_questions || [], "No SME questions recorded."));
+      appendTextDetailBlock(grid, "Current Conclusion", item.current_conclusion || "No conclusion recorded.");
+      appendTextDetailBlock(
+        grid,
+        "Decision Needed Now",
+        `${item.review_action} — reviewer should decide whether this item can move forward, needs stronger evidence, or must route to SME.`,
+      );
+      appendDetailBlock(grid, "Sub-Questions", renderList(item.sub_questions || [], "No sub-questions recorded."));
+      appendDetailBlock(grid, "Impact", renderList(item.impacts || [], "No impacted IDs recorded."));
+
+      const evidenceList = buildElement("div", { className: "evidence-list" });
+      const evidenceCards = item.evidence || [];
+      if (!evidenceCards.length) {
+        evidenceList.appendChild(buildElement("div", { className: "empty" }, "No evidence cards recorded."));
+      } else {
+        for (const card of evidenceCards) {
+          evidenceList.appendChild(renderEvidenceCard(card));
+        }
+      }
+      appendDetailBlock(grid, "Evidence", evidenceList);
+
+      const gapsBlock = document.createElement("div");
+      gapsBlock.appendChild(renderList(item.gaps || [], "No gaps recorded."));
+      gapsBlock.appendChild(buildElement("h3", {}, "Contradictions"));
+      gapsBlock.lastChild.style.marginTop = "18px";
+      gapsBlock.appendChild(renderList(item.contradictions || [], "No contradictions recorded."));
+      appendDetailBlock(grid, "Gaps", gapsBlock);
+
+      const sourceBlock = buildElement("div", { className: "detail-block" });
+      sourceBlock.style.gridColumn = "1 / -1";
+      sourceBlock.appendChild(buildElement("h3", {}, "Source Artifacts"));
+      const linkList = buildElement("div", { className: "link-list" });
+      const sourceArtifacts = item.source_artifacts || [];
+      if (!sourceArtifacts.length) {
+        linkList.appendChild(buildElement("span", { className: "empty" }, "No source artifacts recorded."));
+      } else {
+        for (const path of sourceArtifacts) {
+          if (!path) continue;
+          const href = encodeURI(`../${path}`);
+          linkList.appendChild(buildElement("a", { href, target: "_blank", rel: "noopener" }, path));
+        }
+      }
+      sourceBlock.appendChild(linkList);
+      const sourceHeading = buildElement("h3", {}, "Source Excerpt");
+      sourceHeading.style.marginTop = "18px";
+      sourceBlock.appendChild(sourceHeading);
+      const sourcePre = buildElement("pre", {}, JSON.stringify(item.source_excerpt || {}, null, 2));
+      sourcePre.style.whiteSpace = "pre-wrap";
+      sourcePre.style.margin = "0";
+      sourcePre.style.fontSize = "13px";
+      sourcePre.style.color = "var(--muted)";
+      sourceBlock.appendChild(sourcePre);
+      grid.appendChild(sourceBlock);
+
+      root.appendChild(grid);
     }
 
     renderSummary();
