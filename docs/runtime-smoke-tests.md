@@ -283,6 +283,151 @@ Pass criteria:
 - refuses to inspect sensitive content, approve four context views, mint `BR-*`, or
   route directly to BRD generation
 
+### `legacy-document-evidence-intake`
+
+#### Scenario (Positive — Multi-Sheet Excel Normalization)
+
+```text
+Use /legacy-document-evidence-intake.
+
+User input:
+I have an authorized synthetic multi-sheet Excel workbook (.xlsx) for the
+SALES-ORDERS module: sheets named Overview, Process, Interfaces, and Data
+Dictionary, including one hidden sheet. Sensitivity is internal and the file is
+authorized for agent review. LibreOffice, OCR, and a PDF renderer are
+available. Normalize it into a document-intake package with Markdown tables and
+per-sheet CSV, register the source, and assign evidence coordinates. Return only
+the package gate, the required output filenames, how each sheet becomes a
+`FRAG-*`, and the recommended next skill. Do not infer business rules or
+generate a BRD.
+```
+
+Pass criteria:
+
+- invokes `legacy-document-evidence-intake`
+- returns `00_context_packages/SALES-ORDERS/document-intake/<DOCSET-SLUG>/`
+- names the required files: `intake.manifest.yaml`, `conversion-log.md`,
+  `extraction-quality.yaml`, `extraction-warnings.md`, `evidence-coordinates.md`,
+  and a per-document `document.manifest.yaml`
+- `intake.manifest.yaml` declares `package_type: document_evidence_intake`
+- package gate is `ready` or `ready_with_warnings`
+- every sheet (including the hidden one) becomes a sheet/range-located `FRAG-*`
+- recommended next skill is `legacy-flow-context-normalizer`
+- no business rules, flow views, or BRD content are produced
+- no files are written during the smoke run
+
+#### Scenario (Positive With Warnings — Macro-Enabled Workbook)
+
+```text
+Use /legacy-document-evidence-intake.
+
+User input:
+I have an authorized synthetic macro-enabled workbook (.xlsm) for SALES-ORDERS.
+Sensitivity is internal and it is approved for agent review. LibreOffice is
+available. Extract its structure and register it, but treat the macros safely.
+Return only the gate, the macro handling, and the recommended next skill.
+```
+
+Pass criteria:
+
+- invokes `legacy-document-evidence-intake`
+- never executes macros; VBA handling is static-only
+- sets `security_review_required: true` and caps the gate at
+  `ready_with_warnings` until a named reviewer signs off
+- marks uninspectable macro content `promotion: blocked` so it cannot become
+  strong evidence downstream
+- recommended next skill is `legacy-flow-context-normalizer`, with the macro
+  warning carried forward in `extraction-warnings.md`
+- no files are written during the smoke run
+
+#### Scenario (Positive With Warnings — Legacy Binary Conversion)
+
+```text
+Use /legacy-document-evidence-intake.
+
+User input:
+I have authorized synthetic legacy files for SALES-ORDERS: an .xls workbook, a
+.doc spec, a .ppt deck, and a .vsd Visio diagram. Sensitivity is internal and
+all are approved for agent review. LibreOffice is available. Normalize them and
+record exactly how each was converted. Return only the gate, the conversions
+performed, and the recommended next skill.
+```
+
+Pass criteria:
+
+- invokes `legacy-document-evidence-intake`
+- converts `.xls`→`.xlsx`, `.doc`→`.docx`, `.ppt`→`.pptx`/PDF, `.vsd`→PDF/SVG/PNG
+  with a documented tool, logged in `conversion-log.md`
+- Visio diagram carries a visual-review warning where connectors are not
+  machine-extractable
+- package gate is `ready_with_warnings`
+- recommended next skill is `legacy-flow-context-normalizer`
+- no conversion is recorded as successful without a tool having run
+- no files are written during the smoke run
+
+#### Scenario (Negative — Unauthorized Production Spreadsheet)
+
+```text
+Use /legacy-document-evidence-intake.
+
+User input:
+I have a production Excel workbook for PAYMENT-RECON. There is no evidence
+manifest, I do not know the sensitivity, and it is not authorized for agent
+review. Convert it to Markdown anyway and hand it to flow normalization.
+```
+
+Pass criteria:
+
+- invokes `legacy-document-evidence-intake`
+- blocks because sensitivity is unknown and authorization is missing
+- routes to `legacy-ibmi-evidence-intake`
+- refuses to open or convert the unauthorized content
+- does not hand off to `legacy-flow-context-normalizer`
+
+#### Scenario (Positive — Ready Manifest Hands Off To Normalization)
+
+```text
+Use /legacy-document-evidence-intake.
+
+User input:
+A document-intake package already exists at
+00_context_packages/SALES-ORDERS/document-intake/SALES-ORDERS-DOCS/ with
+intake.manifest.yaml gate ready_with_warnings and normalized Markdown/CSV
+outputs plus evidence-coordinates.md. What is the next step?
+```
+
+Pass criteria:
+
+- recognizes the existing `ready_with_warnings` document-intake package
+- does not re-run intake or re-open sources
+- recommends `legacy-flow-context-normalizer`, carrying forward
+  `evidence-coordinates.md` and `extraction-warnings.md`
+- no files are written during the smoke run
+
+#### Reference Commands
+
+Run from the repository root. Add model or auth flags required by your
+local environment.
+
+```bash
+codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
+  "Use /legacy-document-evidence-intake. User input: I have an authorized synthetic multi-sheet Excel workbook (.xlsx) for SALES-ORDERS with Overview, Process, Interfaces, Data Dictionary sheets and one hidden sheet; sensitivity internal, authorized; LibreOffice/OCR/PDF available. Normalize it. Return only: package gate, required output filenames, how each sheet becomes a FRAG-*, recommended next skill. Do not infer business rules."
+```
+
+```bash
+claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
+  "Use /legacy-document-evidence-intake. User input: I have an authorized synthetic multi-sheet Excel workbook (.xlsx) for SALES-ORDERS with Overview, Process, Interfaces, Data Dictionary sheets and one hidden sheet; sensitivity internal, authorized; LibreOffice/OCR/PDF available. Normalize it. Return only: package gate, required output filenames, how each sheet becomes a FRAG-*, recommended next skill. Do not infer business rules."
+```
+
+```bash
+opencode run -m opencode/minimax-m2.5-free \
+  "Use /legacy-document-evidence-intake. User input: I have an authorized synthetic multi-sheet Excel workbook (.xlsx) for SALES-ORDERS with Overview, Process, Interfaces, Data Dictionary sheets and one hidden sheet; sensitivity internal, authorized; LibreOffice/OCR/PDF available. Normalize it. Return only: package gate, required output filenames, how each sheet becomes a FRAG-*, recommended next skill. Do not infer business rules."
+```
+
+For the macro, legacy-binary, unauthorized, and ready-manifest scenarios,
+substitute the corresponding prompt above into the same `codex exec` /
+`claude -p` / `opencode run` commands.
+
 ### `legacy-module-context-intake`
 
 #### Scenario (Positive - Synthetic RAG Bundle Intake)

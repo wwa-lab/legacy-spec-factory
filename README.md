@@ -155,6 +155,11 @@ blocking status instead of being smoothed into prose.
 The main skill sequence is:
 
 ```text
+legacy-document-evidence-intake (optional, runs first)
+  -> format-normalize raw Office / Visio / PDF / image documents into
+     Markdown / CSV / PDF / PNG / SVG with manifests and evidence coordinates
+     before flow context normalization
+
 legacy-flow-context-normalizer (optional)
   -> normalize scattered docs/specs into draft Operation / Business, System,
      Program, and Data flows for SME review, or source-quality triage when
@@ -208,11 +213,12 @@ primary workflow.
 
 ![Module-first BRD Factory logic](docs/assets/module-first-brd-factory-ieov.png)
 
-Diagram A explains how module context, supplemental evidence, and IEOV
-validation become a trusted BRD Package. Its key message is that RAG does not
-generate the BRD. Reviewed module context defines the backbone; historical
-docs/specs, RAG, runtime, and reports fill gaps; IEOV and SME review make
-every BRD claim traceable.
+Diagram A explains how document intake, module context, supplemental evidence,
+and IEOV validation become a trusted BRD Package. Its key message is that raw
+Office / Visio / PDF / image material first becomes a `document-intake` package
+with `DOC-*` / `FRAG-*` coordinates; RAG does not generate the BRD. Reviewed
+module context defines the backbone; historical docs/specs, RAG, runtime, and
+reports fill gaps; IEOV and SME review make every BRD claim traceable.
 
 Editable source and review-friendly variants are kept together:
 [`module-first-brd-factory-ieov.drawio`](docs/assets/module-first-brd-factory-ieov.drawio),
@@ -225,10 +231,12 @@ and [`module-first-brd-factory-ieov.png`](docs/assets/module-first-brd-factory-i
 
 Diagram B maps the A1-A4 stages in Diagram A to the skills, artifacts, and
 gates that execute and verify each stage. It distinguishes the main path from
-selective evidence repair, now including `legacy-flow-context-normalizer` for
-scattered document/spec normalization, sparse triage, and owner risk
-acceptance before `legacy-module-context-intake`. It also shows the governance
-rail that applies across every skill.
+selective evidence repair, now including `legacy-document-evidence-intake` for
+format-normalizing raw Office / Visio / PDF / image sources,
+`legacy-flow-context-normalizer` for scattered document/spec normalization,
+sparse triage, and owner risk acceptance before
+`legacy-module-context-intake`. It also shows the governance rail that applies
+across every skill.
 
 Editable source and review-friendly variants are kept together:
 [`module-first-brd-factory-skills.drawio`](docs/assets/module-first-brd-factory-skills.drawio),
@@ -238,6 +246,11 @@ and [`module-first-brd-factory-skills.png`](docs/assets/module-first-brd-factory
 ### Earlier BRD Generation Process
 
 ![BRD generation process](docs/assets/brd-generation-process.png)
+
+The earlier process view is kept for teams that want a single end-to-end
+sequence. It now shows raw / historical documents entering through
+`legacy-document-evidence-intake` before flow normalization and module context
+intake.
 
 ### Delivery Hub Overview
 
@@ -252,6 +265,10 @@ and [`module-first-brd-factory-skills.png`](docs/assets/module-first-brd-factory
 ![Legacy Spec Factory repository overview](docs/assets/legacy-spec-factory-repo-overview.png)
 
 ```text
+Raw Office / Visio / PDF / image documents
+  document-intake package with DOC-* / FRAG-* coordinates
+        |
+        v
 AI Retrieval / External RAG / Code Knowledge Graph
   full source, ARCAD REF, table metadata, data dictionary, snippets, impact scope
         |
@@ -607,6 +624,7 @@ even if the static review score is higher.
 | --- | --- | ---: | ---: | --- | --- |
 | `legacy-flow-context-normalizer` | [v0.1.9 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) | 9.51 | 9.0 | Repo-ready | v0.1.9 adds AS400 technical-anchor gates for Program/Data flow; runtime smoke pending |
 | `legacy-module-context-intake` | [v0.1.4 scorecard](docs/reviews/legacy-module-context-intake-v0.1.4-scorecard.md) | 9.46 | 9.0 | Repo-ready | v0.1.4 keeps intake views context-only; runtime smoke pending |
+| `legacy-document-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-document-evidence-intake-v0.1.0-scorecard.md) | 9.42 | 9.0 | Repo-ready | v0.1.0 pre-normalization format intake with validator hardening; runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
@@ -790,6 +808,7 @@ full status matrix and scorecard links.
 | 20 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
 | 21 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 22 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
+| 23 | `legacy-document-evidence-intake` | Module-first context | New | Repo-ready (v0.1.0); pre-normalization format intake before `legacy-flow-context-normalizer`. Run three-runtime smoke tests for multi-sheet Excel, macro-enabled workbook, legacy binary conversion, unauthorized production data, and ready-manifest handoff |
 
 Downstream Atlas skills such as requirements-to-stories, design, task, code,
 and review gates are referenced by the handoff package but are not implemented
@@ -812,6 +831,7 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
+| `legacy-document-evidence-intake` | Intake and format-normalize raw legacy documents (Excel `.xlsx`/`.xlsm`/`.xls`, Word `.docx`/`.doc`, PowerPoint `.pptx`/`.ppt`, Visio `.vsdx`/`.vsd`, PDF, images, screenshots, scanned docs) into Markdown / CSV / PDF / PNG / SVG with manifests, `DOC-*`/`FRAG-*` evidence coordinates, and `ready`/`ready_with_warnings`/`blocked` quality gates before `legacy-flow-context-normalizer`. Static-only macro policy (never executes VBA); honest-conversion policy via LibreOffice; optional Docling as a non-canonical enhancer; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake`. Does not infer business rules, generate BRD/spec content, approve evidence, or classify flow views | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Repo-ready (v0.1.0; runtime smoke pending) |
 | `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, AS400 technical-anchor gates for Program/Data flow, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.9, 9.0 capped; runtime smoke pending) |
 | `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output, human-confirmed four-view module context, or owner-risk-approved sparse flow-normalization output into a traceable package before module analysis, with candidates framed as business signals backed by evidence or carried as low-confidence TBDs | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; runtime smoke pending) |
 
