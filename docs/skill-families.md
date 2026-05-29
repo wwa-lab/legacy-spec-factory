@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory has 22 skills. They are not equally connected — some are
+Legacy Spec Factory has 23 skills. They are not equally connected — some are
 called every run, some only at boundaries, some only when reviewing. This
 document groups them into **families** so callers (humans and orchestrators)
 know which skills travel together, which order they fire in, and which
@@ -15,13 +15,13 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 2 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or four-view module context enters the repo |
+| Module-first context intake | 3 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or four-view module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **22** | |
+| **Total** | **23** | |
 
 ---
 
@@ -54,12 +54,17 @@ authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
+| [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Pre-normalization entry layer, before `legacy-flow-context-normalizer`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
 | [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation that is not yet flow-reviewed, including sparse authorized notes that need source-quality triage or owner risk acceptance | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when four-view context is not yet confirmed; sparse triage must collect supplements or named owner risk acceptance before context intake |
 | [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes, or owner-risk-approved sparse flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; accepted sparse input remains low-confidence with carry-forward TBDs |
 
 **Sequence**:
 
 ```text
+raw Office / Visio / PDF / image documents (not yet normalized)
+  └─ document-evidence-intake (format normalization + evidence coordinates)
+       ├─ ready / ready_with_warnings -> flow-context-normalizer
+       └─ blocked auth/sensitivity -> ibmi-evidence-intake
 scattered docs/specs / draft context evidence / sparse module notes
   └─ flow-context-normalizer
        ├─ SME review for draft context views
