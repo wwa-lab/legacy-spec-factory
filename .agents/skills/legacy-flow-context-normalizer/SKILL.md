@@ -1,6 +1,6 @@
 ---
 name: legacy-flow-context-normalizer
-description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft four-view context files: Operation / Business, System, Program, and Data. Use when a team has historical documents or specs that do not yet conform to the Legacy Spec Factory four-view context standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted context as approved business rules or canonical module flows.
+description: "Normalize scattered Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft Mermaid-backed four-view context files for SME review before context intake, module analysis, or BRD generation. Blocks on unauthorized evidence, missing module scope, unreadable opaque files, hidden contradictions, or attempts to treat draft context as approved rules or canonical module flows."
 ---
 
 <!--

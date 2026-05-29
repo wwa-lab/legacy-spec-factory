@@ -33,7 +33,7 @@
 - **TBD-CARD-AUTH-004** (pending_analysis): CSR menu screen/report analysis
   is still needed to enrich BRD section 4, but it does not block module review.
 
-## Capability Seeds For spec-writer
+## Capability Seeds For BRD / Spec
 
 | CAP Seed | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- |
@@ -69,7 +69,7 @@
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs
 - [ ] No blocking TBDs remain — 3 blocking TBDs pending
 - [ ] Capability seeds list is complete and SME-confirmed
-- [ ] Module ready for spec-writer
+- [ ] Module ready for BRD writer
 
 ## Sign-Off
 - **Module Owner:** Anna Chen — pending

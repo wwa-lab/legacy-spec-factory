@@ -37,9 +37,10 @@ document defines the *file format*; that document defines the *intent*.
 ## Top Blocking TBDs
 (Aggregate of `pending_source` and `pending_sme_judgment` TBDs from all four views.)
 
-## Capability Seeds For spec-writer
-(Module-level capability candidates; one row per CAP-*; the spec-writer
-resolves each into one or more `spec.yaml` artifacts.)
+## Capability Seeds For BRD / Spec
+(Module-level capability candidates; one row per CAP-*. The BRD writer turns
+each selected seed into a BRD Package for SME review before the spec-writer
+resolves it into one or more `spec.yaml` artifacts.)
 
 | CAP Seed | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- |
@@ -85,7 +86,7 @@ Rules:
 - [ ] BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries a
       named `TBD-*` for every missing / partial area
 - [ ] No blocking TBDs remain
-- [ ] Capability seeds reviewed by spec-writer SME
+- [ ] Capability seeds reviewed by module owner / BRD reviewer before BRD drafting
 
 ## Sign-Off
 - **Module Owner:** ____
@@ -95,12 +96,51 @@ Rules:
 
 ---
 
+## Per-View Mermaid Flow Diagram Requirement
+
+Every view file must include `## Mermaid Flow Diagram` before the evidence,
+inventory, or traceability tables. This diagram is the SME-readable flow
+surface; the tables remain required to prove evidence, coverage, IDs, and
+review ownership.
+
+Rules:
+
+- Use a fenced `mermaid` block with `flowchart TD` unless the source order is
+  explicitly left-to-right.
+- Use node IDs that mirror stable IDs such as `ACTOR-*`, `EVENT-*`, `SYS-*`,
+  `IF-*`, `FLOW-*`, `PGM-*`, `DATA-*`, `OBJ-*`, `BR-*`, or `TBD-*`, replacing
+  hyphens with underscores.
+- Every diagram node and edge must be backed by a row or statement in the same
+  view, a source artifact, a named SME note, or a named `TBD-*`.
+- If a view has incomplete evidence, include a placeholder Mermaid node that
+  points to the relevant `TBD-*`. Do not omit the diagram.
+- Do not treat table rows as a substitute for flow visualization.
+
+---
+
 ## File 2: `01-operation-flow.md` (View 1 — Business)
 
-```markdown
+````markdown
 # View 1: Operation Flow / Business Background — [Module Name]
 
 ## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_sme | rejected
+
+## Mermaid Flow Diagram
+
+```mermaid
+flowchart TD
+  ACTOR_AUTH_MODULE_01["Primary User"] --> EVENT_AUTH_MODULE_01["Primary event"]
+  EVENT_AUTH_MODULE_01 --> BR_AUTH_MODULE_01["Seed: eligibility threshold"]
+  EVENT_AUTH_MODULE_01 --> BR_AUTH_MODULE_02["Seed: audit before response"]
+  ACTOR_AUTH_MODULE_04["Operations"] --> EVENT_AUTH_MODULE_02["Batch reconciliation"]
+  EVENT_AUTH_MODULE_02 --> TBD_AUTH_MODULE_001["TBD: BAU peak-hour details"]
+  ACTOR_AUTH_MODULE_03["Reviewer"] --> EVENT_AUTH_MODULE_03["Manual intervention"]
+  EVENT_AUTH_MODULE_03 --> BR_AUTH_MODULE_01
+```
+
+Diagram intent: show the business flow from actors to events, manual or
+exception paths, BAU outcomes, and BRD-relevant rule seeds. Keep technical
+names secondary to business labels.
 
 ## Business Scope
 [Paragraph from SME describing what the module does for the business.]
@@ -136,7 +176,8 @@ Rules:
 
 ## Exception Lifecycle
 [Free-form description from SME of how exceptions flow from detection
-through to resolution. Often a small flowchart.]
+through to resolution. Use Mermaid when the exception lifecycle has more than
+one step; do not rely on an ASCII sketch.]
 
 ## Business Rule Seeds
 (Module-level seeds aggregating across all in-scope flows.)
@@ -170,16 +211,31 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - **Review Date:** ____
 - **Decision:** ____
 - **Notes:** ____
-```
+````
 
 ---
 
 ## File 3: `02-system-flow.md` (View 2 — Integration)
 
-```markdown
+````markdown
 # View 2: System Flow — [Module Name]
 
 ## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme | rejected
+
+## Mermaid Flow Diagram
+
+```mermaid
+flowchart LR
+  SYS_AUTH_MODULE_01["External System A"] --> IF_AUTH_MODULE_01["IF-AUTH-MODULE-01 MQ / mTLS"]
+  IF_AUTH_MODULE_01 --> MODULE_AUTH_MODULE_001["IBM i module boundary"]
+  SYS_AUTH_MODULE_02["Internal Channel"] --> MODULE_AUTH_MODULE_001
+  MODULE_AUTH_MODULE_001 --> SYS_AUTH_MODULE_10["Accounting System"]
+  MODULE_AUTH_MODULE_001 --> SYS_AUTH_MODULE_11["Monitoring System"]
+  MODULE_AUTH_MODULE_001 --> SYS_AUTH_MODULE_12["Reporting / Spool Review"]
+```
+
+Diagram intent: show upstream systems, interfaces, the IBM i module boundary,
+sync/async handoff points, downstream systems, and security boundaries.
 
 ## Upstream Systems
 | System ID | Name | Type | Integration Pattern | Flow(s) | Evidence |
@@ -207,7 +263,8 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | Spool | Compliance | No (manual pickup) | morning review |
 
 ## Security & Network Boundaries
-[Diagram or text describing DMZ, partition boundaries, where TLS terminates, etc.]
+[Describe DMZ, partition boundaries, TLS termination, auth handoff, and any
+edge in the Mermaid diagram that crosses a security boundary.]
 
 ## TBDs
 
@@ -230,16 +287,34 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - **Review Date:** ____
 - **Decision:** ____
 - **Notes:** ____
-```
+````
 
 ---
 
 ## File 4: `03-program-flow.md` (View 3 — Application)
 
-```markdown
+````markdown
 # View 3: Program Flow — [Module Name]
 
 ## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | rejected
+
+## Mermaid Flow Diagram
+
+```mermaid
+flowchart TD
+  FLOW_AUTH_001["FLOW-AUTH-001 Primary event"] --> PGM_ENTRY["PGM-ENTRY"]
+  PGM_ENTRY --> PGM_VALIDATE["PGM-VALIDATE"]
+  PGM_VALIDATE --> PGM_LOGGER["PGM-LOGGER"]
+  PGM_LOGGER --> PGM_EXIT["PGM-EXIT"]
+  FLOW_MANUAL_001["FLOW-MANUAL-001 Manual intervention"] --> PGM_VALIDATE
+  FLOW_BATCH_001["FLOW-BATCH-001 Batch processing"] --> PGM_ORCH["PGM-ORCH"]
+  PGM_ORCH --> PGM_LOGGER
+  PGM_ORCH --> PGM_FINAL["PGM-FINAL"]
+```
+
+Diagram intent: show aggregate program topology across flows, entry programs,
+shared sub-programs, exits, and cross-flow dependencies. Do not replace this
+diagram with an ASCII tree.
 
 ## Flow Inventory
 | Flow ID | Business Event | Trigger Model | Entry Program | Exit Program | Runtime |
@@ -261,7 +336,8 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | PGM-LOGGER | FLOW-AUTH-001, FLOW-MANUAL-001, FLOW-BATCH-001 | Audit log writer | hot path |
 
 ## Overall Call Topology
-[Top-level sequence / ASCII tree showing how flows compose.]
+[Explain the Mermaid topology above and cite the underlying approved flow /
+program analyses for each edge.]
 
 ## TBDs
 
@@ -284,16 +360,33 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - **Review Date:** ____
 - **Decision:** ____
 - **Notes:** ____
-```
+````
 
 ---
 
 ## File 5: `04-data-flow.md` (View 4 — Data)
 
-```markdown
+````markdown
 # View 4: Data Flow — [Module Name]
 
 ## Status: draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | rejected
+
+## Mermaid Flow Diagram
+
+```mermaid
+flowchart LR
+  FLOW_AUTH_001["FLOW-AUTH-001 Primary event"] -->|creates| DATA_TXN_LOG["DATA-TXN-LOG"]
+  FLOW_MANUAL_001["FLOW-MANUAL-001 Manual intervention"] -->|creates| DATA_TXN_LOG
+  DATA_TXN_LOG -->|read by| FLOW_BATCH_001["FLOW-BATCH-001 Batch processing"]
+  FLOW_BATCH_001 -->|creates| DATA_POSTING["DATA-POSTING"]
+  FLOW_BATCH_001 -->|updates| DATA_STATE["DATA-STATE"]
+  DATA_MASTER["DATA-MASTER"] -->|read by| FLOW_AUTH_001
+  DATA_POSTING -->|hands off| SYS_ACCOUNTING["Accounting System"]
+```
+
+Diagram intent: show data movement and lifecycle across flows and major
+objects, with edge labels such as `creates`, `updates`, `reads`, `hands off`,
+`archives`, or `purges`.
 
 ## Data Objects in Scope
 (Aggregated from every flow's Cross-Program Data Flow section, backed by
@@ -319,11 +412,11 @@ program Data Touch Maps and Object Dependencies.)
 ## Critical Data Trails
 [End-to-end paths of important data, using flow `DATA-*` rows as anchors
 — e.g., authorization request -> DTAQ -> online program -> AUTHLOG -> GL
-posting -> archive.]
+posting -> archive. Prefer Mermaid for any multi-step trail.]
 
 ## DB Table Relationships
-[ER-style diagram or table listing PK/FK relationships among the module's
-PF / LF / SQL tables.]
+[ER-style Mermaid diagram or table listing PK/FK relationships among the
+module's PF / LF / SQL tables.]
 
 ## Cross-Module Data Dependencies
 | Object | Owned By Module | Used By This Module | Mechanism |
@@ -353,7 +446,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - **Review Date:** ____
 - **Decision:** ____
 - **Notes:** ____
-```
+````
 
 ---
 
@@ -374,7 +467,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
   - [ ] Every data object (View 4) traces to a program in View 3
 - [ ] No blocking TBDs remain
 - [ ] Capability seeds list is complete and SME-confirmed
-- [ ] Module ready for spec-writer
+- [ ] Module ready for BRD writer
 
 ## Per-View Reviewers
 - View 1 (Business): ____ — date: ____ — decision: ____

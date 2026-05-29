@@ -228,5 +228,6 @@ are found." This has no code path.
 `evidence_strength: confirmed_by_sme` and link to a named SME note.
 Do not try to map it to View 3 (no code). Tag the associated business
 rule seed as "BAU-driven, not enforced by code" — this is critical
-information for spec-writer to decide whether the target system should
-encode this rule programmatically or preserve the manual process.
+information for `legacy-brd-writer` to capture the business choice first, and
+for later spec-writing to decide whether the target system should encode this
+rule programmatically or preserve the manual process.

@@ -3,7 +3,7 @@
 **You are here if:** every flow in scope for this module has an approved
 `flow-<slug>.md`, or a ready `00_context_packages/<MODULE-SLUG>/` package is
 being used as module-first context, AND you need to synthesize the module's
-complete behavior into the canonical 4 views before writing a `spec.yaml`.
+complete behavior into the canonical 4 views before BRD writing and review.
 
 This is the **last reverse-engineering step** before BRD writing. Business
 rule seeds and capability seeds emerge here, then the BRD Package becomes the
@@ -19,7 +19,7 @@ business / SME review artifact before any spec is produced.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.1.0)
+- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.1.4)
 - **Manual fallback:** Build the 4 views by hand following
   `docs/module-analysis-model.md` and the templates in
   `skills/legacy-ibmi-module-analyzer/references/`

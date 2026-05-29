@@ -1233,6 +1233,9 @@ here.
 
 ```text
 Use /legacy-ibmi-module-analyzer.
+Contract-only no-write smoke test. Do not create or edit files. Do not inspect
+or rely on the actual workspace filesystem; use only the scenario text below
+and the skill contract.
 
 User input:
 I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001),
@@ -1242,7 +1245,9 @@ Module slug is AUTH-MODULE, business name is "Authorization Processing". Help me
 synthesize the four-view module analysis.
 
 Return the module-overview.md and all four views (01-operation-flow.md through
-04-data-flow.md) following the output contract format.
+04-data-flow.md) following the output contract format. Each view must include
+`## Mermaid Flow Diagram` with a fenced Mermaid `flowchart` before evidence or
+traceability tables; do not return table-only flow views.
 ```
 
 #### Pass Criteria (Positive)
@@ -1254,6 +1259,7 @@ The response must include all of the following:
 - **02-system-flow.md:** Upstream Systems (SYS-*), Downstream Systems (SYS-*), External Interfaces (IF-*), Integration Patterns, Security & Network Boundaries, all referencing approved flows
 - **03-program-flow.md:** Flow Inventory (all 3 flows), Cross-Flow Dependencies (shared file), Shared Sub-Programs, Call Topology, evidence from approved program/flow analyses
 - **04-data-flow.md:** Data Objects (with OBJ-* and Coupling Score), Lifecycle per object, Coupling Hotspots, DB Table Relationships, Cross-Module Dependencies, evidence from program analyses
+- **Mermaid diagrams:** Each of the four view files includes `## Mermaid Flow Diagram` with a fenced Mermaid `flowchart` before inventory, evidence, or traceability tables; no view represents flow only as a table
 - **Status values:** All views marked as `draft` or `approved_with_non_blocking_tbd` (no blocked status; all required evidence present)
 - **All four views present:** No view is marked blocked or missing
 - **Evidence tagged:** All major actors, systems, programs, data objects, and lifecycle phases link to EV-*, OBJ-*, FLOW-*, or SME confirmation
@@ -1288,17 +1294,17 @@ Return only:
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-module-analyzer. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 For the negative scenario, substitute the missing-flow-analysis prompt above into

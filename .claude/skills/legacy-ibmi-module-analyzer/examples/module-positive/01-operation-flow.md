@@ -2,6 +2,23 @@
 
 ## Status: draft → needs_sme_review
 
+## Mermaid Flow Diagram
+
+```mermaid
+flowchart TD
+  ACTOR_CARD_AUTH_03["Card Network (Visa/MC)"] --> EVENT_CARD_AUTH_01["On-us auth request"]
+  ACTOR_CARD_AUTH_04["CSR"] --> EVENT_CARD_AUTH_02["Manual auth override"]
+  EVENT_CARD_AUTH_02 --> ACTOR_CARD_AUTH_05["Risk Officer approval"]
+  ACTOR_CARD_AUTH_06["Operations"] --> EVENT_CARD_AUTH_03["Nightly reconciliation"]
+  EVENT_CARD_AUTH_01 --> BR_CARD_AUTH_01["Seed: credit limit check"]
+  EVENT_CARD_AUTH_01 --> BR_CARD_AUTH_02["Seed: CVV verification"]
+  EVENT_CARD_AUTH_01 --> BR_CARD_AUTH_03["Seed: audit before response"]
+  EVENT_CARD_AUTH_02 --> BR_CARD_AUTH_04["Seed: supervisor approval"]
+  EVENT_CARD_AUTH_03 --> BR_CARD_AUTH_05["Seed: 06:00 cut-off"]
+  EVENT_CARD_AUTH_03 --> BR_CARD_AUTH_06["Seed: exception threshold gates GL posting"]
+  BR_CARD_AUTH_06 --> ACTOR_CARD_AUTH_07["Finance Analyst review"]
+```
+
 ## Business Scope
 
 The Card Authorization module decides whether to approve or decline
@@ -54,26 +71,20 @@ flow analyses.
 
 ## Exception Lifecycle
 
-```
-[Exception detected by nightly recon NODE-02 worker]
-    │
-    ▼
-[Written to TXNLOGPF with status='EXCEPTION']
-    │
-    ▼
-[Reported via RECONPRT spool]
-    │
-    ▼  Daily 08:00–09:00
-[Finance Analyst reads spool]
-    │
-    ▼
-[If count > threshold]
-    │
-    ▼
-[Email to Card Ops + Risk team]
-    │
-    ▼
-[Manual investigation; transactions re-processed or written off]
+```mermaid
+flowchart TD
+  EXC_DETECTED["Exception detected by nightly recon NODE-02 worker"]
+  EXC_TXNLOGPF["Write TXNLOGPF status='EXCEPTION'"]
+  EXC_RECONPRT["Report via RECONPRT spool"]
+  EXC_FINANCE["Finance Analyst reads spool daily 08:00-09:00"]
+  EXC_THRESHOLD{"Exception count > threshold?"}
+  EXC_EMAIL["Email Card Ops + Risk team"]
+  EXC_CLOSE["Close daily review"]
+  EXC_INVESTIGATE["Manual investigation; re-process or write off"]
+
+  EXC_DETECTED --> EXC_TXNLOGPF --> EXC_RECONPRT --> EXC_FINANCE --> EXC_THRESHOLD
+  EXC_THRESHOLD -->|yes| EXC_EMAIL --> EXC_INVESTIGATE
+  EXC_THRESHOLD -->|no| EXC_CLOSE
 ```
 
 Source: Anna Chen 2026-05-12.

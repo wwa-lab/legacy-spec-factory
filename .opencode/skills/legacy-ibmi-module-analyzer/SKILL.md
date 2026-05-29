@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-module-analyzer
-description: Synthesize a complete IBM i business module from multiple flow analyses, BAU notes, or a ready module-first context package, producing the canonical 4-view module analysis (Operation Flow, System Flow, Program Flow, Data Flow). Use when multiple flows belong to the same business module, or when `legacy-module-context-intake` has normalized external RAG / human four-view context and you need module synthesis to feed `legacy-spec-writer`. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
+description: Synthesize a complete IBM i business module from multiple flow analyses, BAU notes, or a ready module-first context package, producing the canonical Mermaid-backed 4-view module analysis (Operation Flow, System Flow, Program Flow, Data Flow). Use when multiple flows belong to the same business module, or when `legacy-module-context-intake` has normalized external RAG / human four-view context and you need module synthesis to feed BRD writing and review before spec-writing. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
 ---
 
 <!--
@@ -22,15 +22,15 @@ Synthesize multiple flow analyses, BAU (Business As Usual) notes, and SME
 context into one **business module** analysis covering four standard
 views: Operation Flow, System Flow, Program Flow, Data Flow.
 
-This skill is the **last platform-specific layer** before `legacy-spec-writer`.
-It does not re-analyze flows or programs; it aggregates and synthesizes
-what flow-analyzer and program-analyzer produced.
+This skill is the **last platform-specific layer** before `legacy-brd-writer`
+and the BRD Review Gate. It does not re-analyze flows or programs; it
+aggregates and synthesizes what flow-analyzer and program-analyzer produced.
 
-This is the only skill that produces the canonical four module-flow artifacts
-under `04_modules/<MODULE-SLUG>/`. If upstream `00_context_packages/` files
-already contain four context views, treat them as evidence/context input and
-synthesize fresh module-analysis outputs here. Do not copy or report upstream
-context views as the final module flows.
+This is the only skill that produces the canonical four module-analysis view
+artifacts under `04_modules/<MODULE-SLUG>/`. If upstream
+`00_context_packages/` files already contain four context views, treat them as
+evidence/context input and synthesize fresh module-analysis outputs here. Do
+not copy or report upstream context views as the final module-analysis views.
 
 The canonical model is documented in `../../docs/module-analysis-model.md` —
 read that first if you have not already.
@@ -112,6 +112,14 @@ Follow:
 - `../../docs/evidence-and-knowledge-taxonomy.md` for evidence tagging
 - `../../docs/input-readiness-rubric.md` for input readiness scoring
 
+Each of the four view files must include a `## Mermaid Flow Diagram` section
+immediately after the view status / summary material and before evidence,
+inventory, or traceability tables. Mermaid diagrams are the primary visual flow
+surface for SME review. Tables remain required as evidence and traceability
+support, but a table-only view is not a valid module-analysis flow. When input
+is incomplete, include a Mermaid placeholder node with a named `TBD-*` rather
+than omitting the diagram.
+
 Examples:
 
 - `examples/module-positive/` — complete CARD-AUTH module with all 4 views
@@ -186,23 +194,27 @@ field-level rules. The summary below is normative for this skill.
   `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
 - **Required sections**: 4-view index with per-view status, top blocking
   TBDs, module-level capability seeds, BRD Functional Analysis Input
-  Crosswalk, per-view review checklists.
+  Crosswalk, per-view `## Mermaid Flow Diagram` sections, and per-view
+  review checklists.
 - **Required IDs**: mints `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`,
   module-level `BR-*` **seeds**, module-level `CAP-*` **seeds**, and
   `TBD-*`. Reuses `OBJ-*`, `EV-*`, `FLOW-*`, `NODE-*`, `EDGE-*`,
-  `DATA-*`. Final promotion of `BR-*` happens in `legacy-spec-writer`.
+  `DATA-*`. `legacy-brd-writer` reviews these seeds in business language; final
+  promotion of `BR-*` still happens later in `legacy-spec-writer`.
 - **Handoff status**: each view independently `draft` → `in_review` →
   `approved` or `approved_with_non_blocking_tbd`. Module is approved
   only when **all four views** are at least
   `approved_with_non_blocking_tbd`. `blocked_pending_source` /
-  `blocked_pending_sme` halt spec-writer.
+  `blocked_pending_sme` halt BRD writing and any later spec-writing.
 
 ### Validation
 
-- **Mechanical**: all four views plus overview present; every claim
-  traces to source artifact or named SME note; every cross-view
-  reference resolves; every TBD carries a category and ID; capability
-  seeds carry IDs.
+- **Mechanical**: all four views plus overview present; each view has a
+  fenced Mermaid `flowchart` diagram before its evidence / traceability
+  tables; every Mermaid node or edge traces to source artifact, named SME
+  note, or named `TBD-*`; every claim traces to source artifact or named SME
+  note; every cross-view reference resolves; every TBD carries a category and
+  ID; capability seeds carry IDs.
 - **AI semantic**: cross-flow synthesis matches the flow analyses (no
   new IBM i facts introduced); cross-view consistency holds (every View 1
   actor appears in View 3 or is tagged manual; every View 2 system
@@ -213,7 +225,7 @@ field-level rules. The summary below is normative for this skill.
 - **SME / human approval**: View 1 by business owner, View 2 by
   integration architect, View 3 by dev lead, View 4 by data analyst.
   All four sign-offs are required to promote the module past
-  `approved_with_non_blocking_tbd` for spec-writer consumption.
+  `approved_with_non_blocking_tbd` for BRD writer consumption.
 - **Blocking conditions**: any view lacks an SME sign-off; any
   cross-view inconsistency unresolved; any in-scope flow missing or
   unapproved; any capability seed contradicts the underlying flows;
@@ -251,6 +263,8 @@ to the orchestrator.
    - **Primary source: SME interviews + BAU notes.** Code is secondary.
    - Capture: business scope, actors, business events, BAU rhythm,
      manual intervention points, exception lifecycle, business-rule seeds
+   - Draw the Mermaid flow from actors to business events, manual
+     interventions, exception outcomes, and BRD-relevant rule seeds
    - Do **not** derive business rules from field names
    - Output: `01-operation-flow.md`
 
@@ -262,6 +276,9 @@ to the orchestrator.
    - Capture: upstream systems, downstream systems, external interfaces,
      integration patterns, sync/async boundaries, SLA constraints,
      security boundaries
+   - Draw the Mermaid system/interface flow across upstream systems,
+     interfaces, the IBM i module boundary, downstream systems, and security
+     boundaries
    - Output: `02-system-flow.md`
 
 5. **Build View 3 — Program Flow (Aggregate)**
@@ -270,8 +287,11 @@ to the orchestrator.
    - **Primary source: all `flow-<FLOW-SLUG>.md` documents.**
    - Aggregate per-flow summaries; identify cross-flow dependencies and
      shared sub-programs
+   - Draw the Mermaid program flow / call topology across the in-scope flows,
+     entry programs, shared programs, exits, and external response or batch
+     outcomes
    - Do **not** re-derive control flow; reference the flow / program
-     analyses
+     analyses. Do not use an ASCII tree as the primary topology diagram.
    - Output: `03-program-flow.md`
 
 6. **Build View 4 — Data Flow (Aggregate)**
@@ -284,6 +304,8 @@ to the orchestrator.
    - Compute coupling score (number of flows touching each object)
    - Identify coupling hotspots, cross-module data dependencies, DB
      table relationships
+   - Draw the Mermaid data movement / lifecycle flow showing which flows
+     create, update, read, hand off, archive, or purge the major data objects
    - Output: `04-data-flow.md`
 
 7. **Cross-View Consistency Check**
@@ -301,7 +323,7 @@ to the orchestrator.
    - 4-view index with status per view
    - Top blocking TBDs surfaced from any view
    - Module-level capability seeds (which capabilities live in this module,
-     to be developed by `legacy-spec-writer`)
+     to be turned into BRD Packages by `legacy-brd-writer` before spec-writing)
    - Module-level review checklist
 
 9. **Prepare for SME Review**
@@ -375,8 +397,9 @@ code-derived flow / program analyses).
 - **Manual intervention procedures** — must come from SME
 - **Cross-module data dependencies** without seeing the consuming module's
   inventory or SME confirmation
-- **Business rules** — only seeds (questions); the spec-writer resolves
-  them with SME
+- **Business rules** — only seeds (questions); the BRD writer reviews them in
+  business language, and the spec-writer later resolves formal rule promotion
+  with SME approval
 
 **Instead:**
 
@@ -429,9 +452,14 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
 
+- v0.1.4 (2026-05-29): Aligned module-analyzer downstream wording with the
+  BRD-first workflow and made Mermaid diagrams mandatory for each view. The
+  four canonical module-analysis view files are still generated here, but their
+  standard consumer is `legacy-brd-writer` before any spec-writing.
+
 - v0.1.3 (2026-05-29): Added canonical timing guidance so upstream context
-  package views are consumed as inputs and final four-flow module artifacts are
-  generated only under `04_modules/<MODULE-SLUG>/`.
+  package views are consumed as inputs and final four module-analysis view
+  artifacts are generated only under `04_modules/<MODULE-SLUG>/`.
 
 - v0.1.2 (2026-05-28): BRD functional-analysis crosswalk
   - Added a module-level crosswalk for SME-required BRD sections 1-9 and
@@ -453,6 +481,6 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
   - 9-step workflow
   - 4-view synthesis (Operation / System / Program / Data)
   - Cross-view consistency checks
-  - Module-level capability seeds (for spec-writer)
+  - Module-level capability seeds (for BRD writer and later spec-writer)
   - Feedback loops to flow-analyzer, program-analyzer, inventory
   - Examples: complete module (CARD-AUTH), incomplete module (missing flow)

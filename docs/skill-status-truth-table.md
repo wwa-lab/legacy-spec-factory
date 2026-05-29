@@ -40,7 +40,7 @@ Last regenerated: 2026-05-28
 | `legacy-ibmi-data-model-analyzer` | v0.1.0 | 9.32 | repo-ready | passed | synced | passed | 2026-05-16 | [link](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.1.2 | 9.62 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) |
-| `legacy-ibmi-module-analyzer` | v0.1.3 | 9.34 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.3-scorecard.md) |
+| `legacy-ibmi-module-analyzer` | v0.1.4 | 9.36 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.4-scorecard.md) |
 | `legacy-brd-writer` | v0.1.5 | 9.44 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-brd-writer-v0.1.5-scorecard.md) |
 | `legacy-spec-writer` | v0.1.2 | 9.33 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-spec-writer-v0.1.2-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |

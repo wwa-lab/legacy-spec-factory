@@ -17,7 +17,7 @@
 
 - [ ] No blocking TBDs remain — 3 blocking TBDs across views
 - [ ] Capability seeds list is complete and SME-confirmed
-- [ ] Module ready for spec-writer — not yet (blockers above)
+- [ ] Module ready for BRD writer — not yet (blockers above)
 
 ## Per-View Reviewers
 
@@ -40,4 +40,5 @@
    - BR-01 regulatory framing (TBD-CARD-AUTH-002) → Anna Chen + compliance
    - CVV scope (TBD-CARD-AUTH-003) → Anna Chen + Risk Officer
 3. Once all four views are at least `approved_with_non_blocking_tbd`,
-   module is ready for `legacy-spec-writer` to consume capability seeds.
+   module is ready for `legacy-brd-writer` to produce one BRD Package per
+   selected capability seed before spec-writing.

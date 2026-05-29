@@ -612,7 +612,7 @@ even if the static review score is higher.
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
 | `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.1.2 scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) | 9.62 | 9.0 | Repo-ready | v0.1.2 makes Business Capability Seeds business-readable; three-runtime smoke pending |
-| `legacy-ibmi-module-analyzer` | [v0.1.3 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.3-scorecard.md) | 9.34 | 9.0 | Repo-ready | v0.1.3 owns canonical four-flow module artifacts under `04_modules/`; three-runtime smoke pending |
+| `legacy-ibmi-module-analyzer` | [v0.1.4 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.4-scorecard.md) | 9.36 | 9.0 | Repo-ready | v0.1.4 keeps canonical Mermaid-backed four-view module analysis under `04_modules/` but routes standard consumption to BRD writer first; three-runtime smoke pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
 | `legacy-brd-writer` | [v0.1.5 scorecard](docs/reviews/legacy-brd-writer-v0.1.5-scorecard.md) | 9.44 | 9.0 | Repo-ready | v0.1.5 makes BRD the standard business review gate before spec-writing; three-runtime smoke pending |
@@ -776,7 +776,7 @@ full status matrix and scorecard links.
 | 6 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
 | 7 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
 | 8 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-readable seed hardening; run three-runtime smoke tests |
-| 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-signal seed hardening; run three-runtime smoke tests |
+| 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.4 BRD-first downstream wording and mandatory Mermaid view diagrams; run three-runtime smoke tests |
 | 10 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after v0.1.5 BRD-first gate alignment; run three-runtime smoke before field-pilot label |
 | 11 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.2 approved-BRD requirement; finish remaining smoke |
 | 12 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
@@ -823,7 +823,7 @@ Governance/Infrastructure skills (already implemented):
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs and surface business-readable capability seeds | `flow-<FLOW-SLUG>.md` | Repo-ready (v0.1.2, 9.0 capped; smoke pending) |
-| `legacy-ibmi-module-analyzer` | Synthesize a 4-view module model from reviewed Operation / Business, System, Program, and Data flows; when needed, start from program or flow analysis and build business-signal capability seeds | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; smoke pending) |
+| `legacy-ibmi-module-analyzer` | Synthesize a Mermaid-backed 4-view module model from reviewed Operation / Business, System, Program, and Data flows; when needed, start from program or flow analysis and build business-signal capability seeds for BRD writing before spec-writing | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.4, 9.0 capped; smoke pending) |
 | `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
 | `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
