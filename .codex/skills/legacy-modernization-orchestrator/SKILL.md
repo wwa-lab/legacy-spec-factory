@@ -34,6 +34,9 @@ also records which skill pairs were intentionally **not** merged and why.
 
 ```
 Module-First Entry (scattered docs / external RAG / four-view context)
+   ↓ legacy-document-evidence-intake (only when source is raw Office/Visio/PDF/image and not yet normalized)
+      - normalize Excel/Word/PPT/Visio/PDF/image → Markdown/CSV/PDF/PNG/SVG + manifests + evidence coordinates
+00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/ (ready / ready_with_warnings before normalization)
    ↓ legacy-flow-context-normalizer
       - L3/L2: draft Mermaid-backed context views for SME review
       - L1: source-quality triage when no safe flow can be generated
@@ -297,6 +300,7 @@ for the full table. Common routes:
 
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
+| Raw Office/Visio/PDF/image docs, no `document-intake` manifest yet (authorized, sensitivity known) | Normalize formats + evidence coordinates | `legacy-document-evidence-intake` | Implemented v0.1.0 |
 | Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.8 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
@@ -345,6 +349,24 @@ substance the skipped layer would have contributed.
 If a skip is unsafe, say so and route to the missing prerequisite.
 
 ### Module-First Document Routing
+
+**Pre-route rule (format normalization first).** Before routing to
+`legacy-flow-context-normalizer`, check the form of the source material:
+
+- If the inputs are raw Office / Visio / PDF / image files (`.xlsx`, `.xlsm`,
+  `.xls`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.vsdx`, `.vsd`, `.pdf`, `.png`,
+  `.jpg`, `.tif`, scanned pages) **and** there is no
+  `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/intake.manifest.yaml`
+  yet, route to `legacy-document-evidence-intake` first.
+- **Exception:** if any source has `sensitivity: unknown` or missing/`unauthorized`
+  authorization (or unapproved production data, or required redaction), route to
+  `legacy-ibmi-evidence-intake` first instead — neither this orchestrator nor the
+  document-intake skill may open unauthorized content.
+- If an `intake.manifest.yaml` exists with gate `ready` or `ready_with_warnings`,
+  proceed to `legacy-flow-context-normalizer` using its normalized outputs,
+  `evidence-coordinates.md`, and `extraction-warnings.md`.
+- If the material is already normalized text/Markdown/CSV (or external RAG), skip
+  document intake and route straight to `legacy-flow-context-normalizer`.
 
 When the user has historical documents/specs but no SME-reviewed module
 context, route to `legacy-flow-context-normalizer` even when the material

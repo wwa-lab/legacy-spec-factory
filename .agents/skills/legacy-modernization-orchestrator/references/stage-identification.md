@@ -8,6 +8,7 @@ upstream stage that fits — do not "round up" maturity.
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
+| 0p | Document Evidence Intake | Business/technical documents are still in raw Office / Visio / PDF / image form (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned pages), authorized and with known sensitivity, but not yet normalized to Markdown/CSV/PDF/PNG/SVG with `document-intake/<DOCSET-SLUG>/intake.manifest.yaml`. Sensitivity-unknown or unauthorized material is stage **0**, not 0p. |
 | 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data context views are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
 | 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
@@ -62,6 +63,19 @@ When flow-normalization output is sparse:
   package or explicitly accepts non-blocking gaps.
   Do not round it up to module context ready.
 
+When documents are still in raw Office/Visio/PDF/image form:
+
+- If the source material is authorized with known sensitivity but has not yet
+  been normalized to Markdown/CSV/PDF/PNG/SVG (no `document-intake/<DOCSET-SLUG>/intake.manifest.yaml`),
+  the stage is **0p (Document Evidence Intake)**, upstream of 0d. Route to
+  `legacy-document-evidence-intake` first.
+- Once an `intake.manifest.yaml` exists with gate `ready` or
+  `ready_with_warnings`, the stage advances to **0d** and routes to
+  `legacy-flow-context-normalizer`.
+- If any document has `sensitivity: unknown` or missing/`unauthorized`
+  authorization, the stage is **0 (Evidence Intake)**, not 0p — route to
+  `legacy-ibmi-evidence-intake`.
+
 When module analysis is complete but BRD review is missing:
 
 - Keep the canonical stage at **3f Module Analysis Done** for workflow-state
@@ -89,7 +103,7 @@ artifacts live at `docs/XXX260004-demo/01_inventory/`.
 
 | Stage | Lives Under (relative to project.root) |
 | --- | --- |
-| 0d, 0m, 0n | `00_context_packages/` |
+| 0p, 0d, 0m, 0n | `00_context_packages/` |
 | 1 | `evidence/redacted/` (raw never committed) |
 | 2 | `01_inventory/` |
 | 3a, 3b | `02_programs/` |
