@@ -1,14 +1,14 @@
 # SME Review Pack - <MODULE-SLUG>
 
 ## Review Scope
-Review the draft four-flow package for `<Business module name>`:
+Review the draft four-view context package for `<Business module name>`:
 
 - Operation / Business Flow
 - System Flow
 - Program Flow
 - Data Flow
 
-The goal is to decide whether the normalized flows are accurate enough for
+The goal is to decide whether the normalized context views are accurate enough for
 `legacy-module-context-intake`, and which gaps or contradictions must remain
 visible.
 

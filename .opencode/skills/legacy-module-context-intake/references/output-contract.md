@@ -6,6 +6,10 @@ This reference defines the required files under
 The context package is an intake artifact. It is not an approved module
 analysis, BRD, spec, or modernization decision.
 
+The four Markdown files in this package are context views. They are not the
+canonical module-analysis flow files in `04_modules/<MODULE-SLUG>/`; those are
+created only by `legacy-ibmi-module-analyzer`.
+
 ## Package Layout
 
 ```text
@@ -37,7 +41,7 @@ module:
 
 intake:
   skill: legacy-module-context-intake
-  version: v0.1.2
+  version: v0.1.4
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: ready_for_module_analysis
   decision_reason: "Short reason."
@@ -135,7 +139,8 @@ Rules:
 ## View Files
 
 The four view files normalize supplied context into the downstream
-`legacy-ibmi-module-analyzer` vocabulary.
+`legacy-ibmi-module-analyzer` vocabulary. They must stay labeled as intake
+context, even when all four are present and SME-confirmed.
 
 Each view file must include:
 

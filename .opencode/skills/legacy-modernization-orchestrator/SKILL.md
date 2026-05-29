@@ -35,7 +35,7 @@ also records which skill pairs were intentionally **not** merged and why.
 ```
 Module-First Entry (scattered docs / external RAG / four-view context)
    ↓ legacy-flow-context-normalizer
-      - L3/L2: draft Mermaid-backed flows for SME review
+      - L3/L2: draft Mermaid-backed context views for SME review
       - L1: source-quality triage when no safe flow can be generated
 00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft or triage, SME/source review first)
    ↓ legacy-module-context-intake
@@ -57,6 +57,8 @@ Evidence Manifest + Redaction Log + Redacted Evidence Bundle
    legacy-ibmi-module-analyzer ─────► 4-view module analysis
    ↓
 [Layer 2 — Platform-Agnostic Synthesis]
+   legacy-brd-writer ───────────────► BRD Package for SME / business review
+        ↓ BRD REVIEW GATE
    legacy-spec-writer ──────────────► spec.yaml + spec.md + traceability.md
         ↓ EVIDENCE APPROVAL / SME APPROVAL
    legacy-spec-reviewer ────────────► review-report.md (future/manual)
@@ -101,8 +103,8 @@ responsibility is to:
 - identify the user's current stage from the artifact(s) they have
 - identify the user's target outcome
 - decide the safest next skill (implemented or planned)
-- enforce the four hard gates (redaction, inventory completeness, evidence
-  approval, forward handoff)
+- enforce the hard gates (evidence authorization, inventory completeness, BRD
+  review, evidence approval, forward handoff)
 - recommend SME involvement at every approval point
 - minimize unnecessary steps without allowing unsafe stage skipping
 - yield to the downstream skill once routing is decided and input is sufficient
@@ -278,7 +280,8 @@ Determine what the user is trying to reach:
 | Map calls / file usage / DDS / runtime | Static Analysis (call-graph, CRUD, DDS, runtime evidence) |
 | Extract business rules from analysis | Business Rule Mining |
 | Group rules into business capabilities | Capability Mapping |
-| Produce a reviewable `spec.yaml` / `spec.md` | Spec Writing |
+| Produce a business-facing BRD for review | BRD Writing |
+| Produce a reviewable `spec.yaml` / `spec.md` after BRD review | Spec Writing |
 | Validate a draft spec | Spec Review |
 | Build old-vs-new comparison tests | Equivalence Test Generation |
 | Hand off to forward Java/cloud SDLC | Forward SDLC Handoff |
@@ -294,7 +297,7 @@ for the full table. Common routes:
 
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
-| Scattered docs, specs, or sparse module notes, no reviewed four-flow context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.6 |
+| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.8 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -303,7 +306,8 @@ for the full table. Common routes:
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
 | Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** |
 | Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** |
-| Module Analysis Done | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.0** |
+| Module Analysis Done, no approved BRD Package | Produce business-facing BRD for SME review | `legacy-brd-writer` | **Implemented v0.1.5** |
+| Module Analysis Done, approved BRD Package exists | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.2** |
 | Spec Drafted | Validate spec | `legacy-spec-reviewer` | Future (deferred from MVP) |
 | Spec Reviewed (no blocking findings) | Promote to approved | SME approval — not a skill | Human gate |
 | Spec Approved | Equivalence tests | `legacy-equivalence-test-generator` | Future (deferred from MVP) |
@@ -332,6 +336,9 @@ substance the skipped layer would have contributed.
 - Evidence Ready → Spec Writer (skipping inventory + analysis)
 - Inventory Done → Spec Writer (skipping rule mining)
 - Inventory Blocked → anywhere downstream
+- Module Analysis Done → Spec Writer without an approved BRD Package, unless
+  the requester explicitly records a technical-spec-only bypass and accepts the
+  review risk
 - Spec Drafted → Forward Handoff (skipping review and approval)
 - Any stage where evidence has `sensitivity: unknown` → any downstream
 
@@ -341,7 +348,7 @@ If a skip is unsafe, say so and route to the missing prerequisite.
 
 When the user has historical documents/specs but no SME-reviewed module
 context, route to `legacy-flow-context-normalizer` even when the material
-looks weak. The router must not require perfect four-flow input before
+looks weak. The router must not require perfect four-view input before
 starting. Function Specs, Technical Designs, Program Specs, File Specs,
 interface specs, data dictionaries, RAG summaries, and SME notes are all valid
 optional starting material.
@@ -365,6 +372,36 @@ can be provided, route the resulting `ready_with_warnings` package to
 State that all sparse facts remain low-confidence and cannot become approved
 rules without later corroboration.
 
+### Canonical Four-Flow Timing
+
+Only `legacy-ibmi-module-analyzer` produces the canonical four module-flow
+artifacts under `04_modules/<MODULE-SLUG>/`. Earlier module-first stages may
+write four files under `00_context_packages/`, but those are draft or
+normalized context views. When reporting upstream work, use wording such as
+"created draft context views" or "normalized a context package"; do not say
+"created the four module flows" until the module analyzer writes
+`module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
+`03-program-flow.md`, and `04-data-flow.md` under `04_modules/`.
+
+### BRD-First Review Gate
+
+After module analysis completes, the default next route is
+`legacy-brd-writer`, not `legacy-spec-writer`. The BRD Package is the primary
+business / SME review artifact. It must cover BRD functional-analysis sections
+1-9, while sections 10-12 remain optional and evidence-backed.
+
+Route to `legacy-spec-writer` only when one of these is true:
+
+- `05_brds/<CAPABILITY-SLUG>/` contains an approved BRD Package
+  (`brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md`,
+  and approval / review decision evidence) for the selected `CAP-*`; or
+- the requester explicitly asks for a technical-spec-only bypass, names the
+  approver, and accepts that the missing BRD review is a documented risk.
+
+If BRD review is still draft, blocked, or missing sections 1-9 without named
+`TBD-*` carry-forward, route back to `legacy-brd-writer` or
+`legacy-sme-review-facilitator`.
+
 ### Step 4B — Apply Hard Gates
 
 Before any handoff, check the gate that applies to that transition. See
@@ -374,6 +411,7 @@ Before any handoff, check the gate that applies to that transition. See
 | --- | --- | --- |
 | **Evidence Authorization Gate** | Before any Layer 1 skill or any agent reads evidence | Any evidence has `sensitivity: unknown`, lacks source-path authorization, or requires redaction without an approval record |
 | **Inventory Completeness Gate** | Before any Layer 1 analyzer downstream of inventory, and before any Layer 2 skill | `inventory.yaml.sme_review.decision: blocked`, or any `coverage_gaps` entry with `blocking: yes` is unresolved |
+| **BRD Review Gate** | Before `legacy-spec-writer` in the standard workflow | No approved BRD Package exists for the selected `CAP-*`, BRD sections 1-9 are incomplete without named `TBD-*`, or BRD review is blocked |
 | **Evidence Approval Gate** | Before `legacy-spec-writer` produces an approvable spec | Any business rule has `review_status: needs_sme_review` or no linked evidence, and `knowledge_type` is not `modernization_decision` |
 | **Forward Handoff Gate** | Before crossing to `wwa-lab/build-agent-skill` | `spec.yaml.status` is not `approved`, any critical rule unapproved, any blocking TBD remains, or `acceptance_criteria` missing for any approved rule |
 
@@ -394,6 +432,7 @@ user when SME involvement is required:
 | `inventory.yaml` (draft) | Request SME review against `inventory-review-checklist.md` before moving to analysis |
 | `program-analysis.md` | SME validation recommended if the program affects money, inventory, compliance, or customer status |
 | `business-rules.md` (draft) | SME must confirm every rule with `knowledge_type: inferred_business_rule` before approval |
+| `brd.md` / BRD Package (draft) | SME / business review required before spec-writing; sections 1-9 must be reviewed, sections 10-12 may remain absent unless evidence exists |
 | `spec.yaml` (in_review) | SME sign-off required to move from `in_review` to `approved` |
 | Modernization decisions added | Architecture/product approval, not just IBM i SME |
 
@@ -432,6 +471,7 @@ Stage-card mapping (use the same number that appears in
 | 3a / 3b Program Analysis | `references/stage-cards/03-program-analysis.md` |
 | 3c / 3d Flow Analysis | `references/stage-cards/04-flow-analysis.md` |
 | 3e / 3f Module Analysis | `references/stage-cards/05-module-analysis.md` |
+| 3f Module Analysis Done, BRD gate open | `references/stage-cards/05a-brd-writing.md` |
 | 8a / 8b / 8c Spec | `references/stage-cards/06-spec-writing.md` |
 | 9 / 10 Equivalence / Handoff | `references/stage-cards/07-forward-handoff.md` |
 
@@ -694,7 +734,7 @@ field-level rules. The summary below is normative for this skill.
 
 - **Procedure**: see the Core Process section above (Steps 1–6).
 - **Allowed inference**: conservatively classifying the current stage
-  from the artifact's status field; reading the four hard gates from
+  from the artifact's status field; reading the applicable hard gates from
   the artifact's own evidence (not from user assertion); choosing the
   earliest sufficient next skill.
 - **Forbidden assumptions**: inferring that a `Planned` / `Future`
@@ -757,9 +797,9 @@ field-level rules. The summary below is normative for this skill.
 - **SME / human approval**: not required for the routing decision itself,
   but the orchestrator must **flag** every SME control point the
   downstream skill will hit and refuse to advise skipping it.
-- **Blocking conditions**: any of the four hard gates fails (Redaction
-  Gate, Inventory Completeness Gate, Evidence Approval Gate, Forward
-  Handoff Gate); recommended skill status is `Planned` / `Future` and no
+- **Blocking conditions**: any hard gate fails (Evidence Authorization Gate,
+  Inventory Completeness Gate, BRD Review Gate, Evidence Approval Gate,
+  Forward Handoff Gate); recommended skill status is `Planned` / `Future` and no
   manual fallback is provided; stage cannot be classified even
   conservatively; user-asserted artifact maturity contradicts the
   artifact's own status field.
@@ -850,7 +890,7 @@ Before outputting workflow guidance, confirm:
 - [ ] Desired outcome has been identified correctly
 - [ ] Recommended next skill is the safest sufficient next step
 - [ ] Stage-skipping rules respected
-- [ ] All four hard gates checked where applicable
+- [ ] All applicable hard gates checked
 - [ ] SME reminder included when SME is required
 - [ ] Review/export reminder preserves Markdown / `spec.yaml` source-of-truth rules
 - [ ] Planned vs implemented status stated for the recommended skill
@@ -899,7 +939,8 @@ contract Layer 2 expects.
 | --- | --- | --- |
 | `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
 | `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
-| `legacy-spec-writer` | **Implemented v0.1.0** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability |
+| `legacy-brd-writer` | **Implemented v0.1.5** | Produce the BRD Package for SME / business review before spec-writing |
+| `legacy-spec-writer` | **Implemented v0.1.2** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review |
 | `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
 | `legacy-html-exporter` | **Implemented v0.1.0** | Optional companion export for stable human-facing Markdown; creates `.html` / `index.html` without changing the source of truth |
@@ -936,6 +977,11 @@ runtime copies.
 
 ## Version History
 
+- v0.2.5 (2026-05-29): Made BRD-first routing explicit. After module
+  analysis, the standard route is `legacy-brd-writer`; `legacy-spec-writer`
+  requires an approved BRD Package or an explicit technical-spec-only bypass
+  with risk acceptance. Added `05a-brd-writing.md` as the BRD review stage
+  card between module analysis and spec writing.
 - v0.12.0 (2026-05-16): Closed two linear-chain gaps.
   `legacy-ibmi-screen-report-analyzer` and
   `legacy-ibmi-data-model-analyzer` graduate from optional supplemental
@@ -1098,6 +1144,10 @@ runtime copies.
   documents to Function Specs, Technical Designs, Program Specs, File Specs,
   interface specs, and data dictionaries as optional starting material for
   `legacy-flow-context-normalizer` v0.1.6.
+- v0.2.4 (2026-05-29): Clarified four-flow timing so module-first context
+  normalization reports `00_context_packages/` files as context views, while
+  canonical `04_modules/` four-flow artifacts remain owned by
+  `legacy-ibmi-module-analyzer`.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

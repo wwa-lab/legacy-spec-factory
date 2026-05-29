@@ -1,6 +1,6 @@
 # Output Contract: Flow Context Normalizer
 
-This reference defines the draft four-flow package produced under:
+This reference defines the draft four-view context package produced under:
 
 ```text
 00_context_packages/<MODULE-SLUG>/flow-normalization/
@@ -10,6 +10,11 @@ The package is a **pre-SME review artifact** unless
 `flow-context-index.yaml.normalization.status` is `ready_for_context_intake` or
 `ready_with_warnings`. It is not a BRD, approved module analysis, or final
 business-rule source.
+
+The four Markdown files in this package are normalized context views. They are
+not the canonical module-analysis flow files in `04_modules/<MODULE-SLUG>/`.
+Agents must not report this package as "the four module flows"; the final
+module flows are synthesized later by `legacy-ibmi-module-analyzer`.
 
 ## Package Layout
 
@@ -45,11 +50,11 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.6
+  version: v0.1.8
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   quality_level: L2 partial
-  decision_reason: "Draft four views generated from authorized historical docs."
+  decision_reason: "Draft context views generated from authorized historical docs."
   downstream_next_step: legacy-sme-review-facilitator
 
 evidence_authorization:
@@ -167,7 +172,7 @@ Rules:
   and module-relevant, use `normalization.status:
   triage_needs_source_enrichment` with `quality_level: L1 sparse`. The package
   still includes all ten files, but it is a source-quality triage output, not a
-  draft flow package for context intake.
+  canonical module-flow package.
 - If the source owner or SME confirms that no additional document, spec, or
   flow input can be provided, the package may move from
   `triage_needs_source_enrichment` to `ready_with_warnings` only when

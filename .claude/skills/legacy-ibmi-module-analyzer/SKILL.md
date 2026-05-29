@@ -26,6 +26,12 @@ This skill is the **last platform-specific layer** before `legacy-spec-writer`.
 It does not re-analyze flows or programs; it aggregates and synthesizes
 what flow-analyzer and program-analyzer produced.
 
+This is the only skill that produces the canonical four module-flow artifacts
+under `04_modules/<MODULE-SLUG>/`. If upstream `00_context_packages/` files
+already contain four context views, treat them as evidence/context input and
+synthesize fresh module-analysis outputs here. Do not copy or report upstream
+context views as the final module flows.
+
 The canonical model is documented in `../../docs/module-analysis-model.md` —
 read that first if you have not already.
 
@@ -225,6 +231,8 @@ to the orchestrator.
    - If `00_context_packages/<MODULE-SLUG>/` is supplied, read
      `context-index.yaml`, `contradiction-log.md`, and `open-questions.md`
      first; block if the context package is not ready for module analysis
+   - Treat any `00_context_packages/` view files as intake context only; the
+     canonical module views must be generated under `04_modules/<MODULE-SLUG>/`
    - List in-scope flows; check every one has an approved analysis
    - Confirm no in-scope flow actually belongs to a different module
    - Assign `MODULE-<SLUG>-001`
@@ -420,6 +428,10 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.1.3 (2026-05-29): Added canonical timing guidance so upstream context
+  package views are consumed as inputs and final four-flow module artifacts are
+  generated only under `04_modules/<MODULE-SLUG>/`.
 
 - v0.1.2 (2026-05-28): BRD functional-analysis crosswalk
   - Added a module-level crosswalk for SME-required BRD sections 1-9 and

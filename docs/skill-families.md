@@ -48,9 +48,9 @@ the user (or wrapping agent) which skill to invoke next.
 code-knowledge-graph output into a traceable package before module analysis.
 This is the default enterprise entry path when a team already has Visio, Word,
 Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File
-Specs, interface specs, data dictionaries, RAG output, four reviewed flows, or
-a module-level context package. It does not replace evidence authorization or
-SME approval.
+Specs, interface specs, data dictionaries, RAG output, four reviewed context
+views, or a module-level context package. It does not replace evidence
+authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
@@ -60,9 +60,9 @@ SME approval.
 **Sequence**:
 
 ```text
-scattered docs/specs / draft flow evidence / sparse module notes
+scattered docs/specs / draft context evidence / sparse module notes
   └─ flow-context-normalizer
-       ├─ SME review for draft flows
+       ├─ SME review for draft context views
        └─ source-owner supplement request or risk acceptance for sparse triage
             └─ module-context-intake
 external RAG bundle + human-confirmed module context
@@ -70,9 +70,11 @@ external RAG bundle + human-confirmed module context
        └─ module-analyzer (validates / synthesizes approved 4-view module)
 ```
 
-**Anti-pattern**: treating draft document-derived flow steps or RAG candidates
-as approved `BR-*` rules. Flow normalization and context intake preserve
-candidates and gaps; downstream SME review decides what can be promoted.
+**Anti-pattern**: treating draft document-derived context steps or RAG
+candidates as approved `BR-*` rules, or reporting upstream context-view files
+as the final four module flows. Flow normalization and context intake preserve
+candidates and gaps; `legacy-ibmi-module-analyzer` produces the canonical
+`04_modules/` four-view module analysis.
 
 ---
 
@@ -132,8 +134,8 @@ while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
-| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved |
-| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package when produced | `spec.yaml`, `spec.md` | After BRD is SME-approved or when BRD is intentionally skipped |
+| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved; this is the standard business review gate |
+| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package | `spec.yaml`, `spec.md` | After BRD is SME-approved; bypass only by explicit technical-spec-only risk acceptance |
 | [`legacy-modernization-decision-writer`](../skills/legacy-modernization-decision-writer/SKILL.md) | spec.yaml entries needing expansion | `05_decisions/<CAPABILITY-SLUG>/` | Optional — when a `DEC-*` becomes large or architecture-governed |
 
 **Sequence**:

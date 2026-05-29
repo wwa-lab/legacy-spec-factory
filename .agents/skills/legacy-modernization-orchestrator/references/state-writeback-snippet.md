@@ -149,6 +149,7 @@ If your skill's view of the artifact disagrees with `workflow-state.yaml`
 | `legacy-ibmi-program-analyzer` | `3b Program Analysis Done` (or `3a` if partial) | `02_programs/<MODULE>/<OBJ>/program-analysis.md` |
 | `legacy-ibmi-flow-analyzer` | `3d Flow Analysis Done` (or `3c` if partial) | `03_flows/<MODULE>/flow-<slug>.md` |
 | `legacy-ibmi-module-analyzer` | `3f Module Analysis Done` (or `3e` if partial) | `04_modules/<MODULE>/module-overview.md` |
+| `legacy-brd-writer` | (does not advance numeric stage; records BRD Review Gate status) | `05_brds/<CAP-*>/brd.md` |
 | `legacy-spec-writer` | `8c Spec Approved` / `8b Spec In Review` / `8a Spec Drafted` (matches `spec.yaml.status`) | `05_specs/<CAP-*>/spec.yaml` |
 | `legacy-brd-to-sdd-handoff` | `10 Forward Handoff Ready` | `09_forward-sdlc/<CAP-*>/handoff-bundle.yaml` |
 | `legacy-golden-master-test-planner` | `9 Equivalence Pack Ready` | `06_quality/<CAP-*>/golden-master-tests.md` |
@@ -160,8 +161,8 @@ Skills not in this table (`legacy-step-validator`,
 `legacy-runtime-matrix-tester`, `legacy-step-contract`,
 `legacy-ibmi-screen-report-analyzer`,
 `legacy-ibmi-data-model-analyzer`,
-`legacy-modernization-decision-writer`, `legacy-brd-writer`) — plus
-`legacy-ibmi-batch-digest` which IS in the table but is also history-only — are
+`legacy-modernization-decision-writer`) — plus `legacy-brd-writer` and
+`legacy-ibmi-batch-digest` which ARE in the table but are also history-only — are
 governance / supplemental: **append `history[]` only, do not advance
 `stage_id`**. Some may make scoped edits to `capabilities[<CAP-*>].blocking.*`
 (e.g. `legacy-sme-review-facilitator` updates `sme_pending`,

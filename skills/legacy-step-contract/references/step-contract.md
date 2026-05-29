@@ -304,7 +304,7 @@ authoritative procedure.
 - INPUT: authorized scattered Visio / Word / Excel / PDF / PowerPoint / RAG /
   SME-note documents, module identity, draft scope, and source-document
   authorization metadata
-- EXECUTION: normalize scattered documents into the draft four-flow package
+- EXECUTION: normalize scattered documents into the draft four-view context package
   shape defined by
   `skills/legacy-flow-context-normalizer/references/output-contract.md`
 - OUTPUT: `00_context_packages/<MODULE-SLUG>/flow-normalization/` with source
@@ -316,7 +316,7 @@ authoritative procedure.
   - semantic: draft document-derived flow steps remain candidates and are not
     promoted to approved `BR-*`; contradictions and obsolete-document signals
     are not hidden
-  - SME: SME or accountable owner confirms four-flow correctness before the
+  - SME: SME or accountable owner confirms context-view correctness before the
     package can route to `legacy-module-context-intake`
 
 ### Module Context Intake (`legacy-module-context-intake`)

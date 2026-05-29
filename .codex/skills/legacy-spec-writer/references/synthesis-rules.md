@@ -17,7 +17,7 @@ tells you **where each value comes from**.
 | `status` | workflow state | starts `draft`; → `in_review` after self-check; → `approved` after SME sign-off |
 | `source_system` | inventory.yaml | copy `name`, `libraries`, `collection_date` |
 | `target_platform` | SME / platform hint | architecture string + service hint |
-| `business_goal` | approved BRD section 1 if present; otherwise module View 1 Business Scope | one-sentence summary |
+| `business_goal` | approved BRD section 1, cross-checked against module View 1 Business Scope | one-sentence summary |
 | `scope.in_scope` / `scope.out_of_scope` | approved BRD section 1 + SME + module overview Scope Statement | per-capability narrowing of module scope |
 | `evidence[]` | every EV-* referenced by any in-scope flow / program analysis and approved BRD traceability | one row per EV; never inline raw sensitive data |
 | `observed_behaviors[]` | flow analyses' control flow + program analyses' behaviors | factual: what the legacy does |
@@ -25,7 +25,7 @@ tells you **where each value comes from**.
 | `modernization_decisions[]` | derived from BRs + target_platform constraints + SME | each DEC has rationale |
 | `data_model.entities[]` | module View 4 (Data Flow) | each major PF/LF/SQL table that the target system will own |
 | `data_model.entities[].fields[]` | DDS / SQL definitions + cross-program references | type maps to target type per platform |
-| `process_flow.steps[]` | approved BRD section 6 if present + business-visible phases and outcomes from the relevant flow analysis; Transaction Call Map is supporting evidence | one STEP per business step, not one STEP per program node |
+| `process_flow.steps[]` | approved BRD section 6 + business-visible phases and outcomes from the relevant flow analysis; Transaction Call Map is supporting evidence | one STEP per business step, not one STEP per program node |
 | `inputs[]` | approved BRD sections 3-5 + flow analysis Trigger Context + UI surfaces input fields | source = api/screen/batch/file/integration/manual |
 | `outputs[]` | approved BRD sections 4-5 + flow analysis exit nodes + Cross-Program Data Flow carriers with external handoff / creates / updates state impact | target = api_response/event/database/report/spool/file/integration |
 | `exceptions[]` | approved BRD section 8 + flow analysis Error Propagation + program analyses Error Handling | each EX has severity |
@@ -36,11 +36,12 @@ tells you **where each value comes from**.
 
 ---
 
-## Consuming an Approved BRD Package
+## Required Approved BRD Package
 
-When `05_brds/<CAPABILITY-SLUG>/` exists and is approved, treat it as reviewed
-business context, not as a replacement for upstream evidence. The BRD's
-SME-required functional areas map into the spec as follows:
+In the standard workflow, `05_brds/<CAPABILITY-SLUG>/` must exist and be
+approved before spec writing. Treat it as reviewed business context, not as a
+replacement for upstream evidence. The BRD's SME-required functional areas map
+into the spec as follows:
 
 - BRD section 3 Channels and section 4 User Interface / User Touchpoints feed
   `inputs[]`, `outputs[]`, and user-visible exception context.

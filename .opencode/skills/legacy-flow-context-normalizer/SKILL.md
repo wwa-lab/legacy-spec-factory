@@ -1,6 +1,6 @@
 ---
 name: legacy-flow-context-normalizer
-description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft four-view module flows: Operation / Business Flow, System Flow, Program Flow, and Data Flow. Use when a team has historical documents or specs that do not yet conform to the Legacy Spec Factory four-flow standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted flows as approved business rules.
+description: Normalize scattered legacy documentation in Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft four-view context files: Operation / Business, System, Program, and Data. Use when a team has historical documents or specs that do not yet conform to the Legacy Spec Factory four-view context standard and needs a traceable SME review or source-quality triage package before `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or BRD generation. Blocks on unknown evidence authorization, missing module scope, unsupported opaque files with no readable export, hidden contradictions, or attempts to treat draft extracted context as approved business rules or canonical module flows.
 ---
 
 <!--
@@ -19,7 +19,7 @@ Retain this notice in substantial copies or derived versions.
 ## Purpose
 
 Turn scattered historical documentation and specs into a **draft,
-evidence-linked four-flow review package**:
+evidence-linked four-view context review package**:
 
 ```text
 00_context_packages/<MODULE-SLUG>/flow-normalization/
@@ -38,10 +38,18 @@ evidence-linked four-flow review package**:
 This skill is the upstream bridge for teams whose knowledge is trapped in
 Visio, Word, Excel, PDF, PowerPoint, exported screenshots, Function Specs,
 Technical Designs, Program Specs, File Specs, interface specs, data dictionary
-extracts, old process decks, runbooks, or SME notes. The four flows are the
-normalization target, not a raw-input requirement. This skill makes the
-material reviewable, but it does **not** approve flows, mint final `BR-*`
+extracts, old process decks, runbooks, or SME notes. The four context views
+are the normalization target, not a raw-input requirement. This skill makes the
+material reviewable, but it does **not** approve context, mint final `BR-*`
 rules, or generate a BRD.
+
+These files are context views under `00_context_packages/`, not the canonical
+module-analysis artifacts under `04_modules/`. When reporting this step to a
+user, call them **draft context views** or a **flow-normalization package**.
+Do not say this step created the final four module flows. The canonical
+`01-operation-flow.md` / `02-system-flow.md` / `03-program-flow.md` /
+`04-data-flow.md` module artifacts are produced later by
+`legacy-ibmi-module-analyzer`.
 
 ## Boundary
 
@@ -52,7 +60,7 @@ Do not use it as a replacement for:
 
 - `legacy-ibmi-evidence-intake` when raw source/runtime evidence authorization
   or redaction is unresolved.
-- `legacy-module-context-intake` when the four flows are already
+- `legacy-module-context-intake` when the four context views are already
   SME-reviewed or explicitly supplied as human-confirmed context.
 - `legacy-ibmi-flow-analyzer` when the task is source-backed call-chain
   analysis across IBM i programs.
@@ -93,8 +101,8 @@ Stop and produce only blocking findings if any apply:
 | Contradictions are found but the user asks to hide or smooth them over | block; keep `contradiction-log.md` visible |
 | Draft flows are requested as approved rules, approved module context, or BRD input without SME review | block; route through SME review first |
 
-Missing one or more of the four standard flows is **not** a stop condition.
-Create the missing view file with a placeholder Mermaid node, a `TBD-*`
+Missing one or more of the four standard context views is **not** a stop
+condition. Create the missing view file with a placeholder Mermaid node, a `TBD-*`
 question, and `coverage.<view>: absent` or `partial`. If no flow can be safely
 generated but the authorized documents contain module-relevant clues, produce a
 source-quality triage package instead of failing silently. The goal is to
@@ -356,7 +364,8 @@ orchestrator.
       or flow input can be provided and accepts carrying the gaps forward.
       Preserve
       `quality_level: L1 sparse`; do not upgrade coverage or confidence.
-    - `ready_for_context_intake` only when SME review confirms all four flows.
+    - `ready_for_context_intake` only when SME review confirms all four
+      context views for intake.
     - `ready_with_warnings` only when unresolved items are explicitly
       non-blocking and carried into `open-questions.md`; this is the preferred
       status for SME-accepted partial packages.
@@ -376,7 +385,7 @@ orchestrator.
 
 After SME approval, run `legacy-module-context-intake` with:
 
-- the four flow files from this package,
+- the four context-view files from this package,
 - `evidence-map.md`,
 - `contradiction-log.md`,
 - `open-questions.md`,
@@ -397,7 +406,7 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
 
 ## Version
 
-- v0.1.0 (2026-05-27): Initial document-to-four-flow normalization skill.
+- v0.1.0 (2026-05-27): Initial document-to-four-view-context normalization skill.
 - v0.1.1 (2026-05-27): Added deterministic multi-sheet `.xlsx` extraction
   helper that emits `DOC-*` and `FRAG-*` rows for `source-document-index.yaml`.
 - v0.1.2 (2026-05-27): Required Mermaid flow diagrams in every normalized
@@ -418,3 +427,6 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
 - v0.1.7 (2026-05-28): Added advisory BRD functional-analysis hints so raw
   flow/context fragments can surface likely inputs for BRD sections 1-9 and
   optional sections 10-12 without making absent facts look confirmed.
+- v0.1.8 (2026-05-29): Clarified canonical timing: this skill creates draft
+  context views under `00_context_packages/`, while final module four-flow
+  artifacts are produced only by `legacy-ibmi-module-analyzer`.

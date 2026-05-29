@@ -8,7 +8,7 @@ upstream stage that fits — do not "round up" maturity.
 | # | Stage | Identifying Input |
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
-| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data flows are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
+| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data context views are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
 | 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
 | 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
@@ -20,7 +20,7 @@ upstream stage that fits — do not "round up" maturity.
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
-| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd) |
+| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). If no approved BRD Package exists for the selected capability, the next route remains BRD writing / review, not spec writing. |
 | 4a | Static Analysis Partial | One or more of `call-graph.md`, `crud-matrix.md`, `data-dictionary.md`, `screen-map.md` (optional supplemental artifacts; mostly subsumed by program/flow/module analyses) |
 | 4b | Static Analysis Complete | All four Layer 1 supplemental artifacts present (optional) |
 | 5 | Runtime Evidence Mined | `runtime-evidence.jsonl` plus referenced samples in `07_runtime-evidence/` (deferred from MVP) |
@@ -62,6 +62,15 @@ When flow-normalization output is sparse:
   package or explicitly accepts non-blocking gaps.
   Do not round it up to module context ready.
 
+When module analysis is complete but BRD review is missing:
+
+- Keep the canonical stage at **3f Module Analysis Done** for workflow-state
+  compatibility, but attach `stage-cards/05a-brd-writing.md` and route to
+  `legacy-brd-writer`.
+- Do not identify the capability as **8a Spec Drafted** merely because a
+  `spec.md` or `spec.yaml` was generated early. If the approved BRD Package is
+  missing, the current unmet gate is the BRD Review Gate.
+
 When only forward chain artifacts exist:
 
 - If the user has only `wwa-lab/build-agent-skill`-style **target-system**
@@ -86,6 +95,7 @@ artifacts live at `docs/XXX260004-demo/01_inventory/`.
 | 3a, 3b | `02_programs/` |
 | 3c, 3d | `03_flows/` |
 | 3e, 3f | `04_modules/` |
+| 3f + BRD Review Gate | `05_brds/` |
 | 4 | optional supplemental artifacts under the owning program / flow / module folder |
 | 5 | `07_runtime-evidence/` |
 | 6, 7 | `08_business-understanding/` |

@@ -1,7 +1,7 @@
 # SME Review Pack - CREDIT-CHECK
 
 ## Review Scope
-Review the normalized four-flow package for Credit Check. The source set is
+Review the normalized four-view context package for Credit Check. The source set is
 synthetic and approved for agent review.
 
 ## Approval Checklist

@@ -14,7 +14,7 @@ normalization:
   version: v0.1.0
   generated_at: "2026-05-27T00:00:00Z"
   status: ready_for_context_intake
-  decision_reason: "SME confirmed the draft four flows and accepted non-blocking data retention question for carry-forward."
+  decision_reason: "SME confirmed the draft context views and accepted non-blocking data retention question for carry-forward."
   downstream_next_step: legacy-module-context-intake
 
 evidence_authorization:

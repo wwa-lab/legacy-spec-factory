@@ -1,6 +1,6 @@
 ---
 name: legacy-spec-writer
-description: Produce evidence-backed `spec.yaml` and `spec.md` artifacts from approved module + flow + program analyses. One spec per business capability (CAP-*). Layer 2 (platform-agnostic) skill — sits at the boundary between reverse engineering and forward SDLC, producing the contract that `build-agent-skill` consumes. Implements `schemas/spec.schema.yaml`.
+description: Produce evidence-backed `spec.yaml` and `spec.md` artifacts from approved module + flow + program analyses plus an approved BRD Package. One spec per business capability (CAP-*). Layer 2 (platform-agnostic) skill — sits after BRD review at the boundary between reverse engineering and forward SDLC, producing the contract that `build-agent-skill` consumes. Implements `schemas/spec.schema.yaml`.
 ---
 
 <!--
@@ -19,14 +19,16 @@ Retain this notice in substantial copies or derived versions.
 ## Purpose
 
 Synthesize one **business capability spec** from approved upstream
-analyses. The output is a structured, evidence-backed `spec.yaml` (plus a
-human-readable `spec.md`) that the forward SDLC (`build-agent-skill`)
-can consume to generate target-platform code.
+analyses and an approved BRD Package. The output is a structured,
+evidence-backed `spec.yaml` (plus a human-readable `spec.md`) that the
+forward SDLC (`build-agent-skill`) can consume to generate target-platform
+code.
 
 This skill is the **first platform-agnostic layer**. It does not look at
 IBM i source code directly — only at the analyses produced by
 `legacy-ibmi-module-analyzer`, `legacy-ibmi-flow-analyzer`, and
-`legacy-ibmi-program-analyzer`.
+`legacy-ibmi-program-analyzer`, plus the SME-reviewed BRD Package produced by
+`legacy-brd-writer`.
 
 One capability = one `spec.yaml`. A module typically produces multiple
 specs (one per capability identified in the module overview's "Capability
@@ -43,14 +45,15 @@ Accept:
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
+- **Approved BRD Package** (required in the standard workflow) —
+  `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`,
+  `validation-scenarios.md`, `traceability.md`, and approval / review
+  decision evidence. Use it as reviewed business context for SME-required
+  areas such as channels, user touchpoints, system interfaces, process flow,
+  validation rules, error handling, dependencies, and source-document gaps; do
+  not treat it as a substitute for approved module / flow / program evidence.
 - **Target platform hint** (optional) — Java/Spring, Java/Quarkus,
   serverless, etc. Used to inform `target_platform` and `modernization_decisions`
-- **Approved BRD Package** (optional but preferred when produced) —
-  `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`,
-  `review-decision.yaml`, and `traceability.md`. Use it as reviewed business
-  context for SME-required areas such as channels, user touchpoints, system
-  interfaces, error handling, dependencies, and source-document gaps; do not
-  treat it as a substitute for approved module / flow / program evidence.
 - **SME availability** — capability owner who will approve `business_rules`,
   `acceptance_criteria`, and resolve open `TBD-*`
 - **Conditionally required from inventory triggers:**
@@ -75,6 +78,10 @@ Stop and require clarification if:
   route to `legacy-ibmi-module-analyzer`
 - The chosen capability seed has unresolved blocking TBDs in the module
   analysis
+- No approved BRD Package exists for the chosen capability → route to
+  `legacy-brd-writer` / `legacy-sme-review-facilitator`, unless the requester
+  explicitly records a technical-spec-only bypass with approver and risk
+  acceptance
 - No SME owns the capability (without SME, `business_rules` cannot move
   beyond `draft`)
 - Target platform is completely unspecified and decisions cannot be
@@ -132,19 +139,21 @@ field-level rules. The summary below is normative for this skill.
   `flow-<FLOW-SLUG>.md` for every flow the module references; approved
   `program-analysis-<OBJ-ID>.md` for every program in those flows;
   approved `01_inventory/inventory.yaml`; one `CAP-*` capability seed
-  from the module overview; named capability-owner SME.
+  from the module overview; approved BRD Package for that capability;
+  named capability-owner SME.
 - **Optional**: target platform hint (Java/Spring, Java/Quarkus,
   serverless, etc.) — informs `target_platform` and
   `modernization_decisions`.
 - **Input readiness scoring**:
   - `0-5 blocked`: approved module missing, capability seed unresolved,
     blocking TBDs remain, no capability-owner SME, required triggered artifact
-    missing, or evidence authorization unresolved.
+    missing, approved BRD Package missing, or evidence authorization
+    unresolved.
   - `6 minimum_pass`: approved module/upstream analyses, one SME-confirmed
-    `CAP-*`, named SME owner, and required triggered data/screen/report outputs
-    are present.
-  - `7-8 usable`: target platform hint, BAU notes, approved BRD Package or
-    related BRD/module context are supplied.
+    `CAP-*`, approved BRD Package, named SME owner, and required triggered
+    data/screen/report outputs are present.
+  - `7-8 usable`: target platform hint, BAU notes, and BRD review decisions /
+    coverage notes are supplied.
   - `9-10 strong`: acceptance examples, negative cases, runtime observations,
     platform constraints, and modernization decision context are also supplied.
   - Missing target platform hint does not block observed-behavior/spec drafting
@@ -154,8 +163,9 @@ field-level rules. The summary below is normative for this skill.
   available to approve `BR-*` and `AC-*`.
 - **Stop conditions**: module status below `approved_with_non_blocking_tbd`
   (route back to `legacy-ibmi-module-analyzer`); selected `CAP-*` has
-  unresolved blocking TBDs in the module; no SME owns the capability;
-  target platform completely unspecified when decisions are required.
+  unresolved blocking TBDs in the module; approved BRD Package is missing or
+  not approved; no SME owns the capability; target platform completely
+  unspecified when decisions are required.
 
 ### Execution
 
@@ -273,9 +283,8 @@ to the orchestrator. The Forward Handoff Gate
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
    - `process_flow.steps[]` from the relevant flow's business-visible phases
      and major outcomes, using the Transaction Call Map only as evidence
-   - If an approved BRD Package is present, use BRD section 6 as the
-     business-readable process-flow framing and cross-check it against module /
-     flow evidence
+   - Use the approved BRD Package's section 6 as the business-readable
+     process-flow framing and cross-check it against module / flow evidence
    - `inputs[]` from flow analysis Trigger Context, UI surfaces' input fields,
      and BRD sections 3-5 (channels, user touchpoints, system interfaces)
    - `outputs[]` from flow analysis exit nodes, Cross-Program Data Flow
@@ -424,6 +433,10 @@ Synced to all four runtime adapters.
 
 ## Version History
 
+- v0.1.2 (2026-05-29): Enforced the BRD-first review gate. Standard spec
+  writing now requires an approved BRD Package for the selected capability;
+  direct module-to-spec generation is only an explicit technical-spec-only
+  bypass with recorded risk acceptance.
 - v0.1.1 (2026-05-28): Added approved BRD Package consumption rules. Spec
   synthesis may use SME-reviewed BRD sections 3-6, 8, and 9 for
   inputs/outputs/process/exceptions/open questions, while blocked or
