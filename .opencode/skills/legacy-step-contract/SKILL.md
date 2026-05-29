@@ -431,6 +431,10 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.2 (2026-05-29): Renamed flow-context-normalizer Step Contract wording
+  from "draft four-flow package" to "draft four-view context package" so
+  upstream context views are not confused with canonical module-analysis
+  flow artifacts.
 - v0.1.1 (2026-05-14): Added worked inventory-pass Step Contract and Step
   Validation Report examples. Reconciled compact validation result fields
   (`downstream_next_step`, `remediation_step`) and clarified that

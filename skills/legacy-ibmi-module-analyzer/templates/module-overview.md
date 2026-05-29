@@ -21,7 +21,7 @@
 ## Top Blocking TBDs
 (Aggregate of `pending_source` and `pending_sme_judgment` from all views.)
 
-## Capability Seeds For spec-writer
+## Capability Seeds For BRD / Spec
 | CAP Seed | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- |
 | CAP-[SLUG]-001 | [business event / outcome / rule cluster suggesting a capability] | [view / flow / program evidence refs] | [business-language boundary question] |
@@ -55,7 +55,7 @@ content; partial or missing required areas must carry a `TBD-*`.
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs
 - [ ] No blocking TBDs remain
 - [ ] Capability seeds reviewed
-- [ ] Module ready for spec-writer
+- [ ] Module ready for BRD writer
 
 ## Sign-Off
 - **Module Owner:** ____

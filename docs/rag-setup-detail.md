@@ -33,7 +33,7 @@ RAG retrieval is evidence context, not final truth.
 Source code is observed behavior.
 Data dictionary is approved business meaning.
 ARCAD REF is relationship seed.
-Human-confirmed four flows are the preferred BRD skeleton.
+Human-confirmed four-view context is the preferred BRD skeleton.
 Historical specs and scattered documents can be normalized into that skeleton
 when reviewed flows are not yet available.
 BRD-stage VAL scenarios are review seeds, not final TC cases.

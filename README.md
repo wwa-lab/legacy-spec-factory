@@ -610,26 +610,26 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
-| `legacy-flow-context-normalizer` | [v0.1.6 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.6-scorecard.md) | 9.48 | 9.0 | Repo-ready | v0.1.6 adds Function Spec / Technical Design / Program Spec / File Spec input coverage; runtime smoke pending |
-| `legacy-module-context-intake` | [v0.1.2 scorecard](docs/reviews/legacy-module-context-intake-v0.1.2-scorecard.md) | 9.43 | 9.0 | Repo-ready | v0.1.2 accepts owner-risk-approved sparse context as low-confidence input; runtime smoke pending |
+| `legacy-flow-context-normalizer` | [v0.1.9 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) | 9.51 | 9.0 | Repo-ready | v0.1.9 adds AS400 technical-anchor gates for Program/Data flow; runtime smoke pending |
+| `legacy-module-context-intake` | [v0.1.4 scorecard](docs/reviews/legacy-module-context-intake-v0.1.4-scorecard.md) | 9.46 | 9.0 | Repo-ready | v0.1.4 keeps intake views context-only; runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
 | `legacy-ibmi-program-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) | 9.39 | 9.0 | Repo-ready | Fixes committed in `99e27f4`; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.1.2 scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) | 9.62 | 9.0 | Repo-ready | v0.1.2 makes Business Capability Seeds business-readable; three-runtime smoke pending |
-| `legacy-ibmi-module-analyzer` | [v0.1.2 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.2-scorecard.md) | 9.28 | 9.0 | Repo-ready | v0.1.2 makes capability seeds business-signal first; three-runtime smoke pending |
+| `legacy-ibmi-module-analyzer` | [v0.1.4 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.1.4-scorecard.md) | 9.36 | 9.0 | Repo-ready | v0.1.4 keeps canonical Mermaid-backed four-view module analysis under `04_modules/` but routes standard consumption to BRD writer first; three-runtime smoke pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
-| `legacy-brd-writer` | [v0.1.3 scorecard](docs/reviews/legacy-brd-writer-v0.1.3-scorecard.md) | 9.42 | 9.0 | Repo-ready | SME 1-9 functional-analysis alignment added after v0.1.3; three-runtime smoke / rescore pending |
+| `legacy-brd-writer` | [v0.1.5 scorecard](docs/reviews/legacy-brd-writer-v0.1.5-scorecard.md) | 9.44 | 9.0 | Repo-ready | v0.1.5 makes BRD the standard business review gate before spec-writing; three-runtime smoke pending |
 | `legacy-brd-to-sdd-handoff` | [v0.1.0 scorecard](docs/reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) | 9.63 | 9.63 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional frozen positive example output |
-| `legacy-spec-writer` | [v0.1.1 scorecard](docs/reviews/legacy-spec-writer-v0.1.1-scorecard.md) | 9.25 | 9.0 | Repo-ready | v0.1.1 prevents process_flow from copying legacy call chains; three-runtime smoke pending |
-| `legacy-modernization-orchestrator` | [v0.2.3 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.3-scorecard.md) | 9.38 | 9.0 | Repo-ready | v0.2.3 routes historical spec inputs to flow normalization; expanded-route execution remains pending |
+| `legacy-spec-writer` | [v0.1.2 scorecard](docs/reviews/legacy-spec-writer-v0.1.2-scorecard.md) | 9.33 | 9.0 | Repo-ready | v0.1.2 requires an approved BRD Package before standard spec-writing; three-runtime smoke pending |
+| `legacy-modernization-orchestrator` | [v0.2.5 scorecard](docs/reviews/legacy-modernization-orchestrator-v0.2.5-scorecard.md) | 9.44 | 9.0 | Repo-ready | v0.2.5 routes module analysis to BRD review before spec-writing; expanded-route execution remains pending |
 | `legacy-modernization-decision-writer` | [v0.1.0 scorecard](docs/reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; remaining work is optional field-style decision package coverage |
 | `legacy-sme-review-facilitator` | [v0.1.2 scorecard](docs/reviews/legacy-sme-review-facilitator-v0.1.2-scorecard.md) | 9.40 | 9.0 | Repo-ready | v0.1.2 makes SME questions business-language first; three-runtime smoke pending |
 | `legacy-traceability-packager` | [v0.1.1 scorecard](docs/reviews/legacy-traceability-packager-v0.1.1-scorecard.md) | 9.51 | 9.51 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-runtime-matrix-tester` | [v0.1.0 scorecard](docs/reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) | 9.56 | 9.56 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
 | `legacy-golden-master-test-planner` | [v0.1.0 scorecard](docs/reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) | 9.59 | 9.59 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed |
-| `legacy-step-contract` | [v0.1.1 scorecard](docs/reviews/legacy-step-contract-v0.1.1-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional maintainability cleanup |
+| `legacy-step-contract` | [v0.1.2 scorecard](docs/reviews/legacy-step-contract-v0.1.2-scorecard.md) | 9.52 | 9.52 | Field-pilot ready | Terminology-only context-view alignment; prior three-runtime smoke passed |
 | `legacy-step-validator` | [v0.1.1 scorecard](docs/reviews/legacy-step-validator-v0.1.1-scorecard.md) | 9.53 | 9.53 | Field-pilot ready | Three-runtime smoke passed; remaining work is optional checklist-ID / re-validation-ID cleanup |
 | `legacy-html-exporter` | [v0.1.0 scorecard](docs/reviews/legacy-html-exporter-v0.1.0-scorecard.md) | 9.31 | 9.0 | Repo-ready | Codex passed smoke, but Claude Code failed the negative source-of-truth guardrail and OpenCode has not yet converged to a final no-write answer |
 
@@ -773,17 +773,17 @@ full status matrix and scorecard links.
 
 | # | Skill | Chain | Status | Review / next action |
 | ---: | --- | --- | --- | --- |
-| 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.3 repo-ready; run expanded runtime smoke tests to lift the 9.0 cap |
-| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.6; run three-runtime smoke tests for scattered docs/specs, partial-input, sparse-triage, owner-accepted sparse, and multi-sheet Excel normalization |
+| 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.5 repo-ready with BRD-first routing; run expanded runtime smoke tests to lift the 9.0 cap |
+| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.9; run three-runtime smoke tests for scattered docs/specs, sparse API/menu-only input, sparse business-data-only input, owner-accepted sparse, and multi-sheet Excel normalization |
 | 3 | `legacy-module-context-intake` | Module-first context | Existing | Repo-ready after v0.1.2 accepted-sparse intake hardening; run three-runtime smoke tests for RAG/context package intake |
 | 4 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
 | 5 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
 | 6 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
 | 7 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
 | 8 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-readable seed hardening; run three-runtime smoke tests |
-| 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.2 business-signal seed hardening; run three-runtime smoke tests |
-| 10 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after business-readable BRD hardening and SME 1-9 alignment; run three-runtime smoke and rescore before field-pilot label |
-| 11 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.1 process-flow hardening; finish remaining smoke |
+| 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.1.4 BRD-first downstream wording and mandatory Mermaid view diagrams; run three-runtime smoke tests |
+| 10 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after v0.1.5 BRD-first gate alignment; run three-runtime smoke before field-pilot label |
+| 11 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.2 approved-BRD requirement; finish remaining smoke |
 | 12 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
 | 13 | `legacy-step-validator` | Governance | Existing | Field-pilot ready; keep as shared validation gate |
 | 14 | `legacy-ibmi-data-model-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.1.0, 9.0 capped); Codex/OpenCode smoke passed, Claude Code smoke blocked by local CLI login |
@@ -806,7 +806,7 @@ as a placeholder. The remaining work is validation and scorecard hardening:
 1. `legacy-ibmi-runtime-evidence-miner` — optionally run integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes`.
 2. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
 3. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
-4. `legacy-flow-context-normalizer`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
+4. `legacy-flow-context-normalizer`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, `legacy-spec-writer`, and `legacy-modernization-orchestrator` — finish pending three-runtime smoke or expanded-route smoke.
 
 Governance/Infrastructure skills (already implemented):
 - `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
@@ -817,7 +817,7 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.6, 9.0 capped; runtime smoke pending) |
+| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, AS400 technical-anchor gates for Program/Data flow, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.9, 9.0 capped; runtime smoke pending) |
 | `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output, human-confirmed four-view module context, or owner-risk-approved sparse flow-normalization output into a traceable package before module analysis, with candidates framed as business signals backed by evidence or carried as low-confidence TBDs | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
@@ -828,7 +828,7 @@ Governance/Infrastructure skills (already implemented):
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, and data flow | `program-analysis.md` | Repo-ready (9.0 capped; fixes committed) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs and surface business-readable capability seeds | `flow-<FLOW-SLUG>.md` | Repo-ready (v0.1.2, 9.0 capped; smoke pending) |
-| `legacy-ibmi-module-analyzer` | Synthesize a 4-view module model from reviewed Operation / Business, System, Program, and Data flows; when needed, start from program or flow analysis and build business-signal capability seeds | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; smoke pending) |
+| `legacy-ibmi-module-analyzer` | Synthesize a Mermaid-backed 4-view module model from reviewed Operation / Business, System, Program, and Data flows; when needed, start from program or flow analysis and build business-signal capability seeds for BRD writing before spec-writing | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.1.4, 9.0 capped; smoke pending) |
 | `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
 | `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
@@ -850,11 +850,11 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates, including quality-aware routing for scattered document/spec normalization, sparse-input triage, and owner-accepted sparse context intake | routing decision | v0.2.3 repo-ready (9.0 capped; expanded-route smoke pending) |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates, including quality-aware routing for scattered document/spec normalization, sparse-input triage, owner-accepted sparse context intake, and BRD-first review before spec-writing | routing decision | v0.2.5 repo-ready (9.0 capped; expanded-route smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
-| `legacy-brd-writer` | Produce an evidence-backed, business-readable BRD Package from an approved module analysis, preserving SME-required functional-analysis sections 1-9, keeping optional sections evidence-backed, and adding BRD-stage `VAL-*` validation scenario seeds while separating observed behavior, inferred rules, SME decisions, assumptions, and TBDs | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | SME 1-9 alignment pending smoke / rescore |
-| `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md`, with process flow steps framed as business-visible capability behavior rather than legacy call chains | `spec.yaml`, `spec.md` | Repo-ready (v0.1.1, 9.0 capped; smoke pending) |
+| `legacy-brd-writer` | Produce an evidence-backed, business-readable BRD Package from an approved module analysis as the standard review gate before spec-writing, preserving SME-required functional-analysis sections 1-9, keeping optional sections evidence-backed, and adding BRD-stage `VAL-*` validation scenario seeds while separating observed behavior, inferred rules, SME decisions, assumptions, and TBDs | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | Repo-ready (v0.1.5, 9.0 capped; smoke pending) |
+| `legacy-spec-writer` | Produce the modernization-ready `spec.yaml` and `spec.md` after approved BRD review, with process flow steps framed as business-visible capability behavior rather than legacy call chains | `spec.yaml`, `spec.md` | Repo-ready (v0.1.2, 9.0 capped; smoke pending) |
 | `legacy-modernization-decision-writer` | Expand and govern complex `DEC-*` modernization decisions without becoming the architecture/design/task layer | `05_decisions/<CAPABILITY-SLUG>/` | Field-pilot ready (v0.1.0, 9.56) |
 | `legacy-sme-review-facilitator` | Run chat-driven SME review with business-language-first questions, record decision logs, capture sign-off, write BRD review decisions back to `review-decision.yaml`, and route follow-up findings without substituting AI judgment | `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/`, `05_brds/<CAPABILITY-SLUG>/review-decision.yaml` | v0.1.2 pending smoke / rescore |
 | `legacy-brd-to-sdd-handoff` | Validate an approved BRD and approved spec, then package the Atlas SDD handoff without inventing design or implementation decisions | `06_sdd_handoffs/<CAPABILITY-SLUG>/sdd-handoff.yaml`, `sdd-handoff.md`, `atlas-context-pack.json`, `handoff-review.md`, `traceability.md` | Field-pilot ready (v0.1.0, 9.63) |

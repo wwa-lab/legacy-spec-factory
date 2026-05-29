@@ -23,4 +23,6 @@ Use legacy-ibmi-module-analyzer with
 Treat RAG snippets and runtime observations as evidence context only.
 Preserve contradiction-log.md and open-questions.md as TBD inputs.
 Do not promote candidate rules without SME review.
+Generate the canonical four module views only under
+04_modules/[MODULE-SLUG]/.
 ```

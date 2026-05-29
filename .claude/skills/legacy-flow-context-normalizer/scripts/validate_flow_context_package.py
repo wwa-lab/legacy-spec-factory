@@ -42,8 +42,11 @@ BLOCKED_STATUSES = {
 ALL_STATUSES = READY_STATUSES | DRAFT_STATUSES | BLOCKED_STATUSES
 
 EVIDENCE_ID_RE = re.compile(
-    r"\b(?:DOC|FRAG)-[A-Z0-9-]+-\d{3}\b"
+    r"\b(?:DOC|FRAG|SYS|PGM|DATA)-[A-Z0-9-]+-\d{3}\b"
 )
+
+PGM_ID_RE = re.compile(r"\bPGM-[A-Z0-9-]+-\d{3}\b")
+DATA_ID_RE = re.compile(r"\bDATA-[A-Z0-9-]+-\d{3}\b")
 
 _UNKNOWN_AUTH_RE = re.compile(r"authorization_status:\s*[\"']?unknown[\"']?")
 _UNREADABLE_RE = re.compile(r"readable_status:\s*[\"']?unreadable[\"']?")
@@ -82,6 +85,18 @@ def section(text: str, heading: str) -> str:
     return text[start : start + next_match.start()]
 
 
+def top_level_block(text: str, key: str) -> str:
+    pattern = re.compile(rf"^{re.escape(key)}:\s*$", re.M)
+    match = pattern.search(text)
+    if not match:
+        return ""
+    start = match.end()
+    next_match = re.search(r"^\S[^:\n]*:\s*(?:\n|$)", text[start:], re.M)
+    if not next_match:
+        return text[start:]
+    return text[start : start + next_match.start()]
+
+
 def markdown_cells(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
@@ -105,6 +120,10 @@ def view_has_data_rows(text: str, heading: str) -> bool:
 def view_has_mermaid_diagram(text: str) -> bool:
     diagram = section(text, "Mermaid Flow Diagram")
     return bool(re.search(r"```mermaid\s+flowchart\s+(?:TD|LR|BT|RL)", diagram, re.I))
+
+
+def view_has_source_supplement_placeholder(text: str) -> bool:
+    return "source_supplement_required" in text and "TBD-" in text
 
 
 def validate(package_dir: Path, allow_blocked: bool, allow_draft: bool) -> list[str]:
@@ -155,6 +174,26 @@ def validate(package_dir: Path, allow_blocked: bool, allow_draft: bool) -> list[
             findings.append(f"{name} must include a Mermaid flowchart in Mermaid Flow Diagram")
         if not view_has_data_rows(text, "Evidence-Linked Flow Steps"):
             findings.append(f"{name} must include at least one evidence-linked flow step")
+
+    coverage_block = top_level_block(index_text, "coverage")
+    if status in READY_STATUSES and "technical_anchor_coverage:" not in coverage_block:
+        findings.append("ready packages must declare coverage.technical_anchor_coverage")
+
+    program_flow = read_text(package_dir / "03-program-flow.md")
+    if status in READY_STATUSES and not PGM_ID_RE.search(program_flow):
+        if not view_has_source_supplement_placeholder(program_flow):
+            findings.append(
+                "03-program-flow.md must either cite an IBM i program/job/object anchor "
+                "as PGM-* or carry a source_supplement_required TBD placeholder"
+            )
+
+    data_flow = read_text(package_dir / "04-data-flow.md")
+    if status in READY_STATUSES and not DATA_ID_RE.search(data_flow):
+        if not view_has_source_supplement_placeholder(data_flow):
+            findings.append(
+                "04-data-flow.md must either cite an IBM i file/table/data-object anchor "
+                "as DATA-* or carry a source_supplement_required TBD placeholder"
+            )
 
     evidence_map = read_text(package_dir / "evidence-map.md")
     missing_ids = sorted(id_ for id_ in ids_in_view_files(package_dir) if id_ not in evidence_map)

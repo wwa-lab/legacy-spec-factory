@@ -8,20 +8,20 @@
   - FRAG-CREDIT-CHECK-004
 
 ## Summary
-The application status data object is updated with the approve or decline
+The `APPLICPF` application status file is updated with the approve or decline
 recommendation. Retention is not documented and is carried forward as a
 non-blocking question.
 
 ## Mermaid Flow Diagram
 ```mermaid
 flowchart TD
-  STEP_CREDIT_CHECK_004["Application status updated with recommendation result"]
+  STEP_CREDIT_CHECK_004["APPLICPF application status updated with recommendation result"]
 ```
 
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |
-| STEP-CREDIT-CHECK-004 | 1 | Application status is updated with the eligibility recommendation result. | DOC-CREDIT-CHECK-002; FRAG-CREDIT-CHECK-004 | high | sme_confirmed |
+| STEP-CREDIT-CHECK-004 | 1 | `APPLICPF` application status is updated with the eligibility recommendation result. | DOC-CREDIT-CHECK-002; FRAG-CREDIT-CHECK-004; DATA-CREDIT-CHECK-001 (APPLICPF) | high | sme_confirmed |
 
 ## Candidate Seeds
 | Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |

@@ -75,12 +75,11 @@ Trigger on any of these signals:
 
 Do not trigger when:
 
-- You are going **directly from module analysis to spec-writing** (spec-writer
-  consumes module directly; BRD is optional workflow)
 - The output is **code** or **target-platform implementation** (use
   `legacy-spec-writer` then `build-agent-skill`)
-- You only need the **technical specification** (`spec.yaml`) (route directly
-  to `legacy-spec-writer`)
+- The requester has an explicitly approved **technical-spec-only bypass** and
+  accepts the missing BRD review as a documented risk (route to
+  `legacy-spec-writer` with that bypass recorded)
 - No **SME is available** to review and approve the BRD
 - The module analysis is **below `approved_with_non_blocking_tbd`** status (route
   back to `legacy-ibmi-module-analyzer`)
@@ -296,8 +295,9 @@ The summary below is normative for this skill.
   module/spec review instead of minting a new `BR-*` here. Does NOT mint
   `DEC-*`, `AC-*`, `IN-*`, `OUT-*`, `STEP-*`, `TC-*`, or new `BR-*`.
 - **Handoff status**: `status: draft` → `in_review` → `approved` (SME sign-off).
-  `legacy-spec-writer` may consume `approved` BRD; spec-writer can also consume
-  module analysis directly (BRD is optional artifact in the workflow).
+  `legacy-spec-writer` consumes the approved BRD Package in the standard
+  workflow. Direct module-to-spec generation is an exception that requires an
+  explicit technical-spec-only bypass with approver and risk acceptance.
 
 ### Validation
 
@@ -468,12 +468,13 @@ decision.
      notes confirm it for later spec promotion
    - If SME finds issues, mark `status: blocked` with specific findings
 
-## Workflow State Write-Back (history only — supplemental)
+## Workflow State Write-Back (history-only BRD gate)
 
-This is a supplemental Layer 1.5 skill. It produces a business-facing BRD
-between module analysis and spec writing, but does NOT advance the linear
-`stage_id` (BRD is parallel to the technical spec, not a stage on its
-path). It does NOT mutate `current_focus`.
+This is a mandatory business-review gate in the standard module-to-spec
+workflow. It produces a business-facing BRD between module analysis and spec
+writing, but does NOT advance the numeric `stage_id`; it records BRD review
+status in history and blocking metadata until approval. It does NOT mutate
+`current_focus`.
 
 After a run, append one `history[]` entry to
 `<project-root>/workflow-state.yaml` per
@@ -581,18 +582,18 @@ Before marking the BRD `approved`, confirm:
 
 - **`legacy-ibmi-module-analyzer`** (upstream): produces module analysis with
   BR-* seeds and capability seeds. BRD consumes this output.
-- **`legacy-spec-writer`** (downstream): consumes module analysis directly OR
-  module + approved BRD. If BRD is provided, spec-writer uses it as the
-  business context layer for rule promotion and acceptance criteria. BRD is an
-  optional artifact in the workflow.
+- **`legacy-spec-writer`** (downstream): consumes module analysis plus the
+  approved BRD Package in the standard workflow. The BRD is the business
+  context layer for rule promotion and acceptance criteria. Direct module-only
+  spec writing requires an explicit technical-spec-only bypass.
 - **`legacy-golden-master-test-planner`** (downstream verification): consumes
   approved spec acceptance criteria, runtime evidence, and approved scenario
   context to mint formal `TC-*` golden master cases. BRD `VAL-*` entries are
   planning seeds, not final test cases.
 - **`legacy-step-contract`** (parallel): defines the Step Contract shape that
   this skill conforms to.
-- **`legacy-modernization-orchestrator`** (meta): may route to BRD-writer as an
-  optional business review gate before spec-writing.
+- **`legacy-modernization-orchestrator`** (meta): routes to BRD-writer as the
+  standard business review gate before spec-writing.
 
 ## Runtime Portability
 
@@ -620,6 +621,10 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.5 (2026-05-29): Aligned the BRD writer with BRD-first orchestration.
+  BRD is now the standard business review gate before spec-writing; direct
+  module-to-spec work requires an explicit technical-spec-only bypass.
 
 - v0.1.4 (2026-05-27): SME functional-analysis alignment
   - Reframed `brd.md` around required SME sections 1-9

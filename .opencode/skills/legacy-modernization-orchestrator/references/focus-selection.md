@@ -193,7 +193,8 @@ plug in?" Quick lookup:
 | `inventory.yaml` (approved), nothing else | `new` per-module | `legacy-ibmi-program-analyzer` |
 | `program-analysis.md` for some programs | `continued` if in `capabilities[]`; else `scan` then `continued` | continue program analysis or move to `legacy-ibmi-flow-analyzer` |
 | `flow-*.md` for some flows | same | continue flows or move to `legacy-ibmi-module-analyzer` |
-| `module-overview.md` + 4 views approved | `continued` (one CAP-* per spec) | `legacy-spec-writer` |
+| `module-overview.md` + 4 views approved, no approved BRD Package | `continued` (one CAP-* per BRD) | `legacy-brd-writer` |
+| `module-overview.md` + 4 views approved + approved BRD Package | `continued` (one CAP-* per spec) | `legacy-spec-writer` |
 | `spec.yaml` (`status: draft`) | `continued` | finish spec, then SME review |
 | `spec.yaml` (`status: approved`) but no equivalence pack | `continued` | `legacy-golden-master-test-planner` |
 | Approved spec + equivalence pack, no handoff | `continued` | `legacy-brd-to-sdd-handoff` |

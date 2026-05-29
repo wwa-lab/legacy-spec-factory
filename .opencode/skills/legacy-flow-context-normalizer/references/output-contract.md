@@ -1,6 +1,6 @@
 # Output Contract: Flow Context Normalizer
 
-This reference defines the draft four-flow package produced under:
+This reference defines the draft four-view context package produced under:
 
 ```text
 00_context_packages/<MODULE-SLUG>/flow-normalization/
@@ -10,6 +10,11 @@ The package is a **pre-SME review artifact** unless
 `flow-context-index.yaml.normalization.status` is `ready_for_context_intake` or
 `ready_with_warnings`. It is not a BRD, approved module analysis, or final
 business-rule source.
+
+The four Markdown files in this package are normalized context views. They are
+not the canonical module-analysis flow files in `04_modules/<MODULE-SLUG>/`.
+Agents must not report this package as "the four module flows"; the final
+module flows are synthesized later by `legacy-ibmi-module-analyzer`.
 
 ## Package Layout
 
@@ -45,11 +50,11 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.6
+  version: v0.1.9
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   quality_level: L2 partial
-  decision_reason: "Draft four views generated from authorized historical docs."
+  decision_reason: "Draft context views generated from authorized historical docs."
   downstream_next_step: legacy-sme-review-facilitator
 
 evidence_authorization:
@@ -82,6 +87,10 @@ coverage:
   system_flow: partial | usable | strong | absent
   program_flow: partial | usable | strong | absent
   data_flow: partial | usable | strong | absent
+  technical_anchor_coverage:
+    program_anchors: absent | partial | usable | strong
+    data_anchors: absent | partial | usable | strong
+    supplement_required: true | false
   brd_functional_analysis_hints:
     function_purpose: absent | partial | usable | strong
     business_scenarios: absent | partial | usable | strong
@@ -121,6 +130,11 @@ blocking_items:
   - id: TBD-CREDIT-CHECK-001
     reason: "Data retention flow is not visible in supplied documents."
     owner: "Data owner"
+supplement_requests:
+  - id: TBD-CREDIT-CHECK-002
+    view: program_flow
+    needed_source: "API/menu-to-program mapping or IBM i program inventory"
+    reason: "API IDs were supplied, but no AS400 program names were evidenced."
 ```
 
 Rules:
@@ -163,11 +177,25 @@ Rules:
   `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, and
   `legacy-brd-writer` do not invent channels, UI touchpoints, interfaces,
   dependencies, security, or source-document mappings.
+- `coverage.technical_anchor_coverage.program_anchors` records whether View 3
+  has real IBM i program/job/object names. API IDs, journey IDs, menu IDs,
+  screen IDs, or service names do not count unless the source explicitly maps
+  them to an IBM i program/job/object.
+- `coverage.technical_anchor_coverage.data_anchors` records whether View 4 has
+  real IBM i file/table/data-object names such as PF/LF, SQL table, data area,
+  data queue, display/printer file, DDS/DDL object, or file-spec object.
+  Business concepts such as "customer data" or "card account status" do not
+  count unless mapped to concrete IBM i object names.
+- If a technical anchor is `absent`, the corresponding view coverage should be
+  `absent` or `partial`, the Mermaid diagram must use a `TBD-*` placeholder,
+  and `supplement_requests[]` / `open-questions.md` must request the missing
+  source. Do not draw API/menu/business labels as if they were AS400 program
+  or file nodes.
 - When all four views are absent but the source set is authorized, readable,
   and module-relevant, use `normalization.status:
   triage_needs_source_enrichment` with `quality_level: L1 sparse`. The package
   still includes all ten files, but it is a source-quality triage output, not a
-  draft flow package for context intake.
+  canonical module-flow package.
 - If the source owner or SME confirms that no additional document, spec, or
   flow input can be provided, the package may move from
   `triage_needs_source_enrichment` to `ready_with_warnings` only when
@@ -308,16 +336,59 @@ View-specific guidance:
   `SYS-<MODULE-SLUG>-NNN` for system nodes extracted from diagrams or
   inventory lists; cite them in `Evidence Basis` alongside the source `DOC-*`.
   Every `SYS-*` cited must appear in `evidence-map.md` Extracted Fragments.
-- **View 3, Program Flow**: programs, jobs, menus, screens, reports,
-  execution sequence, branching hints, source-analysis focus. May mint
-  `PGM-<MODULE-SLUG>-NNN` for program/job nodes extracted from documents;
-  cite them in `Evidence Basis`. Every `PGM-*` cited must appear in
+- **View 3, Program Flow**: IBM i programs, jobs, service programs, CL/RPG
+  objects, call hints, execution sequence, branching hints, and source-analysis
+  focus. May mint `PGM-<MODULE-SLUG>-NNN` only for AS400 / IBM i program,
+  job, service program, or executable object nodes extracted from documents.
+  API IDs, journey IDs, menu IDs, screen IDs, and service labels may appear as
+  trigger/boundary context, but must not be drawn as `PGM-*` nodes or as the
+  primary Program Flow when no IBM i program mapping is evidenced. If only
+  API/menu/journey/screen labels exist, use a placeholder Mermaid node and a
+  `TBD-*` asking for API-to-program mapping, menu-to-program mapping, program
+  inventory, ARCAD export, DSPPGMREF/call graph, program specs, or SME
+  confirmation. Every `PGM-*` cited must appear in `evidence-map.md` Extracted
+  Fragments.
+- **View 4, Data Flow**: IBM i data objects, PF/LF files, SQL tables, data
+  areas, data queues, display/printer files, fields, CRUD direction,
+  derivations, retention, ownership, and dictionary gaps. May mint
+  `DATA-<MODULE-SLUG>-NNN` only for concrete AS400 / IBM i file/table/data
+  objects extracted from data dictionaries, File Specs, DDS/DDL, CRUD tables,
+  File I/O maps, or SME-confirmed mappings. Business data labels such as
+  "card account data", "customer profile", or "request data" may describe the
+  node but must not replace the file/table/object name. If no concrete
+  IBM i data object is evidenced, use a placeholder Mermaid node and a
+  `TBD-*` asking for file specs, DDS/DDL, data dictionary, CRUD matrix,
+  File I/O map, or SME mapping. Every `DATA-*` cited must appear in
   `evidence-map.md` Extracted Fragments.
-- **View 4, Data Flow**: data objects, files/tables, fields, CRUD direction,
-  derivations, retention, ownership, dictionary gaps. May mint
-  `DATA-<MODULE-SLUG>-NNN` for data objects extracted from data dictionaries
-  or CRUD tables; cite them in `Evidence Basis`. Every `DATA-*` cited must
-  appear in `evidence-map.md` Extracted Fragments.
+
+### View 3 / View 4 Technical-Anchor Examples
+
+When the supplied documents contain API IDs but no IBM i program names:
+
+````markdown
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  TBD_CARD_REPLACEMENT_031["Program Flow cannot be drawn: API/menu labels present, but no AS400 program names or API-to-program mapping were supplied"]
+```
+
+## Gaps For SME Review
+| TBD-CARD-REPLACEMENT-031 | source_supplement_required | Provide API-to-program mapping for HCCAPI162/HCCAPI183/HCCAPI184 or confirm the IBM i entry programs/jobs. | DOC-CARD-REPLACEMENT-001 | Application SME | yes |
+````
+
+When the supplied documents contain business data labels but no IBM i file or
+table names:
+
+````markdown
+## Mermaid Flow Diagram
+```mermaid
+flowchart TD
+  TBD_CARD_REPLACEMENT_041["Data Flow cannot be drawn: business data labels present, but no AS400 file/table names were supplied"]
+```
+
+## Gaps For SME Review
+| TBD-CARD-REPLACEMENT-041 | source_supplement_required | Provide File Specs, DDS/DDL, data dictionary, CRUD matrix, or SME mapping from card/account/address data to IBM i files. | DOC-CARD-REPLACEMENT-002 | Data owner | yes |
+````
 
 `SYS-*`, `PGM-*`, and `DATA-*` are draft identifiers for the normalization
 package only. They must not be used as stable IDs in downstream skills.
@@ -355,7 +426,8 @@ Required sections:
 Rules:
 
 - Preserve original source names and locators.
-- If a view cites a `DOC-*` or `FRAG-*` ID, that ID must appear here.
+- If a view cites a `DOC-*`, `FRAG-*`, `SYS-*`, `PGM-*`, or `DATA-*` ID,
+  that ID must appear here.
 - `Promotion Status` may be `needs_sme_review`, `sme_confirmed`,
   `blocked`, or `deferred`. It may not be `approved` at normalization time.
 
@@ -411,6 +483,11 @@ Rules:
 - Mint `TBD-*` for questions that affect downstream traceability.
 - Use `Blocking Questions` when downstream context intake would otherwise
   invent sequence, ownership, system boundary, or data meaning.
+- Use `source_supplement_required` questions when View 3 lacks IBM i program
+  anchors or View 4 lacks IBM i file/table/data-object anchors. Recommended
+  supplements include API/menu-to-program mapping, inventory, ARCAD export,
+  DSPPGMREF/call graph, program specs, File Specs, DDS/DDL, data dictionary,
+  CRUD matrix, File I/O map, or SME-confirmed mapping.
 
 ## `sme-review-pack.md`
 

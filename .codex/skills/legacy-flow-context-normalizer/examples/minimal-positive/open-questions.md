@@ -16,4 +16,4 @@
 ## Recommended Next Prompt
 Use `legacy-module-context-intake` with
 `skills/legacy-flow-context-normalizer/examples/minimal-positive/` as the
-SME-confirmed four-flow source. Carry `TBD-CREDIT-CHECK-001` as non-blocking.
+SME-confirmed four-view context source. Carry `TBD-CREDIT-CHECK-001` as non-blocking.

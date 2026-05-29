@@ -1,6 +1,6 @@
 ---
 name: legacy-module-context-intake
-description: Normalize external RAG or code-knowledge-graph output, human-confirmed four-view module context, or owner-accepted sparse flow-normalization output into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team already has module-first context, RAG hydration output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, four reviewed module flows, or `legacy-flow-context-normalizer` output accepted as `ready_with_warnings` and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, missing module scope, hidden contradictions, or attempts to promote RAG candidates or sparse-context TBDs into approved business rules.
+description: Normalize external RAG or code-knowledge-graph output, human-confirmed four-view module context, or owner-accepted sparse flow-normalization output into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team already has module-first context, RAG hydration output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, four reviewed context views, or `legacy-flow-context-normalizer` output accepted as `ready_with_warnings` and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, missing module scope, hidden contradictions, or attempts to promote RAG candidates or sparse-context TBDs into approved business rules or canonical module flows.
 ---
 
 <!--
@@ -37,6 +37,12 @@ This skill is a **module-first intake bridge**. It makes RAG output usable by
 Legacy Spec Factory, but it does not approve business rules, replace source
 analysis, or bypass SME review.
 
+The four Markdown files in this package are normalized context views. They
+may seed module analysis, but they are not the final four module-flow artifacts
+under `04_modules/`. When reporting this step to a user, say that context
+views were normalized for module analysis; do not say that the canonical
+module flows were created.
+
 ## Use This Skill When
 
 - A team supplies a business module or subsystem context before running the
@@ -66,7 +72,7 @@ analysis, or bypass SME review.
 ## Required Inputs
 
 - Module slug, business name, and scope statement.
-- Human-confirmed or explicitly draft four-view module context:
+- Human-confirmed or explicitly draft four-view module context views:
   Operation / Business Flow, System Flow, Program Flow, and Data Flow.
 - RAG output bundle when available, preferably with:
   - `rag-run-index.yaml`
@@ -262,6 +268,8 @@ Preserve contradiction-log.md and open-questions.md as TBD inputs.
 Do not promote candidate rules without SME review.
 Preserve business-signal-first candidate seeds; do not turn evidence object
 names into capability boundaries.
+Generate the canonical four module views only under
+04_modules/<MODULE-SLUG>/.
 ```
 
 ## References
@@ -282,6 +290,9 @@ names into capability boundaries.
 - v0.1.3 (2026-05-28): Added advisory BRD functional-analysis coverage hints
   to `context-index.yaml` so downstream module analysis can preserve channel,
   UI, interface, validation, error, and dependency gaps without inventing them.
+- v0.1.4 (2026-05-29): Clarified that intake view files are context-only
+  inputs and that canonical four-flow module artifacts are generated only by
+  `legacy-ibmi-module-analyzer`.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
 - v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse

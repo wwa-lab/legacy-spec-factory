@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 
 ## Recommended Next Prompt
-Use `legacy-sme-review-facilitator` to review the draft four-flow package under
-`00_context_packages/<MODULE-SLUG>/flow-normalization/`. Confirm the four views,
+Use `legacy-sme-review-facilitator` to review the draft four-view context
+package under `00_context_packages/<MODULE-SLUG>/flow-normalization/`. Confirm the four views,
 resolve blocking TBDs, and record which items may be carried forward before
 running `legacy-module-context-intake`.

@@ -11,10 +11,10 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.0
+  version: v0.1.9
   generated_at: "2026-05-27T00:00:00Z"
   status: ready_for_context_intake
-  decision_reason: "SME confirmed the draft four flows and accepted non-blocking data retention question for carry-forward."
+  decision_reason: "SME confirmed the draft context views and accepted non-blocking data retention question for carry-forward."
   downstream_next_step: legacy-module-context-intake
 
 evidence_authorization:
@@ -53,6 +53,10 @@ coverage:
   system_flow: usable
   program_flow: partial
   data_flow: usable
+  technical_anchor_coverage:
+    program_anchors: usable
+    data_anchors: usable
+    supplement_required: false
   evidence_map_complete: true
   contradictions_carried_forward: true
   sme_review_questions_prepared: true
