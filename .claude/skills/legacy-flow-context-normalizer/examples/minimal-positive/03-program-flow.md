@@ -9,19 +9,19 @@
 
 ## Summary
 The historical process diagram labels `CCHK100` as the host credit checking
-program. SME confirmed this is enough to carry as a program-analysis focus,
-not as a complete program call chain.
+program. SME confirmed this is an IBM i program-analysis focus, not a
+complete program call chain.
 
 ## Mermaid Flow Diagram
 ```mermaid
 flowchart TD
-  STEP_CREDIT_CHECK_003["Host credit checking program-analysis focus: CCHK100"]
+  STEP_CREDIT_CHECK_003["IBM i program-analysis focus: CCHK100"]
 ```
 
 ## Evidence-Linked Flow Steps
 | Step ID | Sequence | Statement | Evidence Basis | Confidence | Review Status |
 | --- | ---: | --- | --- | --- | --- |
-| STEP-CREDIT-CHECK-003 | 1 | Host credit checking is anchored by the program-analysis focus labeled in the diagram. | DOC-CREDIT-CHECK-001; FRAG-CREDIT-CHECK-003 | medium | sme_confirmed |
+| STEP-CREDIT-CHECK-003 | 1 | Host credit checking is anchored by the IBM i program-analysis focus labeled in the diagram. | DOC-CREDIT-CHECK-001; FRAG-CREDIT-CHECK-003; PGM-CREDIT-CHECK-001 (CCHK100) | medium | sme_confirmed |
 
 ## Candidate Seeds
 | Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |

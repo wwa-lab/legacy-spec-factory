@@ -12,7 +12,9 @@
 | FRAG-CREDIT-CHECK-001 | DOC-CREDIT-CHECK-001 | Main Process shape Submit Application | Branch staff submit a credit application. | high | 01-operation-business-flow.md |
 | FRAG-CREDIT-CHECK-002 | DOC-CREDIT-CHECK-001 | Main Process connector Host Credit Check | Core banking sends application to host credit checking. | high | 02-system-flow.md |
 | FRAG-CREDIT-CHECK-003 | DOC-CREDIT-CHECK-001 | Main Process note CCHK100 | Diagram labels CCHK100 as host credit check program. | medium | 03-program-flow.md |
-| FRAG-CREDIT-CHECK-004 | DOC-CREDIT-CHECK-002 | Fields row 7 | Application status is updated with recommendation. | high | 04-data-flow.md |
+| FRAG-CREDIT-CHECK-004 | DOC-CREDIT-CHECK-002 | Fields row 7 | APPLICPF application status is updated with recommendation. | high | 04-data-flow.md |
+| PGM-CREDIT-CHECK-001 | DOC-CREDIT-CHECK-001 | Main Process note CCHK100 | CCHK100 is the SME-confirmed IBM i program-analysis focus. | medium | 03-program-flow.md |
+| DATA-CREDIT-CHECK-001 | DOC-CREDIT-CHECK-002 | Fields row 7 | APPLICPF is the SME-confirmed IBM i application status file updated by the recommendation result. | high | 04-data-flow.md |
 
 ## Cross-Document Corroboration
 | Topic | Evidence A | Evidence B | Agreement | Notes |

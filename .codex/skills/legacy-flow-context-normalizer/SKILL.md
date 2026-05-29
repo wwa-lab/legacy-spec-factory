@@ -189,6 +189,14 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   Program Specs, File Specs, interface specs, ARCAD / application inventory
   extracts, data dictionary exports, screen/report samples, meeting notes,
   known SME owner, and reviewed module glossary.
+- **Technical-anchor supplements for View 3 / View 4**: API IDs, journey IDs,
+  menu IDs, screen IDs, and business data labels are not enough to draw IBM i
+  program or data views. For a substantive View 3, request at least one
+  AS400 / IBM i program, job, service program, CL/RPG object, or explicit
+  API/menu-to-program mapping. For a substantive View 4, request at least one
+  AS400 / IBM i PF/LF, SQL table, data area, data queue, printer/display file,
+  file spec, DDS/DDL extract, CRUD matrix, or explicit business-data-to-file
+  mapping.
 - **Input readiness scoring**:
   - `0-5 blocked`: evidence authorization unresolved, module scope missing,
     source files unreadable with no export, or all documents out of scope.
@@ -198,8 +206,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   - `7-8 usable`: documents cover one or more views with visible source
     provenance, gaps, and contradictions; missing views are represented as
     explicit `TBD-*` questions rather than blockers.
-  - `9-10 strong`: each view has multiple corroborating sources, data
-    dictionary or interface context is present, and SME owner is assigned.
+  - `9-10 strong`: each view has multiple corroborating sources, View 3 has
+    IBM i program/job anchors, View 4 has IBM i file/table/data-object anchors,
+    data dictionary or interface context is present, and SME owner is assigned.
 
 ### Execution
 
@@ -210,7 +219,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   evidence is visible.
 - **Forbidden assumptions**: inventing actors, systems, programs, file names,
   field meanings, sequence order, trigger timing, exception handling, manual
-  workarounds, business rules, SLAs, or modernization decisions.
+  workarounds, business rules, SLAs, or modernization decisions. Do not
+  promote API IDs, journey IDs, menu IDs, screen IDs, or business labels into
+  AS400 program names or file names.
 - **ID policy**: may mint `DOC-*`, `FRAG-*`, `STEP-*`, `SYS-*`, `PGM-*`,
   `DATA-*`, `CAND-*`, `CONFLICT-*`, and `TBD-*` within the draft
   package. Do not mint final `BR-*`, `CAP-*`, `DEC-*`, `AC-*`, or `TC-*`.
@@ -240,9 +251,12 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 - **Semantic**: no draft flow is presented as approved; contradictions are not
   hidden; View 1 uses business language first; View 2 captures system and
   integration behavior; View 3 captures application/program/job behavior;
-  View 4 captures data movement and ownership questions; BRD functional
-  analysis hints record which extracted fragments can feed SME-required BRD
-  areas without treating missing hints as invented facts.
+  View 4 captures data movement and ownership questions; View 3 uses IBM i
+  program/job anchors when available and otherwise carries a supplement TBD;
+  View 4 uses IBM i file/table/data-object anchors when available and
+  otherwise carries a supplement TBD; BRD functional analysis hints record
+  which extracted fragments can feed SME-required BRD areas without treating
+  missing hints as invented facts.
 - **SME / human approval**: SME or accountable owner confirms module boundary,
   flow sequence, missing or obsolete documents, exception behavior, manual
   steps, and which contradictions block context intake.
@@ -317,16 +331,30 @@ orchestrator.
      exceptions, customer or operational outcome.
    - System Flow: upstream/downstream systems, interfaces, batches, queues,
      files, schedules, security/SLA hints.
-   - Program Flow: applications, menus, jobs, programs, call hints, trigger
-     points, technical branching.
-   - Data Flow: files/tables, business data objects, fields, read/write/update
-     direction, derivation, retention, ownership.
+   - Program Flow: IBM i programs, jobs, service programs, CL/RPG objects,
+     call hints, trigger points, and technical branching. API IDs, journey
+     IDs, menu IDs, and screen IDs may appear only as trigger or boundary
+     context unless the source explicitly maps them to IBM i programs.
+   - Data Flow: IBM i files/tables, PF/LF objects, SQL tables, data areas,
+     data queues, display/printer files, fields, CRUD direction, derivation,
+     retention, and ownership. Business data labels may appear only as
+     descriptions unless mapped to concrete IBM i objects.
 
 7. **Draft each view**
    - Use `templates/view-template.md`.
    - Include a `Mermaid Flow Diagram` in every view. The diagram is the
      SME-readable flow surface; the evidence table remains the traceability
      surface.
+   - Run the View 3 / View 4 technical-anchor gate before drawing diagrams:
+     - If View 3 evidence has API/menu/journey/screen labels but no IBM i
+       program/job/object names, do **not** draw those labels as program nodes.
+       Create a placeholder node and `TBD-*` asking for API/menu-to-program
+       mapping, inventory, ARCAD export, DSPPGMREF/call graph, program spec,
+       or SME confirmation.
+     - If View 4 evidence has business data labels but no IBM i file/table/
+       data-object names, do **not** draw those labels as data nodes. Create a
+       placeholder node and `TBD-*` asking for file specs, DDS/DDL, data
+       dictionary, CRUD matrix, File I/O map, or SME mapping.
    - Draw Mermaid edges only when the source evidence or SME note supports the
      sequence. Mark uncertain nodes as `(needs SME review)` instead of making
      the diagram look approved.
@@ -430,3 +458,7 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
 - v0.1.8 (2026-05-29): Clarified canonical timing: this skill creates draft
   context views under `00_context_packages/`, while final module four-flow
   artifacts are produced only by `legacy-ibmi-module-analyzer`.
+- v0.1.9 (2026-05-29): Added View 3 / View 4 technical-anchor gates so API,
+  journey, menu, screen, and business data labels are not substituted for IBM i
+  program names or file names. Sparse technical evidence now produces explicit
+  supplement TBDs instead of misleading diagrams.

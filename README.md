@@ -605,7 +605,7 @@ even if the static review score is higher.
 
 | Skill | Review Record | Static Score | Current Score | Status | Main Reason It Is Not Higher |
 | --- | --- | ---: | ---: | --- | --- |
-| `legacy-flow-context-normalizer` | [v0.1.8 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.8-scorecard.md) | 9.50 | 9.0 | Repo-ready | v0.1.8 labels upstream output as draft context views, not final module flows; runtime smoke pending |
+| `legacy-flow-context-normalizer` | [v0.1.9 scorecard](docs/reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) | 9.51 | 9.0 | Repo-ready | v0.1.9 adds AS400 technical-anchor gates for Program/Data flow; runtime smoke pending |
 | `legacy-module-context-intake` | [v0.1.4 scorecard](docs/reviews/legacy-module-context-intake-v0.1.4-scorecard.md) | 9.46 | 9.0 | Repo-ready | v0.1.4 keeps intake views context-only; runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | Runtime load/execution validation still pending |
@@ -769,7 +769,7 @@ full status matrix and scorecard links.
 | # | Skill | Chain | Status | Review / next action |
 | ---: | --- | --- | --- | --- |
 | 1 | `legacy-modernization-orchestrator` | Legacy routing | Existing | v0.2.5 repo-ready with BRD-first routing; run expanded runtime smoke tests to lift the 9.0 cap |
-| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.6; run three-runtime smoke tests for scattered docs/specs, partial-input, sparse-triage, owner-accepted sparse, and multi-sheet Excel normalization |
+| 2 | `legacy-flow-context-normalizer` | Module-first context | Existing | Repo-ready v0.1.9; run three-runtime smoke tests for scattered docs/specs, sparse API/menu-only input, sparse business-data-only input, owner-accepted sparse, and multi-sheet Excel normalization |
 | 3 | `legacy-module-context-intake` | Module-first context | Existing | Repo-ready after v0.1.2 accepted-sparse intake hardening; run three-runtime smoke tests for RAG/context package intake |
 | 4 | `legacy-ibmi-evidence-intake` | Legacy BRD factory | Existing | Repo-ready; keep hardening examples and runtime smoke evidence |
 | 5 | `legacy-ibmi-inventory` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
@@ -812,7 +812,7 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.6, 9.0 capped; runtime smoke pending) |
+| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into draft Mermaid-backed, evidence-linked Operation / Business, System, Program, and Data flows for SME review before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, AS400 technical-anchor gates for Program/Data flow, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.9, 9.0 capped; runtime smoke pending) |
 | `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output, human-confirmed four-view module context, or owner-risk-approved sparse flow-normalization output into a traceable package before module analysis, with candidates framed as business signals backed by evidence or carried as low-confidence TBDs | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.2, 9.0 capped; runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)

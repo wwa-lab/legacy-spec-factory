@@ -56,6 +56,18 @@ fragments:
   - fragment_id: FRAG-CREDIT-CHECK-004
     doc_id: DOC-CREDIT-CHECK-002
     locator: "Fields row 7"
-    summary: "Application status is updated with approve or decline recommendation."
+    summary: "APPLICPF application status file is updated with approve or decline recommendation."
+    candidate_view: data_flow
+    evidence_strength: high
+  - fragment_id: PGM-CREDIT-CHECK-001
+    doc_id: DOC-CREDIT-CHECK-001
+    locator: "Main Process note CCHK100"
+    summary: "CCHK100 is the SME-confirmed IBM i program-analysis focus."
+    candidate_view: program_flow
+    evidence_strength: medium
+  - fragment_id: DATA-CREDIT-CHECK-001
+    doc_id: DOC-CREDIT-CHECK-002
+    locator: "Fields row 7"
+    summary: "APPLICPF is the SME-confirmed IBM i application status file updated by the recommendation result."
     candidate_view: data_flow
     evidence_strength: high

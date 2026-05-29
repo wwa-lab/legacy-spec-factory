@@ -31,7 +31,7 @@ Last regenerated: 2026-05-28
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
 | `legacy-modernization-orchestrator` | v0.2.5 | 9.44 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-modernization-orchestrator-v0.2.5-scorecard.md) |
-| `legacy-flow-context-normalizer` | v0.1.8 | 9.50 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-flow-context-normalizer-v0.1.8-scorecard.md) |
+| `legacy-flow-context-normalizer` | v0.1.9 | 9.51 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) |
 | `legacy-module-context-intake` | v0.1.4 | 9.46 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-module-context-intake-v0.1.4-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
