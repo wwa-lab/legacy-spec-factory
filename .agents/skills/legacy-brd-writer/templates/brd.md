@@ -5,6 +5,7 @@
 **Module ID:** `MODULE-<MODULE-SLUG>-001`
 **Module Analysis Source:** `04_modules/<MODULE-SLUG>/`
 **Status:** `draft` | `in_review` | `approved`
+**Evidence Mode:** `code_backed` | `context_only`
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
@@ -18,6 +19,10 @@ information is expected but missing, record a `TBD-*` instead of inventing it.
 This BRD documents the current legacy system only. Do not include old-vs-new
 comparison, No-gap / Gap1 / Gap2 classification, target-system disposition, or
 handoff-package content in this file.
+
+If **Evidence Mode** is `context_only`, this document cannot be marked
+`approved`; carry missing object-map, program-analysis, and flow-analysis work
+as `TBD-*` blockers until the code-backed evidence gate passes.
 
 ## 1. Function Purpose
 

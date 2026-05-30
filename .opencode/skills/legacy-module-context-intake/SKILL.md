@@ -57,6 +57,11 @@ under `04_modules/`. When reporting this step to a user, say that context
 views were normalized for module analysis; do not say that the canonical
 module flows were created.
 
+For standard code-backed BRD/spec work, this package is not enough by itself.
+It must preserve any IBM i program/file/object anchors so the orchestrator can
+route to `legacy-ibmi-inventory` for `object-map.md`, then program and flow
+analysis, before module or BRD approval.
+
 ## Use This Skill When
 
 - A team supplies a business module or subsystem context before running the
@@ -217,7 +222,9 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   in evidence context unless the view is explicitly technical; BRD functional
   analysis hints preserve which context can feed SME-required BRD areas without
   inventing channels, touchpoints, interfaces, dependencies, security, or
-  source-document mappings.
+  source-document mappings; context-only technical anchors are not presented as
+  `confirmed_from_code` and must be routed to inventory/program/flow analysis
+  before standard BRD approval.
 - **Sparse-input restriction**: if the upstream package is
   `quality_level: L1 sparse`, preserve every missing view as a `TBD-*`, mark
   evidence strength low, and do not create approved facts, `BR-*`, or BRD-ready
@@ -296,6 +303,8 @@ Preserve business-signal-first candidate seeds; do not turn evidence object
 names into capability boundaries.
 Generate the canonical four module views only under
 04_modules/<MODULE-SLUG>/.
+If the target is a standard code-backed BRD/spec and object-map/program/flow
+artifacts are missing, route to legacy-ibmi-inventory first.
 ```
 
 ## References
@@ -319,6 +328,9 @@ Generate the canonical four module views only under
 - v0.1.4 (2026-05-29): Clarified that intake view files are context-only
   inputs and that canonical four-flow module artifacts are generated only by
   `legacy-ibmi-module-analyzer`.
+- v0.1.5 (2026-05-30): Added code-backed handoff guidance so context packages
+  preserve technical anchors but route to inventory/object-map, program
+  analysis, and flow analysis before standard BRD/spec approval.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
 - v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse

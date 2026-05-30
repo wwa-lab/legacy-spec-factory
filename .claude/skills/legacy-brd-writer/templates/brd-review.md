@@ -2,8 +2,9 @@
 
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`  
 **Capability Owner (SME):** `<Name / Role>`  
-**Review Date:** `<YYYY-MM-DD>`  
+**Review Date:** `<YYYY-MM-DD>`
 **Status:** `in_review` | `approved` | `needs_revision` | `rejected`
+**Evidence Mode:** `code_backed` | `context_only`
 
 ---
 
@@ -53,6 +54,12 @@ similar document-quality section.
       functional specifications, technical design notes, runtime evidence, and
       program analyses map to BRD sections or traceability entries instead of
       remaining disconnected references.
+- [ ] For `code_backed` mode, `01_inventory/object-map.md`, in-scope
+      `program-analysis.md`, and in-scope `flow-*.md` artifacts are present,
+      approved, and cited in traceability.
+- [ ] For `context_only` mode, the named risk acceptance is recorded, missing
+      object-map / program / flow artifacts are `TBD-*` blockers, and this BRD
+      is not marked `approved`.
 - [ ] Business owners and SMEs can use the BRD to confirm initial scope and
       inferred rule direction.
 - [ ] `brd.md` contains no generic document-success criteria, formal `AC-*`

@@ -57,6 +57,10 @@ Module-First Entry (scattered docs / external RAG / four-view context)
 00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft or triage, SME/source review first)
    ↓ legacy-module-context-intake
 00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
+   ↓ CODE-BACKED ENRICHMENT CHECKPOINT for standard BRD/spec work
+      - if source/object evidence exists or the target is a code-backed BRD,
+        run inventory → program analysis → flow analysis before approving
+        module/BRD outputs
    ↓ legacy-ibmi-module-analyzer
 
 Raw Legacy Evidence (IBM i source, DDS, DB2, job log, spool, screen, SME notes)
@@ -322,7 +326,7 @@ for the full table. Common routes:
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
 | Raw Office/Visio/PDF/image docs, no `document-intake` manifest yet (authorized, sensitivity known) | Normalize formats + evidence coordinates | `legacy-document-evidence-intake` | Implemented v0.1.0 |
-| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.8 |
+| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.10 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -330,8 +334,9 @@ for the full table. Common routes:
 | Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** |
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
 | Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** |
-| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** |
-| Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME discovery review | `legacy-brd-writer` | **Implemented v0.1.6** |
+| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.1.5** |
+| Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
+| Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME discovery review | `legacy-brd-writer` | **Implemented v0.1.7** |
 | Approved BRD Package, post-BRD No-gap / Gap1 / follow-new-system decision | Discovery complete for that item; new system is source of truth | Stop / record disposition outside BRD | Human gate |
 | Approved BRD Package, post-BRD risk assessment or gap analysis open | Resolve disposition before spec-writing | Risk / gap-analysis process, then route back | Human / external gate |
 | Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.3** |
@@ -352,9 +357,11 @@ substance the skipped layer would have contributed.
 
 #### Safe Skip Examples
 
-- Inventory Done → Spec Writer
-  only if program analysis and rule mining have been done manually and the
-  outputs follow the same shape Layer 2 expects
+- Document / RAG context → Module Analyzer
+  only as a **context-only** synthesis path when the package is
+  `ready_for_module_analysis` or explicitly risk-accepted
+  `ready_with_warnings`; the result must preserve missing source coverage as
+  TBDs and must not claim code-backed approval.
 - Program Analysis Done → Business Rule Miner
   if runtime evidence is not required for the rule (rule is `confirmed_from_code`)
 
@@ -363,6 +370,11 @@ substance the skipped layer would have contributed.
 - Evidence Ready → Spec Writer (skipping inventory + analysis)
 - Inventory Done → Spec Writer (skipping rule mining)
 - Inventory Blocked → anywhere downstream
+- Module context / document-normalization output → approved BRD while
+  `01_inventory/object-map.md`, required `program-analysis-<OBJ-ID>.md`, or
+  required `flow-<FLOW-SLUG>.md` are missing, unless the requester records an
+  explicit context-only BRD draft risk acceptance and the BRD remains
+  non-approved
 - Module Analysis Done → Spec Writer without an approved BRD Package, unless
   the requester explicitly records a technical-spec-only bypass and accepts the
   review risk
@@ -417,6 +429,47 @@ can be provided, route the resulting `ready_with_warnings` package to
 State that all sparse facts remain low-confidence and cannot become approved
 rules without later corroboration.
 
+### Code-Backed BRD Enrichment Gate
+
+The standard Legacy Spec Factory BRD is **code-backed**. A document-first or
+RAG-first run may create useful context packages, but those packages do not
+replace the Layer 1 evidence backbone when the user expects a BRD that describes
+the legacy system with code confidence.
+
+Before routing a module-first package to an approvable module analysis or BRD,
+check whether any of the following are true:
+
+- the user's target is a production / internal-use BRD, migration discovery
+  baseline, spec, or SDD handoff input
+- the input package references IBM i / AS400 programs, jobs, files, PF/LF,
+  DSPF, PRTF, DDS/DDL, ARCAD inventory, DSPPGMREF output, source members, or
+  code/RAG snippets
+- `flow-context-index.yaml.coverage.technical_anchor_coverage.program_anchors`
+  or `data_anchors` is `partial`, `usable`, or `strong`
+- the generated module or BRD would otherwise state behavior as
+  `confirmed_from_code`
+
+If any condition applies, the next route is the earliest missing code-backed
+artifact:
+
+1. `legacy-ibmi-inventory` to produce `01_inventory/inventory.yaml` and
+   `01_inventory/object-map.md`
+2. `legacy-ibmi-program-analyzer` for every in-scope `OBJ-*`
+3. `legacy-ibmi-flow-analyzer` for every in-scope business transaction
+4. `legacy-ibmi-module-analyzer` to synthesize the canonical four views
+5. `legacy-brd-writer`
+
+Only allow a direct context-only module / BRD draft when the user explicitly
+records a named owner risk acceptance that source/object evidence is not
+available for this cycle. In that case:
+
+- the module and BRD must label the evidence mode as `context_only`
+- missing object map, program analysis, and flow analysis are explicit
+  `TBD-*` blockers for code-backed approval
+- `brd.md` may be `draft` or `in_review`, but not `approved`
+- traceability must not use `confirmed_from_code` unless linked code-derived
+  evidence exists
+
 ### Canonical Four-Flow Timing
 
 Only `legacy-ibmi-module-analyzer` produces the canonical four module-flow
@@ -463,6 +516,7 @@ Before any handoff, check the gate that applies to that transition. See
 | --- | --- | --- |
 | **Evidence Authorization Gate** | Before any Layer 1 skill or any agent reads evidence | Any evidence has `sensitivity: unknown`, lacks source-path authorization, or requires redaction without an approval record |
 | **Inventory Completeness Gate** | Before any Layer 1 analyzer downstream of inventory, and before any Layer 2 skill | `inventory.yaml.sme_review.decision: blocked`, or any `coverage_gaps` entry with `blocking: yes` is unresolved |
+| **Code-Backed Analysis Gate** | Before approving module analysis or BRD for standard BRD/spec work | Missing `01_inventory/object-map.md`, incomplete in-scope program analyses, incomplete in-scope flow analyses, or no explicit context-only risk acceptance |
 | **BRD Discovery Gate** | After module analysis and before any spec-writing decision | No approved BRD Package exists for the selected `CAP-*`, BRD sections 1-9 are incomplete without named `TBD-*`, or BRD review is blocked |
 | **Post-BRD Disposition Gate** | Before `legacy-spec-writer` in the standard workflow | Approved BRD has no separate promotion decision, item is No-gap / Gap1 / follow-new-system, or risk/gap-analysis owner has not cleared promotion |
 | **Evidence Approval Gate** | Before `legacy-spec-writer` produces an approvable spec | Any business rule has `review_status: needs_sme_review` or no linked evidence, and `knowledge_type` is not `modernization_decision` |
@@ -984,7 +1038,7 @@ This skill coordinates the rest of the reverse chain:
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
 | `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: Program Call Map, file I/O, object deps, error handling |
 | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** | Per call chain: 7 trigger models; cross-program data flow; commit boundaries |
-| `legacy-ibmi-module-analyzer` | **Implemented v0.1.0** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
+| `legacy-ibmi-module-analyzer` | **Implemented v0.1.5** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
 
 ### Layer 1 — Future platforms
@@ -999,7 +1053,7 @@ contract Layer 2 expects.
 | --- | --- | --- |
 | `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
 | `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
-| `legacy-brd-writer` | **Implemented v0.1.6** | Produce the legacy BRD Package as the legacy-system discovery baseline without old-vs-new comparison or disposition notes |
+| `legacy-brd-writer` | **Implemented v0.1.7** | Produce the legacy BRD Package as the legacy-system discovery baseline without old-vs-new comparison or disposition notes |
 | `legacy-spec-writer` | **Implemented v0.1.3** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision |
 | `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
@@ -1036,6 +1090,12 @@ From the repository root, use `scripts/sync-skills.sh` to create or check
 runtime copies.
 
 ## Version History
+
+- v0.2.7 (2026-05-30): Added the Code-Backed BRD Enrichment Gate so
+  document-first / RAG-first runs cannot jump from context packages directly to
+  approvable BRDs while skipping `object-map.md`, per-program analysis, or
+  flow analysis. Context-only BRDs now require explicit named risk acceptance
+  and remain non-approved drafts.
 
 - v0.2.6 (2026-05-30): Reframed BRD routing as migration discovery. After
   module analysis, the primary near-term route is legacy BRD generation. BRD is

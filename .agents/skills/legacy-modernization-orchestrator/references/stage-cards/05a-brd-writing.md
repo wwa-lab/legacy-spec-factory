@@ -11,13 +11,21 @@ unclear?" in SME-readable language.
 ## Need before starting
 
 - `04_modules/<MODULE-SLUG>/` — overview + all 4 views, all approved
+- For standard code-backed BRDs: `01_inventory/object-map.md`, all in-scope
+  `02_programs/<MODULE>/<OBJ>/program-analysis.md`, and all in-scope
+  `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`, approved or
+  `approved_with_non_blocking_tbd`
 - A single `CAP-*` from `module-overview.md` to scope this BRD
 - Linked `BR-*`, `BEH-*`, `EV-*`, and `TBD-*` seeds for that capability
 - Capability owner SME / BA availability for BRD review
 
+If these code-backed artifacts are missing, route back to the earliest missing
+stage first. A context-only BRD draft is allowed only with named owner risk
+acceptance and cannot be approved.
+
 ## Run
 
-- **Skill:** `legacy-brd-writer` (Implemented v0.1.6)
+- **Skill:** `legacy-brd-writer` (Implemented v0.1.7)
 - **Manual fallback:** Use the templates in
   `skills/legacy-brd-writer/templates/` and keep sections 1-9 populated with
   evidence-backed content or named `TBD-*` gaps.
@@ -46,8 +54,10 @@ unclear?" in SME-readable language.
     classification, target-system disposition, or handoff content
   - `brd-review.md` or `review-decision.yaml` records SME / business approval
 - **Blocks if:** BRD is missing, draft without review, blocked by SME, or any
-  required section 1-9 is absent without a named `TBD-*`. Spec-writing also
-  blocks until a separate post-BRD comparison / promotion decision exists.
+  required section 1-9 is absent without a named `TBD-*`. It also blocks if a
+  standard BRD lacks object-map, program-analysis, or flow-analysis support.
+  Spec-writing also blocks until a separate post-BRD comparison / promotion
+  decision exists.
 
 ## SME action
 

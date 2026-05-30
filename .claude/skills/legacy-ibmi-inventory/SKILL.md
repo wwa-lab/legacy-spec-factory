@@ -42,6 +42,9 @@ Java. It establishes the evidence baseline required before deeper analysis or
 Accept any combination of:
 
 - source member listings or exported source files
+- normalized document-intake / flow-normalization packages that contain IBM i
+  program, job, file, ARCAD, DSPPGMREF, Program Spec, File Spec, or data
+  dictionary anchors
 - RPGLE, CLLE, COBOL, DDS source
 - DB2 for i table and field metadata
 - job descriptions, scheduler notes, or CL command flow
@@ -114,7 +117,10 @@ field-level rules. The summary below is normative for this skill.
 - **Stop conditions**: unauthorized raw production evidence is present;
   capability is "the whole application" (require a narrower slice);
   ground-truth tier 1 source listings (`WRKOBJ` / `DSPOBJD` /
-  source-member listings) are not available.
+  source-member listings) are not available. If only document-derived anchors
+  are available, produce a candidate `object-map.md` with confidence and
+  `TBD-*` gaps, and keep SME review from approving it as complete until source
+  or owner confirmation resolves the gaps.
 
 ### Execution
 
@@ -186,6 +192,10 @@ orchestrator.
    Extract or list programs, service programs, CL commands, PF, LF, DSPF, PRTF,
    jobs, reports, data areas, data queues, message queues, copybooks, and
    external interfaces.
+   When objects come from Program Specs, File Specs, ARCAD lists, DSPPGMREF
+   exports, or normalized document/context packages, mark the evidence source
+   and confidence explicitly; do not treat document mentions as source-verified
+   unless the evidence manifest or SME review confirms them.
 
 4. **Capture relationships**
    Record known or observed relationships:
@@ -403,6 +413,10 @@ Runtime copies may be synced to:
 Use `../../scripts/sync-skills.sh` to create or check runtime copies.
 
 ## Version History
+
+- v0.3.1 (2026-05-30): Clarified that normalized document/context packages can
+  seed a candidate object map, but document-derived anchors remain lower
+  confidence until source or SME confirmation supports inventory approval.
 
 - v0.3.0 (2026-05-16): Added `downstream_required` block to
   `sme_review`. Inventory now auto-detects when

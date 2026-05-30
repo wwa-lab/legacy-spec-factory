@@ -1,7 +1,8 @@
 # Hard Gates Reference
 
-Six gates protect the reverse chain. The orchestrator must
-check the applicable gate before routing across the corresponding boundary.
+Six numbered gates plus the Code-Backed Analysis sub-gate protect the reverse
+chain. The orchestrator must check the applicable gate before routing across
+the corresponding boundary.
 
 ## Gate 1 — Evidence Authorization Gate
 
@@ -49,6 +50,43 @@ check the applicable gate before routing across the corresponding boundary.
 **Waiver path:** an SME may mark a blocking gap non-blocking by adding a
 review note and changing `blocking: pending_sme_judgment` → `no`. Record the
 SME decision in `sme_review.notes`.
+
+## Gate 2B — Code-Backed Analysis Gate
+
+**Boundary:** module-first / document-first context → approvable module
+analysis or standard BRD
+
+**Pass criteria (all required for standard BRD/spec work):**
+
+- `01_inventory/object-map.md` exists and aligns with
+  `01_inventory/inventory.yaml`
+- every in-scope program has an approved or
+  `approved_with_non_blocking_tbd`
+  `02_programs/<MODULE>/<OBJ>/program-analysis.md`
+- every in-scope business transaction has an approved or
+  `approved_with_non_blocking_tbd`
+  `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`
+- module View 3 and View 4 claims that cite code use code-derived evidence,
+  not only document or RAG context
+- any missing source/object evidence is represented by named `TBD-*` blockers
+
+**Context-only exception:** a named accountable owner may explicitly accept a
+context-only draft for this cycle when source/object evidence is unavailable.
+This exception does not pass the code-backed gate; it only allows draft
+review material. The module / BRD must record `evidence_mode: context_only`,
+remain non-approved, carry missing object-map / program / flow work as
+`TBD-*`, and avoid `confirmed_from_code` evidence strength unless a linked
+code-derived artifact exists.
+
+**Block actions:**
+
+1. Route to `legacy-ibmi-inventory` if `object-map.md` is missing or partial.
+2. Route to `legacy-ibmi-program-analyzer` for missing in-scope
+   `program-analysis-<OBJ-ID>.md` files.
+3. Route to `legacy-ibmi-flow-analyzer` for missing in-scope
+   `flow-<FLOW-SLUG>.md` files.
+4. Refuse BRD approval and spec-writing until the gate passes or a
+   context-only draft exception is recorded.
 
 ## Gate 3 — BRD Discovery Gate
 

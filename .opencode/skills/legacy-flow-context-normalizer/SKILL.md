@@ -465,6 +465,13 @@ After SME approval, run `legacy-module-context-intake` with:
 
 Do not hand this package directly to `legacy-brd-writer`.
 
+If the user wants a standard code-backed BRD or spec, also tell the
+orchestrator that this package is only a context input. Any IBM i programs,
+jobs, files, PF/LF, DSPF, PRTF, DDS/DDL, ARCAD, DSPPGMREF, or source snippets
+found here must be converted into the code evidence backbone by
+`legacy-ibmi-inventory` (`object-map.md`), then `legacy-ibmi-program-analyzer`,
+then `legacy-ibmi-flow-analyzer` before BRD approval.
+
 For sparse packages that were owner-accepted as `ready_with_warnings`, tell
 `legacy-module-context-intake`:
 
@@ -505,3 +512,6 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
   journey, menu, screen, and business data labels are not substituted for IBM i
   program names or file names. Sparse technical evidence now produces explicit
   supplement TBDs instead of misleading diagrams.
+- v0.1.10 (2026-05-30): Added handoff guidance that document-normalized
+  technical anchors are context only; standard BRD/spec routing must still run
+  inventory/object-map, program analysis, and flow analysis before approval.

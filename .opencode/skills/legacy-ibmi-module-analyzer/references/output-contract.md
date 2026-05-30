@@ -18,12 +18,13 @@ document defines the *file format*; that document defines the *intent*.
 - **Business Name:** Authorization Processing
 - **Scope Statement:** [one paragraph from SME]
 - **Module Owner:** [SME name / role]
+- **Evidence Mode:** code_backed | context_only
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]
 - **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | 
   blocked_pending_source | blocked_pending_sme | rejected
 
 **Blocked Status Values:**
-- `blocked_pending_source`: One or more required flow analyses or program analyses are missing or incomplete
+- `blocked_pending_source`: One or more required object maps, flow analyses, or program analyses are missing or incomplete
 - `blocked_pending_sme`: Module boundary, scope, or critical SME input (e.g., BAU notes) is missing
 
 ## View Index
@@ -82,6 +83,12 @@ Rules:
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
+- [ ] If **Evidence Mode** is `code_backed`, `01_inventory/object-map.md`,
+      every in-scope `program-analysis.md`, and every in-scope `flow-*.md`
+      are present and approved
+- [ ] If **Evidence Mode** is `context_only`, missing object-map / program /
+      flow artifacts are carried as `TBD-*` blockers and the module is not
+      approved for the standard BRD/spec path
 - [ ] Cross-view consistency check passed (see view 3 ↔ view 1 actor mapping, etc.)
 - [ ] BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries a
       named `TBD-*` for every missing / partial area

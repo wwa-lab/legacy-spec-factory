@@ -88,6 +88,11 @@ coverage:
   dictionary_context_mapped: true
   contradictions_carried_forward: true
   open_questions_carried_forward: true
+  technical_anchor_coverage:
+    program_anchors: absent | partial | usable | strong
+    data_anchors: absent | partial | usable | strong
+    object_map_present: true | false
+    code_backed_analysis_present: true | false
   brd_functional_analysis_hints:
     function_purpose: absent | partial | usable | strong
     business_scenarios: absent | partial | usable | strong
@@ -135,6 +140,11 @@ Rules:
   module analysis and BRD preparation which normalized context can feed the
   SME-required BRD sections 1-9 and optional sections 10-12. Missing or partial
   hints must stay visible as gaps; this skill must not fill them by inference.
+- `coverage.technical_anchor_coverage` is also advisory. It tells the
+  orchestrator whether the package contains IBM i program/data anchors and
+  whether the code evidence backbone already exists. Program/file names in
+  context are not a substitute for `01_inventory/object-map.md`, approved
+  program analyses, or approved flow analyses.
 
 ## View Files
 

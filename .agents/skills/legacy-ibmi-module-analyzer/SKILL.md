@@ -39,6 +39,10 @@ views: Operation Flow, System Flow, Program Flow, Data Flow.
 This skill is the **last platform-specific layer** before `legacy-brd-writer`
 and the BRD Review Gate. It does not re-analyze flows or programs; it
 aggregates and synthesizes what flow-analyzer and program-analyzer produced.
+For the standard BRD/spec path, those code-backed inputs are required: a
+module-first context package can seed the synthesis, but it cannot by itself
+make View 3 (Program Flow), View 4 (Data Flow), or the downstream BRD
+`confirmed_from_code`.
 
 This is the only skill that produces the canonical four module-analysis view
 artifacts under `04_modules/<MODULE-SLUG>/`. If upstream
@@ -58,7 +62,8 @@ Accept:
 - **Ready module context package** from `legacy-module-context-intake`
   (`00_context_packages/<MODULE-SLUG>/context-index.yaml`) when this is a
   module-first RAG / human-context run. Treat it as context and evidence map,
-  not as approved module analysis.
+  not as approved module analysis, object inventory, program analysis, or flow
+  analysis.
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
 - **Approved program analyses** for every program referenced by those flows
@@ -85,9 +90,15 @@ Stop and require clarification if:
 
 - Any in-scope flow lacks an approved `flow-<FLOW-SLUG>.md` → route to
   `legacy-ibmi-flow-analyzer`, unless a ready
-  `00_context_packages/<MODULE-SLUG>/` package is explicitly being used as the
-  module-first input; in that case, carry missing flow-analysis coverage as
-  `TBD-*` and keep affected claims at `needs_sme_review`
+  `00_context_packages/<MODULE-SLUG>/` package is explicitly being used for a
+  context-only draft; in that case, carry missing flow-analysis coverage as
+  `TBD-*`, set `evidence_mode: context_only`, and keep affected claims at
+  `needs_sme_review`
+- The requested output is a standard code-backed BRD/spec input but
+  `01_inventory/object-map.md`, in-scope program analyses, or in-scope flow
+  analyses are missing → route to the earliest missing code-backed skill
+  (`legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, or
+  `legacy-ibmi-flow-analyzer`) instead of approving module synthesis
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
   or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
@@ -149,40 +160,46 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: module definition (slug + business name + scope statement
-  + list of in-scope flows); either approved `flow-<FLOW-SLUG>.md` for every
-  in-scope flow or a ready
+- **Required for standard code-backed runs**: module definition (slug +
+  business name + scope statement + list of in-scope flows); approved
+  `01_inventory/inventory.yaml` plus `01_inventory/object-map.md`; approved
+  `program-analysis-<OBJ-ID>.md` for every program referenced by confirmed
+  flows; approved `flow-<FLOW-SLUG>.md` for every in-scope flow; BAU notes
+  from SME covering operational rhythm and manual procedures.
+- **Required for explicit context-only drafts**: ready
   `00_context_packages/<MODULE-SLUG>/context-index.yaml` from
-  `legacy-module-context-intake`; approved `program-analysis-<OBJ-ID>.md`
-  for every program referenced by confirmed flows when available; approved
-  `01_inventory/inventory.yaml` when this is a normal IBM i extraction run;
-  BAU notes from SME covering operational rhythm and manual procedures.
+  `legacy-module-context-intake`; named owner risk acceptance that
+  source/object evidence is unavailable for this cycle; all missing
+  inventory/program/flow coverage carried as `TBD-*`; BAU notes from SME.
 - **Optional**: architecture diagrams (View 2), data lineage docs
   (View 4), regulatory references.
 - **Input readiness scoring**:
   - `0-5 blocked`: module scope unresolved, neither approved upstream flow
-    analyses nor a ready context package is supplied, triggered
-    data/screen/report analysis missing, evidence links broken, or evidence
-    authorization unresolved.
-  - `6 minimum_pass`: approved inventory, required flows, required program
-    analyses, module slug/name/scope, and SME BAU notes are present; for
-    module-first runs, a ready context package with all four views can satisfy
-    the initial module context but does not approve missing source coverage.
+    analyses nor an explicit risk-accepted context-only package is supplied,
+    triggered data/screen/report analysis missing, evidence links broken, or
+    evidence authorization unresolved.
+  - `6 minimum_pass`: for code-backed runs, approved inventory/object map,
+    required flows, required program analyses, module slug/name/scope, and SME
+    BAU notes are present; for context-only drafts, a ready context package
+    plus named risk acceptance is present, with missing source coverage carried
+    as blocking TBDs for later code-backed approval.
   - `7-8 usable`: triggered data/screen/report outputs, architecture notes,
     data lineage, and known TBD ledgers are supplied.
   - `9-10 strong`: SME edge cases, exception examples, sample transactions,
     regulatory context, and modernization decision context are also supplied.
   - Missing architecture diagrams or regulatory references does not block the
     module analysis unless the module scope specifically depends on them.
-- **Readiness checks**: every in-scope flow is `approved` or
-  `approved_with_non_blocking_tbd`, or the context package status is
-  `ready_for_module_analysis` / `ready_with_warnings`; SME has confirmed the
-  module's business name and boundary; BAU notes are present (View 1 requires
-  SME input that code alone cannot supply).
-- **Stop conditions**: any in-scope flow lacks an approved analysis and no
-  ready context package is supplied; module boundary is ambiguous (which
-  module owns flow X); no SME has confirmed module identity; BAU notes are
-  absent.
+- **Readiness checks**: for code-backed runs, every in-scope flow is
+  `approved` or `approved_with_non_blocking_tbd`, every referenced program
+  analysis is approved, and inventory/object map is approved; for context-only
+  drafts, the context package status is `ready_for_module_analysis` /
+  `ready_with_warnings` and the output is explicitly non-approved; SME has
+  confirmed the module's business name and boundary; BAU notes are present
+  (View 1 requires SME input that code alone cannot supply).
+- **Stop conditions**: any in-scope flow lacks an approved analysis in a
+  code-backed run; any code-backed artifact is missing and no context-only
+  risk acceptance is recorded; module boundary is ambiguous (which module owns
+  flow X); no SME has confirmed module identity; BAU notes are absent.
 
 ### Execution
 
@@ -216,10 +233,14 @@ field-level rules. The summary below is normative for this skill.
   `DATA-*`. `legacy-brd-writer` reviews these seeds in business language; final
   promotion of `BR-*` still happens later in `legacy-spec-writer`.
 - **Handoff status**: each view independently `draft` → `in_review` →
-  `approved` or `approved_with_non_blocking_tbd`. Module is approved
-  only when **all four views** are at least
-  `approved_with_non_blocking_tbd`. `blocked_pending_source` /
-  `blocked_pending_sme` halt BRD writing and any later spec-writing.
+  `approved` or `approved_with_non_blocking_tbd`. For standard BRD/spec work,
+  module approval requires the Code-Backed Analysis Gate: approved
+  inventory/object map, program analyses, and flow analyses. A context-only
+  module may be reviewed as draft material, but it must remain `draft` or
+  `needs_sme_review` for BRD approval until the missing code-backed artifacts
+  are supplied.
+  `blocked_pending_source` / `blocked_pending_sme` halt BRD writing and any
+  later spec-writing.
 
 ### Validation
 
@@ -241,9 +262,10 @@ field-level rules. The summary below is normative for this skill.
   All four sign-offs are required to promote the module past
   `approved_with_non_blocking_tbd` for BRD writer consumption.
 - **Blocking conditions**: any view lacks an SME sign-off; any
-  cross-view inconsistency unresolved; any in-scope flow missing or
-  unapproved; any capability seed contradicts the underlying flows;
-  BAU notes still absent.
+  cross-view inconsistency unresolved; any in-scope flow missing or unapproved
+  in a code-backed run; missing `object-map.md` or program analyses for a
+  standard BRD/spec target; any capability seed contradicts the underlying
+  flows; BAU notes still absent.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with
@@ -257,6 +279,10 @@ to the orchestrator.
    - If `00_context_packages/<MODULE-SLUG>/` is supplied, read
      `context-index.yaml`, `contradiction-log.md`, and `open-questions.md`
      first; block if the context package is not ready for module analysis
+   - Determine `evidence_mode`: `code_backed` when approved
+     inventory/object-map + program + flow analyses are present;
+     `context_only` only when a named owner has accepted missing source
+     coverage for this cycle
    - Treat any `00_context_packages/` view files as intake context only; the
      canonical module views must be generated under `04_modules/<MODULE-SLUG>/`
    - List in-scope flows; check every one has an approved analysis
@@ -270,6 +296,9 @@ to the orchestrator.
      section)
    - Cross-check against `01_inventory/inventory.yaml`; create
      `pending_source` TBDs for gaps
+   - If the run is intended to feed an approvable BRD/spec and
+     `01_inventory/object-map.md` is missing, stop and route to
+     `legacy-ibmi-inventory`
 
 3. **Build View 1 — Operation Flow / Business Background**
    - Use the View 1 section in `references/output-contract.md` and the
@@ -465,6 +494,11 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.1.5 (2026-05-30): Added code-backed vs context-only evidence mode. A
+  module-first context package can seed draft synthesis, but standard BRD/spec
+  work now requires `object-map.md`, program analyses, and flow analyses before
+  module output can be treated as code-backed.
 
 - v0.1.4 (2026-05-29): Aligned module-analyzer downstream wording with the
   BRD-first workflow and made Mermaid diagrams mandatory for each view. The
