@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Step Validator
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Reviews a produced Legacy Spec Factory artifact against the shared step contract before it advances. |
+| Input | Draft artifact, relevant skill contract, source evidence references, readiness/status metadata, and expected output contract. |
+| Output | Structured validation report with `pass`, `pass_with_warnings`, or `blocked` plus findings and SME-readiness notes. |
+| Core prompt strategy | Check mechanical shape, semantic consistency, evidence coverage, and SME-only decisions separately. |
+| Upstream skill | `legacy-step-contract` plus whichever skill produced the artifact under review. |
+| Downstream consumer | Artifact owner, SME review facilitator, governance reviewers, and downstream skill gates. |
+| Validation standard | Findings are severity-ranked, traceable to contract clauses, and do not replace SME approval. |
+| Known risk | Interpreting a validator pass as business approval rather than contract readiness. |
+| Practical example | Validate a draft `spec.yaml`/`spec.md` pair and block advancement if evidence approval or traceability is missing. |
+
 ## Purpose
 
 Audit one completed step package against the Step Contract (defined in

@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Golden Master Test Planner
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Plans old-vs-new equivalence cases from approved behavior without writing executable tests or inventing expected outputs. |
+| Input | Approved `spec.yaml`, approved acceptance criteria, redacted runtime evidence, sample-data references, and output references. |
+| Output | Golden master test plan with `TC-*` cases, coverage map, data/output references, and blocked findings. |
+| Core prompt strategy | Convert approved rules into observable comparisons, bind every expectation to evidence, and mark missing samples as gaps. |
+| Upstream skill | `legacy-spec-writer` plus approved runtime evidence from `legacy-ibmi-runtime-evidence-miner` when available. |
+| Downstream consumer | Forward SDLC test authors, QA teams, implementation validators, and traceability packaging. |
+| Validation standard | Capability status is approved, expected outputs reference real evidence, and no executable code or synthetic production data is produced. |
+| Known risk | Inventing expected outputs because the approved runtime sample set is incomplete. |
+| Practical example | For approved credit-limit enforcement, plan TC cases for accept, hold, override, and exception outcomes using redacted spool samples. |
+
 ## Purpose
 
 Plan one capability's **golden master equivalence tests** so the target

@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Document Evidence Intake
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Converts binary, scanned, or hard-to-read enterprise documents into consumable evidence files with coordinates and quality notes. |
+| Input | Excel, Word, PowerPoint, Visio, PDF, images, screenshots, scanned docs, and source authorization context. |
+| Output | Normalized Markdown / CSV / PDF / PNG / SVG files, manifests, quality gates, and redaction or blocked notes. |
+| Core prompt strategy | Normalize formats first, preserve page/sheet/shape coordinates, flag unreadable or sensitive content, and avoid business-rule inference. |
+| Upstream skill | `legacy-modernization-orchestrator` or direct user-provided raw document intake. |
+| Downstream consumer | `legacy-flow-context-normalizer`, `legacy-module-context-intake`, or `legacy-ibmi-evidence-intake` when sensitivity is unresolved. |
+| Validation standard | Every output file maps back to source coordinates, conversion warnings are explicit, and unauthorized production data is blocked. |
+| Known risk | Losing evidence provenance during conversion or accidentally passing hidden PII/macros into downstream analysis. |
+| Practical example | Convert a Visio process map and workbook tabs into Markdown/CSV plus a manifest before drafting module context. |
+
 ## Purpose
 
 Turn historical business and technical documents that are trapped in formats

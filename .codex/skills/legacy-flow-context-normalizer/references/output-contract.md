@@ -50,7 +50,7 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.9
+  version: v0.1.10
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   quality_level: L2 partial

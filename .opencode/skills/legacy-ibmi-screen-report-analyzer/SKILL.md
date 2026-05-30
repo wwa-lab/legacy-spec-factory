@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Screen & Report Analyzer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Documents IBM i presentation behavior from display files, printer files, menus, subfiles, screens, and reports. |
+| Input | DSPF/PRTF sources, screen samples, spool/report samples, indicators, F-key behavior, inventory entries, and SME notes. |
+| Output | Screen/report analysis with fields, layouts, actions, indicators, report sections, and review questions. |
+| Core prompt strategy | Treat UI/report artifacts as evidence of interaction and presentation, cross-link program usage, and avoid unsupported rule claims. |
+| Upstream skill | `legacy-ibmi-inventory` and `legacy-ibmi-evidence-intake`. |
+| Downstream consumer | Program/flow/module analysts, BRD writers, SMEs, and golden-master planners. |
+| Validation standard | Artifacts map to `OBJ-*` / `EV-*`, field/action claims cite DDS or samples, and presentation uncertainty is flagged. |
+| Known risk | Reading a screen label or report column as full business meaning without program or SME confirmation. |
+| Practical example | Analyze an order inquiry subfile screen, F-key exits, and a spool report before flow analysis. |
+
 ## Purpose
 
 Create a detailed analysis of IBM i display files (DSPF), printer files (PRTF), menu definitions, subfile behavior, function keys, indicators, field-level presentation logic, report layouts, report sections, and related runtime evidence. This skill does not generate modernization code or infer business rules from presentation alone. It produces evidence-backed analysis of the presentation layer ready for SME validation and downstream capability modeling.

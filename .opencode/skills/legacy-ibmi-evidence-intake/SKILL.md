@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Evidence Intake
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Registers and governs IBM i evidence before analysis so every source has authorization, classification, and traceable IDs. |
+| Input | Source code, DDS, DB metadata, job logs, spool files, screens, reports, transactions, runtime samples, and authorization notes. |
+| Output | Evidence manifest, evidence IDs, redaction log, source-path decisions, and blocked/approved intake status. |
+| Core prompt strategy | Classify first, assign stable IDs, enforce redaction and authorization gates, and never analyze unauthorized evidence. |
+| Upstream skill | `legacy-modernization-orchestrator` or direct raw IBM i evidence collection. |
+| Downstream consumer | `legacy-ibmi-inventory`, `legacy-ibmi-runtime-evidence-miner`, screen/report analysis, and all evidence-backed downstream skills. |
+| Validation standard | Every artifact has source path, type, sensitivity, authorization state, redaction decision, and stable `EV-*` identity. |
+| Known risk | Letting raw production data or unclear ownership enter the reverse-engineering chain. |
+| Practical example | Intake RPGLE source, DDS files, and redacted job logs for billing, assigning `EV-*` IDs before inventory begins. |
+
 ## Purpose
 
 Provide a structured, auditable workflow for registering evidence from IBM i

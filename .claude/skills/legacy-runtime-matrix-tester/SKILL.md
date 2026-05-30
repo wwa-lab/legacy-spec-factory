@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Runtime Matrix Tester
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Verifies that a skill works portably across Codex, Claude Code, and OpenCode after it is added or changed. |
+| Input | New or modified skill, runtime matrix entry, representative prompts, expected artifacts, and sync status. |
+| Output | Runtime smoke-test results and updates needed to move status from `synced` to `passed` in `docs/runtime-matrix.md`. |
+| Core prompt strategy | Test the same behavior through each runtime adapter, record concrete evidence, and treat portability failures as blockers. |
+| Upstream skill | Any changed Legacy Spec Factory skill plus `scripts/sync-skills.sh` output. |
+| Downstream consumer | Skill maintainers, repository reviewers, and release/pilot readiness checks. |
+| Validation standard | Each target runtime can discover and execute the skill workflow with expected artifacts and no adapter-only dependency. |
+| Known risk | Passing a superficial smoke test while runtime-specific assumptions remain hidden in the skill body. |
+| Practical example | After adding a new evidence-intake field, run the matrix tester to confirm Codex, Claude Code, and OpenCode copies behave consistently. |
+
 ## Purpose
 
 Validate that legacy spec factory skills are discoverable, loadable, and functionally correct across all three target runtimes: Codex (CLI), Claude Code, and OpenCode. This skill orchestrates the smoke-test protocol defined in `docs/runtime-smoke-tests.md`, records the evidence, and updates `docs/runtime-matrix.md` with test results.

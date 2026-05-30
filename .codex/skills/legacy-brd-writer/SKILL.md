@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy BRD Writer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Turns legacy analysis evidence into a stakeholder-readable old-system BRD for migration discovery and SME review. |
+| Input | Module analysis, flow/program evidence, observed behaviors, inferred rule seeds, gaps, and traceability references. |
+| Output | Legacy BRD Package with behaviors, open questions, validation scenario seeds, and review status. |
+| Core prompt strategy | Separate observed behavior from inferred rules, keep target-system comparison out, and write reviewable business language with evidence tags. |
+| Upstream skill | `legacy-ibmi-module-analyzer` or an accepted module-first context package. |
+| Downstream consumer | SMEs, gap-analysis / old-vs-new reviewers, `legacy-spec-writer`, and decision writers. |
+| Validation standard | BRD sections complete, evidence strength declared, unresolved gaps visible, and BRD review gate not bypassed. |
+| Known risk | Mistaking old-system description for a mandate to preserve every behavior in the target system. |
+| Practical example | Given a four-view order-entry module analysis, produce a BRD package that lists observed hold-release behavior and questions for SME confirmation. |
+
 ## Purpose
 
 Synthesize one **legacy-system Business Requirements Document (BRD) Package**
@@ -52,6 +66,12 @@ old-vs-new comparison, target-system requirements, or SDD handoff files.
 `VAL-*` entries are scenario seeds only; `AC-*` belongs to
 `legacy-spec-writer`, and formal `TC-*` belongs to
 `legacy-golden-master-test-planner`.
+
+For the standard migration-discovery path, the BRD is **code-backed**. A
+module-first context package or document-normalized four-view draft can inform
+the BRD, but it does not replace `01_inventory/object-map.md`, per-program
+analysis, or flow analysis. A context-only BRD is allowed only as a
+non-approved draft with named owner risk acceptance and visible TBD blockers.
 
 The BRD body follows the SME-required functional analysis shape. Sections 1-9
 are mandatory in `brd.md`: Function Purpose, Business Scenarios / Use Cases,
@@ -102,6 +122,10 @@ Do not trigger when:
 - No **SME is available** to review and approve the BRD
 - The module analysis is **below `approved_with_non_blocking_tbd`** status (route
   back to `legacy-ibmi-module-analyzer`)
+- The selected module / capability is context-only and lacks
+  `01_inventory/object-map.md`, required program analyses, or required flow
+  analyses, unless the requester explicitly asks for a context-only draft and a
+  named owner accepts that it cannot be approved as code-backed
 
 This skill is a **migration discovery and business synthesis layer**. If you
 find yourself writing formal acceptance criteria, minting formal `TC-*` test
@@ -192,6 +216,10 @@ Accept:
     Functional Analysis Input Crosswalk. Use that crosswalk to populate SME
     required sections 1-9 and to carry missing / partial areas as `TBD-*`
     instead of rediscovering them from program or flow details.
+- **Approved code evidence backbone** for standard BRDs:
+  `01_inventory/inventory.yaml`, `01_inventory/object-map.md`, in-scope
+  `02_programs/<MODULE>/<OBJ>/program-analysis.md`, and in-scope
+  `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`
 - **One or more capability seeds** — selected from the module overview's
   Capability Seeds; the SME has confirmed each is a distinct, in-scope business
   capability
@@ -202,6 +230,12 @@ Stop and require clarification if:
 
 - Module status is below `approved_with_non_blocking_tbd` → route back to
   `legacy-ibmi-module-analyzer`
+- Standard BRD requested but the code evidence backbone is missing
+  `object-map.md`, required program analyses, or required flow analyses → route
+  to the earliest missing code-backed skill before drafting or approving the
+  BRD
+- Context-only draft requested without named owner risk acceptance → stop and
+  request risk acceptance or route back to source/object evidence collection
 - The selected capability seed has **blocking TBDs** in the module analysis →
   escalate to SME for resolution before proceeding
 - No **SME owner is assigned** → stop; cannot proceed to review without SME
@@ -270,32 +304,43 @@ The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: approved `04_modules/<MODULE-SLUG>/` (all four views at
-  `approved` or `approved_with_non_blocking_tbd`); one or more `CAP-*`
-  capability seeds from the module overview, validated by SME; named
+- **Required for standard code-backed BRDs**: approved
+  `04_modules/<MODULE-SLUG>/` (all four views at `approved` or
+  `approved_with_non_blocking_tbd`, `evidence_mode: code_backed`); one or more
+  `CAP-*` capability seeds from the module overview, validated by SME; named
   capability-owner SME; all referenced `flow-<FLOW-SLUG>.md` and
   `program-analysis-<OBJ-ID>.md` at `approved` or
-  `approved_with_non_blocking_tbd`; approved `01_inventory/inventory.yaml`.
+  `approved_with_non_blocking_tbd`; approved `01_inventory/inventory.yaml`;
+  `01_inventory/object-map.md`.
+- **Required for context-only BRD drafts**: module overview or context package
+  marked `evidence_mode: context_only`; named owner risk acceptance; missing
+  inventory, object-map, program-analysis, and flow-analysis artifacts carried
+  as `TBD-*`; BRD status limited to `draft` or `in_review`.
 - **Optional**: BAU notes, supplemental legacy-system context, source document
   pointers, runtime observations, and policy notes from SMEs.
 - **Input readiness scoring**:
   - `0-5 blocked`: approved module missing, selected `CAP-*` unresolved,
     blocking TBDs remain, capability boundary ambiguous, no SME owner, or
     evidence authorization unresolved.
-  - `6 minimum_pass`: approved module, selected SME-confirmed capability seed,
-    named capability-owner SME, and approved upstream analyses are present.
+  - `6 minimum_pass`: approved code-backed module, selected SME-confirmed
+    capability seed, named capability-owner SME, approved upstream analyses,
+    and approved object map are present. Context-only drafts can reach
+    `minimum_pass` only for draft review, not BRD approval.
   - `7-8 usable`: BAU notes, supplemental SME context, and related open-TBD
     history are supplied.
   - `9-10 strong`: examples of real scenarios, exception cases, runtime
     observations, policy notes, and downstream reader context are also supplied.
   - Missing supplemental context does not block BRD drafting; it should produce
     clearer SME questions instead of invented rules.
-- **Readiness checks**: module and all upstream analyses at required status; no
-  `sensitivity: unknown` evidence in scope; SME owner available to approve BRD.
+- **Readiness checks**: module and all upstream analyses at required status;
+  object map exists for standard BRDs; no `sensitivity: unknown` evidence in
+  scope; SME owner available to approve BRD.
 - **Stop conditions**: module below `approved_with_non_blocking_tbd` (route back
-  to `legacy-ibmi-module-analyzer`); capability seed has blocking TBDs (escalate
-  to SME); no SME owner assigned; capability boundary ambiguous; request asks
-  BRD writer to classify No-gap / Gap1 / Gap2 or decide target-system scope.
+  to `legacy-ibmi-module-analyzer`); standard BRD requested without object map,
+  program analyses, or flow analyses; context-only draft requested without
+  named risk acceptance; capability seed has blocking TBDs (escalate to SME);
+  no SME owner assigned; capability boundary ambiguous; request asks BRD writer
+  to classify No-gap / Gap1 / Gap2 or decide target-system scope.
 
 ### Execution
 
@@ -312,6 +357,7 @@ The summary below is normative for this skill.
   specifying target platform or modernization decisions; adding old-vs-new
   comparison or target-system disposition; reading raw IBM i source code
   (consume upstream analyses only); treating weak inferences as facts.
+  Do not label a context-only document or RAG claim as `confirmed_from_code`.
 - **TBD handling**: unconfirmed rule → `BR-*` seed with `status: needs_sme_review`
   (marked in BRD); contradictory evidence → `TBD-*` with `category:
   contradictory_evidence` and resolver; missing context → `TBD-*` with
@@ -344,6 +390,9 @@ The summary below is normative for this skill.
   move beyond discovery. Direct module-to-spec generation is an exception that
   requires an explicit technical-spec-only bypass with approver and risk
   acceptance.
+  A context-only BRD draft cannot become `approved` until the Code-Backed
+  Analysis Gate passes; keep missing object map, program analysis, and flow
+  analysis as blocking `TBD-*` items in `brd-review.md` and `traceability.md`.
 
 ### Validation
 
@@ -361,6 +410,8 @@ What can be checked by a script, schema, or deterministic linter:
 - no `sensitivity: unknown` in evidence references
 - traceability table is complete and consistent (all claims appear in
   `traceability.md`)
+- standard BRDs cite `01_inventory/object-map.md`, in-scope program analyses,
+  and in-scope flow analyses; context-only drafts visibly block approval
 - BRD does not include acceptance criteria, modernization decisions, or target
   platform details
 - `validation-scenarios.md` does not mint `AC-*` or `TC-*`
@@ -384,6 +435,8 @@ upstream evidence:
   marked for every claim
 - evidence support is not overstated (no weak evidence record used as if it
   were direct code/runtime/SME confirmation)
+- context-only module or document evidence is not presented as code-confirmed
+  behavior
 - no invented IBM i facts (object names, fields, programs, jobs)
 - no scope creep into other capabilities
 - no acceptance criteria or platform decisions hidden in prose
@@ -419,13 +472,21 @@ decision.
    - Validate with SME: is each a distinct capability worth its own BRD?
    - Assign `brd_id` and confirm `capability.{id, name, slug, owner}`
    - Define `scope.in_scope` and `scope.out_of_scope` from SME
+   - Record `evidence_mode`: `code_backed` for standard BRDs, or
+     `context_only` only when named risk acceptance exists and the BRD will
+     remain non-approved
 
 2. **Collect Evidence Bundle**
    - Gather every `EV-*` referenced by flows / programs / module that touch this
      capability
+   - Confirm the code-backed evidence backbone exists for standard BRDs:
+     `01_inventory/object-map.md`, in-scope program analyses, and in-scope
+     flow analyses
    - Populate evidence index with source, type, sensitivity, and confidence
    - Confirm `sensitive` flag is set on all evidence; if any `sensitive:
      unknown`, stop and request redaction review
+   - If context-only, create `TBD-*` blockers for each missing code-backed
+     artifact and prevent approval in `brd-review.md`
 
 3. **Translate Technical Evidence into Business Process Language**
    - Create a short business-first process flow before writing `BEH-*`
@@ -685,6 +746,11 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.7 (2026-05-30): Added code-backed BRD gate. Standard BRDs now require
+  `object-map.md`, approved program analyses, and approved flow analyses before
+  approval; context-only BRDs require named risk acceptance and remain
+  non-approved drafts with visible TBD blockers.
 
 - v0.1.6 (2026-05-30): Reframed BRD writer for migration discovery. BRD is now
   the primary near-term old-system artifact and remains legacy-system-only:

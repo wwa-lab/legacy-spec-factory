@@ -1,8 +1,9 @@
 # BRD Traceability Report: `<CAPABILITY-NAME>`
 
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`  
-**Capability ID:** `CAP-<CAPABILITY-SLUG>-001`  
+**Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
 **Generated:** `<YYYY-MM-DD>`
+**Evidence Mode:** `code_backed` | `context_only`
 
 ---
 
@@ -12,6 +13,11 @@ This report shows the complete traceability between BRD elements (observed
 behaviors, inferred rules, validation scenario seeds, open questions) and their
 supporting evidence.
 
+For `code_backed` mode, this report must include the approved object map,
+program analyses, and flow analyses that support the BRD. For `context_only`
+mode, missing code-backed artifacts must appear as blocking `TBD-*` items and
+the BRD must remain non-approved.
+
 **Coverage:**
 - **Business Scenarios:** X documented
 - **Channels / Touchpoints / Interfaces:** X channels, Y touchpoints, Z interfaces
@@ -20,6 +26,8 @@ supporting evidence.
 - **Validation Scenarios:** V drafted (all `VAL-*`; no formal `AC-*` or `TC-*`)
 - **Open Questions (TBDs):** Z defined (A blocking, B non-blocking)
 - **Evidence Items:** N collected
+- **Code-Backed Artifacts:** object map present? yes/no; program analyses X/Y;
+  flow analyses A/B
 
 ---
 

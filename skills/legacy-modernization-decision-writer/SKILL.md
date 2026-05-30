@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Modernization Decision Writer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Captures high-impact modernization decisions in structured `DEC-*` records when they are too risky to keep inline. |
+| Input | Approved BRD/spec context, gap-analysis findings, stakeholder decisions, evidence links, and target-platform authority notes. |
+| Output | Decision record package with options, rationale, impacts, approvals, and traceability back to legacy evidence. |
+| Core prompt strategy | Separate decision from evidence, document alternatives and authority, and avoid recreating architecture/design artifacts. |
+| Upstream skill | `legacy-brd-writer` and/or `legacy-spec-writer` after review surfaces a material modernization choice. |
+| Downstream consumer | `legacy-spec-writer`, SDD handoff, architects, product owners, and governance reviewers. |
+| Validation standard | Decision has stable `DEC-*` ID, scope, approved authority, evidence links, impact notes, and no hidden target design. |
+| Known risk | Letting a decision record silently override approved BRD/spec scope or become unofficial architecture. |
+| Practical example | Record a decision to replace legacy manual credit override with target-platform policy service, including approvals and trace links. |
+
 ## Purpose
 
 Produce, expand, review, and validate **modernization decision records** (`DEC-*`)

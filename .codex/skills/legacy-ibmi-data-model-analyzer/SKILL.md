@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Legacy Data Model Analyzer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Reconstructs the IBM i domain data model from DDS, DB2 metadata, SQL DDL, inventory, and program/flow evidence. |
+| Input | Approved inventory, DDS PF/LF sources, DB2 for i metadata, SQL DDL, CRUD evidence, and SME notes. |
+| Output | Data model package with dictionary, access paths, relationships, CRUD matrix, and SME review checklist. |
+| Core prompt strategy | Derive structure from schema artifacts first, cross-check usage through programs/flows, and tag uncertain relationships explicitly. |
+| Upstream skill | `legacy-ibmi-inventory` plus `legacy-ibmi-program-analyzer` / `legacy-ibmi-flow-analyzer` evidence when available. |
+| Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-spec-writer`, data architects, and migration designers. |
+| Validation standard | Field/file IDs are traceable, access paths and CRUD claims cite evidence, and inferred relationships are not promoted silently. |
+| Known risk | Misreading logical files, derived keys, or historical fields as current business relationships. |
+| Practical example | Analyze customer and order PF/LF definitions plus program I/O to produce a CRUD matrix for order maintenance. |
+
 ## Purpose
 
 Create a comprehensive analysis of one or more IBM i data structures

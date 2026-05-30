@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Traceability Packager
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Seals or blocks one capability's end-to-end traceability across evidence, analyses, BRD, spec, and optional handoff. |
+| Input | Evidence manifest, inventory, program/flow/module analyses, optional BRD, approved spec artifacts, traceability file, and handoff outputs. |
+| Output | Sealed traceability package or strict blocked-findings report with missing links and status gaps. |
+| Core prompt strategy | Audit chain completeness, refuse to mint new facts, preserve status, and make every gap actionable. |
+| Upstream skill | `legacy-spec-writer` and all earlier evidence/analysis steps for the capability. |
+| Downstream consumer | Auditors, SDLC handoff reviewers, SMEs, governance teams, and release readiness checks. |
+| Validation standard | Every `CAP-*`, `OBJ-*`, `EV-*`, rule, decision, and test/handoff reference resolves or is explicitly blocked. |
+| Known risk | Creating a polished package that implies approval despite broken or missing trace links. |
+| Practical example | Package `CAP-ORDER-RELEASE` traceability from evidence manifest through approved spec and SDD handoff, blocking missing `EV-*` links. |
+
 ## Purpose
 
 Package one capability's **end-to-end traceability** into a sealed, audit-friendly bundle that answers four questions deterministically:

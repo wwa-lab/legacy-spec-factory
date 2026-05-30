@@ -1,14 +1,20 @@
 # Skill Families
 
-Legacy Spec Factory has 23 skills. They are not equally connected — some are
-called every run, some only at boundaries, some only when reviewing. This
-document groups them into **families** so callers (humans and orchestrators)
-know which skills travel together, which order they fire in, and which
-shared vocabulary they use.
+Legacy Spec Factory's scored reverse-modernization family currently tracks 23
+skills. They are not equally connected — some are called every run, some only
+at boundaries, some only when reviewing. This document groups the scored Legacy
+skills into **families** so callers (humans and orchestrators) know which
+skills travel together, which order they fire in, and which shared vocabulary
+they use.
 
 **Authoritative status / scores**: see
 [`skill-status-truth-table.md`](skill-status-truth-table.md). This document
 is about **how skills relate**, not whether they are field-pilot ready.
+
+**Quick explainer cards**: see
+[`skill-card-index.md`](skill-card-index.md) for a one-page navigation table
+that links to the embedded Skill Card in each Legacy Spec Factory `SKILL.md`,
+including supplemental skills outside this scored family map.
 
 ## Family Overview
 
@@ -21,7 +27,7 @@ is about **how skills relate**, not whether they are field-pilot ready.
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total** | **23** | |
+| **Total tracked here** | **23** | |
 
 ---
 

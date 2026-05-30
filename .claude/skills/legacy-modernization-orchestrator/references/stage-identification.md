@@ -21,7 +21,7 @@ upstream stage that fits — do not "round up" maturity.
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
-| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). If no approved BRD Package exists for the selected capability, the next route remains BRD discovery writing / review, not spec writing. |
+| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). For standard code-backed BRD/spec work, the views must be backed by approved inventory, in-scope program analyses, and in-scope flow analyses; context-only views with missing source coverage remain 3e/in review unless an explicit non-approved context-only draft path is recorded. If no approved BRD Package exists for the selected capability, the next route remains BRD discovery writing / review, not spec writing. |
 | 5a | BRD Discovery In Review | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: draft` or `status: in_review`, or BRD review/sign-off is incomplete |
 | 5b | BRD Discovery Approved | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: approved`; route to spec only if a separate post-BRD promotion / disposition decision exists |
 | 5c | Post-BRD Comparison / Disposition Open | Approved BRD exists, but old-vs-new comparison, risk assessment, gap analysis, or promotion decision is still pending outside the BRD Package |
@@ -87,6 +87,24 @@ When module analysis is complete but BRD review is missing:
 - Do not identify the capability as **8a Spec Drafted** merely because a
   `spec.md` or `spec.yaml` was generated early. If the approved BRD Package is
   missing, the current unmet gate is the BRD Discovery Gate.
+
+When a module or BRD was generated from `00_context_packages/` only:
+
+- If the user expects a production / internal-use BRD, migration discovery
+  baseline, spec, or SDD handoff input, identify the earliest missing
+  code-backed stage instead of rounding up to module or BRD maturity.
+- Missing `01_inventory/object-map.md` means the current unmet stage is
+  **2a/2c Inventory** depending on whether a partial `inventory.yaml` exists.
+- Missing `02_programs/<MODULE>/<OBJ>/program-analysis.md` for in-scope
+  programs means the current unmet stage is **3a Program Analysis In
+  Progress**, even if `04_modules/` or `05_brds/` exists.
+- Missing `03_flows/<MODULE>/flow-<FLOW-SLUG>.md` for known business
+  transactions means the current unmet stage is **3c Flow Analysis In
+  Progress**.
+- A context-only module or BRD may remain as draft review material only when a
+  named owner risk acceptance says source/object evidence is unavailable for
+  this cycle. It must not be treated as **3f Module Analysis Done** or **5b BRD
+  Discovery Approved** for code-backed downstream routing.
 
 When only forward chain artifacts exist:
 

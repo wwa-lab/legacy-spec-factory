@@ -5,6 +5,7 @@
 - **Business Name:** [Name]
 - **Scope Statement:** [SME-confirmed one paragraph]
 - **Module Owner:** [SME name / role]
+- **Evidence Mode:** code_backed | context_only
 - **In-scope Flows:**
   - FLOW-[SLUG]-001 ([business event])
   - FLOW-[SLUG]-002 ([business event])
@@ -51,6 +52,12 @@ content; partial or missing required areas must carry a `TBD-*`.
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
+- [ ] For `code_backed` mode, `01_inventory/object-map.md`, in-scope
+      `program-analysis.md`, and in-scope `flow-*.md` artifacts are present
+      and approved
+- [ ] For `context_only` mode, missing object-map / program / flow artifacts
+      are carried as `TBD-*` blockers and the module is not approved for a
+      standard BRD/spec path
 - [ ] Cross-view consistency check passed
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs
 - [ ] No blocking TBDs remain
