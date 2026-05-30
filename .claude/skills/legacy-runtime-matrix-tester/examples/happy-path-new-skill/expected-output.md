@@ -8,7 +8,7 @@ the prompt in `prompt.txt`.
 ```
 [pass] Skill exists: skills/legacy-ibmi-inventory/SKILL.md
 [pass] Sync check: scripts/sync-skills.sh --skill legacy-ibmi-inventory --target all --check exit 0
-[pass] Contract validation: python3 scripts/check-spec-contract.py exit 0
+[pass] Contract validation: contract validator exit 0
 [pass] Canonical source synced: adapter copies match canonical source
 [pass] Test prompts available: docs/runtime-smoke-tests.md and/or skills/legacy-ibmi-inventory/examples/
 ```

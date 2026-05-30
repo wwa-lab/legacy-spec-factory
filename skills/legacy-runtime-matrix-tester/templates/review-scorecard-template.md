@@ -21,7 +21,7 @@ after completing runtime smoke tests.
 | Canonical source exists | pass | `skills/legacy-SKILL-NAME/SKILL.md` |
 | Skill not already at `passed` in all runtimes | pass | Prior matrix entry shows `synced` or `loaded` |
 | Sync check passes | pass | `scripts/sync-skills.sh --skill legacy-SKILL-NAME --target all --check` exit 0 |
-| Contract validation passes (if applicable) | pass | `python3 scripts/check-spec-contract.py` exit 0 |
+| Contract validation passes (if applicable) | pass | contract validator exit 0 |
 | Canonical source is synced | pass | Canonical files match the tested adapter copies |
 | Test prompts available | pass | `docs/runtime-smoke-tests.md` or `examples/` contains canonical prompt(s) |
 

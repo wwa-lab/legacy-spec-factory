@@ -70,7 +70,11 @@ Do not use it as a replacement for:
 ## Required Inputs
 
 - Module slug, business name, draft scope statement, and owner or SME role.
-- One or more source documents, specs, or exported readable forms:
+- One or more source documents, specs, or exported readable forms. Prefer
+  Markdown, text, CSV, modern Office text exports, normalized document-intake
+  packages, or pasted SME notes. Raw binary Office/Visio files, scanned images,
+  and OCR/converter-dependent sources are optional supplements; if they cannot
+  be read without tooling, skip them and continue with the readable sources:
   - Visio / diagram exports (`.vsdx`, PDF, SVG, PNG, or image export)
   - Word / runbook / procedure docs
   - Excel / CSV process, application, interface, data dictionary, or CRUD lists
@@ -96,7 +100,7 @@ Stop and produce only blocking findings if any apply:
 | Any source/runtime evidence has unknown sensitivity or missing authorization | `legacy-ibmi-evidence-intake` |
 | Confidential or production evidence needs redaction and no approved redaction exists | `legacy-ibmi-evidence-intake` |
 | Module slug, business name, or scope is missing | module owner / SME clarification |
-| No supplied document can be read or extracted into text/table/diagram fragments | request PDF/SVG/PNG/CSV/text export |
+| No readable source, normalized package, text/table export, SME note, or scope clue remains after optional binary/OCR/converter-dependent sources are skipped | produce triage package and request PDF/SVG/PNG/CSV/text export |
 | Documents appear to cover multiple modules and no draft boundary can be proposed | SME boundary decision |
 | Contradictions are found but the user asks to hide or smooth them over | block; keep `contradiction-log.md` visible |
 | Draft flows are requested as approved rules, approved module context, or BRD input without SME review | block; route through SME review first |
@@ -109,6 +113,15 @@ source-quality triage package instead of failing silently. The goal is to
 improve user experience by making incomplete inputs reviewable instead of
 blocking unless a downstream step would need to invent facts.
 
+Unreadable binary/OCR/converter-dependent sources are also **not** a stop
+condition when at least one readable source or scope clue remains. Add the
+unreadable source to `source-document-index.yaml` with
+`readable_status: skipped_optional_binary` (or equivalent notes), set its
+evidence strength to `blocked`/low as appropriate, add a `TBD-*` asking for a
+readable export, and continue drafting the four view files from the readable
+material only. Do not invoke `legacy-document-evidence-intake` automatically
+just to process optional binaries in hosted-agent mode.
+
 ## Input Quality Ladder
 
 Classify the input set before drafting flows:
@@ -117,8 +130,8 @@ Classify the input set before drafting flows:
 | --- | --- | --- |
 | `L3 strong` | The documents support all four views with visible evidence. | Produce four substantive view files, each with Mermaid flowchart, evidence-linked steps, candidate seeds, and SME questions. |
 | `L2 partial` | The documents support one to three views. | Produce substantive views where evidence exists; create Mermaid placeholders and `TBD-*` questions for missing views; route to SME review. |
-| `L1 sparse` | Documents are authorized and readable, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
-| `L0 blocked` | Evidence is unauthorized, unreadable, out of scope, or lacks a usable module boundary. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
+| `L1 sparse` | Documents are authorized and readable, or only source/scope clues remain after optional binaries are skipped, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
+| `L0 blocked` | Evidence authorization is unresolved, the module boundary is unusable, all sources are out of scope, or the user asks to hide contradictions / treat draft flows as approved. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
 
 `L1 sparse` is still useful output. It should identify what was found, why no
 flow should be inferred, which source types would unlock the next pass, and
@@ -140,32 +153,32 @@ from the templates under `templates/`.
 
 Runtime tooling rule: the bundled Python helpers are standard-library scripts
 and optional execution aids, not environment setup triggers. Run them only with
-an already-available interpreter (`python3` preferred, then `python`). Do not
-create a virtual environment, install packages, or wait on interactive
-environment configuration. If interpreter discovery or startup remains in a
-configuring/evaluating state for more than about 30 seconds, record Python as
-`tool_unavailable` for this run, continue with manual package drafting where
-possible, and list the exact remediation in `open-questions.md` and
-`flow-context-index.yaml`.
+an already-available Python interpreter. Do not create a virtual environment,
+install packages, or wait on interactive environment configuration. If
+interpreter discovery or startup remains in a configuring/evaluating state,
+record Python as `tool_unavailable` for this run, continue with manual package
+drafting where possible, and list the exact remediation in `open-questions.md`
+and `flow-context-index.yaml`.
 
-For deterministic local validation, run:
+GitHub Copilot hosted-agent mode is stricter: do not run Python commands,
+shell probes, Excel helpers, validators, package installs, or environment setup
+from this skill unless the user explicitly confirms the runtime is already
+prepared. Draft the four context-view files manually from readable supplied
+content, record validation/helper execution as `tool_unavailable_hosted_agent`,
+and report the validator/helper script paths as manual follow-up text. Do not
+enter or wait on Python environment setup.
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-  00_context_packages/<MODULE-SLUG>/flow-normalization
-```
+For deterministic local validation outside hosted Copilot mode, run
+`skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`
+with an existing Python interpreter against
+`00_context_packages/<MODULE-SLUG>/flow-normalization`.
 
 For multi-sheet Excel intake, generate an initial `source-document-index.yaml`
-fragment draft with:
-
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
-  source-docs/<workbook>.xlsx \
-  --module-slug <MODULE-SLUG> \
-  --title "<Workbook title>" \
-  --owner "<Document owner>" \
-  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
-```
+fragment draft manually in hosted Copilot mode. Outside hosted Copilot mode,
+the optional helper path is
+`skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py`; run
+it only with an existing Python interpreter and explicit workbook/package
+arguments.
 
 The package status in `flow-context-index.yaml` must be one of:
 
@@ -410,12 +423,13 @@ orchestrator.
     - `blocked_*` when a downstream skill would need to invent facts.
 
 12. **Validate**
-    - Run the bundled validator only with an already-available Python
-      interpreter; do not create a virtual environment or install dependencies:
-      ```bash
-      python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-        --allow-draft 00_context_packages/<MODULE-SLUG>/flow-normalization
-      ```
+    - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
+      Record validation as `tool_unavailable_hosted_agent`, keep the package
+      out of `ready_for_context_intake`, and report the validator script path:
+      `skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`.
+    - In an already-prepared local shell only, run the bundled validator with
+      an existing Python interpreter; do not create a virtual environment or
+      install dependencies.
     - Fix every reported finding, then re-run until the validator outputs
       `OK: flow context package is structurally valid`.
     - If no Python interpreter is available, or startup remains

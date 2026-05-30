@@ -153,8 +153,9 @@ Rules:
   `legacy-module-context-intake` for ready packages, and the remediation route
   for blocked packages.
 - `quality_level` must be one of `L3 strong`, `L2 partial`, `L1 sparse`, or
-  `L0 blocked`. Use `L1 sparse` when input is authorized and readable but no
-  flow sequence can be safely generated.
+  `L0 blocked`. Use `L1 sparse` when input is authorized and readable, or only
+  source/scope clues remain after optional binaries are skipped, but no flow
+  sequence can be safely generated.
 - `blocking_items[]` is empty only when all gates pass or all remaining items
   are explicitly non-blocking.
 - Gate/status compatibility: `warning` gates are compatible with
@@ -253,13 +254,16 @@ Rules:
   specs are optional input sources. Treat them as evidence-bearing historical
   or design artifacts, not as guaranteed current production truth.
 - Every extracted item used in a view gets a `FRAG-*` ID.
-- `readable_status` is `extracted`, `manual_export_required`, `unreadable`,
-  or `not_needed`.
+- `readable_status` is `extracted`, `manual_export_required`,
+  `skipped_optional_binary`, `unreadable`, or `not_needed`.
+- Use `skipped_optional_binary` for authorized raw binary, scanned, OCR-only, or
+  converter-dependent sources that cannot be read in the current runtime. These
+  sources may drive open questions and supplement requests, but must not be
+  cited as evidence for concrete flow steps.
 - For multi-sheet Excel workbooks, use
-  `scripts/extract_excel_fragments.py` to produce a first-pass
-  `source-document-index.yaml`. The script enumerates every sheet, uses the
-  first non-empty row as headers, and emits one `FRAG-*` per non-empty data row
-  with locators such as `Interfaces row 4`.
+  `scripts/extract_excel_fragments.py` only as an optional local helper when an
+  existing Python interpreter is available. In hosted-agent mode, draft
+  `source-document-index.yaml` manually from readable exports instead.
 
 ## Four View Files
 
@@ -542,18 +546,21 @@ Forbidden:
 
 ## Local Validation
 
-Use the bundled validator for package-level checks:
+Use the bundled validator for package-level checks only outside GitHub Copilot
+hosted-agent mode. In hosted-agent mode, do not run Python, do not create a
+virtual environment, and do not wait on environment setup; record validation as
+`tool_unavailable_hosted_agent` and report the validator script path as manual
+follow-up text.
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-  00_context_packages/<MODULE-SLUG>/flow-normalization
-```
+Manual validator path:
+`skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`
+with package argument
+`00_context_packages/<MODULE-SLUG>/flow-normalization`.
 
 The validator uses only Python's standard library. Run it only with an
-already-available interpreter (`python3` preferred, then `python`); do not
-create a virtual environment, install dependencies, or wait on interactive
-environment configuration. If interpreter startup remains
-configuring/evaluating for more than about 30 seconds, record validation as
+already-available Python interpreter; do not create a virtual environment,
+install dependencies, or wait on interactive environment configuration. If
+interpreter startup remains configuring/evaluating, record validation as
 `tool_unavailable`, keep the package out of `ready_for_context_intake`, and
 report the manual command above.
 

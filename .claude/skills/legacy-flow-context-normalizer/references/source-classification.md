@@ -17,6 +17,10 @@ Record both:
 The source set does **not** need to contain all roles below. Use whatever the
 team has, preserve gaps as `TBD-*`, and avoid treating a design document as
 proof of current production behavior without SME or source/runtime evidence.
+Raw binary Office/Visio files, scanned images, and OCR/converter-dependent
+sources are optional supplements. If the agent cannot read them without
+prepared tooling, register them as skipped optional sources, ask for a readable
+export, and continue classifying the readable sources.
 
 | Source Type | Usually Helps With | Notes |
 | --- | --- | --- |
@@ -50,6 +54,12 @@ proof of current production behavior without SME or source/runtime evidence.
 | IBM i ACS object report (`DSPOBJ` / `DSPOBJD` spool) | Object name, library, type, text description | Text description is often short or blank. Treat as candidate seed, not confirmed business description. |
 | iDoctor / IBM i Code Review HTML/CSV | Program, procedure, reference map | Cross-reference candidate; do not treat as runtime proof without source analysis. |
 
+For skipped optional binary/OCR/converter-dependent sources, record the format
+and path if authorized, set `readable_status` or notes to
+`skipped_optional_binary`, and do not cite the skipped source as evidence for a
+flow step. It may support an open question such as "provide readable export for
+this diagram/workbook."
+
 ## Evidence Strength
 
 Use these values in view tables and `evidence-map.md`:
@@ -65,21 +75,21 @@ Use these values in view tables and `evidence-map.md`:
 
 For `.xlsx` files, prefer:
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
-  <workbook>.xlsx \
-  --module-slug <MODULE-SLUG> \
-  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
-```
+In GitHub Copilot hosted-agent mode, draft `source-document-index.yaml`
+manually from the readable workbook/export and do not run Python helpers. In an
+already-prepared local shell only, the optional helper path is
+`skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py`;
+invoke it with an existing Python interpreter, the workbook path, the module
+slug, and the output package path.
 
 The helper reads every sheet in the workbook. It uses the first non-empty row
 as headers and emits one `FRAG-*` per non-empty data row with locators like
 `Interfaces row 4` or `Data Dictionary row 12`.
 
-The helper uses only Python's standard library. Run it only if `python3` or
-`python` is already available; do not create a virtual environment or install
+The helper uses only Python's standard library. Run it only if a Python
+interpreter is already available; do not create a virtual environment or install
 spreadsheet dependencies. If the interpreter is unavailable or remains
-configuring/evaluating for more than about 30 seconds, draft
+configuring/evaluating, draft
 `source-document-index.yaml` manually from the readable workbook/export and
 record the helper as `tool_unavailable`.
 

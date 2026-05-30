@@ -91,7 +91,10 @@ conversion procedure, and `references/quality-gates.md` for the gate rubric.
 ## Required Inputs
 
 - Module slug (`MODULE-SLUG`) and a document-set slug (`DOCSET-SLUG`).
-- One or more source documents in a supported family, each with:
+- One or more source documents in a supported family. Readable exports are
+  preferred; raw legacy binaries, scanned images, OCR-only material, and files
+  needing converters are optional enhancements and may be skipped when tooling
+  is unavailable. For each supplied document record:
   - source path,
   - declared file type,
   - file size,
@@ -113,11 +116,16 @@ Stop and produce only blocking findings (gate `blocked`) if any apply:
 | Production data sample is present and unapproved | `legacy-ibmi-evidence-intake` |
 | Redaction is required and no approval is recorded | `legacy-ibmi-evidence-intake` |
 | Module slug or document-set slug is missing | document owner clarification |
-| No supplied document can be opened or extracted in any way | request a readable export / better tooling |
+| No authorized readable content remains after optional binary/OCR/converter-dependent inputs are skipped | request a readable export / better tooling |
 
-Missing conversion tooling is **not** a hard stop. Produce a `blocked` or
-`ready_with_warnings` package with explicit remediation (install LibreOffice,
-provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
+Missing conversion/OCR tooling is **not** a hard stop for the whole intake when
+other authorized readable material exists. Register the affected document,
+mark its `document_gate: blocked`, record `result: tool_unavailable`, add a
+warning such as `skipped_optional_binary_unreadable`, and continue with the
+readable documents. The package may still be `ready_with_warnings` if at least
+one authorized document produced usable `FRAG-*` evidence. Only make the whole
+package `blocked` when authorization/sensitivity blocks exist or every supplied
+source is skipped/unreadable.
 
 ## Macro Security Policy (`.xlsm` and macro-enabled Office)
 
@@ -135,19 +143,28 @@ provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
 
 ## Tooling / Docling Policy
 
+- Binary conversion, OCR, image extraction, and legacy Office/Visio handling are
+  optional enhancements. They must never be required for the hosted-agent path
+  to continue when readable exports, Markdown, CSV, text, or normalized document
+  packages are already available.
 - **Enterprise/Copilot runtime rule**: do **not** create a Python virtual
   environment, install packages, or wait on interactive environment setup for
-  this skill. Probe only tools that already exist in the runtime (for example
-  `command -v python3`, `command -v soffice`, `command -v tesseract`,
-  `command -v pdftotext`) and record unavailable tools honestly in
-  `conversion-log.md`. If a probe or interpreter startup remains in a
-  configuring/evaluating state for more than a short bounded check (about 30
-  seconds), stop using that tool for this run and record it as unavailable.
-- The bundled validator is a standard-library Python script. Run it with an
-  already-available interpreter (`python3` preferred, then `python`) and never
-  install dependencies for it. If no Python interpreter is available, record
-  validation as `tool_unavailable`, keep the package gate `blocked`, and report
-  the exact remediation.
+  this skill. Probe only tools that already exist in the runtime when the
+  runtime is known to be prepared; otherwise record unavailable tools honestly
+  in `conversion-log.md`. If a probe or interpreter startup remains in a
+  configuring/evaluating state, stop using that tool for this run and record it
+  as unavailable.
+- **GitHub Copilot hosted-agent mode**: do not run Python commands, shell
+  probes, package installs, virtual-environment setup, LibreOffice, OCR, or
+  converter commands from this skill unless the user explicitly confirms the
+  runtime is already prepared. Treat tooling as `tool_unavailable`, produce the
+  manifests/warnings from readable supplied content, and report the manual
+  validation/remediation command as text. Do not enter or wait on Python
+  environment setup.
+- The bundled validator is a standard-library Python script. Run it only with
+  an already-available interpreter and never install dependencies for it. If no
+  Python interpreter is available, record validation as `tool_unavailable`, keep
+  the package gate `blocked`, and report the exact remediation.
 - Optional converters/enhancers such as LibreOffice, OCR engines, PDF renderers,
   or Docling are never installed automatically. Missing optional tooling is
   evidence for the package gate, not a reason to stall.
@@ -165,8 +182,9 @@ provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
   - `.vsd` → PDF / SVG / PNG
 - If a converter is unavailable, record the gap in `conversion-log.md`, set the
   affected document gate to `blocked` (or `ready_with_warnings` when partial
-  extraction still produced usable output), and give remediation steps. Never
-  record a conversion as successful when no tool ran.
+  extraction still produced usable output), add a skip warning, and continue
+  with other readable documents. Never record a conversion as successful when no
+  tool ran.
 
 ## Output Contract
 
@@ -202,10 +220,11 @@ The package-level **quality gate** in `intake.manifest.yaml` must be one of:
   unresolved authorization or sensitivity issues.
 - `ready_with_warnings` — usable output exists, but some documents carry
   warnings (macros statically extracted, OCR low-confidence regions, visual
-  review needed, partial conversion). Warnings travel forward.
+  review needed, partial conversion, optional binary skipped). Warnings travel
+  forward.
 - `blocked` — at least one hard issue (unauthorized/unknown sensitivity,
-  required redaction missing, no tooling and no usable extraction, or no
-  document could be opened).
+  required redaction missing, no tooling/readable export for every supplied
+  document, or no document could be opened).
 
 Allowed handoff:
 
@@ -313,14 +332,10 @@ Emit a Step Validation Report (see
 1. **Resolve identity and tooling**
    - Confirm `MODULE-SLUG`, `DOCSET-SLUG`, and which converters/OCR/Docling are
      available. Record availability in `conversion-log.md`.
-   - Use bounded availability checks only; do not configure environments or
-     install missing tools:
-     ```bash
-     command -v python3 || command -v python || true
-     command -v soffice || true
-     command -v tesseract || true
-     command -v pdftotext || true
-     ```
+   - In GitHub Copilot hosted-agent mode, do not run shell probes. If prior
+     runtime facts are not already visible, record converters/OCR/Python as
+     `tool_unavailable` and continue with honest warnings or a blocked gate.
+   - In an already-prepared local shell only, bounded PATH checks may be used.
 
 2. **Register source files** (`intake.manifest.yaml`)
    - For each document record path, file type, size, `sha256`, owner,
@@ -333,9 +348,11 @@ Emit a Step Validation Report (see
      Do not open that content.
 
 4. **Normalize legacy binary formats**
-   - Convert `.xls`→`.xlsx`, `.doc`→`.docx`, `.ppt`→`.pptx`/PDF, `.vsd`→PDF/SVG/
-     PNG using LibreOffice or a documented converter. If unavailable, record the
-     gap and set the document gate accordingly — never fake success.
+   - Treat this as optional. Convert `.xls`→`.xlsx`, `.doc`→`.docx`,
+     `.ppt`→`.pptx`/PDF, `.vsd`→PDF/SVG/PNG only when an approved converter is
+     already available. If unavailable, register the document, record
+     `tool_unavailable`, mark the document `blocked`, add a skip warning, and
+     continue with other readable sources — never fake success.
 
 5. **Extract structure** (per format, see `references/format-strategy.md`)
    - Excel: sheets (incl. hidden), used ranges, tables, formulas, merged cells,
@@ -365,15 +382,16 @@ Emit a Step Validation Report (see
      `references/quality-gates.md`.
 
 9. **Validate**
-   - Run the bundled validator and fix every finding before handoff:
-     ```bash
-     python3 skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py \
-       00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>
-     ```
-   - If `python3` is unavailable, try `python` only if it already exists. Do not
-     create a virtual environment or install Python packages for this validator;
-     instead record the validation tooling gap and keep the package `blocked`
-     until validation can run.
+   - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
+     Record `validation: tool_unavailable_hosted_agent` in the package notes,
+     keep the package out of downstream handoff, and report the manual validator
+     path:
+     `skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py`.
+   - In an already-prepared local shell only, run the bundled validator with an
+     existing Python interpreter and fix every finding before handoff.
+   - If no interpreter is available, do not create a virtual environment or
+     install Python packages; record the validation tooling gap and keep the
+     package `blocked` until validation can run.
 
 ## Handoff
 
