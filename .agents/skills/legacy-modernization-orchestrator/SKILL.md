@@ -581,9 +581,10 @@ After Step 8 writes the YAML state, regenerate the human-readable
 companion `docs/<project>/STATUS.md` so a human reader can see project
 status at a glance without parsing YAML.
 
-```bash
-python3 scripts/generate-status.py docs/<project-name>/
-```
+In GitHub Copilot hosted-agent mode, do not run the status generator or
+configure Python. In an already-prepared local shell only, run
+`scripts/generate-status.py docs/<project-name>/` with an existing Python
+interpreter.
 
 The script emits a single-page snapshot: current focus, all capabilities
 with their stage / blocking, open blockers grouped by capability, and the
@@ -596,8 +597,9 @@ a virtual environment, install packages, or wait on interactive environment
 configuration for status regeneration. If the script or interpreter is
 unavailable in the runtime, or startup remains configuring/evaluating for more
 than about 30 seconds, skip this step and tell the user (in the prose above the
-Quick Card): "STATUS.md not regenerated — run `python3
-scripts/generate-status.py docs/<project>/` manually."
+Quick Card): "STATUS.md not regenerated — run
+`scripts/generate-status.py docs/<project>/` manually with an existing Python
+interpreter."
 
 Downstream skills SHOULD also call this script at the end of their own
 write-back, but the orchestrator running it after every routing decision

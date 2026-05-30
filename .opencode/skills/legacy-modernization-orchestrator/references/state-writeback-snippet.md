@@ -171,9 +171,10 @@ documented in each skill's own SKILL.md.
 
 Validate any `workflow-state.yaml` against this contract with:
 
-```bash
-python3 scripts/check-workflow-state.py [<path-to-workflow-state.yaml>]
-```
+In GitHub Copilot hosted-agent mode, do not run Python or configure an
+environment for this check. In an already-prepared local shell only, run
+`scripts/check-workflow-state.py [<path-to-workflow-state.yaml>]` with an
+existing Python interpreter.
 
 Use only an already-available Python interpreter for this check. Do not create a
 virtual environment, install packages, or wait on interactive Python environment

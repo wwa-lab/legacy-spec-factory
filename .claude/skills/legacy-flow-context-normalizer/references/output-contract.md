@@ -542,18 +542,21 @@ Forbidden:
 
 ## Local Validation
 
-Use the bundled validator for package-level checks:
+Use the bundled validator for package-level checks only outside GitHub Copilot
+hosted-agent mode. In hosted-agent mode, do not run Python, do not create a
+virtual environment, and do not wait on environment setup; record validation as
+`tool_unavailable_hosted_agent` and report the validator script path as manual
+follow-up text.
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-  00_context_packages/<MODULE-SLUG>/flow-normalization
-```
+Manual validator path:
+`skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`
+with package argument
+`00_context_packages/<MODULE-SLUG>/flow-normalization`.
 
 The validator uses only Python's standard library. Run it only with an
-already-available interpreter (`python3` preferred, then `python`); do not
-create a virtual environment, install dependencies, or wait on interactive
-environment configuration. If interpreter startup remains
-configuring/evaluating for more than about 30 seconds, record validation as
+already-available Python interpreter; do not create a virtual environment,
+install dependencies, or wait on interactive environment configuration. If
+interpreter startup remains configuring/evaluating, record validation as
 `tool_unavailable`, keep the package out of `ready_for_context_intake`, and
 report the manual command above.
 

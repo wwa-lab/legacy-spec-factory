@@ -65,21 +65,21 @@ Use these values in view tables and `evidence-map.md`:
 
 For `.xlsx` files, prefer:
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
-  <workbook>.xlsx \
-  --module-slug <MODULE-SLUG> \
-  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
-```
+In GitHub Copilot hosted-agent mode, draft `source-document-index.yaml`
+manually from the readable workbook/export and do not run Python helpers. In an
+already-prepared local shell only, the optional helper path is
+`skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py`;
+invoke it with an existing Python interpreter, the workbook path, the module
+slug, and the output package path.
 
 The helper reads every sheet in the workbook. It uses the first non-empty row
 as headers and emits one `FRAG-*` per non-empty data row with locators like
 `Interfaces row 4` or `Data Dictionary row 12`.
 
-The helper uses only Python's standard library. Run it only if `python3` or
-`python` is already available; do not create a virtual environment or install
+The helper uses only Python's standard library. Run it only if a Python
+interpreter is already available; do not create a virtual environment or install
 spreadsheet dependencies. If the interpreter is unavailable or remains
-configuring/evaluating for more than about 30 seconds, draft
+configuring/evaluating, draft
 `source-document-index.yaml` manually from the readable workbook/export and
 record the helper as `tool_unavailable`.
 

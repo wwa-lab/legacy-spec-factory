@@ -21,7 +21,7 @@ execution. Fill in sections as the test runs.
 |-------|--------|---------|
 | Skill exists in canonical source | pass/fail | `skills/legacy-SKILL-NAME/SKILL.md` is present and readable |
 | Sync drift | pass/fail | `scripts/sync-skills.sh --skill legacy-SKILL-NAME --target all --check` exit code 0 |
-| Contract validation | pass/fail | `python3 scripts/check-spec-contract.py` (if applicable) exit code 0 |
+| Contract validation | pass/fail | contract validator (if applicable) exit code 0 |
 | Canonical SKILL.md is synced | pass/fail | Canonical files match the tested adapter copies |
 | Test prompts available | pass/fail | Canonical prompts in `docs/runtime-smoke-tests.md` or `examples/`, or override provided |
 

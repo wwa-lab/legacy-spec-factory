@@ -107,19 +107,23 @@ Use `references/output-contract.md` for required fields and examples. Use the
 templates under `templates/` as scaffolding.
 
 Runtime tooling rule: the bundled validator is a standard-library Python script.
-Run it only with an already-available interpreter (`python3` preferred, then
-`python`). Do not create a virtual environment, install packages, or wait on
-interactive environment configuration. If interpreter discovery or startup
-remains configuring/evaluating for more than about 30 seconds, record validation
-as `tool_unavailable`, keep the package out of `ready_for_module_analysis`, and
-report the manual command to run later.
+Run it only with an already-available Python interpreter. Do not create a
+virtual environment, install packages, or wait on interactive environment
+configuration. If interpreter discovery or startup remains
+configuring/evaluating, record validation as `tool_unavailable`, keep the
+package out of `ready_for_module_analysis`, and report the manual command to
+run later.
 
-For deterministic local validation, run:
+GitHub Copilot hosted-agent mode is stricter: do not run Python commands,
+shell probes, validators, package installs, or environment setup from this skill
+unless the user explicitly confirms the runtime is already prepared. Record
+validation as `tool_unavailable_hosted_agent`, keep the package out of
+`ready_for_module_analysis`, and report the validator path as manual follow-up
+text. Do not enter or wait on Python environment setup.
 
-```bash
-python3 skills/legacy-module-context-intake/scripts/validate_context_package.py \
-  00_context_packages/<MODULE-SLUG>/
-```
+For deterministic local validation outside hosted Copilot mode, run
+`skills/legacy-module-context-intake/scripts/validate_context_package.py` with
+an existing Python interpreter against `00_context_packages/<MODULE-SLUG>/`.
 
 The package status in `context-index.yaml` must be one of:
 

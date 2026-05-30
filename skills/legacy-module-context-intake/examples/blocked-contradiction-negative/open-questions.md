@@ -33,7 +33,7 @@ Required action:
 3. Clear TBD-PAYMENT-MATCH-001 from blocking_items in context-index.yaml.
 4. Update intake.status to ready_for_module_analysis or ready_with_warnings.
 5. Re-run the validator:
-   python3 skills/legacy-module-context-intake/scripts/validate_context_package.py \
+   skills/legacy-module-context-intake/scripts/validate_context_package.py \
      00_context_packages/PAYMENT-MATCH/
 6. Then route to legacy-ibmi-module-analyzer.
 ```

@@ -56,8 +56,9 @@ scripts/sync-skills.sh --skill legacy-SKILL-NAME --target all --check
 # Expected: exit code 0
 
 # Check contract validation (if skill touches spec.yaml)
-python3 scripts/check-spec-contract.py
-# Expected: exit code 0
+# In hosted-agent mode, do not run Python or configure an environment.
+# In an already-prepared local shell only, run scripts/check-spec-contract.py
+# with an existing Python interpreter. Expected: exit code 0.
 
 # Use only an already-available Python interpreter for this check.
 # Do not create a virtual environment, install packages, or wait on

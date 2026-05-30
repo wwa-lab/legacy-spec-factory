@@ -140,32 +140,32 @@ from the templates under `templates/`.
 
 Runtime tooling rule: the bundled Python helpers are standard-library scripts
 and optional execution aids, not environment setup triggers. Run them only with
-an already-available interpreter (`python3` preferred, then `python`). Do not
-create a virtual environment, install packages, or wait on interactive
-environment configuration. If interpreter discovery or startup remains in a
-configuring/evaluating state for more than about 30 seconds, record Python as
-`tool_unavailable` for this run, continue with manual package drafting where
-possible, and list the exact remediation in `open-questions.md` and
-`flow-context-index.yaml`.
+an already-available Python interpreter. Do not create a virtual environment,
+install packages, or wait on interactive environment configuration. If
+interpreter discovery or startup remains in a configuring/evaluating state,
+record Python as `tool_unavailable` for this run, continue with manual package
+drafting where possible, and list the exact remediation in `open-questions.md`
+and `flow-context-index.yaml`.
 
-For deterministic local validation, run:
+GitHub Copilot hosted-agent mode is stricter: do not run Python commands,
+shell probes, Excel helpers, validators, package installs, or environment setup
+from this skill unless the user explicitly confirms the runtime is already
+prepared. Draft the four context-view files manually from readable supplied
+content, record validation/helper execution as `tool_unavailable_hosted_agent`,
+and report the validator/helper script paths as manual follow-up text. Do not
+enter or wait on Python environment setup.
 
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-  00_context_packages/<MODULE-SLUG>/flow-normalization
-```
+For deterministic local validation outside hosted Copilot mode, run
+`skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`
+with an existing Python interpreter against
+`00_context_packages/<MODULE-SLUG>/flow-normalization`.
 
 For multi-sheet Excel intake, generate an initial `source-document-index.yaml`
-fragment draft with:
-
-```bash
-python3 skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py \
-  source-docs/<workbook>.xlsx \
-  --module-slug <MODULE-SLUG> \
-  --title "<Workbook title>" \
-  --owner "<Document owner>" \
-  --output 00_context_packages/<MODULE-SLUG>/flow-normalization/source-document-index.yaml
-```
+fragment draft manually in hosted Copilot mode. Outside hosted Copilot mode,
+the optional helper path is
+`skills/legacy-flow-context-normalizer/scripts/extract_excel_fragments.py`; run
+it only with an existing Python interpreter and explicit workbook/package
+arguments.
 
 The package status in `flow-context-index.yaml` must be one of:
 
@@ -410,12 +410,13 @@ orchestrator.
     - `blocked_*` when a downstream skill would need to invent facts.
 
 12. **Validate**
-    - Run the bundled validator only with an already-available Python
-      interpreter; do not create a virtual environment or install dependencies:
-      ```bash
-      python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
-        --allow-draft 00_context_packages/<MODULE-SLUG>/flow-normalization
-      ```
+    - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
+      Record validation as `tool_unavailable_hosted_agent`, keep the package
+      out of `ready_for_context_intake`, and report the validator script path:
+      `skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`.
+    - In an already-prepared local shell only, run the bundled validator with
+      an existing Python interpreter; do not create a virtual environment or
+      install dependencies.
     - Fix every reported finding, then re-run until the validator outputs
       `OK: flow context package is structurally valid`.
     - If no Python interpreter is available, or startup remains
