@@ -91,7 +91,10 @@ conversion procedure, and `references/quality-gates.md` for the gate rubric.
 ## Required Inputs
 
 - Module slug (`MODULE-SLUG`) and a document-set slug (`DOCSET-SLUG`).
-- One or more source documents in a supported family, each with:
+- One or more source documents in a supported family. Readable exports are
+  preferred; raw legacy binaries, scanned images, OCR-only material, and files
+  needing converters are optional enhancements and may be skipped when tooling
+  is unavailable. For each supplied document record:
   - source path,
   - declared file type,
   - file size,
@@ -113,11 +116,16 @@ Stop and produce only blocking findings (gate `blocked`) if any apply:
 | Production data sample is present and unapproved | `legacy-ibmi-evidence-intake` |
 | Redaction is required and no approval is recorded | `legacy-ibmi-evidence-intake` |
 | Module slug or document-set slug is missing | document owner clarification |
-| No supplied document can be opened or extracted in any way | request a readable export / better tooling |
+| No authorized readable content remains after optional binary/OCR/converter-dependent inputs are skipped | request a readable export / better tooling |
 
-Missing conversion tooling is **not** a hard stop. Produce a `blocked` or
-`ready_with_warnings` package with explicit remediation (install LibreOffice,
-provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
+Missing conversion/OCR tooling is **not** a hard stop for the whole intake when
+other authorized readable material exists. Register the affected document,
+mark its `document_gate: blocked`, record `result: tool_unavailable`, add a
+warning such as `skipped_optional_binary_unreadable`, and continue with the
+readable documents. The package may still be `ready_with_warnings` if at least
+one authorized document produced usable `FRAG-*` evidence. Only make the whole
+package `blocked` when authorization/sensitivity blocks exist or every supplied
+source is skipped/unreadable.
 
 ## Macro Security Policy (`.xlsm` and macro-enabled Office)
 
@@ -135,6 +143,10 @@ provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
 
 ## Tooling / Docling Policy
 
+- Binary conversion, OCR, image extraction, and legacy Office/Visio handling are
+  optional enhancements. They must never be required for the hosted-agent path
+  to continue when readable exports, Markdown, CSV, text, or normalized document
+  packages are already available.
 - **Enterprise/Copilot runtime rule**: do **not** create a Python virtual
   environment, install packages, or wait on interactive environment setup for
   this skill. Probe only tools that already exist in the runtime when the
@@ -170,8 +182,9 @@ provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
   - `.vsd` → PDF / SVG / PNG
 - If a converter is unavailable, record the gap in `conversion-log.md`, set the
   affected document gate to `blocked` (or `ready_with_warnings` when partial
-  extraction still produced usable output), and give remediation steps. Never
-  record a conversion as successful when no tool ran.
+  extraction still produced usable output), add a skip warning, and continue
+  with other readable documents. Never record a conversion as successful when no
+  tool ran.
 
 ## Output Contract
 
@@ -207,10 +220,11 @@ The package-level **quality gate** in `intake.manifest.yaml` must be one of:
   unresolved authorization or sensitivity issues.
 - `ready_with_warnings` — usable output exists, but some documents carry
   warnings (macros statically extracted, OCR low-confidence regions, visual
-  review needed, partial conversion). Warnings travel forward.
+  review needed, partial conversion, optional binary skipped). Warnings travel
+  forward.
 - `blocked` — at least one hard issue (unauthorized/unknown sensitivity,
-  required redaction missing, no tooling and no usable extraction, or no
-  document could be opened).
+  required redaction missing, no tooling/readable export for every supplied
+  document, or no document could be opened).
 
 Allowed handoff:
 
@@ -334,9 +348,11 @@ Emit a Step Validation Report (see
      Do not open that content.
 
 4. **Normalize legacy binary formats**
-   - Convert `.xls`→`.xlsx`, `.doc`→`.docx`, `.ppt`→`.pptx`/PDF, `.vsd`→PDF/SVG/
-     PNG using LibreOffice or a documented converter. If unavailable, record the
-     gap and set the document gate accordingly — never fake success.
+   - Treat this as optional. Convert `.xls`→`.xlsx`, `.doc`→`.docx`,
+     `.ppt`→`.pptx`/PDF, `.vsd`→PDF/SVG/PNG only when an approved converter is
+     already available. If unavailable, register the document, record
+     `tool_unavailable`, mark the document `blocked`, add a skip warning, and
+     continue with other readable sources — never fake success.
 
 5. **Extract structure** (per format, see `references/format-strategy.md`)
    - Excel: sheets (incl. hidden), used ranges, tables, formulas, merged cells,

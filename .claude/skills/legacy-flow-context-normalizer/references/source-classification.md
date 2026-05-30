@@ -17,6 +17,10 @@ Record both:
 The source set does **not** need to contain all roles below. Use whatever the
 team has, preserve gaps as `TBD-*`, and avoid treating a design document as
 proof of current production behavior without SME or source/runtime evidence.
+Raw binary Office/Visio files, scanned images, and OCR/converter-dependent
+sources are optional supplements. If the agent cannot read them without
+prepared tooling, register them as skipped optional sources, ask for a readable
+export, and continue classifying the readable sources.
 
 | Source Type | Usually Helps With | Notes |
 | --- | --- | --- |
@@ -49,6 +53,12 @@ proof of current production behavior without SME or source/runtime evidence.
 | Skyview EA / Stingray call-graph export | Caller/callee node pairs, edge type, module label | Edges are static-analysis candidates only; runtime call order requires SME or source-code confirmation. |
 | IBM i ACS object report (`DSPOBJ` / `DSPOBJD` spool) | Object name, library, type, text description | Text description is often short or blank. Treat as candidate seed, not confirmed business description. |
 | iDoctor / IBM i Code Review HTML/CSV | Program, procedure, reference map | Cross-reference candidate; do not treat as runtime proof without source analysis. |
+
+For skipped optional binary/OCR/converter-dependent sources, record the format
+and path if authorized, set `readable_status` or notes to
+`skipped_optional_binary`, and do not cite the skipped source as evidence for a
+flow step. It may support an open question such as "provide readable export for
+this diagram/workbook."
 
 ## Evidence Strength
 

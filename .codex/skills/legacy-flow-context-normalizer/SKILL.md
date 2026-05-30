@@ -70,7 +70,11 @@ Do not use it as a replacement for:
 ## Required Inputs
 
 - Module slug, business name, draft scope statement, and owner or SME role.
-- One or more source documents, specs, or exported readable forms:
+- One or more source documents, specs, or exported readable forms. Prefer
+  Markdown, text, CSV, modern Office text exports, normalized document-intake
+  packages, or pasted SME notes. Raw binary Office/Visio files, scanned images,
+  and OCR/converter-dependent sources are optional supplements; if they cannot
+  be read without tooling, skip them and continue with the readable sources:
   - Visio / diagram exports (`.vsdx`, PDF, SVG, PNG, or image export)
   - Word / runbook / procedure docs
   - Excel / CSV process, application, interface, data dictionary, or CRUD lists
@@ -96,7 +100,7 @@ Stop and produce only blocking findings if any apply:
 | Any source/runtime evidence has unknown sensitivity or missing authorization | `legacy-ibmi-evidence-intake` |
 | Confidential or production evidence needs redaction and no approved redaction exists | `legacy-ibmi-evidence-intake` |
 | Module slug, business name, or scope is missing | module owner / SME clarification |
-| No supplied document can be read or extracted into text/table/diagram fragments | request PDF/SVG/PNG/CSV/text export |
+| No readable source, normalized package, text/table export, SME note, or scope clue remains after optional binary/OCR/converter-dependent sources are skipped | produce triage package and request PDF/SVG/PNG/CSV/text export |
 | Documents appear to cover multiple modules and no draft boundary can be proposed | SME boundary decision |
 | Contradictions are found but the user asks to hide or smooth them over | block; keep `contradiction-log.md` visible |
 | Draft flows are requested as approved rules, approved module context, or BRD input without SME review | block; route through SME review first |
@@ -109,6 +113,15 @@ source-quality triage package instead of failing silently. The goal is to
 improve user experience by making incomplete inputs reviewable instead of
 blocking unless a downstream step would need to invent facts.
 
+Unreadable binary/OCR/converter-dependent sources are also **not** a stop
+condition when at least one readable source or scope clue remains. Add the
+unreadable source to `source-document-index.yaml` with
+`readable_status: skipped_optional_binary` (or equivalent notes), set its
+evidence strength to `blocked`/low as appropriate, add a `TBD-*` asking for a
+readable export, and continue drafting the four view files from the readable
+material only. Do not invoke `legacy-document-evidence-intake` automatically
+just to process optional binaries in hosted-agent mode.
+
 ## Input Quality Ladder
 
 Classify the input set before drafting flows:
@@ -117,8 +130,8 @@ Classify the input set before drafting flows:
 | --- | --- | --- |
 | `L3 strong` | The documents support all four views with visible evidence. | Produce four substantive view files, each with Mermaid flowchart, evidence-linked steps, candidate seeds, and SME questions. |
 | `L2 partial` | The documents support one to three views. | Produce substantive views where evidence exists; create Mermaid placeholders and `TBD-*` questions for missing views; route to SME review. |
-| `L1 sparse` | Documents are authorized and readable, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
-| `L0 blocked` | Evidence is unauthorized, unreadable, out of scope, or lacks a usable module boundary. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
+| `L1 sparse` | Documents are authorized and readable, or only source/scope clues remain after optional binaries are skipped, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
+| `L0 blocked` | Evidence authorization is unresolved, the module boundary is unusable, all sources are out of scope, or the user asks to hide contradictions / treat draft flows as approved. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
 
 `L1 sparse` is still useful output. It should identify what was found, why no
 flow should be inferred, which source types would unlock the next pass, and

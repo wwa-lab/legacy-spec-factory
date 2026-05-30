@@ -9,13 +9,18 @@ handoff; per-document gates roll up into it.
 | Gate | Meaning | Handoff |
 | --- | --- | --- |
 | `ready` | Every document extracted cleanly; no macro/security flags; no unresolved authorization or sensitivity issues. | `legacy-flow-context-normalizer` |
-| `ready_with_warnings` | Usable output exists, but some documents carry warnings (macros statically extracted, low-confidence OCR, visual review needed, partial conversion). Warnings travel forward. | `legacy-flow-context-normalizer` |
-| `blocked` | At least one hard issue: unauthorized / unknown sensitivity, required redaction missing, no tooling and no usable extraction, or no document could be opened. | `legacy-ibmi-evidence-intake` (auth/sensitivity) or request better export/tooling |
+| `ready_with_warnings` | Usable output exists, but some documents carry warnings (macros statically extracted, low-confidence OCR, visual review needed, partial conversion, optional binary/converter-dependent source skipped). Warnings travel forward. | `legacy-flow-context-normalizer` |
+| `blocked` | At least one hard issue: unauthorized / unknown sensitivity, required redaction missing, or every supplied document is unreadable/skipped with no usable extraction. | `legacy-ibmi-evidence-intake` (auth/sensitivity) or request better export/tooling |
 
 ## Roll-Up Rule
 
 - Any document with `document_gate: blocked` for an authorization or sensitivity
   reason ⇒ package `gate: blocked`, route to `legacy-ibmi-evidence-intake`.
+- A document with `document_gate: blocked` only because optional binary,
+  converter, OCR, or hosted-agent tooling is unavailable does not by itself
+  block the package when at least one other authorized document produced usable
+  `FRAG-*` evidence. Roll up to `ready_with_warnings` and carry the skipped
+  document in `extraction-warnings.md`.
 - Any document with `security_review_required: true` ⇒ package `gate` capped at
   `ready_with_warnings` until a named reviewer signs off.
 - Any warning (OCR, visual-review, partial conversion) on an otherwise usable
@@ -40,7 +45,10 @@ Each `documents/<DOC-SLUG>/document.manifest.yaml` must declare its `doc_id`,
 `executed: false`.
 
 For `ready` / `ready_with_warnings` documents, every path listed in
-`normalized_outputs` must exist under the package directory.
+`normalized_outputs` must exist under the package directory. A skipped optional
+binary/converter-dependent document should use `document_gate: blocked`, no
+`normalized_outputs`, and a warning explaining the skipped source and manual
+remediation.
 
 ## Forbidden In `ready` / `ready_with_warnings`
 
