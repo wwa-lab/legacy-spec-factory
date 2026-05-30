@@ -549,6 +549,14 @@ python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_pack
   00_context_packages/<MODULE-SLUG>/flow-normalization
 ```
 
+The validator uses only Python's standard library. Run it only with an
+already-available interpreter (`python3` preferred, then `python`); do not
+create a virtual environment, install dependencies, or wait on interactive
+environment configuration. If interpreter startup remains
+configuring/evaluating for more than about 30 seconds, record validation as
+`tool_unavailable`, keep the package out of `ready_for_context_intake`, and
+report the manual command above.
+
 It checks required files, status vocabulary, output-file references,
 view-to-evidence-map linkage, contradiction-log completeness, forbidden
 candidate promotion, and ready-package SME review evidence. It is a structural

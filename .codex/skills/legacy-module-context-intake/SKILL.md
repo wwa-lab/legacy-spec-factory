@@ -106,6 +106,14 @@ Stop and produce only blocking findings / requested remediation if any apply:
 Use `references/output-contract.md` for required fields and examples. Use the
 templates under `templates/` as scaffolding.
 
+Runtime tooling rule: the bundled validator is a standard-library Python script.
+Run it only with an already-available interpreter (`python3` preferred, then
+`python`). Do not create a virtual environment, install packages, or wait on
+interactive environment configuration. If interpreter discovery or startup
+remains configuring/evaluating for more than about 30 seconds, record validation
+as `tool_unavailable`, keep the package out of `ready_for_module_analysis`, and
+report the manual command to run later.
+
 For deterministic local validation, run:
 
 ```bash

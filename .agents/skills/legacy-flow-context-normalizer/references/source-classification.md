@@ -76,6 +76,13 @@ The helper reads every sheet in the workbook. It uses the first non-empty row
 as headers and emits one `FRAG-*` per non-empty data row with locators like
 `Interfaces row 4` or `Data Dictionary row 12`.
 
+The helper uses only Python's standard library. Run it only if `python3` or
+`python` is already available; do not create a virtual environment or install
+spreadsheet dependencies. If the interpreter is unavailable or remains
+configuring/evaluating for more than about 30 seconds, draft
+`source-document-index.yaml` manually from the readable workbook/export and
+record the helper as `tool_unavailable`.
+
 Sheet names such as `Function Spec`, `Technical Design`, `Program Spec`, and
 `File Spec` are useful signals. They should guide candidate view
 classification, but they do not make any view mandatory.

@@ -174,3 +174,8 @@ Validate any `workflow-state.yaml` against this contract with:
 ```bash
 python3 scripts/check-workflow-state.py [<path-to-workflow-state.yaml>]
 ```
+
+Use only an already-available Python interpreter for this check. Do not create a
+virtual environment, install packages, or wait on interactive Python environment
+configuration; if startup remains configuring/evaluating for more than about 30
+seconds, record the check as `tool_unavailable` and report the manual command.

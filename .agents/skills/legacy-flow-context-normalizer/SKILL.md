@@ -138,6 +138,16 @@ not confirmed facts.
 Use `references/output-contract.md` for required fields and examples. Start
 from the templates under `templates/`.
 
+Runtime tooling rule: the bundled Python helpers are standard-library scripts
+and optional execution aids, not environment setup triggers. Run them only with
+an already-available interpreter (`python3` preferred, then `python`). Do not
+create a virtual environment, install packages, or wait on interactive
+environment configuration. If interpreter discovery or startup remains in a
+configuring/evaluating state for more than about 30 seconds, record Python as
+`tool_unavailable` for this run, continue with manual package drafting where
+possible, and list the exact remediation in `open-questions.md` and
+`flow-context-index.yaml`.
+
 For deterministic local validation, run:
 
 ```bash
@@ -400,13 +410,18 @@ orchestrator.
     - `blocked_*` when a downstream skill would need to invent facts.
 
 12. **Validate**
-    - Run the bundled validator:
+    - Run the bundled validator only with an already-available Python
+      interpreter; do not create a virtual environment or install dependencies:
       ```bash
       python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py \
         --allow-draft 00_context_packages/<MODULE-SLUG>/flow-normalization
       ```
     - Fix every reported finding, then re-run until the validator outputs
       `OK: flow context package is structurally valid`.
+    - If no Python interpreter is available, or startup remains
+      configuring/evaluating for more than about 30 seconds, record validation
+      as `tool_unavailable`, keep the package out of
+      `ready_for_context_intake`, and report the exact command to run manually.
     - Do not route to SME review or context intake until the validator passes.
 
 ## Handoff

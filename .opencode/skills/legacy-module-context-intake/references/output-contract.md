@@ -314,6 +314,14 @@ python3 skills/legacy-module-context-intake/scripts/validate_context_package.py 
   00_context_packages/<MODULE-SLUG>/
 ```
 
+The validator uses only Python's standard library. Run it only with an
+already-available interpreter (`python3` preferred, then `python`); do not
+create a virtual environment, install dependencies, or wait on interactive
+environment configuration. If interpreter startup remains
+configuring/evaluating for more than about 30 seconds, record validation as
+`tool_unavailable`, keep the package out of `ready_for_module_analysis`, and
+report the manual command above.
+
 It checks required files, status vocabulary, output-file references, view-to
 evidence-map linkage, contradiction-log completeness, and RAG candidate
 promotion status. It is a structural guard only; SME approval and semantic

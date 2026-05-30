@@ -135,6 +135,22 @@ provide a vendor PDF export, etc.) rather than pretending conversion succeeded.
 
 ## Tooling / Docling Policy
 
+- **Enterprise/Copilot runtime rule**: do **not** create a Python virtual
+  environment, install packages, or wait on interactive environment setup for
+  this skill. Probe only tools that already exist in the runtime (for example
+  `command -v python3`, `command -v soffice`, `command -v tesseract`,
+  `command -v pdftotext`) and record unavailable tools honestly in
+  `conversion-log.md`. If a probe or interpreter startup remains in a
+  configuring/evaluating state for more than a short bounded check (about 30
+  seconds), stop using that tool for this run and record it as unavailable.
+- The bundled validator is a standard-library Python script. Run it with an
+  already-available interpreter (`python3` preferred, then `python`) and never
+  install dependencies for it. If no Python interpreter is available, record
+  validation as `tool_unavailable`, keep the package gate `blocked`, and report
+  the exact remediation.
+- Optional converters/enhancers such as LibreOffice, OCR engines, PDF renderers,
+  or Docling are never installed automatically. Missing optional tooling is
+  evidence for the package gate, not a reason to stall.
 - Deterministic structural extraction + manifests are the **canonical output**.
 - Docling MAY be referenced as an optional renderer/enhancer for supported
   formats (`.xlsx`, `.docx`, `.pptx`, PDF). It must **not** be the only source
@@ -297,6 +313,14 @@ Emit a Step Validation Report (see
 1. **Resolve identity and tooling**
    - Confirm `MODULE-SLUG`, `DOCSET-SLUG`, and which converters/OCR/Docling are
      available. Record availability in `conversion-log.md`.
+   - Use bounded availability checks only; do not configure environments or
+     install missing tools:
+     ```bash
+     command -v python3 || command -v python || true
+     command -v soffice || true
+     command -v tesseract || true
+     command -v pdftotext || true
+     ```
 
 2. **Register source files** (`intake.manifest.yaml`)
    - For each document record path, file type, size, `sha256`, owner,
@@ -346,6 +370,10 @@ Emit a Step Validation Report (see
      python3 skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py \
        00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>
      ```
+   - If `python3` is unavailable, try `python` only if it already exists. Do not
+     create a virtual environment or install Python packages for this validator;
+     instead record the validation tooling gap and keep the package `blocked`
+     until validation can run.
 
 ## Handoff
 
@@ -407,6 +435,10 @@ copies directly. No runtime-specific assumptions are baked into this source.
 
 ## Version History
 
+- v0.1.1 (2026-05-30): Added enterprise/Copilot runtime guardrails to prevent
+  automatic Python environment creation or optional tool installation during
+  document intake; missing tools must be recorded as package evidence instead
+  of stalling.
 - v0.1.0 (2026-05-29): Initial legacy document evidence intake and format
   normalization skill. Converts Excel / Word / PowerPoint / Visio / PDF / image
   / scanned documents into Markdown / CSV / PDF / PNG / SVG with manifests,

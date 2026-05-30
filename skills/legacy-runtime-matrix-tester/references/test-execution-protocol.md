@@ -59,6 +59,12 @@ scripts/sync-skills.sh --skill legacy-SKILL-NAME --target all --check
 python3 scripts/check-spec-contract.py
 # Expected: exit code 0
 
+# Use only an already-available Python interpreter for this check.
+# Do not create a virtual environment, install packages, or wait on
+# interactive Python environment configuration; if startup remains
+# configuring/evaluating for more than about 30 seconds, record
+# tool_unavailable in the scorecard instead of stalling the matrix run.
+
 # Check the canonical source state
 git status --short skills/legacy-SKILL-NAME/
 # Expected: any canonical changes under test have already been synced to adapters

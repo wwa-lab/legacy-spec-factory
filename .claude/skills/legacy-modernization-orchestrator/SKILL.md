@@ -591,9 +591,13 @@ last 10 history entries. It is **always** in sync with
 `workflow-state.yaml` because it is derived from it — never hand-edit
 STATUS.md.
 
-If the script is unavailable in the runtime, skip this step and tell the
-user (in the prose above the Quick Card): "STATUS.md not regenerated —
-run `python3 scripts/generate-status.py docs/<project>/` manually."
+Run the script only with an already-available Python interpreter. Do not create
+a virtual environment, install packages, or wait on interactive environment
+configuration for status regeneration. If the script or interpreter is
+unavailable in the runtime, or startup remains configuring/evaluating for more
+than about 30 seconds, skip this step and tell the user (in the prose above the
+Quick Card): "STATUS.md not regenerated — run `python3
+scripts/generate-status.py docs/<project>/` manually."
 
 Downstream skills SHOULD also call this script at the end of their own
 write-back, but the orchestrator running it after every routing decision
