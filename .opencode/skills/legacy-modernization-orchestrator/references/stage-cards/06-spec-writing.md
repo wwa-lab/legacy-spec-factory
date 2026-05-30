@@ -1,9 +1,10 @@
 # Stage 06: Spec Writing (one capability at a time)
 
 **You are here if:** module analysis is approved (4 views + overview), the
-selected `CAP-*` has an approved BRD Package (or an explicit
-technical-spec-only bypass), and you want to produce a per-capability
-`spec.yaml` + `spec.md` that downstream forward SDLC can consume.
+selected `CAP-*` has an approved legacy BRD Package plus an explicit post-BRD
+promotion / disposition decision (or an explicit technical-spec-only bypass),
+and you want to produce a per-capability `spec.yaml` + `spec.md` that
+downstream forward SDLC can consume.
 
 You produce **one spec per `CAP-*`** capability seed listed in
 `module-overview.md`. Do not bundle multiple capabilities into one spec.
@@ -14,6 +15,8 @@ You produce **one spec per `CAP-*`** capability seed listed in
 - `05_brds/<CAPABILITY-SLUG>/` — approved BRD Package with `brd.md`,
   `brd-review.md`, `validation-scenarios.md`, `traceability.md`, and review /
   approval evidence; bypass allowed only when explicitly recorded as a risk
+- Post-BRD promotion / disposition evidence showing this is not No-gap, Gap1,
+  follow-new-system, or pending-decision and is ready to move beyond discovery
 - A single `CAP-*` from `module-overview.md` to scope this spec
 - Linked `BR-*` rules and `evidence_id`s for that capability
 - SME availability for `inferred_business_rule` confirmation and the
@@ -21,7 +24,7 @@ You produce **one spec per `CAP-*`** capability seed listed in
 
 ## Run
 
-- **Skill:** `legacy-spec-writer` (Implemented v0.1.2)
+- **Skill:** `legacy-spec-writer` (Implemented v0.1.3)
 - **Manual fallback:** Use `schemas/spec.schema.yaml` and the templates in
   `skills/legacy-spec-writer/references/`
 
@@ -56,6 +59,10 @@ Optional companions:
 - **Check:**
   - Approved BRD Package exists for the selected `CAP-*`, or an explicit
     technical-spec-only bypass is recorded
+  - A named stakeholder post-BRD promotion / disposition decision exists for
+    the capability
+  - No-gap, Gap1, follow-new-system, and pending-decision outcomes are not
+    being promoted into requirements
   - Every rule has at least one linked `evidence_id`
   - No rule with `knowledge_type: inferred_business_rule` has
     `review_status: needs_sme_review`

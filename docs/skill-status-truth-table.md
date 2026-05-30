@@ -8,7 +8,7 @@ The table is built from scorecard frontmatter under `docs/reviews/`. Run
 `scripts/verify-skill-claims.py` to detect drift between this table,
 README, runtime-matrix, and scorecard frontmatter.
 
-Last regenerated: 2026-05-28
+Last regenerated: 2026-05-30
 
 ## How to Read This Table
 
@@ -30,7 +30,7 @@ Last regenerated: 2026-05-28
 
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | v0.2.5 | 9.44 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-modernization-orchestrator-v0.2.5-scorecard.md) |
+| `legacy-modernization-orchestrator` | v0.2.6 | 9.49 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-modernization-orchestrator-v0.2.6-scorecard.md) |
 | `legacy-flow-context-normalizer` | v0.1.9 | 9.51 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) |
 | `legacy-module-context-intake` | v0.1.4 | 9.46 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-module-context-intake-v0.1.4-scorecard.md) |
 | `legacy-document-evidence-intake` | v0.1.0 | 9.42 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-document-evidence-intake-v0.1.0-scorecard.md) |
@@ -42,8 +42,8 @@ Last regenerated: 2026-05-28
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.1.2 | 9.62 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) |
 | `legacy-ibmi-module-analyzer` | v0.1.4 | 9.36 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.4-scorecard.md) |
-| `legacy-brd-writer` | v0.1.5 | 9.44 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-brd-writer-v0.1.5-scorecard.md) |
-| `legacy-spec-writer` | v0.1.2 | 9.33 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-spec-writer-v0.1.2-scorecard.md) |
+| `legacy-brd-writer` | v0.1.6 | 9.48 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-brd-writer-v0.1.6-scorecard.md) |
+| `legacy-spec-writer` | v0.1.3 | 9.39 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-spec-writer-v0.1.3-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |
 | `legacy-sme-review-facilitator` | v0.1.2 | 9.40 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-sme-review-facilitator-v0.1.2-scorecard.md) |
 | `legacy-brd-to-sdd-handoff` | v0.1.0 | 9.63 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) |

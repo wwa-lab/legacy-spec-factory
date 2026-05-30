@@ -10,8 +10,8 @@
 ## Reviewer Guidance
 
 This checklist is completed by the **capability owner SME**. The reviewer must
-validate that the BRD is accurate, complete, and safe to forward to the
-specification phase.
+validate that the BRD is accurate, complete, and safe to use as the
+legacy-system discovery baseline. It is not an SDD handoff approval.
 
 **What to check:**
 
@@ -30,7 +30,8 @@ specification phase.
 8. Are optional sections 10-12 included only when useful and evidence-backed?
 9. Are the **TBDs** correctly categorized and achievable?
 10. Do the **validation scenario seeds** cover the important business cases?
-11. Is the BRD ready for **spec-writing** without re-interrogating you?
+11. Is the BRD ready for **legacy-system discovery decisions** without
+    re-interrogating you?
 
 ---
 
@@ -57,6 +58,8 @@ similar document-quality section.
 - [ ] `brd.md` contains no generic document-success criteria, formal `AC-*`
       acceptance criteria, formal `TC-*` test cases, or target-platform
       decisions.
+- [ ] `brd.md` contains no old-vs-new comparison, No-gap / Gap1 / Gap2
+      classification, target-system disposition, or SDD handoff content.
 
 ---
 
@@ -100,7 +103,7 @@ similar document-quality section.
 
 ### `BEH-<CAPABILITY-SLUG>-001`: Does this match legacy system behavior?
 
-- [ ] **Yes** — accurate, can forward to spec-writer
+- [ ] **Yes** — accurate for the discovery baseline
 - [ ] **Partial** — mostly correct, but needs clarification (see notes)
 - [ ] **No** — inaccurate or missing key behavior (block until revised)
 
@@ -210,7 +213,8 @@ similar document-quality section.
 ### Do the `VAL-*` scenarios cover the important business cases for this BRD?
 
 - [ ] **Yes** — happy path, exception, boundary, and manual-review scenarios are
-      sufficient for spec-writing and downstream test planning
+      sufficient for SME discovery review and later planning if a gap is
+      promoted
 - [ ] **Partial** — coverage is directionally right, but scenarios need
       additions or clarification (see notes)
 - [ ] **No** — scenario coverage misses material business behavior
@@ -253,14 +257,14 @@ similar document-quality section.
 
 ---
 
-## Completeness & Handoff Readiness
+## Completeness & Discovery Readiness
 
-### Is the BRD ready to forward to the specification phase?
+### Is the BRD ready to use as the migration-discovery baseline?
 
-- [ ] **Yes** — all facts validated, no silent gaps, spec-writer can proceed
-      without re-interrogating SME
+- [ ] **Yes** — all legacy facts validated, no silent gaps, migration
+      stakeholders can use it later as input to a separate comparison process
 - [ ] **Almost** — minor gaps (see notes); recommend minor revision before
-      forwarding
+      using as the baseline
 - [ ] **No** — major issues (see notes); block until resolved
 
 **Readiness Assessment:**
@@ -279,16 +283,17 @@ similar document-quality section.
 
 **Final Status:**
 
-- [ ] `approved` — Forward to spec-writer with confidence
-- [ ] `approved_with_non_blocking_tbd` — Forward to spec-writer; carry
+- [ ] `approved` — Use as the legacy-system discovery baseline
+- [ ] `approved_with_non_blocking_tbd` — Use as discovery baseline; carry
       non-blocking TBDs listed below
 - [ ] `needs_revision` — Return to author with specific feedback
-- [ ] `rejected` — Do not forward to spec-writer
+- [ ] `rejected` — Do not use as migration-discovery baseline
 
 **Non-Blocking TBDs (if approved_with_non_blocking_tbd):**
 
 ```
-<List any non-blocking TBDs that spec-writer should carry forward>
+<List any non-blocking TBDs that later comparison, gap analysis, or
+spec-writing should carry forward>
 ```
 
 ---
@@ -312,10 +317,11 @@ similar document-quality section.
 ## Next Steps
 
 If `approved` or `approved_with_non_blocking_tbd`:
-- Forward BRD to `legacy-spec-writer` along with module analysis
-- Spec-writer may promote BR-* from `needs_sme_review` to `approved` in
-  `spec.yaml` using your explicit decisions recorded above
-- Spec-writer will generate acceptance criteria and modernization decisions
+- Use the BRD as the legacy-system discovery baseline
+- Run old-vs-new comparison only after new-system context is available; record
+  No-gap / Gap1 / Gap2 disposition outside the BRD Package
+- Route to `legacy-spec-writer` only for items explicitly promoted beyond
+  discovery; spec-writer will generate formal `AC-*` and `DEC-*`
 
 If `needs_revision`:
 - Author revises BRD based on feedback

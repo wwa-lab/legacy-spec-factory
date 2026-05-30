@@ -8,12 +8,16 @@
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
+**Discovery Scope:** `legacy_system_only`
 
 ---
 
 Sections 1-9 are required for SME review. Sections 10-12 are optional and must
 only be included when supported by evidence or explicit SME input. If optional
 information is expected but missing, record a `TBD-*` instead of inventing it.
+This BRD documents the current legacy system only. Do not include old-vs-new
+comparison, No-gap / Gap1 / Gap2 classification, target-system disposition, or
+handoff-package content in this file.
 
 ## 1. Function Purpose
 
@@ -245,8 +249,9 @@ for review. This is a source map, not the main business narrative.
 
 ## 13. Open Questions & Gaps (TBDs)
 
-Questions that remain unresolved and must be answered before the next phase
-(spec-writing), or explicitly carried forward as non-blocking.
+Questions that remain unresolved and must be answered before BRD approval,
+later old-vs-new comparison, gap analysis, spec-writing, or SDD handoff. Some
+TBDs may be non-blocking for the BRD while still blocking a later phase.
 
 ### TBD-<CAPABILITY-SLUG>-001: `<Question Title>`
 
@@ -255,7 +260,8 @@ Questions that remain unresolved and must be answered before the next phase
 **Statement:** `<What is unclear or missing?>`
 **Evidence:** `EV-<CAPABILITY-SLUG>-001` or `<missing evidence description>`
 **Resolver:** `<Role: SME, Source Owner, Architecture team, etc.>`
-**Blocking:** `yes` | `no` (for this step and/or next step)
+**Blocking:** `yes` | `no` (for BRD approval, later comparison, gap analysis,
+spec-writing, and/or SDD handoff)
 
 **Context:** `<Why this matters / where it appears in the BRD>`
 

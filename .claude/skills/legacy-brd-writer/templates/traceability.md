@@ -72,14 +72,14 @@ Every open question is categorized and assigned to a resolver.
 | --- | --- | --- | --- | --- | --- |
 | `TBD-<CAPABILITY-SLUG>-001` | `<Question>` | `sme_questions` | Program A vs. Program B behavior unclear | `SME` | Yes (this step) |
 | `TBD-<CAPABILITY-SLUG>-002` | `<Question>` | `evidence_gaps` | Missing spool sample for scenario X | `Source Owner` | No (non-blocking) |
-| `TBD-<CAPABILITY-SLUG>-003` | `<Question>` | `downstream_handoff_blockers` | Unclear whether this rule applies post-modernization | `Architecture` | No (spec-writer can mark as TBD) |
+| `TBD-<CAPABILITY-SLUG>-003` | `<Question>` | `downstream_handoff_blockers` | Confirm whether this legacy behavior must be assessed before later migration comparison or promotion | `Product / Risk / SME owner` | No for BRD; Yes before spec / handoff |
 
 **Categories:**
 - `missing_inputs` — upstream artifact or gate missing
 - `evidence_gaps` — evidence itself is missing, unreadable, unredacted
 - `contradictory_evidence` — two evidence items conflict
 - `sme_questions` — only SME judgment can answer
-- `downstream_handoff_blockers` — non-blocking for this step, but needs resolution before next step
+- `downstream_handoff_blockers` — non-blocking for BRD unless marked business-critical, but needs resolution before later comparison, gap analysis, spec-writing, or SDD handoff
 
 **Validation:** All TBD-* items have a category, resolver, and blocking status ✓ / ✗
 

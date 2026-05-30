@@ -161,7 +161,7 @@ than filing a TBD."
 ### Symptoms
 - `open_questions[]` is short while the spec contains many "unclear",
   "to be determined", "subject to confirmation" phrases
-- Downstream `build-agent-skill` has no way to detect the embedded gaps
+- Downstream consumers have no reliable way to detect the embedded gaps
 
 ### Discipline
 - Every uncertainty is a TBD with an ID, blocking status, and owner

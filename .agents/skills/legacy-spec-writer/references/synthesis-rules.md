@@ -36,12 +36,14 @@ tells you **where each value comes from**.
 
 ---
 
-## Required Approved BRD Package
+## Required Approved BRD Package and Promotion Decision
 
 In the standard workflow, `05_brds/<CAPABILITY-SLUG>/` must exist and be
-approved before spec writing. Treat it as reviewed business context, not as a
-replacement for upstream evidence. The BRD's SME-required functional areas map
-into the spec as follows:
+approved before spec writing. A named post-BRD promotion / disposition decision
+must also show that this capability should move beyond legacy discovery. Treat
+the BRD as reviewed business context, not as a replacement for upstream
+evidence or as an automatic implementation mandate. The BRD's SME-required
+functional areas map into the spec as follows:
 
 - BRD section 3 Channels and section 4 User Interface / User Touchpoints feed
   `inputs[]`, `outputs[]`, and user-visible exception context.
@@ -55,6 +57,11 @@ into the spec as follows:
 - BRD optional section 10 Security / Authentication may inform `inputs[]`,
   `exceptions[]`, or `modernization_decisions[]` only when the requirement is
   evidence-backed and SME-approved.
+- Old-vs-new comparison / disposition is a separate post-BRD gate, not a BRD
+  section and not a source of requirements by itself. No-gap, Gap1, and
+  follow-new-system decisions do not enter the spec. Legacy behavior enters
+  only when risk assessment, formal gap analysis, or explicit product / SME
+  decision promotes it.
 
 If `review-decision.yaml.functional_analysis_coverage[]` marks a required BRD
 section as `accepted_with_tbd`, carry the named `TBD-*` into

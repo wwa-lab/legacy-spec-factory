@@ -93,9 +93,11 @@ process_flow:
       evidence_ids:
         - EV-<CAP-SLUG>-001
 
-# Standard workflow requires an approved BRD Package; cross-check
-# inputs/outputs/exceptions against BRD sections 3-5 and 8 plus review
-# decision / section coverage evidence.
+# Standard workflow requires an approved legacy BRD Package plus an explicit
+# post-BRD promotion / disposition decision. Cross-check inputs/outputs/
+# exceptions against BRD sections 3-5 and 8 plus review decision / section
+# coverage evidence. Do not promote No-gap, Gap1, or follow-new-system
+# post-BRD decisions into requirements.
 inputs:
   - id: IN-<CAP-SLUG>-001
     name: "<input name>"

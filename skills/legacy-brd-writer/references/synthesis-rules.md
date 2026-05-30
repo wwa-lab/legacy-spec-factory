@@ -134,6 +134,17 @@ the BRD look complete.
 - If optional information is expected but missing, create a `TBD-*` with the
   right resolver instead of filling the gap with plausible text.
 
+### Post-BRD Comparison Boundary
+
+The BRD writer does not perform old-vs-new comparison. Do not add No-gap,
+Gap1, Gap2, risk-assessment, gap-analysis disposition, target requirements, or
+handoff package content to the BRD Package.
+
+The approved BRD can later be used as the legacy baseline for a separate
+comparison / migration-disposition process once new-system context is
+available. That later process owns No-gap / Gap1 / Gap2 classification and any
+risk or gap-analysis decision.
+
 ### If Business Meaning Is Unknown
 
 If evidence only shows that one program calls another, but does not reveal why
@@ -270,9 +281,10 @@ inside the BRD.
 
 ## 3. Surfacing Open Questions (TBD-*)
 
-An **open question** is something we cannot confirm from evidence or upstream
-artifacts. It must be resolved before the BRD can be approved and handed to
-spec-writer.
+An **open question** is something we cannot confirm from evidence, upstream
+artifacts, or SME direction. Some questions must be resolved before BRD
+approval; others can be carried as non-blocking discovery findings that block
+later comparison, gap analysis, spec-writing, or SDD handoff.
 
 ### Categories
 
@@ -282,7 +294,7 @@ spec-writer.
 | `evidence_gaps` | Evidence exists but is missing, unreadable, redacted | Source owner, Redaction team | Spool sample for scenario Y not available |
 | `contradictory_evidence` | Two evidence items disagree | SME | Program A allows $0 credit; Program B rejects $0 credit |
 | `sme_questions` | Only domain expert can answer | SME | Is credit limit enforced for all customer types? |
-| `downstream_handoff_blockers` | Non-blocking for BRD, but spec-writer needs it | Architecture, next step | Is modernization target a microservice or monolith? |
+| `downstream_handoff_blockers` | Non-blocking for BRD unless marked critical, but blocks later comparison, gap analysis, spec-writing, or SDD handoff | Product owner, risk owner, architecture, next step | Legacy behavior needs a later migration decision before promotion |
 
 ### Surfacing Steps
 
@@ -291,6 +303,7 @@ spec-writer.
    - Claims where module analysis says "unclear" or "TBD"
    - Inferred rules with only weak evidence
    - Gaps in flow/program coverage
+   - Legacy behavior that needs later comparison or promotion review
 
 2. **Create a TBD-* for each item**:
    ```yaml
@@ -304,8 +317,9 @@ spec-writer.
 
 3. **Mark blocking vs. non-blocking**:
    - **Blocking for this step**: SME must resolve before BRD can be approved
-   - **Non-blocking for this step, blocking for spec-writer**: Spec-writer can
-     note it as a TBD in the spec and proceed
+   - **Non-blocking for this step, blocking for a later gate**: risk
+     comparison, gap analysis, spec-writing, or SDD handoff must resolve or
+     explicitly carry it before proceeding
    - **Non-blocking for both**: Can be deferred or noted as future work
 
 ### Do NOT Hide TBDs in Prose
@@ -421,6 +435,9 @@ All cross-references must resolve to valid IDs in `docs/id-conventions.md`.
 - [ ] Every TBD-* has a category (not just "unclear")
 - [ ] Every TBD-* has an assigned resolver
 - [ ] Every TBD-* is marked blocking or non-blocking
+- [ ] No No-gap / Gap1 / Gap2 classification, target-system requirement,
+      risk-assessment disposition, gap-analysis disposition, or handoff content
+      appears in the BRD Package
 - [ ] No invented IBM i facts (object names, fields, programs)
 - [ ] Traceability table is complete and consistent
 - [ ] All IDs resolve to upstream artifacts

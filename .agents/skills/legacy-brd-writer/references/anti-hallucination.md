@@ -126,7 +126,7 @@ Without evidence: What do these fields contain? What are their valid values?
               or something else?"
    evidence_gap: "Field definition not extracted; sample data ambiguous"
    resolver: SME / Source Owner
-   blocking: no (spec-writer can make best-effort guess)
+   blocking: no (for BRD); yes before spec if the field is promoted
    ```
 
 ---
@@ -271,15 +271,15 @@ BRD author: "We should store credit limits in a database table instead of
 **What to do instead:**
 1. Keep BRD focused on observed behaviors and inferred business rules
 2. Do NOT include target platform, architecture, or implementation decisions
-3. If a decision is implied by the legacy behavior, mark as TBD-* for spec-writer
-   to address:
+3. If a decision is implied by the legacy behavior, mark as TBD-* for later
+   comparison / spec-writing to address:
    ```yaml
    id: TBD-<CAPABILITY-SLUG>-004
    category: downstream_handoff_blockers
    statement: "Decision needed: how to modernize credit limit checks from 
               CUSTPF file read to scalable microservice?"
-   resolver: Architecture / Spec-writer
-   blocking: no (for BRD; blocking for spec-writer)
+   resolver: Architecture / Product owner / Spec-writer
+   blocking: no (for BRD; blocking before spec / SDD handoff)
    ```
 
 ---
@@ -407,6 +407,39 @@ content.
 
 ---
 
+### 15. Adding Post-BRD Comparison Into the BRD
+
+**Trap:**
+```
+BRD author has heard the new system may not support one legacy behavior.
+BRD author writes: "Gap2: the new system must implement this behavior."
+```
+
+**Why it's wrong:**
+- The BRD phase is old-system discovery; SMEs may not know the new system yet
+- The BRD proves what the old system does; it does not classify No-gap / Gap1 /
+  Gap2 or decide target scope
+- Old-vs-new comparison needs new-system evidence and a separate product /
+  migration decision process
+
+**What to do instead:**
+1. Keep the observed legacy behavior as `BEH-*` with evidence.
+2. If the legacy evidence itself is incomplete, create a normal BRD `TBD-*`.
+3. If later migration comparison is needed, record that need outside the BRD
+   Package or in the orchestrator state, not in `brd.md`:
+   ```yaml
+   id: TBD-<CAPABILITY-SLUG>-004
+   category: downstream_handoff_blockers
+   statement: "BEH-<CAPABILITY-SLUG>-002 may require post-BRD comparison
+              against the new-system design before promotion."
+   resolver: Product owner / SME / Risk owner
+   blocking: no (for BRD); yes (before spec / SDD handoff)
+   ```
+4. Do not mint No-gap / Gap1 / Gap2 labels, `AC-*`, `DEC-*`, architecture,
+   tasks, or handoff fields in the BRD.
+
+---
+
 ## Checklist: Before Handing BRD to SME
 
 - [ ] Every BEH-* statement is observable fact (not interpretation)
@@ -419,6 +452,8 @@ content.
 - [ ] No target platform or architecture in BRD (that's spec-writer)
 - [ ] No generic `Success Criteria` or document-quality/readiness section in
       `brd.md`
+- [ ] No No-gap / Gap1 / Gap2 label, risk-assessment disposition, or
+      gap-analysis disposition appears in the BRD Package
 - [ ] Required sections 1-9 are present and do not rely on invented channels,
       interfaces, touchpoints, rules, errors, or dependencies
 - [ ] Optional sections 10-12 are included only when evidence-backed or

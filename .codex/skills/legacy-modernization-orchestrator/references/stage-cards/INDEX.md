@@ -19,8 +19,8 @@ decision via the **Quick Card** block in `SKILL.md → Output Structure`.
 | [03-program-analysis](03-program-analysis.md) | 3a–3b | Program Analysis | Inventory approved; analyzing one program at a time |
 | [04-flow-analysis](04-flow-analysis.md) | 3c–3d | Flow Analysis | Multiple programs analyzed; tracing one business transaction end-to-end |
 | [05-module-analysis](05-module-analysis.md) | 3e–3f | Module Analysis | Several flows belong to the same module; need 4-view synthesis |
-| [05a-brd-writing](05a-brd-writing.md) | 3f + BRD gate | BRD Writing And Review | Module approved; producing the BRD Package for SME / business review |
-| [06-spec-writing](06-spec-writing.md) | 8a–8c | Spec Writing | Module and BRD approved; producing `spec.yaml` + `spec.md` per capability |
+| [05a-brd-writing](05a-brd-writing.md) | 3f + 5a–5c | BRD Discovery Writing And Review | Module approved; producing the legacy BRD Package for SME / business discovery review |
+| [06-spec-writing](06-spec-writing.md) | 8a–8c | Spec Writing | Module and BRD approved plus explicit post-BRD promotion / disposition; producing `spec.yaml` + `spec.md` per capability |
 | [07-forward-handoff](07-forward-handoff.md) | 10 | Forward SDLC Handoff | Spec approved + equivalence pack ready; crossing to `build-agent-skill` |
 
 ## Optional / Parallel Cards
@@ -36,7 +36,7 @@ orchestrator points to them when applicable.
 | `legacy-ibmi-runtime-evidence-miner` | Job logs / spool / reports available alongside source | See SKILL.md (no dedicated card yet) |
 | `legacy-ibmi-screen-report-analyzer` | DSPF / PRTF / subfile / menu samples available | See SKILL.md |
 | `legacy-ibmi-data-model-analyzer` | Domain data model needed before spec-writing | See SKILL.md |
-| `legacy-brd-writer` | Standard business review gate after module analysis and before spec-writing | [05a-brd-writing](05a-brd-writing.md) |
+| `legacy-brd-writer` | Standard migration-discovery gate after module analysis; before any spec-writing decision | [05a-brd-writing](05a-brd-writing.md) |
 | `legacy-modernization-decision-writer` | A modernization decision is large/risky enough to warrant a DEC-* package | See SKILL.md |
 
 ## Path Convention

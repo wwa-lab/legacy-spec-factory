@@ -133,14 +133,15 @@ impact, or contradiction questions.
 ## 3. Layer 2 — Synthesis
 
 **Purpose**: Take approved module context and evidence outputs, then synthesize
-business-facing artifacts. Layer 2 is platform-agnostic — adding a new legacy
+business-facing discovery artifacts and, only after explicit promotion,
+delivery-ready specs. Layer 2 is platform-agnostic — adding a new legacy
 platform (e.g., COBOL/JCL) means adding or swapping the verification family,
 while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
-| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved; this is the standard business review gate |
-| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package | `spec.yaml`, `spec.md` | After BRD is SME-approved; bypass only by explicit technical-spec-only risk acceptance |
+| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available; SME / BA legacy-system context | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved; this is the primary legacy-system discovery output |
+| [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package + explicit post-BRD promotion / disposition decision | `spec.yaml`, `spec.md` | After BRD is SME-approved and stakeholders decide the capability should move beyond discovery |
 | [`legacy-modernization-decision-writer`](../skills/legacy-modernization-decision-writer/SKILL.md) | spec.yaml entries needing expansion | `05_decisions/<CAPABILITY-SLUG>/` | Optional — when a `DEC-*` becomes large or architecture-governed |
 
 **Sequence**:
@@ -148,8 +149,11 @@ while BRD/spec/handoff synthesis stays reusable.
 ```
 module-analyzer (approved)
   └─ brd-writer
-       └─ SME review (use sme-review-facilitator)
-            └─ spec-writer
+       └─ SME review of legacy-system BRD
+            └─ post-BRD comparison / disposition when new-system context exists
+                 ├─ follow new system -> stop in discovery
+                 ├─ risk assessment / gap analysis -> resolve disposition
+                 └─ promoted -> spec-writer
                  └─ decision-writer (optional, per cross-cutting DEC)
 ```
 
@@ -160,7 +164,8 @@ status; `observed_behavior` vs `inferred_business_rule` vs
 **Anti-pattern**: writing `BR-*` rules in inventory/program-analysis output —
 those are extraction artifacts, not synthesis. Module analysis may create
 `BR-*` seeds; BRD writer reuses and reviews those seeds, and spec-writer owns
-final promotion to approved rules.
+final promotion to approved rules only after a post-BRD disposition says the
+item should move forward.
 
 ---
 
@@ -251,11 +256,12 @@ historical specs, or enough module context to start at the module level:
 1.  orchestrator                   → "stage: module context; next: module-context-intake"
 2.  module-context-intake           → 00_context_packages/<MODULE-SLUG>/
 3.  module-analyzer                 → 04_modules/<MODULE-SLUG>/
-4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/ (BRD + VAL-* scenario seeds)
-5.  sme-review-facilitator          → chat review + 07_sme_reviews/<CAPABILITY-SLUG>/ + review-decision.yaml
-6.  spec-writer                     → 05_specs/<CAPABILITY-SLUG>/
-7.  traceability-packager           → 06_traceability_packages/
-8.  brd-to-sdd-handoff              → 06_sdd_handoffs/<CAPABILITY-SLUG>/
+4.  brd-writer                      → 05_brds/<CAPABILITY-SLUG>/ (legacy BRD + VAL-* scenario seeds)
+5.  sme-review-facilitator          → chat review of legacy BRD
+6.  post-BRD disposition            → No-gap / Gap1 / Gap2 when new-system context exists
+7.  promoted capability only        → spec-writer → 05_specs/<CAPABILITY-SLUG>/
+8.  approved spec only              → traceability-packager → 06_traceability_packages/
+9.  approved spec + handoff gate     → brd-to-sdd-handoff → 06_sdd_handoffs/<CAPABILITY-SLUG>/
                                       → Atlas (external)
 ```
 
@@ -313,10 +319,11 @@ proposals can revisit with full context.
 
 ### `brd-writer` + `brd-to-sdd-handoff` — kept separate
 
-- An SME approval gate sits between them. Merging implies a continuous
-  flow and risks the LLM skipping SME review.
-- BRD is the business artifact; handoff is the contract bundle. Different
-  consumers (SME vs Atlas).
+- SME approval, post-BRD comparison/disposition, and often risk/gap-analysis
+  decisions sit between them. Merging implies a continuous flow and risks the
+  LLM skipping those control points.
+- BRD is the migration-discovery artifact; handoff is the sealed contract
+  bundle. Different consumers (SME/product/risk owners vs Atlas).
 
 ### `spec-writer` + `decision-writer` + `traceability-packager` — kept separate
 
