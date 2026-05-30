@@ -752,7 +752,8 @@ Return only:
 
 - current stage is `Module Analysis Done` or equivalent Stage 3f wording
 - recommended next skill is `legacy-brd-writer`
-- gate check names the BRD Review Gate or says BRD review is still missing
+- gate check names the BRD Discovery Gate or says BRD discovery review is still
+  missing
 - next artifact expected mentions `05_brds/<CAPABILITY-SLUG>/brd.md` and the
   BRD review package
 - no files are created or edited

@@ -20,7 +20,7 @@ conversion as successful when no tool ran.
 | Doc ID | From | To | Tool | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
 | DOC-<MODULE-SLUG>-001 | .xls | .xlsx | libreoffice | succeeded | <command / outcome> |
-| DOC-<MODULE-SLUG>-002 | .vsd | pdf,svg,png | libreoffice | tool_unavailable | remediation: install LibreOffice or supply vendor PDF |
+| DOC-<MODULE-SLUG>-002 | .vsd | pdf,svg,png | libreoffice | tool_unavailable | remediation: request LibreOffice from environment owner or supply vendor PDF |
 
 Result values: `succeeded` | `partial` | `tool_unavailable` | `not_required`.
 
@@ -33,4 +33,4 @@ Result values: `succeeded` | `partial` | `tool_unavailable` | `not_required`.
 
 ## Remediation Needed
 
-- <Document>: <what is needed to lift the gate — better export, install tool, etc.>
+- <Document>: <what is needed to lift the gate — better export, environment-owner tool install, etc.; do not install tools automatically during intake>

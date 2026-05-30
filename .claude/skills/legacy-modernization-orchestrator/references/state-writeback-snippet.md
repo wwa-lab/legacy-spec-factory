@@ -149,7 +149,7 @@ If your skill's view of the artifact disagrees with `workflow-state.yaml`
 | `legacy-ibmi-program-analyzer` | `3b Program Analysis Done` (or `3a` if partial) | `02_programs/<MODULE>/<OBJ>/program-analysis.md` |
 | `legacy-ibmi-flow-analyzer` | `3d Flow Analysis Done` (or `3c` if partial) | `03_flows/<MODULE>/flow-<slug>.md` |
 | `legacy-ibmi-module-analyzer` | `3f Module Analysis Done` (or `3e` if partial) | `04_modules/<MODULE>/module-overview.md` |
-| `legacy-brd-writer` | (does not advance numeric stage; records BRD Review Gate status) | `05_brds/<CAP-*>/brd.md` |
+| `legacy-brd-writer` | (does not advance numeric stage; records BRD Discovery Gate status) | `05_brds/<CAP-*>/brd.md` |
 | `legacy-spec-writer` | `8c Spec Approved` / `8b Spec In Review` / `8a Spec Drafted` (matches `spec.yaml.status`) | `05_specs/<CAP-*>/spec.yaml` |
 | `legacy-brd-to-sdd-handoff` | `10 Forward Handoff Ready` | `09_forward-sdlc/<CAP-*>/handoff-bundle.yaml` |
 | `legacy-golden-master-test-planner` | `9 Equivalence Pack Ready` | `06_quality/<CAP-*>/golden-master-tests.md` |
@@ -174,3 +174,8 @@ Validate any `workflow-state.yaml` against this contract with:
 ```bash
 python3 scripts/check-workflow-state.py [<path-to-workflow-state.yaml>]
 ```
+
+Use only an already-available Python interpreter for this check. Do not create a
+virtual environment, install packages, or wait on interactive Python environment
+configuration; if startup remains configuring/evaluating for more than about 30
+seconds, record the check as `tool_unavailable` and report the manual command.

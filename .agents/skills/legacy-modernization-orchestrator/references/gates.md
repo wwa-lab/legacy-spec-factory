@@ -1,6 +1,6 @@
 # Hard Gates Reference
 
-Five gates protect the reverse chain. The orchestrator must
+Six gates protect the reverse chain. The orchestrator must
 check the applicable gate before routing across the corresponding boundary.
 
 ## Gate 1 — Evidence Authorization Gate
@@ -50,9 +50,9 @@ check the applicable gate before routing across the corresponding boundary.
 review note and changing `blocking: pending_sme_judgment` → `no`. Record the
 SME decision in `sme_review.notes`.
 
-## Gate 3 — BRD Review Gate
+## Gate 3 — BRD Discovery Gate
 
-**Boundary:** approved module analysis → `legacy-spec-writer`
+**Boundary:** approved module analysis → migration-discovery BRD baseline
 
 **Pass criteria (all required unless an explicit technical-spec-only bypass is
 recorded):**
@@ -69,10 +69,35 @@ recorded):**
 1. Route to `legacy-brd-writer` if the BRD Package is missing or incomplete.
 2. Route to `legacy-sme-review-facilitator` if BRD content exists but review /
    approval is missing.
-3. Refuse standard spec-writing until the gate passes or the requester records
-   a technical-spec-only bypass with approver and risk acceptance.
+3. Refuse standard spec-writing until this gate and the Post-BRD Disposition
+   Gate pass, or until the requester records a technical-spec-only bypass with
+   approver and risk acceptance.
 
-## Gate 4 — Evidence Approval Gate
+## Gate 4 — Post-BRD Disposition Gate
+
+**Boundary:** approved BRD Package → `legacy-spec-writer`
+
+**Pass criteria (all required unless an explicit technical-spec-only bypass is
+recorded):**
+
+- a named stakeholder decision outside the BRD Package promotes the capability
+  beyond legacy discovery
+- No-gap, Gap1, and follow-new-system outcomes are explicitly left with the new
+  system as source of truth
+- risk assessment or gap analysis, when required, has owner approval to proceed
+- pending migration decisions are resolved before spec-writing
+- no BRD content is being silently converted into old-vs-new comparison,
+  `AC-*`, `DEC-*`, or implementation scope
+
+**Block actions:**
+
+1. If No-gap, Gap1, follow-new-system, or pending decision, stop in discovery
+   and record the disposition outside the BRD Package.
+2. If risk assessment or gap analysis is open, route to the named business /
+   risk / gap-analysis owner.
+3. Refuse spec-writing and SDD handoff until promotion is explicit.
+
+## Gate 5 — Evidence Approval Gate
 
 **Boundary:** `business-rules.md` (draft) → `legacy-spec-writer`,
 or any approval transition on rules / behaviors
@@ -102,7 +127,7 @@ canonical taxonomy.
 strength; they need architecture/product approval recorded in
 `review_notes`.
 
-## Gate 5 — Forward Handoff Gate
+## Gate 6 — Forward Handoff Gate
 
 **Boundary:** approved `spec.yaml` → `wwa-lab/build-agent-skill` chain
 

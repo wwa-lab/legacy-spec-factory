@@ -12,7 +12,8 @@
 ## Purpose
 
 This file captures SME-reviewable validation scenario seeds for the BRD.
-They help reviewers confirm business behavior and help downstream teams plan
+They help reviewers confirm legacy business behavior during migration discovery
+and, only for items later promoted beyond discovery, help downstream teams plan
 acceptance criteria, golden master tests, and SOW scope.
 
 These are **not** formal acceptance criteria and **not** executable test cases.

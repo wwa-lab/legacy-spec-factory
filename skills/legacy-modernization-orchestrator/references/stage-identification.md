@@ -21,7 +21,10 @@ upstream stage that fits — do not "round up" maturity.
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
-| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). If no approved BRD Package exists for the selected capability, the next route remains BRD writing / review, not spec writing. |
+| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). If no approved BRD Package exists for the selected capability, the next route remains BRD discovery writing / review, not spec writing. |
+| 5a | BRD Discovery In Review | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: draft` or `status: in_review`, or BRD review/sign-off is incomplete |
+| 5b | BRD Discovery Approved | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: approved`; route to spec only if a separate post-BRD promotion / disposition decision exists |
+| 5c | Post-BRD Comparison / Disposition Open | Approved BRD exists, but old-vs-new comparison, risk assessment, gap analysis, or promotion decision is still pending outside the BRD Package |
 | 4a | Static Analysis Partial | One or more of `call-graph.md`, `crud-matrix.md`, `data-dictionary.md`, `screen-map.md` (optional supplemental artifacts; mostly subsumed by program/flow/module analyses) |
 | 4b | Static Analysis Complete | All four Layer 1 supplemental artifacts present (optional) |
 | 5 | Runtime Evidence Mined | `runtime-evidence.jsonl` plus referenced samples in `07_runtime-evidence/` (deferred from MVP) |
@@ -83,7 +86,7 @@ When module analysis is complete but BRD review is missing:
   `legacy-brd-writer`.
 - Do not identify the capability as **8a Spec Drafted** merely because a
   `spec.md` or `spec.yaml` was generated early. If the approved BRD Package is
-  missing, the current unmet gate is the BRD Review Gate.
+  missing, the current unmet gate is the BRD Discovery Gate.
 
 When only forward chain artifacts exist:
 
@@ -109,7 +112,7 @@ artifacts live at `docs/XXX260004-demo/01_inventory/`.
 | 3a, 3b | `02_programs/` |
 | 3c, 3d | `03_flows/` |
 | 3e, 3f | `04_modules/` |
-| 3f + BRD Review Gate | `05_brds/` |
+| 3f + BRD Discovery Gate / 5a–5c | `05_brds/` |
 | 4 | optional supplemental artifacts under the owning program / flow / module folder |
 | 5 | `07_runtime-evidence/` |
 | 6, 7 | `08_business-understanding/` |

@@ -1,6 +1,6 @@
 ---
 name: legacy-spec-writer
-description: Produce evidence-backed `spec.yaml` and `spec.md` artifacts from approved module + flow + program analyses plus an approved BRD Package. One spec per business capability (CAP-*). Layer 2 (platform-agnostic) skill — sits after BRD review at the boundary between reverse engineering and forward SDLC, producing the contract that `build-agent-skill` consumes. Implements `schemas/spec.schema.yaml`.
+description: Produce evidence-backed `spec.yaml` and `spec.md` artifacts from approved module + flow + program analyses plus an approved legacy-system BRD Package after stakeholders explicitly promote a capability beyond legacy discovery. One spec per business capability (CAP-*). Layer 2 (platform-agnostic) skill — sits after BRD review and any separate post-BRD comparison / gap-analysis decision, producing the contract that downstream SDLC can consume. Implements `schemas/spec.schema.yaml`.
 ---
 
 <!--
@@ -18,17 +18,18 @@ Retain this notice in substantial copies or derived versions.
 
 ## Purpose
 
-Synthesize one **business capability spec** from approved upstream
-analyses and an approved BRD Package. The output is a structured,
-evidence-backed `spec.yaml` (plus a human-readable `spec.md`) that the
-forward SDLC (`build-agent-skill`) can consume to generate target-platform
-code.
+Synthesize one **business capability spec** from approved upstream analyses,
+an approved legacy BRD Package, and an explicit stakeholder decision to promote
+the capability beyond legacy discovery. The output is a structured,
+evidence-backed `spec.yaml` (plus a human-readable `spec.md`) that the forward
+SDLC can consume when delivery work is actually intended.
 
 This skill is the **first platform-agnostic layer**. It does not look at
 IBM i source code directly — only at the analyses produced by
 `legacy-ibmi-module-analyzer`, `legacy-ibmi-flow-analyzer`, and
 `legacy-ibmi-program-analyzer`, plus the SME-reviewed BRD Package produced by
-`legacy-brd-writer`.
+`legacy-brd-writer`. It must not treat every approved BRD as an automatic
+implementation mandate.
 
 One capability = one `spec.yaml`. A module typically produces multiple
 specs (one per capability identified in the module overview's "Capability
@@ -45,13 +46,20 @@ Accept:
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
-- **Approved BRD Package** (required in the standard workflow) —
+- **Approved legacy BRD Package** (required before standard spec-writing) —
   `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`,
   `validation-scenarios.md`, `traceability.md`, and approval / review
   decision evidence. Use it as reviewed business context for SME-required
   areas such as channels, user touchpoints, system interfaces, process flow,
   validation rules, error handling, dependencies, and source-document gaps; do
   not treat it as a substitute for approved module / flow / program evidence.
+- **Promotion / disposition decision** (required) — named stakeholder decision
+  outside the BRD Package showing that this capability should move beyond
+  legacy discovery into spec-writing. When old-vs-new comparison has already
+  happened, valid triggers include approved gap-analysis intake, risk-owner
+  approval to proceed, or explicit product/SME approval to specify. No-gap,
+  Gap1, and follow-new-system decisions normally do not enter this skill because
+  the new system remains the source of truth.
 - **Target platform hint** (optional) — Java/Spring, Java/Quarkus,
   serverless, etc. Used to inform `target_platform` and `modernization_decisions`
 - **SME availability** — capability owner who will approve `business_rules`,
@@ -82,6 +90,9 @@ Stop and require clarification if:
   `legacy-brd-writer` / `legacy-sme-review-facilitator`, unless the requester
   explicitly records a technical-spec-only bypass with approver and risk
   acceptance
+- Approved BRD exists but the only post-BRD decision is No-gap, Gap1, follow
+  new system, or pending decision → do not write a spec; route to the separate
+  migration disposition, risk assessment, or gap-analysis process as appropriate
 - No SME owns the capability (without SME, `business_rules` cannot move
   beyond `draft`)
 - Target platform is completely unspecified and decisions cannot be
@@ -115,8 +126,8 @@ Follow:
   `DEC-*`, `IN-*`, `OUT-*`, `EX-*`, `STEP-*`, `AC-*`, `TC-*`, `TBD-*`)
 - `../../docs/evidence-and-knowledge-taxonomy.md` for the
   knowledge-type / evidence-strength model
-- `../../docs/forward-sdlc-contract.md` for the handoff contract to
-  `build-agent-skill`
+- `../../docs/forward-sdlc-contract.md` for the later handoff contract to
+  downstream SDLC
 - `../../docs/input-readiness-rubric.md` for input readiness scoring
 
 Examples:
@@ -139,19 +150,21 @@ field-level rules. The summary below is normative for this skill.
   `flow-<FLOW-SLUG>.md` for every flow the module references; approved
   `program-analysis-<OBJ-ID>.md` for every program in those flows;
   approved `01_inventory/inventory.yaml`; one `CAP-*` capability seed
-  from the module overview; approved BRD Package for that capability;
-  named capability-owner SME.
+  from the module overview; approved BRD Package for that capability; named
+  capability-owner SME; post-BRD promotion / disposition decision showing that
+  this is not merely a legacy-discovery item.
 - **Optional**: target platform hint (Java/Spring, Java/Quarkus,
   serverless, etc.) — informs `target_platform` and
   `modernization_decisions`.
 - **Input readiness scoring**:
   - `0-5 blocked`: approved module missing, capability seed unresolved,
     blocking TBDs remain, no capability-owner SME, required triggered artifact
-    missing, approved BRD Package missing, or evidence authorization
-    unresolved.
+    missing, approved BRD Package missing, post-BRD promotion / disposition decision
+    missing, or evidence authorization unresolved.
   - `6 minimum_pass`: approved module/upstream analyses, one SME-confirmed
-    `CAP-*`, approved BRD Package, named SME owner, and required triggered
-    data/screen/report outputs are present.
+    `CAP-*`, approved BRD Package, named SME owner, explicit post-BRD
+    promotion / disposition decision, and required triggered data/screen/report
+    outputs are present.
   - `7-8 usable`: target platform hint, BAU notes, and BRD review decisions /
     coverage notes are supplied.
   - `9-10 strong`: acceptance examples, negative cases, runtime observations,
@@ -164,7 +177,8 @@ field-level rules. The summary below is normative for this skill.
 - **Stop conditions**: module status below `approved_with_non_blocking_tbd`
   (route back to `legacy-ibmi-module-analyzer`); selected `CAP-*` has
   unresolved blocking TBDs in the module; approved BRD Package is missing or
-  not approved; no SME owns the capability; target platform completely
+  not approved; no SME owns the capability; post-BRD promotion / disposition decision is
+  missing or says to follow the new system; target platform completely
   unspecified when decisions are required.
 
 ### Execution
@@ -178,6 +192,8 @@ field-level rules. The summary below is normative for this skill.
 - **Forbidden assumptions**: inventing business rules beyond upstream
   seeds + SME confirmation; promoting a "weak" `BR-*` to `approved`
   without explicit SME approval; generating `AC-*` for unapproved `BR-*`;
+  promoting No-gap, Gap1, or follow-new-system post-BRD decisions into
+  requirements;
   filling data-model field meanings from field names alone; reading raw
   IBM i source (this skill consumes upstream analyses only); specifying
   target architecture without rationale.
@@ -200,7 +216,7 @@ field-level rules. The summary below is normative for this skill.
   `STEP-*`, `AC-*`, `TC-*`, `TBD-*`. Reuses `CAP-*`, `OBJ-*`, `EV-*`,
   `BEH-*` from upstream. `spec.yaml` must validate against
   `../../schemas/spec.schema.yaml`.
-- **Handoff status**: `status: draft` → `in_review` → `approved`
+- **Spec status**: `status: draft` → `in_review` → `approved`
   (capability-owner SME sign-off). Forward Handoff Gate consumes
   `approved`; `rejected` or `retired` halt forward SDLC.
 
@@ -225,8 +241,8 @@ field-level rules. The summary below is normative for this skill.
 - **Blocking conditions**: any business-critical `BR-*` unapproved; any
   `approved` `BR-*` missing `AC-*`; any `AC-*` missing
   `validates: [BR-*]`; any `evidence[]` row with `sensitivity: unknown`;
-  any blocking TBD; spec arrives at `build-agent-skill` with silent
-  gaps.
+  any blocking TBD; missing post-BRD promotion / disposition decision; spec arrives at
+  downstream SDLC with silent gaps.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with
@@ -239,6 +255,12 @@ to the orchestrator. The Forward Handoff Gate
 1. **Confirm Capability Scope**
    - Take one `CAP-*` from the module overview's Capability Seeds
    - Validate with SME: is this a distinct capability worth its own spec?
+   - Confirm the approved BRD is not merely a legacy discovery baseline: a
+     separate post-BRD decision promotes the capability to spec-writing via
+     gap analysis, risk-owner approval, or explicit product/SME decision
+   - If the post-BRD decision is No-gap, Gap1, follow-new-system, or pending,
+     stop and route back to migration disposition / risk assessment / gap
+     analysis
    - Assign `spec_id` and confirm `capability.{id,name,slug,owner}`
    - Define `scope.in_scope` and `scope.out_of_scope` from SME
 
@@ -271,8 +293,8 @@ to the orchestrator. The Forward Handoff Gate
      record a DEC-*
    - Decisions must have a `rationale` tied to BR or BEH or to
      `target_platform` constraints
-   - Decisions are *forward-looking* — they tell `build-agent-skill` how
-     to implement, not what the legacy does
+   - Decisions are *forward-looking* — they tell downstream SDLC how to
+     implement, not what the legacy does
 
 6. **Define Data Model**
    - For each target entity, map to legacy `OBJ-*` (the originating PF/LF)
@@ -382,6 +404,8 @@ A/B/C/D classification.
 - **Promote a "weak" BR to `approved`** without explicit SME approval
 - **Generate ACs for unapproved BRs** — every AC must validate an approved BR
 - **Include in the spec any fact** that doesn't trace to an EV-* in `evidence[]`
+- **Promote No-gap, Gap1, or follow-new-system post-BRD decisions into
+  requirements**; those stay with the new system as source of truth
 - **Specify target architecture details** that have no rationale tied to BRs,
   BEHs, or platform constraints
 - **Fill data-model field meanings** from field names alone (e.g., a field
@@ -399,16 +423,16 @@ A/B/C/D classification.
 - If a field's meaning is unclear → entity field carries a TBD on
   semantics; type is best-effort with `needs_sme_review` evidence
 
-**The contract with `build-agent-skill`:**
+**The contract with downstream SDLC:**
 
 - Every `approved` BR has ≥1 AC → testable
 - Every `approved` AC has explicit `validates: [BR]` → traceable
 - Every `approved` DEC has explicit rationale → reviewable
 - Every TBD is explicit → no silent gaps
 
-If a spec arrives at `build-agent-skill` with silent gaps, the modernization
-will encode the gaps as defects. The whole skill family exists to prevent
-this.
+If a spec arrives downstream with silent gaps or without an explicit post-BRD
+promotion decision, the modernization will encode the gaps as defects. The
+whole skill family exists to prevent this.
 
 ## SME Review Questions
 
@@ -423,6 +447,7 @@ The capability owner SME must validate:
 - [ ] Inputs / Outputs / Exceptions are complete
 - [ ] Acceptance criteria are testable and meaningful
 - [ ] Open TBDs are tracked with named owners
+- [ ] Post-BRD promotion / disposition decision is explicit
 - [ ] No silent gap — spec can be implemented without re-interrogating SME
 
 ## Runtime Portability
@@ -432,6 +457,12 @@ Canonical: `skills/legacy-spec-writer/SKILL.md`
 Synced to all four runtime adapters.
 
 ## Version History
+
+- v0.1.3 (2026-05-30): Added migration-discovery promotion gate. Approved BRD
+  no longer automatically implies spec-writing; No-gap, Gap1, and
+  follow-new-system outcomes from the separate post-BRD comparison process
+  remain governed by the new system, while promoted legacy behaviors require
+  explicit risk/gap-analysis/product decision before spec.
 
 - v0.1.2 (2026-05-29): Enforced the BRD-first review gate. Standard spec
   writing now requires an approved BRD Package for the selected capability;

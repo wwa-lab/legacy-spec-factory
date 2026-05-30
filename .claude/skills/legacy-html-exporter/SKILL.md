@@ -214,6 +214,12 @@ Do not inspect more files than the active branch requires.
   3. If the prompt is a contract-only or no-write smoke test, do not actually
      run the script; infer the sibling `.html` path from the contract
   4. Otherwise run `python3 scripts/render_stakeholder_html.py <path> [--recursive]`
+     only with an already-available interpreter. The renderer uses only the
+     Python standard library; do not create a virtual environment, install
+     packages, or wait on interactive environment configuration. If Python is
+     unavailable or startup remains configuring/evaluating for more than about
+     30 seconds, do not claim export success; report the exact command for a
+     later manual run.
   5. Report generated or expected `.html` paths back to the user
 - **Allowed inference**: if the user says "给 SME 看这些文档", infer that the
   relevant Markdown package or capability directory should be exported
@@ -281,6 +287,9 @@ Negative source-of-truth challenge:
 Use exactly `blocked`, not "convert", "warn", "deprecated", or mixed answers.
 
 ## Quick Commands
+
+These commands require only an already-available Python interpreter; do not
+install packages or create a virtual environment for this exporter.
 
 Single file:
 

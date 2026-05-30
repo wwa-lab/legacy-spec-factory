@@ -228,7 +228,11 @@ orchestrator.
    - `scripts/sync-skills.sh --skill <skill-name> --target all --check` must
      exit 0 (no drift for the target skill)
    - `python3 scripts/check-spec-contract.py` (if the skill touches
-     `spec.yaml` shape)
+     `spec.yaml` shape), using only an already-available interpreter. Do not
+     create a virtual environment, install packages, or wait on interactive
+     Python environment configuration to satisfy this check; record
+     `tool_unavailable` if interpreter startup remains configuring/evaluating
+     for more than about 30 seconds.
    - Confirm canonical `SKILL.md` has been synced to the adapter copies that
      will be tested
    - Record outcomes in the scorecard

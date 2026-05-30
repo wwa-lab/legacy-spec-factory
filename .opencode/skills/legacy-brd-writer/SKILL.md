@@ -1,6 +1,6 @@
 ---
 name: legacy-brd-writer
-description: Use when an approved module analysis needs an evidence-backed BRD package with SME-reviewable business rules, observed behaviors, open gaps, traceability, and BRD-stage validation scenario seeds before spec-writing.
+description: Use when migration discovery needs an evidence-backed legacy-system BRD for one capability, with SME-reviewable observed behaviors, inferred rule seeds, open gaps, traceability, and BRD-stage validation scenario seeds. This is the primary near-term old-system discovery artifact; it does not compare against the new system, create an SDD handoff, or mandate target-system changes.
 ---
 
 <!--
@@ -18,13 +18,21 @@ Retain this notice in substantial copies or derived versions.
 
 ## Purpose
 
-Synthesize one **Business Requirements Document (BRD) Package** from an
-approved module analysis, making the distinction between observed behaviors,
-inferred rules, SME decisions, open gaps, and BRD-stage validation scenarios
-**visible and reviewable** by non-technical stakeholders before technical
-spec-writing.
+Synthesize one **legacy-system Business Requirements Document (BRD) Package**
+from an approved module analysis, making the distinction between observed
+behaviors, inferred rules, SME decisions, open gaps, BRD-stage validation
+scenarios, and traceability **visible and reviewable** by non-technical
+stakeholders.
 
-The BRD is a **business synthesis layer**, not a technical specification. It shows:
+In the current migration-discovery operating model, the BRD is the primary
+near-term output. Its job is to prepare the old system's business
+understanding, not to compare old and new systems or force a handoff to
+delivery. Old-vs-new comparison, No-gap / Gap1 / Gap2 disposition,
+spec-writing, and SDD handoff are downstream activities that happen after the
+legacy BRD is approved and after new-system context is available.
+
+The BRD is a **business synthesis layer**, not a technical specification or
+handoff package. It shows:
 
 - The **business process story** in SME language: triggering event, actors,
   customer/account impact, business state changes, normal path, exception paths,
@@ -37,11 +45,13 @@ The BRD is a **business synthesis layer**, not a technical specification. It sho
 - Which **business validation scenarios** (`VAL-*`) SMEs and downstream teams
   should use to review the BRD scope
 
-The BRD consumes module analysis, flow analyses, and program analyses. It does
-**not** produce formal acceptance criteria, formal `TC-*` test cases,
-modernization decisions, or target-platform choices. `VAL-*` entries are
-scenario seeds only; `AC-*` belongs to `legacy-spec-writer`, and formal `TC-*`
-belongs to `legacy-golden-master-test-planner`.
+The BRD consumes module analysis, flow analyses, program analyses, and SME /
+BA legacy context. It does **not** produce formal acceptance criteria, formal
+`TC-*` test cases, modernization decisions, target-platform choices,
+old-vs-new comparison, target-system requirements, or SDD handoff files.
+`VAL-*` entries are scenario seeds only; `AC-*` belongs to
+`legacy-spec-writer`, and formal `TC-*` belongs to
+`legacy-golden-master-test-planner`.
 
 The BRD body follows the SME-required functional analysis shape. Sections 1-9
 are mandatory in `brd.md`: Function Purpose, Business Scenarios / Use Cases,
@@ -67,7 +77,11 @@ Trigger on any of these signals:
   coverage, SOW scope, and missing runtime evidence without creating formal
   test cases yet
 - You are **orchestrating a discovery phase** and need a non-technical bridge
-  artifact between reverse engineering and forward SDLC
+  artifact that explains the old system before any gap-analysis or forward-SDLC
+  decision
+- Migration stakeholders need an **as-is legacy BRD** that can later be compared
+  against a new-system BRD or product design in a separate comparison /
+  gap-analysis process
 - Legal, compliance, or product stakeholders need **clear visibility** into what
   rules are observed vs. inferred vs. uncertain
 
@@ -77,6 +91,11 @@ Do not trigger when:
 
 - The output is **code** or **target-platform implementation** (use
   `legacy-spec-writer` then `build-agent-skill`)
+- The requester wants an **SDD handoff package** or Atlas-ready delivery bundle
+  (use `legacy-brd-to-sdd-handoff` only after approved BRD + approved spec)
+- The requester wants old-vs-new **No-gap / Gap1 / Gap2 classification** or
+  target-system scope decisions in the BRD itself. Finish the legacy BRD first,
+  then route comparison to the post-BRD migration disposition process.
 - The requester has an explicitly approved **technical-spec-only bypass** and
   accepts the missing BRD review as a documented risk (route to
   `legacy-spec-writer` with that bypass recorded)
@@ -84,10 +103,12 @@ Do not trigger when:
 - The module analysis is **below `approved_with_non_blocking_tbd`** status (route
   back to `legacy-ibmi-module-analyzer`)
 
-This skill is a **business synthesis layer**. If you find yourself writing
-formal acceptance criteria, minting formal `TC-*` test cases, minting `DEC-*`
-ids, or specifying target architecture, you are in the wrong skill. Route to
-`legacy-spec-writer` or `legacy-golden-master-test-planner` as appropriate.
+This skill is a **migration discovery and business synthesis layer**. If you
+find yourself writing formal acceptance criteria, minting formal `TC-*` test
+cases, minting `DEC-*` ids, specifying target architecture, or producing an
+Atlas/SDD package, you are in the wrong skill. Route to
+`legacy-spec-writer`, `legacy-golden-master-test-planner`, or
+`legacy-brd-to-sdd-handoff` as appropriate.
 
 It is also the wrong output shape if the BRD reads like a program walkthrough.
 Runtime chains, object lists, file-copy details, and call-sequence summaries are
@@ -127,6 +148,9 @@ You must:
   document-quality criteria in the BRD body
 - refuse to produce formal acceptance criteria, modernization decisions, or
   platform choices — those belong in `legacy-spec-writer`
+- refuse to classify legacy behavior as No-gap / Gap1 / Gap2 inside the BRD;
+  that classification belongs after BRD approval when new-system context is
+  available
 - refuse to produce formal `TC-*` test cases or invented exact expected outputs
   — those belong in `legacy-golden-master-test-planner` after spec approval
 - require SME sign-off before the BRD leaves `in_review` status
@@ -144,12 +168,16 @@ You must not:
   diagrams, source documents, or dependencies just to satisfy the BRD shape
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
+- invent a new-system comparison, gap classification, risk assessment, or
+  gap-analysis disposition
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
   recorded as review input, and `legacy-spec-writer` performs the final rule
   promotion in `spec.yaml`
 - generate formal acceptance criteria (spec-writer's job)
 - generate formal `TC-*` test cases or exact expected outputs
 - include target platform or modernization decisions
+- include SDD handoff package content
+- mark No-gap, Gap1, or Gap2 status inside the BRD
 - collapse observed behavior into inferred rules without marking the
   distinction
 - treat high-confidence inferences as facts without SME validation
@@ -179,6 +207,9 @@ Stop and require clarification if:
 - No **SME owner is assigned** → stop; cannot proceed to review without SME
 - The capability **boundary is ambiguous** (does flow X belong here or to another
   capability?) → SME must decide
+- The user asks the BRD writer to classify old-vs-new No-gap / Gap1 / Gap2 or
+  decide target-system scope → explain that the BRD must first capture the
+  legacy baseline; comparison/disposition is a post-BRD process
 
 ## Output Contract
 
@@ -215,6 +246,13 @@ Follow:
   checks
 - `../../docs/input-readiness-rubric.md` for input readiness scoring
 
+Post-BRD comparison note:
+
+- The legacy BRD is the baseline input for later old-vs-new comparison.
+- No-gap / Gap1 / Gap2 classification, risk assessment, and formal gap analysis
+  are outside this skill and must not be written into `brd.md`,
+  `brd-review.md`, `validation-scenarios.md`, or `traceability.md`.
+
 Examples:
 
 - `examples/brd-positive/` — one approved BRD (Credit Limit Enforcement from
@@ -238,7 +276,8 @@ The summary below is normative for this skill.
   capability-owner SME; all referenced `flow-<FLOW-SLUG>.md` and
   `program-analysis-<OBJ-ID>.md` at `approved` or
   `approved_with_non_blocking_tbd`; approved `01_inventory/inventory.yaml`.
-- **Optional**: BAU notes, supplemental context.
+- **Optional**: BAU notes, supplemental legacy-system context, source document
+  pointers, runtime observations, and policy notes from SMEs.
 - **Input readiness scoring**:
   - `0-5 blocked`: approved module missing, selected `CAP-*` unresolved,
     blocking TBDs remain, capability boundary ambiguous, no SME owner, or
@@ -255,11 +294,12 @@ The summary below is normative for this skill.
   `sensitivity: unknown` evidence in scope; SME owner available to approve BRD.
 - **Stop conditions**: module below `approved_with_non_blocking_tbd` (route back
   to `legacy-ibmi-module-analyzer`); capability seed has blocking TBDs (escalate
-  to SME); no SME owner assigned; capability boundary ambiguous.
+  to SME); no SME owner assigned; capability boundary ambiguous; request asks
+  BRD writer to classify No-gap / Gap1 / Gap2 or decide target-system scope.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (8 ordered steps).
+- **Procedure**: see the Workflow section below (9 ordered steps).
 - **Allowed inference**: lifting `BEH-*` from flow control flow, program branch
   points, and error handling (factual statements about what the legacy system
   does); aggregating `BR-*` seeds from module overview and cross-checking
@@ -269,13 +309,16 @@ The summary below is normative for this skill.
   SME confirmation; promoting a BR-* seed to `approved` status (only
   `legacy-spec-writer` may do that); generating formal acceptance criteria;
   generating formal `TC-*` test cases or invented exact expected outputs;
-  specifying target platform or modernization decisions; reading raw IBM i
-  source code (consume upstream analyses only); treating weak inferences as
-  facts.
+  specifying target platform or modernization decisions; adding old-vs-new
+  comparison or target-system disposition; reading raw IBM i source code
+  (consume upstream analyses only); treating weak inferences as facts.
 - **TBD handling**: unconfirmed rule → `BR-*` seed with `status: needs_sme_review`
   (marked in BRD); contradictory evidence → `TBD-*` with `category:
   contradictory_evidence` and resolver; missing context → `TBD-*` with
-  `category: sme_questions` or `category: evidence_gaps`.
+  `category: sme_questions` or `category: evidence_gaps`; legacy behavior that
+  needs later comparison or promotion review may be referenced by a `TBD-*`
+  with `category: downstream_handoff_blockers` and `blocking: no` for BRD
+  approval unless the SME marks it business-critical.
 
 ### Output
 
@@ -294,10 +337,13 @@ The summary below is normative for this skill.
   BRD review and has no upstream `BR-*`, record it as a `TBD-*` requiring
   module/spec review instead of minting a new `BR-*` here. Does NOT mint
   `DEC-*`, `AC-*`, `IN-*`, `OUT-*`, `STEP-*`, `TC-*`, or new `BR-*`.
-- **Handoff status**: `status: draft` → `in_review` → `approved` (SME sign-off).
-  `legacy-spec-writer` consumes the approved BRD Package in the standard
-  workflow. Direct module-to-spec generation is an exception that requires an
-  explicit technical-spec-only bypass with approver and risk acceptance.
+- **Review status**: `status: draft` → `in_review` → `approved` (SME sign-off).
+  The approved BRD is ready as the legacy-system discovery baseline.
+  `legacy-spec-writer` consumes it only after a separate post-BRD comparison /
+  promotion decision says the capability or selected legacy behavior should
+  move beyond discovery. Direct module-to-spec generation is an exception that
+  requires an explicit technical-spec-only bypass with approver and risk
+  acceptance.
 
 ### Validation
 
@@ -358,8 +404,9 @@ What only a domain expert can decide:
 - are there unspoken business rules the code doesn't show?
 - do the `VAL-*` scenario seeds cover the important happy path, exception,
   boundary, and manual review cases for this BRD?
-- are TBDs blocking or non-blocking for the next step (spec-writer)?
-- is the BRD safe to promote to `approved` and forward to spec-writer?
+- are TBDs blocking or non-blocking for BRD approval or later comparison,
+  gap-analysis, or spec-writing?
+- is the BRD safe to promote to `approved` as a migration-discovery artifact?
 
 SME approval is a **control point**, not a rubber stamp. The Step Validation
 Report must record the SME's name (or role), the date, and the specific
@@ -450,7 +497,11 @@ decision.
    - Contradictory evidence → `TBD-*` with category `contradictory_evidence`
    - Missing context → `TBD-*` with category `sme_questions`
    - Ambiguous scope → `TBD-*` with category `sme_questions`
-   - Each TBD must name a resolver and indicate whether it blocks spec-writing
+   - Legacy behavior that may need later comparison or promotion review →
+     `TBD-*` with category `downstream_handoff_blockers` only when the blocker
+     is visible from legacy evidence
+   - Each TBD must name a resolver and indicate what it blocks: BRD approval,
+     later comparison, gap analysis, spec-writing, or SDD handoff
 
 8. **Build Traceability**
    - Generate `traceability.md` cross-reference table
@@ -468,13 +519,12 @@ decision.
      notes confirm it for later spec promotion
    - If SME finds issues, mark `status: blocked` with specific findings
 
-## Workflow State Write-Back (history-only BRD gate)
+## Workflow State Write-Back (history-only discovery gate)
 
-This is a mandatory business-review gate in the standard module-to-spec
-workflow. It produces a business-facing BRD between module analysis and spec
-writing, but does NOT advance the numeric `stage_id`; it records BRD review
-status in history and blocking metadata until approval. It does NOT mutate
-`current_focus`.
+This is the standard business-review gate for the migration-discovery phase.
+It produces a business-facing legacy BRD after module analysis. It does NOT
+advance the numeric `stage_id`; it records BRD review status and blocking
+metadata until approval. It does NOT mutate `current_focus`.
 
 After a run, append one `history[]` entry to
 `<project-root>/workflow-state.yaml` per
@@ -492,12 +542,13 @@ history:
 
 Also overwrite `project.last_updated_at` / `project.last_updated_by`.
 
-**Permitted side-effect:** if BRD authoring surfaces inferred business
-rules or open gaps not already in `capabilities[<CAP-*>].blocking.*`, you
-MAY append them to `blocking.sme_pending` (rule IDs) or `blocking.tbds`.
-You MUST NOT change `stage_id`, `last_artifact`, or `last_skill` — the
-linear stage owner remains `legacy-ibmi-module-analyzer` or
-`legacy-spec-writer`.
+**Permitted side-effect:** if BRD authoring surfaces inferred business rules or
+open gaps not already in
+`capabilities[<CAP-*>].blocking.*`, you MAY append them to
+`blocking.sme_pending` (rule IDs) or `blocking.tbds`. You MUST NOT change
+`stage_id`, `last_artifact`, or `last_skill` — the linear stage owner remains
+`legacy-ibmi-module-analyzer` unless a later stakeholder decision routes the
+capability to `legacy-spec-writer`.
 
 If `workflow-state.yaml` does not exist, this skill does NOT create it.
 
@@ -522,6 +573,9 @@ grounded in:
 - **Generate formal `TC-*` test cases or invented expected outputs**
   (golden-master planner's job after spec approval and runtime evidence review)
 - **Include target platform or modernization decisions** (spec-writer's job)
+- **Add old-vs-new comparison or target disposition to the BRD**. No-gap,
+  Gap1, Gap2, risk assessment, and formal gap analysis belong after BRD
+  approval when new-system context is available.
 - **Add generic BRD success criteria to `brd.md`**; artifact-readiness checks
   belong in `brd-review.md`, not in the business requirements document
 - **Invent optional functional-analysis details** such as channels, UI screens,
@@ -543,6 +597,8 @@ grounded in:
 - If a test-like scenario needs runtime data or expected output evidence →
   create a `VAL-*` with `readiness: needs_runtime_evidence` or defer it; do not
   invent the expected result
+- If later comparison is needed → finish the legacy BRD first, then route the
+  approved BRD into the separate comparison / gap-analysis process
 
 ## Quality Checklist
 
@@ -567,6 +623,9 @@ Before marking the BRD `approved`, confirm:
 - [ ] Every `VAL-*` maps to existing `BEH-*` or `BR-*` and ≥1 `EV-*`
 - [ ] `validation-scenarios.md` contains no formal `AC-*`, formal `TC-*`,
       target architecture, or invented exact expected output
+- [ ] No No-gap / Gap1 / Gap2 classification, risk assessment, gap-analysis
+      disposition, target-system requirement, or SDD handoff content appears in
+      the BRD Package
 - [ ] No invented IBM i facts; all object names come from upstream artifacts
 - [ ] Knowledge type (observed_behavior / inferred_business_rule) is marked for
       every claim
@@ -583,9 +642,12 @@ Before marking the BRD `approved`, confirm:
 - **`legacy-ibmi-module-analyzer`** (upstream): produces module analysis with
   BR-* seeds and capability seeds. BRD consumes this output.
 - **`legacy-spec-writer`** (downstream): consumes module analysis plus the
-  approved BRD Package in the standard workflow. The BRD is the business
-  context layer for rule promotion and acceptance criteria. Direct module-only
-  spec writing requires an explicit technical-spec-only bypass.
+  approved BRD Package only after a separate post-BRD comparison / promotion
+  decision says the capability or selected legacy behavior should move beyond
+  discovery. The BRD is the business context layer for later rule promotion and
+  acceptance criteria; it is not itself a mandate to implement legacy-only
+  behavior. Direct module-only spec writing requires an explicit
+  technical-spec-only bypass.
 - **`legacy-golden-master-test-planner`** (downstream verification): consumes
   approved spec acceptance criteria, runtime evidence, and approved scenario
   context to mint formal `TC-*` golden master cases. BRD `VAL-*` entries are
@@ -593,7 +655,9 @@ Before marking the BRD `approved`, confirm:
 - **`legacy-step-contract`** (parallel): defines the Step Contract shape that
   this skill conforms to.
 - **`legacy-modernization-orchestrator`** (meta): routes to BRD-writer as the
-  standard business review gate before spec-writing.
+  standard legacy-discovery output after module analysis and routes to
+  spec-writing only after a separate post-BRD promotion / gap-analysis
+  decision.
 
 ## Runtime Portability
 
@@ -622,9 +686,15 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.6 (2026-05-30): Reframed BRD writer for migration discovery. BRD is now
+  the primary near-term old-system artifact and remains legacy-system-only:
+  No-gap / Gap1 / Gap2 comparison, risk assessment, formal gap analysis, target
+  requirements, and SDD handoff content are explicitly post-BRD concerns.
+
 - v0.1.5 (2026-05-29): Aligned the BRD writer with BRD-first orchestration.
-  BRD is now the standard business review gate before spec-writing; direct
-  module-to-spec work requires an explicit technical-spec-only bypass.
+  BRD became the required business review artifact before any later
+  spec-writing decision; direct module-to-spec work required an explicit
+  technical-spec-only bypass.
 
 - v0.1.4 (2026-05-27): SME functional-analysis alignment
   - Reframed `brd.md` around required SME sections 1-9

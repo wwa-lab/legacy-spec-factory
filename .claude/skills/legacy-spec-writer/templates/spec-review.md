@@ -38,4 +38,5 @@
 
 1. <SME/Expert> to confirm or resolve <TBD-ID>
 2. <Role> to approve <DEC-ID>
-3. Once all approved, spec status → `approved` and ready for downstream skill
+3. Once all approved, spec status -> `approved` and eligible for the Forward
+   Handoff Gate

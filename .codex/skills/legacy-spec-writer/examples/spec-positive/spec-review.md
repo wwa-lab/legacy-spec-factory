@@ -49,4 +49,5 @@ Anna Chen (Card Operations, AMH partition) — confirmed scope and BR-001/BR-002
 2. Anna + Risk team to decide on fallback policy (TBD-002)
 3. David Park to approve DEC-001 (sync gRPC pattern)
 4. Maria Lopez to approve DEC-002 (Kafka audit log)
-5. Once all approved, spec status → `approved` and ready for `build-agent-skill`
+5. Once all approved, spec status -> `approved` and eligible for the Forward
+   Handoff Gate
