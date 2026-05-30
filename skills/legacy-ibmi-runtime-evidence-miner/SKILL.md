@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy IBM i Runtime Evidence Miner
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Extracts structured observed-runtime facts from approved IBM i job logs and spool/report files. |
+| Input | Approved evidence manifest, redacted job logs, spool/report files, inventory mappings, and known runtime context. |
+| Output | `runtime-evidence.jsonl` records tagged `observed_in_runtime` with source coordinates and object links. |
+| Core prompt strategy | Mine only observable facts, bind each record to `EV-*` and `OBJ-*`, and never infer business rules or modernization decisions. |
+| Upstream skill | `legacy-ibmi-evidence-intake` and `legacy-ibmi-inventory`. |
+| Downstream consumer | Program/flow/module analysis, `legacy-spec-writer`, and `legacy-golden-master-test-planner`. |
+| Validation standard | Evidence is approved and redacted, object mappings exist, JSONL records validate, and unsupported interpretations are absent. |
+| Known risk | Treating one log run or spool sample as exhaustive behavior for all production scenarios. |
+| Practical example | Mine a redacted nightly billing job log into runtime records for called programs, error messages, and generated spool outputs. |
+
 **Version**: 0.1.0  
 **Status**: Field-pilot ready (v0.1.0)
 **Author**: Leo L Zhang  

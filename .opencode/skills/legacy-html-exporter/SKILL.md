@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy HTML Exporter
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Creates easier-to-read standalone HTML companions for stakeholder-facing Markdown artifacts. |
+| Input | Canonical Markdown artifacts such as BRDs, specs, review packs, question packs, traceability pages, and STATUS pages. |
+| Output | `.html` companion files and optional directory `index.html` pages, with Markdown remaining canonical. |
+| Core prompt strategy | Render for readability without changing artifact meaning, links, IDs, evidence status, or approval state. |
+| Upstream skill | Any Legacy Spec Factory skill that produced stakeholder-facing Markdown. |
+| Downstream consumer | SMEs, pilot reviewers, business sign-off sessions, and non-technical stakeholders. |
+| Validation standard | HTML mirrors the Markdown content, local links resolve where possible, and no contract fields are redefined. |
+| Known risk | Stakeholders treating the HTML copy as the source of truth instead of the canonical Markdown. |
+| Practical example | Export a BRD package and traceability page to HTML before a walkthrough with operations SMEs. |
+
 Convert human-facing Markdown artifacts into standalone HTML so SMEs,
 business users, and pilot reviewers can read the same content in a browser
 without changing the canonical source format.

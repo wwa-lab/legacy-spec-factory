@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy IBM i — Programs Batch Digest
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Condenses many per-program analyses into one SME-friendly review table for medium or large modules. |
+| Input | A module folder containing multiple `program-analysis-*.md` files and their inventory/object IDs. |
+| Output | `programs-batch-digest.md` grouped by criticality with one-line roles, TBD counts, decisions, and links. |
+| Core prompt strategy | Summarize only what detail files support, preserve links to source analyses, and surface review priorities instead of rewriting detail. |
+| Upstream skill | `legacy-ibmi-program-analyzer`. |
+| Downstream consumer | `legacy-sme-review-facilitator`, SMEs, module analysts, and review coordinators. |
+| Validation standard | Every digest row links to a real program analysis, counts match detail files, and stage state is history-only. |
+| Known risk | Oversimplifying a critical program so reviewers miss a pending decision or blocked evidence item. |
+| Practical example | Turn 50 order-batch program analyses into a one-page SME review digest grouped as critical, standard, and low-risk. |
+
 Aggregate every `02_programs/<MODULE>/<OBJ>/program-analysis.md` under one
 module into a single page the SME can scan in 30 minutes instead of
 opening 50+ files. Groups programs by `criticality` so the SME's eye lands

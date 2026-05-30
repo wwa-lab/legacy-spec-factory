@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Legacy Program Analyzer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Creates an evidence-backed technical analysis of one RPGLE, CLLE, or COBOL program. |
+| Input | One approved source program, its `OBJ-*` inventory entry, referenced DDS/copybooks, and optional runtime or SME notes. |
+| Output | `program-analysis-<OBJ-ID>.md` covering call map, control flow, file I/O, external calls, and error handling. |
+| Core prompt strategy | Extract concrete code behavior first, tag every inference, avoid business-rule invention, and stop on missing inventory/source. |
+| Upstream skill | `legacy-ibmi-inventory`. |
+| Downstream consumer | `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, data-model analysis, batch digest, and spec synthesis. |
+| Validation standard | Program ID resolves in approved inventory, evidence tags are present, and all calls/files/errors are grounded in source. |
+| Known risk | Inferring business intent from field or routine names without SME or runtime confirmation. |
+| Practical example | Analyze `ORDENTR` RPGLE to document subroutines, PF/LF I/O, display-file indicators, and calls to credit-check programs. |
+
 ## Purpose
 
 Create a detailed analysis of one IBM i program (RPGLE, CLLE, or COBOL)

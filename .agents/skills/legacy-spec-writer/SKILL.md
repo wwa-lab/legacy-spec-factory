@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Spec Writer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Promotes approved discovery into an evidence-backed, platform-agnostic capability spec for downstream SDLC. |
+| Input | Approved BRD Package, module/flow/program analyses, approved decisions, traceability, and explicit stakeholder promotion. |
+| Output | `spec.yaml`, `spec.md`, and `traceability.md` for one `CAP-*` capability. |
+| Core prompt strategy | Encode only approved behavior, preserve evidence links, separate rules from decisions, and conform to `schemas/spec.schema.yaml`. |
+| Upstream skill | `legacy-brd-writer` after BRD review and post-BRD disposition. |
+| Downstream consumer | Golden-master planning, traceability packaging, SDD handoff, and forward SDLC agents. |
+| Validation standard | Schema validation passes, capability scope is singular, evidence/SME approval is explicit, and target design is not invented. |
+| Known risk | Letting speculative BRD gaps or target architecture preferences enter the spec as approved requirements. |
+| Practical example | Convert an approved order-release BRD into `CAP-ORDER-RELEASE` spec artifacts with trace links to flows and SME decisions. |
+
 ## Purpose
 
 Synthesize one **business capability spec** from approved upstream analyses,

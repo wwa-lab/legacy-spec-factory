@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy SME Review Facilitator
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Converts a draft artifact into a guided SME review session with documented answers and status updates. |
+| Input | BRD, spec, module analysis, review questions, open TBDs, evidence references, and SME responses. |
+| Output | SME review transcript/decision artifacts, answered questions, unresolved items, and targeted write-back notes. |
+| Core prompt strategy | Ask focused review questions, capture exact SME decisions, distinguish approval from clarification, and write back only scoped changes. |
+| Upstream skill | `legacy-brd-writer`, `legacy-spec-writer`, `legacy-ibmi-module-analyzer`, or any artifact needing SME validation. |
+| Downstream consumer | Artifact owners, `legacy-spec-writer`, decision writer, validators, and approval gates. |
+| Validation standard | Review status, SME identity/role, question outcomes, approvals, unresolved issues, and write-back targets are explicit. |
+| Known risk | Treating informal SME chat as full artifact approval without recording scope and authority. |
+| Practical example | Walk an SME through BRD open questions for credit holds and write confirmed answers back to the review artifact. |
+
 ## Purpose
 
 Enable structured SME review and decision capture across the Legacy Spec Factory

@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy BRD-to-SDD Handoff
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Packages an approved legacy BRD and approved Legacy spec into an Atlas-compatible SDD handoff without generating design or code. |
+| Input | Approved Legacy BRD Package, approved `spec.yaml` / `spec.md`, traceability evidence, and forward SDLC contract expectations. |
+| Output | Machine-readable and human-readable handoff bundle plus a strict findings report for any blocked or warning condition. |
+| Core prompt strategy | Treat handoff as a gate: verify approvals, preserve legacy-vs-target boundaries, map only approved scope, and refuse missing evidence. |
+| Upstream skill | `legacy-spec-writer` after BRD approval and any post-BRD disposition work. |
+| Downstream consumer | Atlas / forward SDLC agents, architecture/design teams, and implementation planners. |
+| Validation standard | `docs/forward-sdlc-contract.md` satisfied, required artifacts present, IDs traceable, and no bypass of `legacy-spec-writer`. |
+| Known risk | Turning discovery material into target design prematurely or packaging an unapproved capability as implementation-ready. |
+| Practical example | Given approved BRD `CAP-CREDIT-LIMIT` and approved `spec.yaml`, emit an SDD handoff package with blocked findings for any missing trace links. |
+
 ## Purpose
 
 Validate and package **one capability's handoff** from the Legacy Spec Factory

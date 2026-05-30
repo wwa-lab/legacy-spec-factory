@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Step Contract
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Defines the shared INPUT -> EXECUTION -> OUTPUT -> VALIDATION contract every Legacy Spec Factory step must follow. |
+| Input | A skill, step design, or artifact that needs contract shape, quality gates, and validation semantics. |
+| Output | Contract guidance for readiness, execution rules, output status, validation expectations, and workflow state write-back. |
+| Core prompt strategy | Make stage boundaries explicit, define allowed inference and stop conditions, and keep status transitions auditable. |
+| Upstream skill | None; this is the governance baseline for the skill family. |
+| Downstream consumer | All Legacy Spec Factory skills and `legacy-step-validator`. |
+| Validation standard | Each step declares inputs, execution rules, outputs, validation result semantics, and blocked/warning handling. |
+| Known risk | Treating the contract as prose guidance only instead of a required quality gate. |
+| Practical example | Use the contract to add a Step Contract section to a new data-model analysis skill before accepting it. |
+
 ## Purpose
 
 Every step in the Legacy Spec Factory reverse chain follows the same shape:

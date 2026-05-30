@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Module Context Intake
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Turns reviewed external/RAG/four-view module context into a traceable context package for safe downstream module analysis. |
+| Input | Accepted flow-normalization output, RAG/context snippets, owner-reviewed four-view context, retrieval gaps, contradictions, and scope notes. |
+| Output | `00_context_packages/<MODULE-SLUG>/` package with source map, context views, readiness status, and blocked/TBD items. |
+| Core prompt strategy | Normalize context without approving it as business truth, preserve contradictions, and keep sparse context from becoming hidden rules. |
+| Upstream skill | `legacy-flow-context-normalizer` or external RAG / human-confirmed module context. |
+| Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and module review workflows. |
+| Validation standard | Module scope, evidence authorization, context provenance, contradiction handling, and readiness status are explicit. |
+| Known risk | Promoting RAG candidates or owner guesses into approved business rules. |
+| Practical example | Package a reviewed four-view claims module context with retrieval gaps so module analysis can proceed with visible TBDs. |
+
 ## Purpose
 
 Turn external RAG / code knowledge graph output plus human-confirmed module

@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy Modernization Orchestrator
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Routes a legacy modernization request to the safest next Legacy Spec Factory skill and gate. |
+| Input | User goal, available artifacts, source/evidence type, current stage, approval status, and constraints. |
+| Output | Routing decision, next-step guidance, required inputs, stop conditions, and handoff target. |
+| Core prompt strategy | Identify stage and target outcome first, enforce hard gates, minimize unnecessary steps, and yield to the downstream skill. |
+| Upstream skill | None; this is the entry-point router. |
+| Downstream consumer | Any Legacy Spec Factory skill, especially evidence intake, context intake, inventory, analysis, BRD, spec, and handoff skills. |
+| Validation standard | Recommended route matches input readiness, does not skip evidence/SME gates, and clearly names blockers or next artifact. |
+| Known risk | Performing downstream analysis inside the router instead of handing off once the correct skill is known. |
+| Practical example | Given a Visio flow, RPGLE source, and a request for a migration spec, route first to document/evidence intake before inventory or spec writing. |
+
 Routes legacy reverse-modernization work to the correct skill in the correct
 order. The output is a routing decision and next-step execution guidance — not
 an inventory, not a spec, not a review report, and not source code.

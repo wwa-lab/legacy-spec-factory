@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Legacy Flow Analyzer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Explains one end-to-end IBM i business transaction across the programs, triggers, data movement, and error paths it touches. |
+| Input | Approved inventory, relevant program analyses, trigger context, runtime clues, screen/report evidence, and SME notes. |
+| Output | Flow analysis with trigger model, sequence, cross-program data flow, error propagation, commit boundaries, and capability seeds. |
+| Core prompt strategy | Stitch only evidence-backed hops, separate technical sequence from business meaning, and expose missing links as TBDs. |
+| Upstream skill | `legacy-ibmi-program-analyzer` and `legacy-ibmi-inventory`. |
+| Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and capability/spec preparation. |
+| Validation standard | All called programs and files map to inventory IDs, trigger model is declared, and unresolved branches are not hidden. |
+| Known risk | Over-connecting programs into a transaction flow because names or call chains look related. |
+| Practical example | Analyze an order-release flow from menu option through RPGLE validation, update programs, spool output, and error handling. |
+
 ## Purpose
 
 Analyze one **call chain** — a complete business transaction that spans

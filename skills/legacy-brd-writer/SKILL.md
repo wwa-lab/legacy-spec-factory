@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # Legacy BRD Writer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Turns legacy analysis evidence into a stakeholder-readable old-system BRD for migration discovery and SME review. |
+| Input | Module analysis, flow/program evidence, observed behaviors, inferred rule seeds, gaps, and traceability references. |
+| Output | Legacy BRD Package with behaviors, open questions, validation scenario seeds, and review status. |
+| Core prompt strategy | Separate observed behavior from inferred rules, keep target-system comparison out, and write reviewable business language with evidence tags. |
+| Upstream skill | `legacy-ibmi-module-analyzer` or an accepted module-first context package. |
+| Downstream consumer | SMEs, gap-analysis / old-vs-new reviewers, `legacy-spec-writer`, and decision writers. |
+| Validation standard | BRD sections complete, evidence strength declared, unresolved gaps visible, and BRD review gate not bypassed. |
+| Known risk | Mistaking old-system description for a mandate to preserve every behavior in the target system. |
+| Practical example | Given a four-view order-entry module analysis, produce a BRD package that lists observed hold-release behavior and questions for SME confirmation. |
+
 ## Purpose
 
 Synthesize one **legacy-system Business Requirements Document (BRD) Package**

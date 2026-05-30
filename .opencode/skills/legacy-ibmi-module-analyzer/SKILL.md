@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Legacy Module Analyzer
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Synthesizes multiple IBM i flows or module-first context into the canonical four-view module analysis. |
+| Input | Flow analyses, program analyses, data/screen evidence, BAU notes, or an accepted `00_context_packages/<MODULE-SLUG>/` package. |
+| Output | Mermaid-backed Operation Flow, System Flow, Program Flow, and Data Flow module analysis with review status. |
+| Core prompt strategy | Preserve evidence boundaries across views, use diagrams as traceable summaries, and keep uncertain behavior as TBDs. |
+| Upstream skill | `legacy-ibmi-flow-analyzer` or `legacy-module-context-intake`. |
+| Downstream consumer | `legacy-brd-writer`, `legacy-spec-writer`, SMEs, and module review workflows. |
+| Validation standard | Four views align without contradictions, all key nodes trace to evidence, and module-analysis model rules are followed. |
+| Known risk | Producing polished diagrams that make unresolved flow gaps look approved. |
+| Practical example | Combine order entry, release, and cancellation flows into one four-view Order Management module analysis. |
+
 ## Purpose
 
 Synthesize multiple flow analyses, BAU (Business As Usual) notes, and SME

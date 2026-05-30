@@ -16,6 +16,20 @@ Retain this notice in substantial copies or derived versions.
 
 # IBM i Legacy Inventory
 
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Builds the object map and baseline inventory needed before deeper IBM i analysis can be trusted. |
+| Input | Approved evidence manifest, source members, DDS, DB2 metadata, jobs, screens, reports, spool/runtime references, and object metadata. |
+| Output | `inventory.yaml`, `object-map.md`, readiness status, gaps, and blocked object notes. |
+| Core prompt strategy | Enumerate assets conservatively, assign stable `OBJ-*` IDs, mark confidence/readiness, and block missing or unauthorized evidence. |
+| Upstream skill | `legacy-ibmi-evidence-intake`. |
+| Downstream consumer | Program, flow, module, screen/report, data-model, and runtime-evidence skills. |
+| Validation standard | Inventory Completeness Gate passes or blocks clearly; every downstream object reference can resolve to `inventory.yaml`. |
+| Known risk | Missing a file, trigger, job, or display object that later invalidates program or flow analysis. |
+| Practical example | Inventory an order subsystem's RPGLE programs, CL jobs, PF/LF files, DSPFs, and reports before program analysis starts. |
+
 ## Purpose
 
 Create a structured inventory of IBM i / AS400 legacy assets for one business
