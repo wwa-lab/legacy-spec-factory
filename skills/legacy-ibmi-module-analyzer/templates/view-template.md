@@ -13,6 +13,9 @@ Diagram rules:
 - Use `flowchart TD` unless the reviewed source flow is explicitly
   left-to-right.
 - Place this section before evidence, inventory, or traceability tables.
+- Rendered Mermaid preview is optional. Do not block completion on IDE or
+  browser preview when this fenced Mermaid source is present and structurally
+  reviewed.
 - View 1 should use business-readable actor, event, manual intervention,
   exception, and rule-seed labels.
 - View 2 should show upstream systems, interfaces, the IBM i module boundary,

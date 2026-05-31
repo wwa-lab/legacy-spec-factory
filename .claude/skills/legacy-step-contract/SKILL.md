@@ -159,6 +159,14 @@ Execution rules:
 - The step writes its own output. The Step Contract does not.
 - The step preserves IDs; it does not renumber on re-execution.
 - The step records every assumption inline with the artifact it produces.
+- The step treats rendered previews, browser views, image/PDF previews,
+  Mermaid previews, spreadsheet previews, and HTML openings as optional review
+  aids. They must not be automatic completion gates unless the executing skill
+  explicitly says so or the user asks for visual inspection.
+- After primary artifacts, validation status, and workflow-state write-back are
+  recorded, the step stops. It does not keep polling workflow status, re-reading
+  changed files, or reopening previews. Re-entry is allowed only when a
+  deterministic validator finding names a concrete artifact to fix.
 
 ### 3. OUTPUT
 
@@ -449,6 +457,9 @@ No runtime-specific assumptions are baked into this canonical source.
   from "draft four-flow package" to "draft four-view context package" so
   upstream context views are not confused with canonical module-analysis
   flow artifacts.
+- v0.1.3 (2026-05-31): Added the global artifact-preview and
+  stop-after-writeback completion boundary so steps do not keep processing
+  after outputs, validation status, and workflow-state write-back are recorded.
 - v0.1.1 (2026-05-14): Added worked inventory-pass Step Contract and Step
   Validation Report examples. Reconciled compact validation result fields
   (`downstream_next_step`, `remediation_step`) and clarified that

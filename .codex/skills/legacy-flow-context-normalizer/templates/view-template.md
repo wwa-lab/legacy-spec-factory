@@ -18,6 +18,9 @@ flowchart TD
 Diagram rules:
 - Use `flowchart TD` unless the source order is explicitly left-to-right.
 - Use node IDs that mirror `STEP-*`, replacing hyphens with underscores.
+- Rendered Mermaid preview is optional. Do not block completion on IDE or
+  browser preview when this fenced Mermaid source is present and structurally
+  reviewed.
 - Keep node labels business-readable for View 1; put technical names in
   parentheses only when needed.
 - For View 3, draw substantive flow nodes only when AS400 / IBM i program,

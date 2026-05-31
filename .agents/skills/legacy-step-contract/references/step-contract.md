@@ -60,6 +60,8 @@ under `missing_inputs` or `evidence_gaps`.
 | `decision_points` | recommended | list of `{decision, alternatives, recorded_as}` | Where the executing skill must choose, the choice must be recorded explicitly |
 | `idempotency` | recommended | `idempotent` / `non_idempotent` / `idempotent_with_caveat` | Affects re-execution behavior |
 | `id_minting_policy` | yes | list of allowed ID prefixes for this step | See per-step table below |
+| `artifact_preview_policy` | recommended | `not_required` / `explicit_user_request_only` / `required_by_skill` | Rendered previews are optional unless the skill explicitly makes them required |
+| `completion_boundary` | recommended | `stop_after_writeback` | Stop after artifacts, validation status, and workflow-state write-back are recorded |
 
 ### Per-Step ID Minting Policy
 
@@ -89,6 +91,24 @@ The executing skill must stop and surface a TBD (rather than fabricate) when:
 - evidence is contradictory and no SME is available to resolve
 - a downstream ID is referenced but cannot be resolved
 - a `tools_forbidden` action would be required to continue
+
+### Artifact Preview And Completion Boundary
+
+Rendered previews are not validation unless the executing skill explicitly says
+so. This includes browser previews, image/PDF previews, spreadsheet previews,
+Mermaid previews, HTML openings, and IDE preview panes. Default policy:
+
+- Do not open previews automatically; use `explicit_user_request_only`.
+- For large modules, large docsets, or generated page/slide/image sets, record
+  preview status as skipped or not requested and continue with structural
+  validation.
+- Never open every generated page/sheet/slide or reopen the same preview as a
+  completion check.
+- After primary artifacts, validation status, and workflow-state write-back are
+  recorded, stop the run. Do not keep polling workflow status or re-reading
+  changed files.
+- Re-enter the package only when a deterministic validator finding names a
+  concrete file to fix, or when the user explicitly asks for another action.
 
 ## Section 3 — OUTPUT
 

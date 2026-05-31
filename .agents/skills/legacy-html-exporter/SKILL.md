@@ -251,6 +251,9 @@ Do not inspect more files than the active branch requires.
 - **Single-file discipline**: for one concrete `.md` path, do not scan large
   directory trees, whole docs folders, or unrelated examples unless the file is
   missing and the prompt explicitly asks you to find alternatives.
+- **Browser preview discipline**: generating the `.html` file is the completion
+  gate. Do not open a browser or preview pane unless the user explicitly asks
+  to inspect the rendered page. After reporting the generated path, stop.
 
 ### Output
 
@@ -279,6 +282,8 @@ Do not inspect more files than the active branch requires.
    generated `index.html`.
 5. If the user later edits the Markdown source, re-run the export rather than
    editing the HTML directly.
+6. Do not open the generated HTML automatically; report the path and stop
+   unless the user requested browser inspection.
 
 ## Response Templates
 

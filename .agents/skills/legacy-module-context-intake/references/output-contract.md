@@ -41,11 +41,19 @@ module:
 
 intake:
   skill: legacy-module-context-intake
-  version: v0.1.4
+  version: v0.1.6
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: ready_for_module_analysis
   decision_reason: "Short reason."
   downstream_next_step: legacy-ibmi-module-analyzer
+
+run_validation:
+  structural_status: not_run
+  structural_method: not_run
+  validator_command: "python3 skills/legacy-module-context-intake/scripts/validate_context_package.py 00_context_packages/CREDIT-CHECK"
+  artifact_preview_status: not_requested
+  artifact_preview_reason: "Preview is optional; context Markdown files and evidence maps are the canonical package."
+  completion_boundary: stop_after_writeback
 
 evidence_authorization:
   status: approved | synthetic_non_production | public | blocked | unknown
@@ -129,6 +137,15 @@ Rules:
   - `blocked_pending_scope`
   - `blocked_pending_contradiction_review`
 - `downstream_next_step` is `legacy-ibmi-module-analyzer` unless blocked.
+- `run_validation.structural_status` records `pass`, `pass_with_warnings`,
+  `blocked`, `not_run`, `tool_unavailable`, or
+  `tool_unavailable_hosted_agent`.
+- `run_validation.artifact_preview_status` records `not_requested`,
+  `skipped_large_package`, `passed`, `failed`, or `timed_out`. Preview is an
+  optional visual aid, not a package gate.
+- `run_validation.completion_boundary: stop_after_writeback` tells the agent
+  to stop after package files, validation status, and any workflow-state
+  write-back are recorded.
 - `blocking_items[]` is empty only when all gates pass or all remaining items
   are explicitly non-blocking.
 - Owner-accepted sparse flow-normalization input is allowed only when
@@ -338,3 +355,9 @@ It checks required files, status vocabulary, output-file references, view-to
 evidence-map linkage, contradiction-log completeness, and RAG candidate
 promotion status. It is a structural guard only; SME approval and semantic
 review are still required downstream.
+
+Previewing generated context Markdown is not part of local validation. Do not
+open IDE, browser, Mermaid, or Markdown previews unless the user explicitly
+asks. For large modules, set `run_validation.artifact_preview_status:
+skipped_large_package` or `not_requested`, then stop after
+`completion_boundary: stop_after_writeback` is recorded.

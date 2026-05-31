@@ -34,6 +34,12 @@ handoff; per-document gates roll up into it.
 - `package_type: document_evidence_intake`
 - `gate` ∈ {`ready`, `ready_with_warnings`, `blocked`}
 - `module_slug`, `docset_slug`
+- `run_validation.structural_status` ∈ {`pass`, `pass_with_warnings`,
+  `blocked`, `not_run`, `tool_unavailable`,
+  `tool_unavailable_hosted_agent`}
+- `run_validation.artifact_preview_status` ∈ {`not_requested`,
+  `skipped_large_docset`, `passed`, `failed`, `timed_out`}
+- `run_validation.completion_boundary: stop_after_writeback`
 - at least one `documents[]` entry, each with `doc_id`, `path`, `family`,
   `file_type`, `size_bytes`, `sha256`, `sensitivity`, `authorization_status`,
   and `document_gate`
@@ -56,3 +62,18 @@ remediation.
 - Any conversion recorded `succeeded` without a tool having run.
 - Any macro-enabled file missing a security flag.
 - Any flow-view classification, business rule, or BRD/spec content.
+
+## Preview And Completion Boundary
+
+Rendered previews of normalized Markdown, CSV, PDF, PNG, SVG, spreadsheet, or
+OCR outputs are optional review aids. They are not part of the package gate.
+For large docsets, generated page images, or hosted-agent runs, set
+`run_validation.artifact_preview_status: skipped_large_docset` or
+`not_requested`, then finish after the manifest, quality/warning files,
+coordinates, per-document manifests, normalized output list, and validation
+status are written.
+
+Do not open every generated page/sheet/slide, do not reopen the same preview,
+and do not continue polling changed files after `completion_boundary:
+stop_after_writeback` is recorded. Re-enter the package only when a validator
+finding names a concrete file to fix.

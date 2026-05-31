@@ -11,12 +11,20 @@ module:
 
 normalization:
   skill: "legacy-flow-context-normalizer"
-  version: "v0.1.10"
+  version: "v0.1.11"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "draft_needs_sme_review" # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
   quality_level: "L2 partial" # L3 strong | L2 partial | L1 sparse | L0 blocked
   decision_reason: "<Why this status was selected>"
   downstream_next_step: "legacy-sme-review-facilitator" # legacy-module-context-intake when ready
+
+run_validation:
+  structural_status: "not_run" # pass | pass_with_warnings | blocked | not_run | tool_unavailable | tool_unavailable_hosted_agent
+  structural_method: "not_run" # validator | manual_review | hosted_agent_skipped | not_run
+  validator_command: "python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py --allow-draft 00_context_packages/<MODULE-SLUG>/flow-normalization"
+  mermaid_preview_status: "not_requested" # not_requested | skipped_large_module | passed | failed | timed_out
+  mermaid_preview_reason: "Preview is optional; structural Mermaid source was generated."
+  completion_boundary: "stop_after_writeback"
 
 evidence_authorization:
   status: "unknown" # approved | synthetic_non_production | public | blocked | unknown
