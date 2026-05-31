@@ -174,6 +174,16 @@ record Python as `tool_unavailable` for this run, continue with manual package
 drafting where possible, and list the exact remediation in `open-questions.md`
 and `flow-context-index.yaml`.
 
+Mermaid preview guardrail: Mermaid source blocks are required; IDE, browser, or
+extension-rendered Mermaid previews are optional. Do not open diagram previews
+as part of this skill unless the user explicitly asks for visual preview. For
+large modules, large document sets, or diagrams with more than about 80
+nodes/edges, mark `run_validation.mermaid_preview_status` as
+`skipped_large_module` and continue after structural validation. Never open the
+same preview repeatedly. If one explicitly requested preview attempt takes more
+than about 30 seconds, record `timed_out` or `skipped_large_module`, report the
+manual preview path, and finish the run.
+
 GitHub Copilot hosted-agent mode is stricter: do not run Python commands,
 shell probes, Excel helpers, validators, package installs, or environment setup
 from this skill unless the user explicitly confirms the runtime is already
@@ -450,7 +460,23 @@ orchestrator.
       configuring/evaluating for more than about 30 seconds, record validation
       as `tool_unavailable`, keep the package out of
       `ready_for_context_intake`, and report the exact command to run manually.
-    - Do not route to SME review or context intake until the validator passes.
+    - Record the result in `flow-context-index.yaml.run_validation`. Mermaid
+      preview status is informational only; it is not a structural validation
+      gate.
+    - Do not route to context intake until the validator passes. A hosted-agent
+      or tool-unavailable run may still be handed to SME/source-owner review as
+      a draft package when validation status and manual follow-up are recorded,
+      but it must not claim `ready_for_context_intake`.
+
+13. **Finalize and stop**
+    - After all ten files are written, `flow-context-index.yaml` is updated,
+      workflow state is written back if applicable, and validation status is
+      recorded, stop the run and report the package path plus any manual
+      validator or preview follow-up.
+    - Do not keep re-reading the module directory, repeatedly checking workflow
+      status, or reopening Mermaid previews after write-back. Additional
+      checks are allowed only when the validator returns a specific finding
+      that names a file to fix.
 
 ## Handoff
 
@@ -515,3 +541,6 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
 - v0.1.10 (2026-05-30): Added handoff guidance that document-normalized
   technical anchors are context only; standard BRD/spec routing must still run
   inventory/object-map, program analysis, and flow analysis before approval.
+- v0.1.11 (2026-05-31): Added a large-module Mermaid preview guardrail and a
+  stop-after-writeback completion boundary so generated flow packages do not
+  remain in processing after structural outputs are written.

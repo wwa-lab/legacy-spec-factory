@@ -183,6 +183,14 @@ source is skipped/unreadable.
   or Docling are never installed automatically. Missing optional tooling is
   evidence for the package gate, not a reason to stall.
 - Deterministic structural extraction + manifests are the **canonical output**.
+- Artifact preview guardrail: normalized Markdown, CSV, PDF, PNG, SVG, and OCR
+  outputs are files to be indexed, not UI previews to be opened automatically.
+  Do not open IDE, browser, image, PDF, or spreadsheet previews unless the user
+  explicitly requests visual inspection. For large docsets or generated
+  page/slide images, record `run_validation.artifact_preview_status:
+  skipped_large_docset` and continue after structural validation. Never open
+  every generated page/sheet/slide as a completion check, and never reopen the
+  same preview repeatedly.
 - Docling MAY be referenced as an optional renderer/enhancer for supported
   formats (`.xlsx`, `.docx`, `.pptx`, PDF). It must **not** be the only source
   of truth, and its output must be recorded as one extraction method among
@@ -397,15 +405,31 @@ Emit a Step Validation Report (see
 
 9. **Validate**
    - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
-     Record `validation: tool_unavailable_hosted_agent` in the package notes,
-     keep the package out of downstream handoff, and report the manual validator
-     path:
+     Record `run_validation.structural_status:
+     tool_unavailable_hosted_agent` in `intake.manifest.yaml`, keep the package
+     out of downstream handoff, and report the manual validator path:
      `skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py`.
    - In an already-prepared local shell only, run the bundled validator with an
-     existing Python interpreter and fix every finding before handoff.
+     existing Python interpreter and fix every finding before handoff. Record
+     the result in `intake.manifest.yaml.run_validation`.
    - If no interpreter is available, do not create a virtual environment or
      install Python packages; record the validation tooling gap and keep the
      package `blocked` until validation can run.
+   - Artifact preview status is informational only; it is not the validation
+     gate. The gate is the manifest, normalized output file list, evidence
+     coordinates, quality/warning files, and validator/manual structural
+     review.
+
+10. **Finalize and stop**
+    - After `intake.manifest.yaml`, `conversion-log.md`,
+      `extraction-quality.yaml`, `extraction-warnings.md`,
+      `evidence-coordinates.md`, per-document manifests, normalized outputs,
+      and `run_validation` status are written, stop the run and report the
+      package path plus any manual validator or preview follow-up.
+    - Do not keep re-reading the docset directory, repeatedly checking workflow
+      status, or opening generated previews after write-back. Additional checks
+      are allowed only when the validator returns a specific finding naming a
+      file to fix.
 
 ## Handoff
 
@@ -471,6 +495,10 @@ copies directly. No runtime-specific assumptions are baked into this source.
   automatic Python environment creation or optional tool installation during
   document intake; missing tools must be recorded as package evidence instead
   of stalling.
+- v0.1.2 (2026-05-31): Added an artifact preview guardrail and
+  stop-after-writeback completion boundary so large document-intake packages do
+  not remain in processing after normalized outputs and validation status are
+  written.
 - v0.1.0 (2026-05-29): Initial legacy document evidence intake and format
   normalization skill. Converts Excel / Word / PowerPoint / Visio / PDF / image
   / scanned documents into Markdown / CSV / PDF / PNG / SVG with manifests,

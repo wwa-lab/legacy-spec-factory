@@ -9,6 +9,14 @@ docset_slug: "<DOCSET-SLUG>"
 gate: "blocked"
 gate_reason: "<Why this gate was chosen>"
 
+run_validation:
+  structural_status: "not_run" # pass | pass_with_warnings | blocked | not_run | tool_unavailable | tool_unavailable_hosted_agent
+  structural_method: "not_run" # validator | manual_review | hosted_agent_skipped | not_run
+  validator_command: "python3 skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py --allow-blocked 00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>"
+  artifact_preview_status: "not_requested" # not_requested | skipped_large_docset | passed | failed | timed_out
+  artifact_preview_reason: "Preview is optional; normalized outputs and manifests are the canonical package."
+  completion_boundary: "stop_after_writeback"
+
 tooling:
   libreoffice: "<available|unavailable>"   # soffice for legacy binary conversion
   docling: "<available|unavailable>"        # optional non-canonical enhancer

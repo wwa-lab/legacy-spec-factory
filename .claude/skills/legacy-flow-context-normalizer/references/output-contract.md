@@ -50,12 +50,20 @@ module:
 
 normalization:
   skill: legacy-flow-context-normalizer
-  version: v0.1.10
+  version: v0.1.11
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: draft_needs_sme_review
   quality_level: L2 partial
   decision_reason: "Draft context views generated from authorized historical docs."
   downstream_next_step: legacy-sme-review-facilitator
+
+run_validation:
+  structural_status: not_run
+  structural_method: not_run
+  validator_command: "python3 skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py --allow-draft 00_context_packages/CREDIT-CHECK/flow-normalization"
+  mermaid_preview_status: not_requested
+  mermaid_preview_reason: "Preview is optional; structural Mermaid source was generated."
+  completion_boundary: stop_after_writeback
 
 evidence_authorization:
   status: approved
@@ -152,6 +160,20 @@ Rules:
   `source_owner_supplement_request` or SME clarification for sparse triage,
   `legacy-module-context-intake` for ready packages, and the remediation route
   for blocked packages.
+- `run_validation.structural_status` records the deterministic structural
+  check outcome: `pass`, `pass_with_warnings`, `blocked`, `not_run`,
+  `tool_unavailable`, or `tool_unavailable_hosted_agent`.
+- `run_validation.structural_method` records `validator`, `manual_review`,
+  `hosted_agent_skipped`, or `not_run`.
+- `run_validation.mermaid_preview_status` records `not_requested`,
+  `skipped_large_module`, `passed`, `failed`, or `timed_out`. Mermaid preview
+  is an optional visual aid, not a handoff gate; the required gate is the
+  presence of fenced Mermaid source blocks plus structural validation/manual
+  syntax review.
+- `run_validation.completion_boundary: stop_after_writeback` tells the agent
+  to stop after files, index/state write-back, and validation status are
+  recorded. Do not keep re-reading changed files or reopening previews unless a
+  validator finding names a concrete file to fix.
 - `quality_level` must be one of `L3 strong`, `L2 partial`, `L1 sparse`, or
   `L0 blocked`. Use `L1 sparse` when input is authorized and readable, or only
   source/scope clues remain after optional binaries are skipped, but no flow
@@ -550,7 +572,8 @@ Use the bundled validator for package-level checks only outside GitHub Copilot
 hosted-agent mode. In hosted-agent mode, do not run Python, do not create a
 virtual environment, and do not wait on environment setup; record validation as
 `tool_unavailable_hosted_agent` and report the validator script path as manual
-follow-up text.
+follow-up text. A draft package may still go to SME/source-owner review when
+this status is recorded, but it must not claim `ready_for_context_intake`.
 
 Manual validator path:
 `skills/legacy-flow-context-normalizer/scripts/validate_flow_context_package.py`
@@ -568,3 +591,9 @@ It checks required files, status vocabulary, output-file references,
 view-to-evidence-map linkage, contradiction-log completeness, forbidden
 candidate promotion, and ready-package SME review evidence. It is a structural
 guard only; SME approval and semantic review are still required.
+
+Mermaid preview is not part of local validation. Do not automatically open an
+IDE, browser, or extension preview for generated diagrams. For large modules or
+large diagrams, set `run_validation.mermaid_preview_status:
+skipped_large_module`; if an explicitly requested preview takes more than about
+30 seconds, set `timed_out` and finish after reporting the manual preview path.

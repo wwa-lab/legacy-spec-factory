@@ -10,6 +10,8 @@
   - FLOW-[SLUG]-001 ([business event])
   - FLOW-[SLUG]-002 ([business event])
 - **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme | rejected
+- **Mermaid Preview Status:** not_requested | skipped_large_module | passed | failed | timed_out
+- **Completion Boundary:** stop_after_writeback
 
 ## View Index
 | View | File | Status | Reviewer |

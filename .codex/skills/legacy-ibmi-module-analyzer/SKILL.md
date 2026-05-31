@@ -145,6 +145,14 @@ support, but a table-only view is not a valid module-analysis flow. When input
 is incomplete, include a Mermaid placeholder node with a named `TBD-*` rather
 than omitting the diagram.
 
+Mermaid preview guardrail: Mermaid source blocks are required; rendered IDE,
+browser, or extension previews are optional. Do not open diagram previews unless
+the user explicitly asks for visual inspection. For large modules, many
+in-scope flows, or diagrams with more than about 80 nodes/edges, skip preview,
+record the skip in `module-overview.md`, and continue with structural/manual
+review. Never reopen the same preview or preview all four views as a completion
+check.
+
 Examples:
 
 - `examples/module-positive/` — complete CARD-AUTH module with all 4 views
@@ -376,6 +384,15 @@ to the orchestrator.
    - Module is approved only when **all four views** are at least
      `approved_with_non_blocking_tbd`
 
+10. **Finalize and stop**
+    - After the four view files, `module-overview.md`,
+      `module-review-checklist.md`, and workflow-state write-back are recorded,
+      stop the run and report the module package path plus any manual preview
+      follow-up.
+    - Do not keep re-reading the module directory, repeatedly checking workflow
+      status, or opening Mermaid previews after write-back unless a concrete
+      validation finding names a file to fix.
+
 ## Workflow State Write-Back
 
 At the end of a module-analysis run, update
@@ -499,6 +516,10 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
   module-first context package can seed draft synthesis, but standard BRD/spec
   work now requires `object-map.md`, program analyses, and flow analyses before
   module output can be treated as code-backed.
+
+- v0.1.6 (2026-05-31): Added Mermaid preview and stop-after-writeback
+  guardrails so large four-view module packages do not keep processing after
+  view files, overview, checklist, and workflow-state write-back are recorded.
 
 - v0.1.4 (2026-05-29): Aligned module-analyzer downstream wording with the
   BRD-first workflow and made Mermaid diagrams mandatory for each view. The

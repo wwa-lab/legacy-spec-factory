@@ -22,6 +22,8 @@ document defines the *file format*; that document defines the *intent*.
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]
 - **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | 
   blocked_pending_source | blocked_pending_sme | rejected
+- **Mermaid Preview Status:** not_requested | skipped_large_module | passed | failed | timed_out
+- **Completion Boundary:** stop_after_writeback
 
 **Blocked Status Values:**
 - `blocked_pending_source`: One or more required object maps, flow analyses, or program analyses are missing or incomplete
@@ -109,6 +111,11 @@ Every view file must include `## Mermaid Flow Diagram` before the evidence,
 inventory, or traceability tables. This diagram is the SME-readable flow
 surface; the tables remain required to prove evidence, coverage, IDs, and
 review ownership.
+
+Rendered Mermaid preview is optional. The validation gate is the fenced Mermaid
+source block plus evidence-backed node/edge traceability. For large modules or
+large diagrams, record preview as skipped in `module-overview.md` and do not
+open IDE/browser previews unless the user explicitly asks.
 
 Rules:
 

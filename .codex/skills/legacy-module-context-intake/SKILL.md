@@ -133,6 +133,14 @@ configuring/evaluating, record validation as `tool_unavailable`, keep the
 package out of `ready_for_module_analysis`, and report the manual command to
 run later.
 
+Artifact preview guardrail: context Markdown files are the canonical review
+surface. Do not open IDE, browser, Mermaid, or Markdown previews unless the
+user explicitly asks for visual inspection. For large modules or four-view
+packages copied from large normalization runs, record
+`run_validation.artifact_preview_status: skipped_large_package` and continue
+after structural validation/manual review. Never reopen the same preview or
+open every view as a completion check.
+
 GitHub Copilot hosted-agent mode is stricter: do not run Python commands,
 shell probes, validators, package installs, or environment setup from this skill
 unless the user explicitly confirms the runtime is already prepared. Record
@@ -289,6 +297,26 @@ This skill conforms to the Legacy Spec Factory Step Contract.
    - Otherwise set `ready_for_module_analysis` or `ready_with_warnings` and
      route to `legacy-ibmi-module-analyzer`.
 
+9. **Validate**
+   - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
+     Record `run_validation.structural_status:
+     tool_unavailable_hosted_agent` in `context-index.yaml`, keep the package
+     out of downstream handoff, and report the manual validator path:
+     `skills/legacy-module-context-intake/scripts/validate_context_package.py`.
+   - In an already-prepared local shell only, run the bundled validator with an
+     existing Python interpreter and fix every finding before handoff. Record
+     the result in `context-index.yaml.run_validation`.
+   - Artifact preview status is informational only; it is not a structural
+     validation gate.
+
+10. **Finalize and stop**
+    - After all eight package files, `context-index.yaml.run_validation`, and
+      any applicable workflow-state write-back are recorded, stop the run and
+      report the package path plus any manual validator or preview follow-up.
+    - Do not keep re-reading the context package, repeatedly checking workflow
+      status, or opening previews after write-back unless a validator finding
+      names a concrete file to fix.
+
 ## Handoff To Module Analyzer
 
 When the package is ready, tell the next agent:
@@ -331,6 +359,9 @@ artifacts are missing, route to legacy-ibmi-inventory first.
 - v0.1.5 (2026-05-30): Added code-backed handoff guidance so context packages
   preserve technical anchors but route to inventory/object-map, program
   analysis, and flow analysis before standard BRD/spec approval.
+- v0.1.6 (2026-05-31): Added artifact preview and stop-after-writeback
+  guardrails so large context packages do not remain in processing after
+  package files and validation status are written.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
 - v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse

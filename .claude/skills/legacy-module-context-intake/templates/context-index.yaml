@@ -11,11 +11,19 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.5"
+  version: "v0.1.6"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "blocked_pending_evidence" # ready_for_module_analysis | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_contradiction_review
   decision_reason: "<Why this status was selected>"
   downstream_next_step: "legacy-ibmi-evidence-intake" # legacy-ibmi-module-analyzer when ready; evidence-intake when blocked
+
+run_validation:
+  structural_status: "not_run" # pass | pass_with_warnings | blocked | not_run | tool_unavailable | tool_unavailable_hosted_agent
+  structural_method: "not_run" # validator | manual_review | hosted_agent_skipped | not_run
+  validator_command: "python3 skills/legacy-module-context-intake/scripts/validate_context_package.py 00_context_packages/<MODULE-SLUG>"
+  artifact_preview_status: "not_requested" # not_requested | skipped_large_package | passed | failed | timed_out
+  artifact_preview_reason: "Preview is optional; context Markdown files and evidence maps are the canonical package."
+  completion_boundary: "stop_after_writeback"
 
 evidence_authorization:
   status: "unknown" # approved | synthetic_non_production | public | blocked | unknown
