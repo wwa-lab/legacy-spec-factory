@@ -3,7 +3,8 @@ skill: legacy-spec-writer
 scorecard_version: v0.1.3
 static_score: 9.39
 decision: repo-ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-spec-writer-v0.1.4-scorecard.md
 last_verified: 2026-05-30
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4, date: 2026-05-30 }

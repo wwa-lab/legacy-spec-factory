@@ -148,6 +148,18 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ---
 
+## Logic Decomposition Ledger
+
+| Logic ID | Routine / Lines | Logic Type | Source Inputs / Constants | Operation / Condition | Result Field / Action | Branch Priority / Loop Scope | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LOG-CREDIT-VALIDATION-001 | CreditChk lines 30-32 | IF / not-found branch | `%found(CREDFILE)` false, literal 0, literal 'D' | Not-found branch after CHAIN | ApprovedAmount = 0; return 'D' | First branch after file lookup; exits before amount comparison | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| LOG-CREDIT-VALIDATION-002 | CreditChk lines 34-39 | IF / ELSE amount comparison | RequestAmount, CREDLIMIT, literals 'A'/'D' | Compare RequestAmount <= CREDLIMIT | ApprovedAmount = RequestAmount and return 'A', else ApprovedAmount = CREDLIMIT and return 'D' | Executes only when CREDFILE record is found | EV-CREDIT-VALIDATION-001 |
+
+**Unresolved:**
+- TBD-CREDIT-VALIDATION-001: Confirm CREDFILE DDS field list and CREDLIMIT type.
+
+---
+
 ## Data Touch Map
 
 ### Data Touches
@@ -170,6 +182,38 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 **Unresolved:**
 - TBD-CREDIT-VALIDATION-001: Confirm CREDFILE DDS field list and CREDLIMIT type.
+
+---
+
+## Key File & Field Logic
+
+### Key Files
+
+| File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| CREDFILE | lookup/reference | CreditChk | CHAIN then `%found` branch | CustID | CREDLIMIT read-only; no persisted mutation observed | EV-CREDIT-VALIDATION-002 |
+| CreditChk parameter list / return | parameter-DS | CreditChk | input parameters and output parameter/return code | CustID input | ApprovedAmount output, Decision Code return | EV-CREDIT-VALIDATION-001 |
+| CUSTFILE | declared-only | N/A | no observed I/O | N/A | none observed | EV-CREDIT-VALIDATION-003 |
+
+### Key Fields
+
+| Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| CustID | CreditChk parameter / CREDFILE | input / access-key | CHAIN CREDFILE | numeric 9P0 from procedure spec | selects credit record | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| RequestAmount | CreditChk parameter | input / calculation-operand / branch-condition | comparison with CREDLIMIT | decimal 7P2 from procedure spec | approved amount or denial branch | EV-CREDIT-VALIDATION-001 |
+| CREDLIMIT | CREDFILE | lookup field / branch-condition | comparison with RequestAmount | DDS pending | caps ApprovedAmount when RequestAmount exceeds limit | EV-CREDIT-VALIDATION-002 |
+| ApprovedAmount | CreditChk output parameter | output / derived | set in every return branch | 0, RequestAmount, or CREDLIMIT | returned to caller | EV-CREDIT-VALIDATION-001 |
+| Decision Code | CreditChk return | return-code | returned from CreditChk | 'A', 'D' | caller receives approval/denial outcome | EV-CREDIT-VALIDATION-001 |
+
+### Field Lineage
+
+| Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LIN-CREDIT-VALIDATION-001 | CreditChk.RequestAmount | procedure parameter | none | if RequestAmount <= CREDLIMIT | ApprovedAmount | CreditChk ApprovedAmount output parameter | EV-CREDIT-VALIDATION-001 |
+| LIN-CREDIT-VALIDATION-002 | CREDFILE.CREDLIMIT | file field; DDS pending | none | if RequestAmount > CREDLIMIT | ApprovedAmount | CreditChk ApprovedAmount output parameter | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+
+**Unresolved:**
+- TBD-CREDIT-VALIDATION-001: Confirm physical DDS mapping and type for CREDFILE.CREDLIMIT.
 
 ---
 
@@ -202,14 +246,23 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ## File I/O
 
-| File | Type | Operations | Key Fields | Purpose | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| CREDFILE | PF | CHAIN | CustID | Fetch customer credit limit | [EV-CREDIT-VALIDATION-002] |
-| CUSTFILE | LF | (Declared but not accessed) | N/A | Not used in this program | [EV-CREDIT-VALIDATION-003] |
+### File Access Summary
+
+| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| CREDFILE | pending DDS | PF | CHAIN | CustID | before approval/denial decision | `%found(CREDFILE)` checked immediately after CHAIN | EV-CREDIT-VALIDATION-002 |
+| CUSTFILE | pending DDS | LF | declared only | N/A | no observed I/O | none observed | EV-CREDIT-VALIDATION-003 |
+
+### Field Mutation Matrix
+
+| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| (none) | N/A | N/A | N/A | No `WRITE`, `UPDATE`, `DELETE`, or SQL DML observed | N/A | full-source-read | N/A |
 
 **Operation details:**
 
 - **CREDFILE / CHAIN on CustID:** Random access to fetch the customer credit record used by this procedure. Key field: CustID (numeric 9P0). %found() indicator used to check success. If found, CREDLIMIT field is used in amount comparison (line 35).
+- **CUSTFILE / declared only:** File is declared in F-spec but no source statement reads, writes, updates, or deletes it.
 
 **Evidence links:**
 - [EV-CREDIT-VALIDATION-002: F-spec line 17; CHAIN statement line 29; %found() check line 30]
@@ -232,18 +285,38 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ## Error Handling
 
-| Error Condition | Detected By | Handling | Recovery | Evidence |
+### Exception Closure Ledger
+
+| Exception / Error Condition | Trigger / Source | Message ID / Error Code / RC | Detected By | Fields Set / Messages Sent | Handling Action | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Record not found (CustID not in CREDFILE) | CHAIN CREDFILE returns not found | return code 'D' | `%found(CREDFILE)` check | ApprovedAmount = 0; no message sent | return 'D' | caller receives denial; no file mutation observed | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+
+### Message / Error Code Inventory
+
+| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
 | --- | --- | --- | --- | --- |
-| Record not found (CustID not in CREDFILE) | CHAIN with %found() check | Set ApprovedAmount = 0 and return decision 'D' (DENIED) | Customer request denied; proceed to next transaction | [EV-CREDIT-VALIDATION-001, lines 30–32] |
+| 'A' | return literal | approval decision | amount <= CREDLIMIT branch | EV-CREDIT-VALIDATION-001 |
+| 'D' | return literal | denial decision | not-found branch or amount > CREDLIMIT branch | EV-CREDIT-VALIDATION-001 |
 
 **Unhandled exceptions:**
 - CHAIN I/O error: No MONITOR block observed. If CREDFILE becomes unavailable (file locked, I/O error), program will abnormally terminate. [medium_confidence, needs_sme_review per TBD]
+
+**Generic handlers:**
+- None observed.
 
 **Logged errors:**
 - No error logging observed. Errors are signaled via return code ('A' or 'D'), not via message queue or spool.
 
 **Evidence links:**
 - [EV-CREDIT-VALIDATION-001: CHAIN statement and subsequent IF logic]
+
+---
+
+## Redundancy Candidate Notes
+
+| Candidate | Location | Candidate Redundancy | Reason | Trace / Last Observed Use | Evidence | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| CUSTFILE declaration | F-spec line 18 | unknown | File is declared but no I/O references are observed in this source; caller/job or copybook usage is not proven absent beyond this program. | declared only; no observed runtime touch | EV-CREDIT-VALIDATION-003 | pending_sme_judgment via TBD-CREDIT-VALIDATION-003 |
 
 ---
 
@@ -280,10 +353,13 @@ Before approval, SME must validate:
 
 - [X] External entry points and callable procedures are correct and complete — Single callable procedure CreditChk with documented parameters
 - [X] Parameter contracts match actual usage — No invented parameters; all declared in P spec
+- [X] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior — not-found branch and amount comparison are captured
 - [X] Data Touch Map captures critical carriers, keys, payloads, and state impacts — CREDFILE lookup and return decision captured
-- [X] File I/O matches job design — CREDFILE CHAIN on CustID; only this access observed
+- [X] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields — CustID, RequestAmount, CREDLIMIT, ApprovedAmount, and Decision Code captured
+- [X] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped — no persisted file mutation observed
 - [X] External calls match system interfaces — None present
-- [ ] Error handling aligns with production reliability requirements — **See TBD-CREDIT-VALIDATION-002**
+- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact — return codes captured; **See TBD-CREDIT-VALIDATION-002** for unhandled I/O error intent
+- [ ] Redundancy candidates are conservative and do not remove hidden rules — CUSTFILE declaration marked unknown, not removed
 - [ ] TBDs are non-blocking or properly flagged for follow-up — 4 TBDs; 2 pending source/SME, 1 pending SME (error handling), 1 non-blocking
 - [X] No invented subroutines or undocumented file access — All behaviors confirmed from source
 - [X] All evidence links reference existing inventory items — EV-* IDs from CREDIT-VALIDATION capability scope

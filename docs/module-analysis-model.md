@@ -2,8 +2,8 @@
 
 This document defines the standard module-level analysis model used by
 Legacy Spec Factory. It is the design basis for the
-`legacy-ibmi-module-analyzer` skill and the input contract for the
-`legacy-spec-writer` skill.
+`legacy-ibmi-module-analyzer` skill, the evidence backbone for
+`legacy-brd-writer`, and downstream input context for `legacy-spec-writer`.
 
 ## Origin
 
@@ -66,8 +66,8 @@ operations runbooks. Code confirms or refutes; SME judgment fills gaps.
 
 ### View 3 — Program Flow
 
-**Question answered:** "What is the actual program-level call structure
-across all transactions in this module?"
+**Question answered:** "What is the actual program-level call structure and
+replay readiness across all transactions in this module?"
 
 **Captures:**
 - Inventory of flows in scope (one row per `flow-<FLOW-SLUG>.md`
@@ -76,6 +76,11 @@ across all transactions in this module?"
   model (batch, interactive, scheduled, triggered, API)
 - Cross-flow dependencies: which flow must run before which; which flow
   writes data another flow reads
+- Replay coverage: whether each in-scope flow can be traced from trigger to
+  final response, durable persistence, rollback, skipped work, or manual
+  outcome
+- Key decision and exception paths, with `REPLAY-*`, `PERSIST-*`, and
+  `EXCHAIN-*` evidence carried from flow analysis
 - Shared sub-programs called from multiple flows (utility programs,
   validation routines, audit writers)
 - Overall call topology of the module
@@ -98,6 +103,13 @@ them.
   rows and backed by program Data Touch Maps / Object Dependencies
 - Data lifecycle per object: **Created → Updated → Read → Archived → Purged**
   with the program(s) responsible at each stage
+- Critical field lineage across programs and flows, preserving the source
+  field, carrier, transformation, persisted/output locations, and consumers
+- Module persistence matrix: field-level writes, updates, deletes, skipped
+  mutations, queues, spool, IFS handoffs, response payloads, checkpoints, and
+  commit / rollback / retry effects
+- Exception-aware data risks: how exception chains affect data state,
+  persistence, skipped mutations, manual recovery, and downstream consumers
 - Critical data trails (e.g., a transaction record's path from intake to
   GL posting to reporting to archive)
 - Shared data objects within the module (coupling hotspots — files,
@@ -108,9 +120,11 @@ them.
 - Data retention / archival policy (where applicable)
 
 **Primary source:** Aggregated `Cross-Program Data Flow` sections from
-every `flow-<FLOW-SLUG>.md`, backed by every program's `Data Touch Map`
-and `Object Dependencies`; DDS definitions from inventory; SME notes on
-data ownership and retention.
+every `flow-<FLOW-SLUG>.md`, backed by flow `Cross-Program Field Lineage`,
+`Flow Persistence Matrix`, and `Exception Propagation Chain` sections; every
+program's `Data Touch Map`, `Object Dependencies`, `Key File & Field Logic`,
+and `Field Mutation Matrix`; DDS definitions from inventory; SME notes on data
+ownership and retention.
 
 ## View Independence vs Cross-View Linking
 
@@ -123,8 +137,15 @@ However, every claim must be cross-linkable:
   that enforce it (or the missing programs that should)
 - An upstream system in View 2 must reference the entry program(s) it
   invokes in View 3
+- Every `REPLAY-*` path in View 3 must map to a business event, exception
+  outcome, persisted outcome, or named `TBD-*`
+- Every external or durable `PERSIST-*` output must map to a View 2 system /
+  manual consumer or a View 4 object / output
+- Every material `EXCHAIN-*` must map to a View 1 operational outcome and BRD
+  Error Handling coverage, or carry a named `TBD-*`
 - A data object's lifecycle in View 4 must reference the program(s) in
   View 3 that act on it
+- Critical `LINEAGE-*` and durable `PERSIST-*` claims must appear in View 4
 
 This is enforced through the shared ID conventions
 (`docs/id-conventions.md`): every business actor, system, program,
@@ -136,11 +157,11 @@ A module analysis produces a directory:
 
 ```
 04_modules/<MODULE-SLUG>/
-├── module-overview.md          ← summary, 4-view index, blocking TBDs
+├── module-overview.md          ← summary, 4-view index, readiness, blocking TBDs
 ├── 01-operation-flow.md        ← View 1: Business view
 ├── 02-system-flow.md           ← View 2: Integration view
-├── 03-program-flow.md          ← View 3: Application / program view (aggregates flows)
-├── 04-data-flow.md             ← View 4: Data view
+├── 03-program-flow.md          ← View 3: Application / program view + replay coverage
+├── 04-data-flow.md             ← View 4: Data, lineage, persistence, exception impact
 └── module-review-checklist.md  ← SME sign-off for the whole module
 ```
 
@@ -161,7 +182,8 @@ Module
 ├─ Capability   (BR-* groups; spec.yaml unit)
 ├─ Flow         (business transaction; flow-*.md)
 │   └─ Program  (program-analysis-*.md)
-│       └─ Object Dependencies
+│       └─ Object Dependencies + Field Mutation Matrix
+├─ Replay / Lineage / Persistence / Exception evidence
 └─ BAU notes    (manual, periodic, exception-handling processes)
 ```
 

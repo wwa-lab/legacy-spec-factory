@@ -40,6 +40,33 @@ document defines the *file format*; that document defines the *intent*.
 ## Top Blocking TBDs
 (Aggregate of `pending_source` and `pending_sme_judgment` TBDs from all four views.)
 
+## Module Program-Chain Readiness
+| Flow ID | Replay Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
+| --- | --- | --- | --- | --- | --- |
+| FLOW-AUTH-001 | complete (`REPLAY-AUTH-001`) | partial (`LINEAGE-AUTH-001`) | complete (`PERSIST-AUTH-001`) | complete (`EXCHAIN-AUTH-001`) | TBD-* or none |
+
+This table is the module-level coverage check for flow-analyzer v0.2.0
+surfaces. A code-backed module should not summarize a flow as understood if
+replay, critical field lineage, persistence, or exception-chain coverage is
+missing without a named `TBD-*` or waiver.
+
+## Module Persistence & Critical Field Summary
+| Data / Field / Outcome | Source Flows | Persistence / Output | Downstream Consumer | Risk / TBD |
+| --- | --- | --- | --- | --- |
+| AUTH_STATUS / decision response | FLOW-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | response + AUTHLOGPF write | external partner + nightly recon | TBD-* or none |
+
+Use this table to surface module-level field and durable-state behavior that
+BRD dependencies, validation rules, or downstream SDD data contracts must
+preserve.
+
+## Module Exception & Recovery Summary
+| Exception Cluster | Source Flow / EXCHAIN | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
+| --- | --- | --- | --- | --- |
+| RC=-2 / message family | FLOW-BATCH-001 (`EXCHAIN-*`) | GL posting skipped, spool generated | Finance review next morning | covered / TBD-* |
+
+Use this table to keep error handling reviewable at module scope. Do not reduce
+multiple message IDs or return-code paths into a generic "error handled" row.
+
 ## Capability Seeds For BRD / Spec
 (Module-level capability candidates; one row per CAP-*. The BRD writer turns
 each selected seed into a BRD Package for SME review before the spec-writer
@@ -62,14 +89,14 @@ sections can safely draw evidence from, and where a `TBD-*` must be carried.
 | BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Coverage Status | Carry-Forward TBD |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Function Purpose | View 1 Business Scope + module Scope Statement | ACTOR-* / EVENT-* / EV-* | covered / partial / missing | TBD-* or none |
-| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm | EVENT-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
+| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | covered / partial / missing | TBD-* or none |
 | 3 | Channels | View 1 Actors + View 2 Upstream Systems + flow Trigger Context | ACTOR-* / SYS-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
 | 4 | User Interface / User Touchpoints | View 1 Manual Intervention + triggered screen/report analysis | ACTOR-* / OBJ-* / EV-* | covered / partial / missing | TBD-* or none |
 | 5 | System Interfaces | View 2 Upstream / Downstream Systems + External Interfaces | SYS-* / IF-* / EV-* | covered / partial / missing | TBD-* or none |
-| 6 | Process Flow | View 1 Business Events + View 3 Flow Inventory | EVENT-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
-| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch/error evidence | BR-* / SEED-* / EV-* | covered / partial / missing | TBD-* or none |
-| 8 | Error Handling | View 1 Exception Lifecycle + flow Error Propagation | TBD-* / EV-* / FLOW-* | covered / partial / missing | TBD-* or none |
-| 9 | Dependencies | View 2 System Flow + View 4 Data Flow + View 3 Cross-Flow Dependencies | SYS-* / DATA-* / OBJ-* / EV-* | covered / partial / missing | TBD-* or none |
+| 6 | Process Flow | View 1 Business Events + View 3 Replay Coverage Summary + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | covered / partial / missing | TBD-* or none |
+| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch points + field lineage + exception-chain seeds | BR-* / SEED-* / LINEAGE-* / EXCHAIN-* / EV-* | covered / partial / missing | TBD-* or none |
+| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | TBD-* / EXCHAIN-* / EV-* / FLOW-* | covered / partial / missing | TBD-* or none |
+| 9 | Dependencies | View 2 System Flow + View 4 Data Flow / Persistence + View 3 Cross-Flow Dependencies | SYS-* / DATA-* / OBJ-* / PERSIST-* / LINEAGE-* / EV-* | covered / partial / missing | TBD-* or none |
 | 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | SYS-* / IF-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
 | 11 | Workflow / Design Notes (optional) | View 3 Call Topology or supplied workflow docs | FLOW-* / DOC-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
 | 12 | Source Document Mapping (optional) | Context package / evidence map / source document index | DOC-* / FRAG-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
@@ -92,6 +119,14 @@ Rules:
       flow artifacts are carried as `TBD-*` blockers and the module is not
       approved for the standard BRD/spec path
 - [ ] Cross-view consistency check passed (see view 3 ↔ view 1 actor mapping, etc.)
+- [ ] Module Program-Chain Readiness covers every in-scope flow's replay,
+      field-lineage, persistence, and exception-chain status, or carries named
+      `TBD-*` / waiver entries
+- [ ] Module Persistence & Critical Field Summary captures every
+      module-critical `LINEAGE-*` and durable `PERSIST-*` outcome that affects
+      BRD sections 6-9
+- [ ] Module Exception & Recovery Summary maps every material `EXCHAIN-*` to a
+      business outcome, recovery owner, or named gap
 - [ ] BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries a
       named `TBD-*` for every missing / partial area
 - [ ] No blocking TBDs remain
@@ -190,8 +225,11 @@ names secondary to business labels.
 
 ## Exception Lifecycle
 [Free-form description from SME of how exceptions flow from detection
-through to resolution. Use Mermaid when the exception lifecycle has more than
-one step; do not rely on an ASCII sketch.]
+through to resolution, cross-checked against each flow's `EXCHAIN-*` rows.
+Use Mermaid when the exception lifecycle has more than one step; do not rely
+on an ASCII sketch. Every material message ID, return code, skipped mutation,
+retry, rollback, or manual outcome from an `Exception Propagation Chain` must
+either appear here or be carried as a named `TBD-*`.]
 
 ## Business Rule Seeds
 (Module-level seeds aggregating across all in-scope flows.)
@@ -216,6 +254,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 - [ ] **Business actors complete?** All roles interacting with the module are named; no inferred actors (e.g., "probably marketing uses this")
 - [ ] **BAU rhythm correct?** Cut-off times, peak hours, seasonal patterns match operational reality
 - [ ] **Exception procedures accurate?** Manual intervention points and escalation paths match how the team actually handles failures
+- [ ] **Exception chains complete?** Material `EXCHAIN-*` rows from in-scope flows map to business outcomes, skipped work, retry/rollback behavior, and manual recovery
 - [ ] **Business-rule seeds reasonable?** Seeds are phrased as open questions, not invented rules
 - [ ] **Evidence linked?** Every major actor, event, BAU cadence, and intervention links to SME confirmation or source document
 - [ ] **No code-hallucinations?** No procedures, actors, or timing derived solely from program names / table names
@@ -337,6 +376,15 @@ diagram with an ASCII tree.
 | FLOW-BATCH-001 | Batch processing | Scheduler+Batch | PGM-ORCH | PGM-FINAL | async, batch |
 | FLOW-MANUAL-001 | Manual intervention | Menu | PGM-MANUAL | PGM-MANUAL | sync, interactive |
 
+## Replay Coverage Summary
+| Flow ID | Replay Paths Covered | Key Decision / Exception Paths | Persisted Outcomes | Missing Replay / Lineage / Persistence Gaps |
+| --- | --- | --- | --- | --- |
+| FLOW-AUTH-001 | `REPLAY-AUTH-001` trigger → validation → response | approve / decline / `EXCHAIN-AUTH-001` timeout | `PERSIST-AUTH-001` AUTHLOGPF write + response | none |
+
+Replay coverage is required for code-backed module analysis. If a legacy flow
+analysis predates flow-analyzer v0.2.0, refresh the flow or record the missing
+coverage as `TBD-*` / waiver instead of silently summarizing call topology.
+
 ## Cross-Flow Dependencies
 | From Flow | To Flow | Mechanism | Reason |
 | --- | --- | --- | --- |
@@ -364,10 +412,11 @@ program analyses for each edge.]
 Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 - [ ] **All flows in scope?** Flow Inventory lists every business event touched by this module; no missing or extra flows
+- [ ] **Replay coverage complete?** Each flow has replay paths from trigger to final response, persistence, rollback, or manual outcome
 - [ ] **Cross-flow dependencies correct?** Shared files, data areas, and sub-program calls accurately reflect the code and approved flow analyses
 - [ ] **Shared sub-programs correctly identified?** Every CALL statement touching multiple flows is documented
 - [ ] **Call topology sound?** The Transaction Call Map / Program Call Map accurately represents the actual call topology from approved flow and program analyses
-- [ ] **Evidence linked?** Each node, edge, and dependency references a FLOW-* ID or approved program-analysis
+- [ ] **Evidence linked?** Each node, edge, replay path, and dependency references a FLOW-* / REPLAY-* ID or approved program-analysis
 
 ## SME Sign-Off
 - **Reviewer:** ____
@@ -404,7 +453,8 @@ objects, with edge labels such as `creates`, `updates`, `reads`, `hands off`,
 
 ## Data Objects in Scope
 (Aggregated from every flow's Cross-Program Data Flow section, backed by
-program Data Touch Maps and Object Dependencies.)
+program Data Touch Maps, Object Dependencies, Field Mutation Matrix rows, and
+Key File & Field Logic.)
 
 | Object / Carrier | Type | Inventory ID | Producer Flows | Consumer Flows | State Impact Summary | Coupling Score | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -417,6 +467,33 @@ program Data Touch Maps and Object Dependencies.)
 | Object / Carrier | Created By | Updated By | Read By | Sent / Received By | Archived By | Purged By |
 | --- | --- | --- | --- | --- | --- | --- |
 | DATA-TXN-LOG | FLOW-AUTH-001 (per event) | (none — append-only) | FLOW-BATCH-001, FLOW-MANUAL-001 | n/a | (monthly archive job — out of module) | (yearly purge — out of module) |
+
+## Module Persistence Matrix
+| Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Operation Summary | Commit / Retry / Recovery Notes | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| DATA-TXN-LOG.STATUS | FLOW-AUTH-001 (`PERSIST-AUTH-001`) | FLOW-BATCH-001 | write auth result before response | rollback sends decline response; retry not automatic | EV-* |
+
+Include writes, updates, deletes, skipped mutations, queues, spool files, IFS
+handoffs, response payloads, checkpoints, and other durable outputs. Do not
+collapse field-level updates into a single file-level row when downstream
+behavior depends on the field.
+
+## Critical Field Lineage Across Module
+| Critical Field / Business Data | Source Flows (`LINEAGE-*`) | Carriers | Persisted / Output Locations | Consumers | TBD / Risk |
+| --- | --- | --- | --- | --- | --- |
+| Authorization decision | FLOW-AUTH-001 (`LINEAGE-AUTH-001`) | request DS → work fields → AUTHLOGPF.STATUS | AUTHLOGPF, response message | partner response, nightly recon | none |
+
+Use this section for business-critical fields and values that must be
+preserved through modernization. If lineage is missing at a program boundary,
+carry the gap as `TBD-*`; do not infer the missing transformation.
+
+## Exception-Aware Data Risks
+| Exception Chain | Data / Persist Impact | Recovery / Manual Action | Evidence / TBD |
+| --- | --- | --- | --- |
+| `EXCHAIN-BATCH-001` RC=-2 | GLPOSTPF write skipped, RECONPRT spool generated | Finance review, possible partial restart | EV-* / TBD-* |
+
+This section makes exception paths visible to data and modernization reviewers:
+failed or skipped writes are part of module behavior, not merely error text.
 
 ## Coupling Hotspots (Modernization Risks)
 | Object | Coupling Score | Risk | Mitigation |
@@ -449,10 +526,13 @@ module's PF / LF / SQL tables.]
 Per the SME Review Questions in SKILL.md, the reviewer should verify:
 
 - [ ] **Data lifecycle correct?** Created / Updated / Read / Archived / Purged lifecycle per object matches code evidence and BAU (View 1)
+- [ ] **Persistence matrix complete?** Durable writes, skipped mutations, response payloads, queues, spool, checkpoints, and retry/rollback effects are represented with `PERSIST-*` evidence
+- [ ] **Critical field lineage complete?** Business-critical fields trace through carriers, program boundaries, persisted locations, and consumers with `LINEAGE-*` evidence
+- [ ] **Exception-aware data risks captured?** `EXCHAIN-*` rows with data or persistence impact are mapped to recovery, manual action, or `TBD-*`
 - [ ] **Coupling hotspots match reality?** HIGH coupling scores point to objects that are actually "scary to change" in operations
 - [ ] **Cross-module dependencies identified?** Every object consumed by another module or producing for external systems is listed
 - [ ] **DB relationships documented?** PK/FK, versioning, and archival strategy are clear
-- [ ] **Evidence linked?** Each object and lifecycle phase references an EV-* ID, OBJ-* ID, or FLOW-* from approved analyses
+- [ ] **Evidence linked?** Each object, field lineage, persistence row, and lifecycle phase references an EV-* ID, OBJ-* ID, FLOW-*, LINEAGE-*, or PERSIST-* from approved analyses
 - [ ] **No hallucinated fields?** Coupling scores and lifecycle phases derived solely from code and flow evidence, not speculation
 
 ## SME Sign-Off
@@ -478,6 +558,10 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
   - [ ] Every upstream/downstream system (View 2) appears in View 3
   - [ ] Every business-rule seed (View 1) references a program / file in
         View 3 / View 4
+  - [ ] Every `REPLAY-*` path in View 3 maps to a business event, exception
+        outcome, persisted outcome, or named `TBD-*`
+  - [ ] Every `LINEAGE-*`, `PERSIST-*`, and material `EXCHAIN-*` claim is
+        represented in View 4 or explicitly waived
   - [ ] Every data object (View 4) traces to a program in View 3
 - [ ] No blocking TBDs remain
 - [ ] Capability seeds list is complete and SME-confirmed
@@ -510,5 +594,7 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | `EV-` | evidence | `EV-AUTH-MODULE-012` |
 
 Flow / Node / Edge / Data IDs from flow-analyzer remain valid in View 3 / 4.
+Flow-analyzer v0.2.0 IDs (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and
+`EXCHAIN-*`) remain valid in module overview, View 1, View 3, and View 4.
 Object IDs (`OBJ-*`) and evidence IDs (`EV-*`) from inventory and
 program-analyzer remain valid throughout.

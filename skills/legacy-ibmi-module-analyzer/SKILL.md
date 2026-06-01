@@ -66,6 +66,13 @@ Accept:
   analysis.
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
+  - For code-backed runs, each approved flow should be
+    `legacy-ibmi-flow-analyzer` v0.2.0 or later, or otherwise expose the
+    equivalent `Flow Replay Path`, `Cross-Program Field Lineage`,
+    `Flow Persistence Matrix`, and `Exception Propagation Chain` sections.
+    Older flow artifacts require refresh or a named SME waiver before they
+    can support module-level replay, lineage, persistence, or exception
+    claims.
 - **Approved program analyses** for every program referenced by those flows
 - **Approved inventory** with module scope confirmed
 - **BAU notes from SME** — operational rhythm, manual processes,
@@ -99,6 +106,10 @@ Stop and require clarification if:
   analyses are missing → route to the earliest missing code-backed skill
   (`legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, or
   `legacy-ibmi-flow-analyzer`) instead of approving module synthesis
+- The requested output is a standard code-backed BRD/spec input but in-scope
+  flow analyses do not expose replay, field-lineage, persistence, and
+  exception-chain coverage, and no named SME waiver exists → route back to
+  `legacy-ibmi-flow-analyzer` for v0.2.0 refresh
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
   or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
@@ -118,7 +129,7 @@ Produce a directory `04_modules/<MODULE-SLUG>/`:
 ├── 01-operation-flow.md        ← View 1: Business view + BAU
 ├── 02-system-flow.md           ← View 2: Integration view
 ├── 03-program-flow.md          ← View 3: Application/program view (aggregates flows)
-├── 04-data-flow.md             ← View 4: Data view (aggregates Object Dependencies)
+├── 04-data-flow.md             ← View 4: Data view (aggregates lineage and persistence)
 └── module-review-checklist.md  ← SME sign-off for the whole module
 ```
 
@@ -194,37 +205,48 @@ field-level rules. The summary below is normative for this skill.
   - `7-8 usable`: triggered data/screen/report outputs, architecture notes,
     data lineage, and known TBD ledgers are supplied.
   - `9-10 strong`: SME edge cases, exception examples, sample transactions,
-    regulatory context, and modernization decision context are also supplied.
+    regulatory context, modernization decision context, and flow-analyzer
+    v0.2.0 replay / field-lineage / persistence / exception-chain sections
+    are also supplied.
   - Missing architecture diagrams or regulatory references does not block the
     module analysis unless the module scope specifically depends on them.
 - **Readiness checks**: for code-backed runs, every in-scope flow is
   `approved` or `approved_with_non_blocking_tbd`, every referenced program
-  analysis is approved, and inventory/object map is approved; for context-only
-  drafts, the context package status is `ready_for_module_analysis` /
-  `ready_with_warnings` and the output is explicitly non-approved; SME has
-  confirmed the module's business name and boundary; BAU notes are present
-  (View 1 requires SME input that code alone cannot supply).
+  analysis is approved, inventory/object map is approved, and each in-scope
+  flow exposes replay, lineage, persistence, and exception-chain coverage
+  (or a named waiver); for context-only drafts, the context package status is
+  `ready_for_module_analysis` / `ready_with_warnings` and the output is
+  explicitly non-approved; SME has confirmed the module's business name and
+  boundary; BAU notes are present (View 1 requires SME input that code alone
+  cannot supply).
 - **Stop conditions**: any in-scope flow lacks an approved analysis in a
-  code-backed run; any code-backed artifact is missing and no context-only
-  risk acceptance is recorded; module boundary is ambiguous (which module owns
-  flow X); no SME has confirmed module identity; BAU notes are absent.
+  code-backed run; any in-scope flow lacks replay / lineage / persistence /
+  exception-chain sections needed for code-backed module claims and no waiver
+  exists; any code-backed artifact is missing and no context-only risk
+  acceptance is recorded; module boundary is ambiguous (which module owns flow
+  X); no SME has confirmed module identity; BAU notes are absent.
 
 ### Execution
 
 - **Procedure**: see the Workflow section below (9 ordered steps).
 - **Allowed inference**: aggregating across approved flow/program/
-  inventory artifacts; cross-view consistency checking; computing data
-  lifecycle and coupling score from existing Object Dependency data.
+  inventory artifacts; aggregating approved flow replay paths, field lineage,
+  persistence outcomes, and exception propagation chains; cross-view
+  consistency checking; computing data lifecycle and coupling score from
+  existing Object Dependency data.
 - **Forbidden assumptions**: inventing business actors, upstream /
   downstream systems, BAU rhythm, regulatory requirements, manual
-  intervention procedures, cross-module dependencies, or business rules
-  (these remain seeds). Tier-2 SME claims that contradict tier-1 code
-  become TBDs, not overrides.
+  intervention procedures, cross-module dependencies, module-level replay
+  paths, field lineage, persistence lifecycles, exception recovery, or
+  business rules (these remain seeds). Tier-2 SME claims that contradict
+  tier-1 code become TBDs, not overrides.
 - **TBD handling**: missing flow analysis → `TBD: pending_source`
   routing to `legacy-ibmi-flow-analyzer`; business context absent from
   BAU notes → `TBD: pending_sme_judgment`; ambiguous module boundary
   → `TBD: pending_sme_judgment`; incomplete data lifecycle →
-  `TBD: pending_sme` (archive/purge ownership).
+  `TBD: pending_sme` (archive/purge ownership); missing replay, field-lineage,
+  persistence, or exception-chain coverage in older flow artifacts →
+  `TBD: pending_source` unless waived by named SME.
 
 ### Output
 
@@ -233,13 +255,18 @@ field-level rules. The summary below is normative for this skill.
   `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
 - **Required sections**: 4-view index with per-view status, top blocking
   TBDs, module-level capability seeds, BRD Functional Analysis Input
-  Crosswalk, per-view `## Mermaid Flow Diagram` sections, and per-view
-  review checklists.
+  Crosswalk, Module Program-Chain Readiness, Module Persistence & Critical
+  Field Summary, Module Exception & Recovery Summary, per-view `## Mermaid
+  Flow Diagram` sections, and per-view review checklists. View 3 must include
+  Replay Coverage Summary. View 4 must include Module Persistence Matrix,
+  Critical Field Lineage Across Module, and Exception-Aware Data Risks.
 - **Required IDs**: mints `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`,
   module-level `BR-*` **seeds**, module-level `CAP-*` **seeds**, and
   `TBD-*`. Reuses `OBJ-*`, `EV-*`, `FLOW-*`, `NODE-*`, `EDGE-*`,
-  `DATA-*`. `legacy-brd-writer` reviews these seeds in business language; final
-  promotion of `BR-*` still happens later in `legacy-spec-writer`.
+  `DATA-*`, and flow-analyzer v0.2 IDs such as `REPLAY-*`, `LINEAGE-*`,
+  `PERSIST-*`, and `EXCHAIN-*`. `legacy-brd-writer` reviews these seeds in
+  business language; final promotion of `BR-*` still happens later in
+  `legacy-spec-writer`.
 - **Handoff status**: each view independently `draft` → `in_review` →
   `approved` or `approved_with_non_blocking_tbd`. For standard BRD/spec work,
   module approval requires the Code-Backed Analysis Gate: approved
@@ -262,9 +289,10 @@ field-level rules. The summary below is normative for this skill.
   new IBM i facts introduced); cross-view consistency holds (every View 1
   actor appears in View 3 or is tagged manual; every View 2 system
   appears in View 3; every View 4 data object traces to a flow); seeds
-  are questions, not approved rules; tier-2 claims contradicting tier-1
-  are surfaced as TBDs; BRD sections 1-9 are either covered by named
-  module evidence or carry explicit `TBD-*` gaps.
+  are questions, not approved rules; replay, field-lineage, persistence, and
+  exception-chain gaps are carried forward instead of being summarized away;
+  tier-2 claims contradicting tier-1 are surfaced as TBDs; BRD sections 1-9
+  are either covered by named module evidence or carry explicit `TBD-*` gaps.
 - **SME / human approval**: View 1 by business owner, View 2 by
   integration architect, View 3 by dev lead, View 4 by data analyst.
   All four sign-offs are required to promote the module past
@@ -294,14 +322,17 @@ to the orchestrator.
    - Treat any `00_context_packages/` view files as intake context only; the
      canonical module views must be generated under `04_modules/<MODULE-SLUG>/`
    - List in-scope flows; check every one has an approved analysis
+   - For code-backed runs, confirm each in-scope flow exposes `Flow Replay
+     Path`, `Cross-Program Field Lineage`, `Flow Persistence Matrix`, and
+     `Exception Propagation Chain`, or record a named SME waiver and `TBD-*`
    - Confirm no in-scope flow actually belongs to a different module
    - Assign `MODULE-<SLUG>-001`
 
 2. **Aggregate Inventory of Programs & Objects**
    - List every program touched by any flow in scope (from each flow's
      Nodes section)
-   - List every object touched (from each program's Object Dependencies
-     section)
+   - List every object and key field touched (from each program's Object
+     Dependencies, Key File & Field Logic, and Field Mutation Matrix sections)
    - Cross-check against `01_inventory/inventory.yaml`; create
      `pending_source` TBDs for gaps
    - If the run is intended to feed an approvable BRD/spec and
@@ -314,6 +345,11 @@ to the orchestrator.
    - **Primary source: SME interviews + BAU notes.** Code is secondary.
    - Capture: business scope, actors, business events, BAU rhythm,
      manual intervention points, exception lifecycle, business-rule seeds
+   - Consume each flow's `Flow Replay Path` to ensure every business event has
+     a replayable path or a named gap
+   - Consume each flow's `Exception Propagation Chain` to aggregate
+     operational exception outcomes, skipped work, manual recovery, and
+     BRD error-handling seeds
    - Draw the Mermaid flow from actors to business events, manual
      interventions, exception outcomes, and BRD-relevant rule seeds
    - Do **not** derive business rules from field names
@@ -338,6 +374,9 @@ to the orchestrator.
    - **Primary source: all `flow-<FLOW-SLUG>.md` documents.**
    - Aggregate per-flow summaries; identify cross-flow dependencies and
      shared sub-programs
+   - Add a Replay Coverage Summary that lists each in-scope flow's
+     `REPLAY-*` paths, major decision / exception branches, persisted
+     outcomes, and missing replay / lineage / persistence gaps
    - Draw the Mermaid program flow / call topology across the in-scope flows,
      entry programs, shared programs, exits, and external response or batch
      outcomes
@@ -348,13 +387,16 @@ to the orchestrator.
 6. **Build View 4 — Data Flow (Aggregate)**
    - Use the View 4 section in `references/output-contract.md` and the
      aggregation rules in `references/synthesis-rules.md`
-   - **Primary source: every flow's Cross-Program Data Flow section,
-     backed by every program's Data Touch Map and Object Dependencies.**
+   - **Primary source: every flow's Cross-Program Data Flow,
+     Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
+     Propagation Chain sections, backed by every program's Data Touch Map,
+     Object Dependencies, Field Mutation Matrix, and Key File & Field Logic.**
    - Compute data lifecycle per object (created / updated / read /
      archived / purged) by walking flows
    - Compute coupling score (number of flows touching each object)
-   - Identify coupling hotspots, cross-module data dependencies, DB
-     table relationships
+   - Identify critical field lineage, persisted outputs, skipped mutations,
+     commit/rollback/retry impacts, coupling hotspots, cross-module data
+     dependencies, and DB table relationships
    - Draw the Mermaid data movement / lifecycle flow showing which flows
      create, update, read, hand off, archive, or purge the major data objects
    - Output: `04-data-flow.md`
@@ -366,6 +408,13 @@ to the orchestrator.
      once in View 3 as a trigger or external call
    - Every business-rule seed in View 1 must reference at least one
      program / file in View 3 / View 4
+   - Every `REPLAY-*` path in View 3 should map to a View 1 business event
+     or exception outcome
+   - Every external or durable `PERSIST-*` output should map to View 2
+     system/manual consumers or View 4 data objects
+   - Every `LINEAGE-*` / `PERSIST-*` claim should appear in View 4
+   - Every `EXCHAIN-*` should have a View 1 operational outcome and BRD
+     error-handling crosswalk coverage or a named `TBD-*`
    - Every data object in View 4 must trace to at least one flow / program
      in View 3
    - Mismatches → cross-view TBDs
@@ -373,6 +422,11 @@ to the orchestrator.
 8. **Write module-overview.md**
    - 4-view index with status per view
    - Top blocking TBDs surfaced from any view
+   - Module Program-Chain Readiness summary across replay / lineage /
+     persistence / exception-chain coverage
+   - Module Persistence & Critical Field Summary for BRD dependencies and
+     downstream SDD data contracts
+   - Module Exception & Recovery Summary for BRD error-handling coverage
    - Module-level capability seeds (which capabilities live in this module,
      to be turned into BRD Packages by `legacy-brd-writer` before spec-writing)
    - Module-level review checklist
@@ -457,6 +511,9 @@ code-derived flow / program analyses).
 - **Manual intervention procedures** — must come from SME
 - **Cross-module data dependencies** without seeing the consuming module's
   inventory or SME confirmation
+- **Module-level replay paths, field lineage, persistence lifecycles, or
+  exception recovery** not present in approved flow/program artifacts or named
+  SME notes
 - **Business rules** — only seeds (questions); the BRD writer reviews them in
   business language, and the spec-writer later resolves formal rule promotion
   with SME approval
@@ -486,20 +543,30 @@ Per view:
 - Are the business actors complete? Any missing roles?
 - Is the BAU rhythm correct? Cut-off times, peak hours, seasonal patterns?
 - Are exception-handling procedures accurate?
+- Do the exception outcomes from each `EXCHAIN-*` match actual recovery,
+  escalation, skipped work, and manual handling?
 - Are the business-rule seeds reasonable questions?
 
 **View 2 (System Flow):**
 - All upstream and downstream systems listed?
 - Integration patterns correct?
 - SLAs accurate?
+- Do durable outputs from `PERSIST-*` map to the correct external systems,
+  files, queues, spool users, or manual consumers?
 
 **View 3 (Program Flow):**
 - All flows in scope? Any missing or extra flows?
+- Can each flow be replayed from trigger to final response, persistence,
+  rollback, or manual outcome?
 - Cross-flow dependencies correct?
 - Shared sub-programs correctly identified?
 
 **View 4 (Data Flow):**
 - Data lifecycle correct for each major object?
+- Are critical fields traced from source through module-level persistence and
+  downstream outputs?
+- Are skipped mutations, rollback/retry effects, and exception-state writes
+  represented accurately?
 - Coupling hotspots match operational reality (which files are "scary
   to change")?
 - Cross-module data dependencies correctly identified?
@@ -512,14 +579,19 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
 
-- v0.1.5 (2026-05-30): Added code-backed vs context-only evidence mode. A
-  module-first context package can seed draft synthesis, but standard BRD/spec
-  work now requires `object-map.md`, program analyses, and flow analyses before
-  module output can be treated as code-backed.
+- v0.2.0 (2026-06-01): Aligned module synthesis with program/flow v0.2.0.
+  Code-backed module analysis now requires or waives replay, critical field
+  lineage, persistence, and exception-chain coverage, and aggregates those
+  surfaces into module-level readiness, data, and BRD crosswalk outputs.
 
 - v0.1.6 (2026-05-31): Added Mermaid preview and stop-after-writeback
   guardrails so large four-view module packages do not keep processing after
   view files, overview, checklist, and workflow-state write-back are recorded.
+
+- v0.1.5 (2026-05-30): Added code-backed vs context-only evidence mode. A
+  module-first context package can seed draft synthesis, but standard BRD/spec
+  work now requires `object-map.md`, program analyses, and flow analyses before
+  module output can be treated as code-backed.
 
 - v0.1.4 (2026-05-29): Aligned module-analyzer downstream wording with the
   BRD-first workflow and made Mermaid diagrams mandatory for each view. The

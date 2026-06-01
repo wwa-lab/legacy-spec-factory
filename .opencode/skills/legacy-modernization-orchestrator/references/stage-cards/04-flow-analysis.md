@@ -2,7 +2,8 @@
 
 **You are here if:** every in-scope program has an approved
 `program-analysis.md` AND you want to trace one complete business
-transaction end-to-end across all the programs it touches.
+transaction end-to-end across all the programs it touches, including replay,
+critical field lineage, persistence, and exception outcomes.
 
 You will produce **one flow file per business transaction** (e.g. "submit
 order", "post AR invoice"). A flow may cover one of seven trigger models:
@@ -20,7 +21,7 @@ scheduler, API/remote.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.1.0)
+- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.2.0)
 - **Manual fallback:** Use the flow skeleton in
   `skills/legacy-ibmi-flow-analyzer/references/` and synthesize across the
   per-program analyses
@@ -34,9 +35,11 @@ scheduler, API/remote.
   e.g. `docs/XXX260004-demo/03_flows/CREDIT-CHECK/flow-submit-order.md`
 - **Consumed by:** `legacy-ibmi-module-analyzer`
 
-Required sections: Trigger Context, Sequence, Cross-Program Data Flow, Error
-Propagation, Commit Boundaries, UI Surfaces, Business-Capability Seeds
-(`CAP-*`).
+Required sections: Trigger Context, Transaction Call Map, Common Dependencies,
+Flow Replay Path, Nodes, Edges, Cross-Program Data Flow, Cross-Program Field
+Lineage, Branch Points, Flow Persistence Matrix, UI Surfaces, Error Propagation
+& Commit Boundaries, Exception Propagation Chain, and Business-Capability Seeds
+(`SEED-*`).
 
 ## Gate before advancing
 
@@ -44,16 +47,21 @@ Propagation, Commit Boundaries, UI Surfaces, Business-Capability Seeds
   every business transaction the module supports must have an approved
   flow before module analysis is complete
 - **Check:** `flow-*.md` files cover every named transaction the SME lists
-  for this module
+  for this module, and each approved flow exposes Flow Replay Path,
+  Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
+  Propagation Chain
 - **Blocks if:** a known business transaction has no flow, OR any flow is
-  at `status: draft` with money / inventory / compliance impact
+  at `status: draft` with money / inventory / compliance impact, OR a
+  code-backed flow lacks replay / lineage / persistence / exception-chain
+  coverage without a named waiver
 
 ## SME action
 
 - **Required:** to confirm trigger context, commit boundaries, and which
   flows count as "the module's business"
-- **Ask:** "Is this the complete sequence under trigger X? What happens on
-  error after step N? Is the commit boundary at step M correct?"
+- **Ask:** "Is this the complete replay under trigger X? Are the critical
+  fields carried correctly? Which files/fields persist or skip updates? What
+  happens on error after step N? Is the commit boundary at step M correct?"
 - **Recorded in:** `flow-<slug>.md` → `status` and the per-step
   `review_status` columns
 

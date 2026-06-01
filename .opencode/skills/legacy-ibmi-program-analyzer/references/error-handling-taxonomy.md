@@ -4,6 +4,36 @@ This guide documents common error handling patterns in IBM i programs (RPGLE, CL
 
 ---
 
+## Exception Closure Extraction Rules
+
+Program analysis must document exception handling as a closed path, not as
+a loose list of error labels. For every observed business, parameter,
+file I/O, SQL, call, queue/message, display/report, or system exception
+path, capture:
+
+- trigger condition or failing operation
+- message ID, error code, return code, status field, or generic handler
+  token (`CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local `UCC*` /
+  `LCC*`, literal business codes, RC/status values, `*ANY`, bare
+  `ON-ERROR`)
+- detection mechanism (`MONMSG`, `MONITOR` / `ON-ERROR`, indicator,
+  `%ERROR`, `%STATUS`, `%FOUND`, `SQLCODE`, `SQLSTATE`, return-code
+  check, COBOL `FILE-STATUS`, validation branch)
+- fields set and messages/logs/spool/queues written
+- handling action (`RETURN`, `GOTO`, rollback, skip write, continue,
+  abort, call error handler, send message)
+- downstream impact (which write, call, posting, report, or return path
+  is allowed, skipped, or terminated)
+- evidence link or TBD
+
+Do not limit extraction to shop-local message prefixes such as `UCC*` or
+`LCC*`. Generic handlers (`MONMSG MSGID(*ANY)`, bare `ON-ERROR`, generic
+COBOL error paragraphs) prove only generic coverage. They do not prove
+that a specific message ID is handled unless that ID appears in source,
+message-file references, runtime evidence, or SME-approved notes.
+
+---
+
 ## RPGLE Error Handling Patterns
 
 ### 1. File Operation Errors with Indicators
@@ -517,4 +547,3 @@ END-READ.
 - Return code variables for program status
 
 All three share common patterns (file not found, I/O error, parameter validation) but express them differently. Recognize the pattern to understand error conditions and recovery paths.
-

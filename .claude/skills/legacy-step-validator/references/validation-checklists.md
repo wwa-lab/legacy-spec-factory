@@ -116,7 +116,7 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 | --- | --- | --- |
 | File exists and follows `templates/program-analysis.md` section order | 3 | blocking |
 | Header cites `OBJ-*` from an `approved` / `approved_with_non_blocking_tbd` inventory | 1 | blocking |
-| Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + call tree + call edge table + reverse caller index), Routine Cards, Deep Read Windows, entry points, object dependencies, Data Touch Map, control flow, file I/O, external calls, error handling, TBDs, SME checklist sections present | 3 | blocking |
+| Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + call tree + call edge table + reverse caller index), Routine Cards, Deep Read Windows, entry points, object dependencies, Data Touch Map, Logic Decomposition Ledger, Key File & Field Logic, control flow, File I/O with Field Mutation Matrix, external calls, Error Handling, Exception Closure Ledger, TBDs, SME checklist sections present | 3 | blocking |
 | Analysis mode is one of `standard`, `segmented`, or `large_program` | 3 | blocking |
 | Coverage Ledger records routines found, routines deep-read, external edges resolved, data touches resolved, blocking gaps, and non-blocking gaps | 3 | blocking |
 | Segmented or large-program mode includes Routine Cards and Deep Read Windows | 3 | blocking |
@@ -130,6 +130,9 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 | --- | --- | --- |
 | Behaviours are consistent with linked source lines | 4 | blocking |
 | No invented subroutines, fields, files, jobs, or error codes | 4 | blocking |
+| Key file / key field logic is grounded in source operations, DDS / externally described fields, or named SME notes; no field semantics are invented from names alone | 4 | blocking |
+| File I/O updates identify the specific file/object, operation, affected field(s), condition, before/after/source value where evidenced, and skipped/no-op cases where relevant | 3 | blocking |
+| Exception Closure Ledger inventories every observed message ID, return code, indicator, SQLSTATE/status, CPF/MCH escape, or user-defined error code; it is not limited to known prefixes such as UCC* / LCC* | 4 | blocking |
 | Flow-header (if present) reconciled against code-derived Program Call Map; mismatches recorded as TBDs | 9 | blocking |
 | Evidence strength not overstated (no `weakly_inferred` posing as `confirmed_from_code`) | 5 | blocking |
 | Knowledge type matches each statement's nature (observed vs inferred) | 5 | blocking |
@@ -151,6 +154,8 @@ Program analysis is ready for flow analysis when:
 
 - `status` ∈ `approved`, `approved_with_non_blocking_tbd`
 - SME sign-off recorded when required by the program's risk class
+- Logic Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix,
+  and Exception Closure Ledger are present or their gaps are named `TBD-*`
 
 ## Flow analysis step
 
@@ -160,8 +165,8 @@ Detected when a single `flow-<FLOW-SLUG>.md` is supplied.
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| File exists with all required sections populated, including Transaction Call Map and Common Dependencies | 3 | blocking |
-| `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `SEED-*`, `TBD-*` minted; no `BR-*` minted by flow analysis | 3 | blocking |
+| File exists with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, Error Propagation & Commit Boundaries, and Exception Propagation Chain | 3 | blocking |
+| `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, `EXCHAIN-*`, `SEED-*`, `TBD-*` minted; no `BR-*` minted by flow analysis | 3 | blocking |
 | Every node cites an approved `program-analysis-<OBJ-ID>.md` | 1 | blocking |
 | Every edge traces to evidence type 1, 2, or 3 (source statement, config export, integration contract) | 4 | blocking |
 | Every UI surface references a DSPF / PRTF / `*MENU` `OBJ-*` from inventory | 4 | blocking |
@@ -174,7 +179,10 @@ Detected when a single `flow-<FLOW-SLUG>.md` is supplied.
 | --- | --- | --- |
 | Calls match the upstream program-analyses' External Calls sections and Program Call Map edge tables | 4 | blocking |
 | Branch destinations match DSPF option tables | 4 | blocking |
-| Error propagation matches each node's program-analysis | 4 | blocking |
+| Flow Replay Path covers trigger through final response, durable persistence, rollback, or manual outcome for every major path | 3 | blocking |
+| Cross-Program Field Lineage preserves critical fields across program boundaries using upstream Key File & Field Logic / Field Mutation Matrix evidence | 4 | blocking |
+| Flow Persistence Matrix preserves field-level writes, updates, deletes, skipped mutations, queues, spool, IFS, response payloads, and checkpoints | 4 | blocking |
+| Exception Propagation Chain matches each node's Exception Closure Ledger and documents message IDs / return codes / skipped work / retry or rollback effects | 4 | blocking |
 | Commit boundaries are evidenced, not assumed | 9 | blocking |
 | Business event name comes from SME, not autogenerated from program names | 6 | blocking |
 | Capability seeds are questions, not approved rules | 5 | blocking |
@@ -195,6 +203,9 @@ Flow is ready for module analysis when:
 - `status` ∈ `approved`, `approved_with_non_blocking_tbd`
 - No `blocked_pending_source` or `blocked_pending_sme`
 - SME has signed off on trigger model + business event name + capability seeds
+- Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and
+  Exception Propagation Chain are present or missing coverage is waived by a
+  named SME and carried as `TBD-*`
 
 ## Module analysis step
 
@@ -205,10 +216,11 @@ plus four `0N-*.md` view files.
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| `module-overview.md` exists with 4-view index, top blocking TBDs, capability seeds, review checklist | 3 | blocking |
+| `module-overview.md` exists with 4-view index, top blocking TBDs, Module Program-Chain Readiness, Module Persistence & Critical Field Summary, Module Exception & Recovery Summary, capability seeds, BRD Functional Analysis Input Crosswalk, and review checklist | 3 | blocking |
 | All four views (`01-operation-flow.md`, `02-system-flow.md`, `03-program-flow.md`, `04-data-flow.md`) exist | 3 | blocking |
 | `module-review-checklist.md` exists | 3 | blocking |
-| `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`, module-level `BR-*` seeds, module-level `CAP-*` seeds, `TBD-*` minted; nothing else | 3 | blocking |
+| View 3 includes Replay Coverage Summary; View 4 includes Module Persistence Matrix, Critical Field Lineage Across Module, and Exception-Aware Data Risks | 3 | blocking |
+| `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`, module-level `BR-*` seeds, module-level `CAP-*` seeds, `TBD-*` minted; upstream `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `OBJ-*`, `EV-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and `EXCHAIN-*` reused; no unapproved ID families minted | 3 | blocking |
 | Every in-scope flow is `approved` or `approved_with_non_blocking_tbd` | 1 | blocking |
 
 ### Semantic
@@ -218,6 +230,10 @@ plus four `0N-*.md` view files.
 | Cross-flow synthesis matches the flow analyses; no new IBM i facts introduced | 4 | blocking |
 | Every View 1 actor appears in View 3 (or is tagged manual) | 2 | blocking |
 | Every View 2 system appears in View 3 as a trigger or external call | 2 | blocking |
+| Every `REPLAY-*` path in View 3 maps to a View 1 business event, exception outcome, persisted outcome, or named `TBD-*` | 2 | blocking |
+| Every external or durable `PERSIST-*` output maps to View 2 system/manual consumers or View 4 objects / outputs | 2 | blocking |
+| Every module-critical `LINEAGE-*` and durable `PERSIST-*` claim appears in View 4 | 2 | blocking |
+| Every material `EXCHAIN-*` has a View 1 operational outcome and BRD Error Handling crosswalk coverage, or a named `TBD-*` | 2 | blocking |
 | Every View 4 data object traces to at least one flow in View 3 | 2 | blocking |
 | Tier-2 SME claims contradicting tier-1 code are surfaced as TBDs, not overrides | 9 | blocking |
 | Capability seeds and business-rule seeds remain *questions* | 5 | blocking |
@@ -233,8 +249,11 @@ plus four `0N-*.md` view files.
 
 ### Next-step gate
 
-Module is ready for spec writing when **all four views** are at least
-`approved_with_non_blocking_tbd` and the module overview is signed off.
+Module is ready for BRD writing when **all four views** are at least
+`approved_with_non_blocking_tbd`, the module overview is signed off, and the
+BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries named
+`TBD-*` gaps. Spec writing remains downstream of an approved BRD Package plus
+an explicit post-BRD promotion / disposition decision.
 
 ## Spec writing step
 

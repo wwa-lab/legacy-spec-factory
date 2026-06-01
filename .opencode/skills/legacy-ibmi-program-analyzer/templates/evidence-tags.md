@@ -127,6 +127,16 @@ Does source code directly show this?
 - 🟡 medium_confidence — field access inferred from statements
 - ⚠️ missing — DDS not provided
 
+### Key File & Field Logic
+- ✅ confirmed_from_code — field source, alias, calculation/condition, or persisted target is visible in source/DDS/copybook
+- 🔴 needs_sme_review — field role is visible but business meaning or physical mapping is ambiguous
+- ⚠️ missing — DDS/copybook/source needed to prove field lineage
+
+### Field Mutation Matrix
+- ✅ confirmed_from_code — assignment and WRITE/UPDATE/DELETE/SQL DML are both visible
+- 🔴 needs_sme_review — mutation is visible but field meaning or rollback expectation is unclear
+- ⚠️ missing — persisted field source assignment cannot be proven
+
 ### External Calls
 - ✅ confirmed_from_code — CALL statement visible
 - 🔴 needs_sme_review — parameters undocumented
@@ -142,6 +152,11 @@ Does source code directly show this?
 - 🟠 strongly_inferred — error path observed in multiple branches
 - 🔴 needs_sme_review — error codes unclear
 - ⚠️ missing — no error handling observed
+
+### Exception Closure
+- ✅ confirmed_from_code — trigger, code/message, handler, action, and downstream impact are visible
+- 🔴 needs_sme_review — generic handler exists but production intent or specific message coverage is unclear
+- ⚠️ missing — message ID, return code meaning, or downstream impact is not available
 
 ---
 
@@ -190,4 +205,3 @@ Explanation: F-spec shows CREDFILE; CHAIN statement on line 145 uses CUSTID as k
 - **Missing?** → missing + TBD-SLUG-NNN
 
 **Never tag "likely" or "probably" without a strength level.**
-

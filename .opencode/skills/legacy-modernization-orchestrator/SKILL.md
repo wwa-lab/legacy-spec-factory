@@ -331,15 +331,15 @@ for the full table. Common routes:
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
 | Inventory Blocked | Any downstream | **STOP — Inventory Completeness Gate** | N/A (doc) |
-| Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** |
+| Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.2.0** |
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
-| Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** |
-| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.1.5** |
+| Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.0** |
+| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.0** |
 | Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
 | Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME discovery review | `legacy-brd-writer` | **Implemented v0.1.7** |
 | Approved BRD Package, post-BRD No-gap / Gap1 / follow-new-system decision | Discovery complete for that item; new system is source of truth | Stop / record disposition outside BRD | Human gate |
 | Approved BRD Package, post-BRD risk assessment or gap analysis open | Resolve disposition before spec-writing | Risk / gap-analysis process, then route back | Human / external gate |
-| Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.3** |
+| Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.4** |
 | Spec Drafted | Validate spec | `legacy-spec-reviewer` | Future (deferred from MVP) |
 | Spec Reviewed (no blocking findings) | Promote to approved | SME approval — not a skill | Human gate |
 | Spec Approved | Equivalence tests | `legacy-equivalence-test-generator` | Future (deferred from MVP) |
@@ -1036,9 +1036,9 @@ This skill coordinates the rest of the reverse chain:
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
-| `legacy-ibmi-program-analyzer` | **Implemented v0.1.0** | Per-program: Program Call Map, file I/O, object deps, error handling |
-| `legacy-ibmi-flow-analyzer` | **Implemented v0.1.0** | Per call chain: 7 trigger models; cross-program data flow; commit boundaries |
-| `legacy-ibmi-module-analyzer` | **Implemented v0.1.5** | 4-view module synthesis (Operation/System/Program/Data) per `docs/module-analysis-model.md` |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.2.0** | Per-program: Program Call Map, key file/field logic, field-level File I/O, object deps, exception closure |
+| `legacy-ibmi-flow-analyzer` | **Implemented v0.2.0** | Per call chain: 7 trigger models; replay path; field lineage; persistence matrix; exception chain; commit boundaries |
+| `legacy-ibmi-module-analyzer` | **Implemented v0.2.0** | 4-view module synthesis plus module replay readiness, critical field lineage, persistence, and exception recovery summaries per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
 
 ### Layer 1 — Future platforms
@@ -1054,7 +1054,7 @@ contract Layer 2 expects.
 | `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
 | `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
 | `legacy-brd-writer` | **Implemented v0.1.7** | Produce the legacy BRD Package as the legacy-system discovery baseline without old-vs-new comparison or disposition notes |
-| `legacy-spec-writer` | **Implemented v0.1.3** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision |
+| `legacy-spec-writer` | **Implemented v0.1.4** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision and analyzer v0.2 evidence consumption |
 | `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
 | `legacy-html-exporter` | **Implemented v0.1.0** | Optional companion export for stable human-facing Markdown; creates `.html` / `index.html` without changing the source of truth |
@@ -1090,6 +1090,11 @@ From the repository root, use `scripts/sync-skills.sh` to create or check
 runtime copies.
 
 ## Version History
+
+- v0.2.8 (2026-06-01): Aligned routing tables and stage cards with
+  program/flow/module analyzer v0.2.0 contracts so orchestration checks for
+  key field logic, field-level persistence, replay, lineage, and exception
+  chain evidence before BRD/spec handoff.
 
 - v0.2.7 (2026-05-30): Added the Code-Backed BRD Enrichment Gate so
   document-first / RAG-first runs cannot jump from context packages directly to

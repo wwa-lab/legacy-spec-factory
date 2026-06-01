@@ -44,6 +44,30 @@ flowchart LR
 | HSSDTAR002 | FLOW-NIGHTLY-RECON (read-modify-write each day) | FLOW-NIGHTLY-RECON | FLOW-NIGHTLY-RECON | n/a (overwritten daily) | n/a |
 | RECONPRT | FLOW-NIGHTLY-RECON (daily spool) | n/a | Finance Analyst (manual) | spool retention 30 days (system policy) | system spool purge |
 
+## Module Persistence Matrix
+
+| Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Operation Summary | Commit / Retry / Recovery Notes | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| TXNLOGPF.AUTH_STATUS | FLOW-ONUS-AUTH-001 (`PERSIST-ONUS-AUTH-001`), FLOW-MANUAL-AUTH-001 (`PERSIST-MANUAL-AUTH-001`) | FLOW-NIGHTLY-RECON-001 | append authorization result before external/menu response | failed write returns decline / validation error; no automatic retry observed | flow persistence matrices + TXNLOGWR program analysis |
+| GLPOSTPF.POST_AMT | FLOW-NIGHTLY-RECON-001 (`PERSIST-NIGHTLY-RECON-001`) | GL System | creates GL posting rows after reconciliation | skipped when `EXCHAIN-NIGHTLY-RECON-001` threshold breach fires | RECONSQL program analysis |
+| RECONPRT spool output | FLOW-NIGHTLY-RECON-001 (`PERSIST-NIGHTLY-RECON-002`) | Finance Analyst | prints daily exception report | always generated on exception threshold breach; manual review required | flow persistence matrix |
+| HSSDTAR002.LAST_RUN_DATE | FLOW-NIGHTLY-RECON-001 (`PERSIST-NIGHTLY-RECON-003`) | FLOW-NIGHTLY-RECON-001 | checkpoint update after successful run | partial restart behavior pending SME confirmation | TBD-CARD-AUTH-DAT-003 |
+
+## Critical Field Lineage Across Module
+
+| Critical Field / Business Data | Source Flows (`LINEAGE-*`) | Carriers | Persisted / Output Locations | Consumers | TBD / Risk |
+| --- | --- | --- | --- | --- | --- |
+| Authorization decision | FLOW-ONUS-AUTH-001 (`LINEAGE-ONUS-AUTH-001`), FLOW-MANUAL-AUTH-001 (`LINEAGE-MANUAL-AUTH-001`) | request DS → CREDITCHK work fields → TXNLOGWR | TXNLOGPF.AUTH_STATUS, MQ/menu response | card network, CSR, nightly recon | none |
+| Credit exposure / available limit | FLOW-ONUS-AUTH-001 (`LINEAGE-ONUS-AUTH-002`), FLOW-MANUAL-AUTH-001 (`LINEAGE-MANUAL-AUTH-002`) | CREDFILE fields → CREDITCHK result | transient validation result; not stored separately | authorization decision | field semantics require CUSTOMER-MASTER contract |
+| Exception threshold count | FLOW-NIGHTLY-RECON-001 (`LINEAGE-NIGHTLY-RECON-001`) | TXNLOGPF exception rows → RECONSQL count → threshold compare | RECONPRT, RECONDTAQ, GLPOSTPF skipped / written | Finance Analyst, Risk Monitoring, GL System | TBD-CARD-AUTH-002 |
+
+## Exception-Aware Data Risks
+
+| Exception Chain | Data / Persist Impact | Recovery / Manual Action | Evidence / TBD |
+| --- | --- | --- | --- |
+| `EXCHAIN-ONUS-AUTH-001` MQ timeout | MQ response may fail after TXNLOGPF write; partner retry may create duplicate attempt | upstream retry ownership; idempotency strategy pending | TBD-CARD-AUTH-DAT-001 |
+| `EXCHAIN-NIGHTLY-RECON-001` RC=-2 threshold breach | GLPOSTPF write skipped or deferred; RECONPRT and RECONDTAQ still produced | Finance Analyst daily review, Card Ops escalation | TBD-CARD-AUTH-002 |
+
 ## Coupling Hotspots (Modernization Risks)
 
 | Object | Coupling Score | Risk | Mitigation |

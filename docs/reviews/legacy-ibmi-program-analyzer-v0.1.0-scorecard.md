@@ -3,7 +3,8 @@ skill: legacy-ibmi-program-analyzer
 scorecard_version: v0.1.0
 static_score: 9.39
 decision: repo-ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-ibmi-program-analyzer-v0.2.0-scorecard.md
 last_verified: not-yet-tested
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: null }

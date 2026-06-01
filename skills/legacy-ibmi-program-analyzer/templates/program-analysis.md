@@ -166,6 +166,20 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ---
 
+## Logic Decomposition Ledger
+
+Purpose: preserve calculations, constants, branch priority, loops, and CASE /
+SELECT behavior before translating anything into business prose.
+
+| Logic ID | Routine / Lines | Logic Type | Source Inputs / Constants | Operation / Condition | Result Field / Action | Branch Priority / Loop Scope | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LOG-[SLUG]-[NNN] | [SRxxx lines XX-YY] | arithmetic / string-build / precision / constant / IF / SELECT / loop | [fields, literals, constants] | [ADD/SUB/MULT/DIV/CAT/IF/WHEN/etc.] | [field set, return, call, write, skip] | [nested order, fallback, EOF scope] | [EV-*] |
+
+**Unresolved:**
+- TBD-[SLUG]-[NNN]: [Question about operand source, constant meaning, branch priority, precision, or loop scope]
+
+---
+
 ## Data Touch Map
 
 Purpose: program-local data movement and state-change view. Track objects,
@@ -192,11 +206,41 @@ working variable.
 
 ---
 
+## Key File & Field Logic
+
+Purpose: identify the files and fields that define the program's replayable
+behavior: access keys, calculation inputs/results, branch drivers, error/status
+fields, external parameters, and persisted fields.
+
+### Key Files
+
+| File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| [FILE_NAME] | driver / lookup / state-update / detail-insert / audit-log / screen-report / queue-message / parameter-DS | [SRxxx] | [READ loop / CHAIN lookup / UPDATE / WRITE / DELETE / EXFMT / CALL inout] | [FIELD_NAMES] | [FIELD_NAMES] | [EV-*] |
+
+### Key Fields
+
+| Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| [FIELD_NAME] | [FILE / DS / parameter / work variable] | access-key / input / derived / calculation-result / branch-condition / status-flag / return-code / error-code / message-id / external-parameter / persisted-field / audit-output | [routine, condition, mutation, call] | [literal/domain/range if visible] | [write, return, skip, error, external handoff] | [EV-*] |
+
+### Field Lineage
+
+| Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LIN-[SLUG]-[NNN] | [FILE.FIELD or parameter] | [alias/copybook field] | [work variables] | [operation or branch] | [alias field] | [FILE.FIELD / message / call parameter] | [EV-*] |
+
+**Unresolved:**
+- TBD-[SLUG]-[NNN]: [Question about missing DDS/copybook, physical-field mapping, alias meaning, or critical-field source]
+
+---
+
 ## Control Flow
 
-Purpose: concise narrative derived from Program Call Map, Routine Cards, Data
-Touch Map, and Deep Read Windows. Do not introduce new business facts here that
-are absent from the evidence-backed sections above.
+Purpose: concise narrative derived from Program Call Map, Routine Cards, Logic
+Decomposition Ledger, Data Touch Map, Key File & Field Logic, and Deep Read
+Windows. Do not introduce new business facts here that are absent from the
+evidence-backed sections above.
 
 ### Main Entry Point
 1. [Step description] [evidence_strength]
@@ -223,13 +267,21 @@ are absent from the evidence-backed sections above.
 
 ## File I/O
 
-| File | Type | Operations | Key Fields | Purpose | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| [FILE_NAME] | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | [KEY_FIELD_NAMES] | [Purpose description] | [EV-[SLUG]-[NNN]] |
+### File Access Summary
+
+| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [FILE_NAME] | [FORMAT] | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | [KEY_FIELD_NAMES] | [IF/loop/SELECT context] | [*INxx / %FOUND / %ERROR / SQLCODE / SQLSTATE] | [EV-*] |
+
+### Field Mutation Matrix
+
+| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [FILE_NAME] | WRITE / UPDATE / DELETE / EXEC SQL | [SRxxx lines XX-YY] | [key fields and condition] | [FIELD_NAME or record delete] | [literal, source field, calculation, moved value] | [EV-* assignment lines] | [handler, message ID, return code, or unhandled] |
 
 **Operation details:**
 
-- **[FILE_NAME] / [OPERATION] on [KEY]:** [Description of operation, indicators, result].
+- **[FILE_NAME] / [OPERATION] on [KEY]:** [Description of operation, fields assigned before mutation, indicators/status checks, result].
 
 **Evidence links:**
 - [EV-[SLUG]-[NNN]: Source lines / DDS reference]
@@ -259,18 +311,42 @@ are absent from the evidence-backed sections above.
 
 ## Error Handling
 
-| Error Condition | Detected By | Handling | Recovery | Evidence |
+### Exception Closure Ledger
+
+| Exception / Error Condition | Trigger / Source | Message ID / Error Code / RC | Detected By | Fields Set / Messages Sent | Handling Action | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Error type] | [condition, file op, call, SQL, validation] | [CPFxxxx / CPDxxxx / MCHxxxx / RNXxxxx / SQLCODE / UCC* / LCC* / literal code / none] | MONMSG / MONITOR ON-ERROR / %ERROR / indicator / IF / RC check / SQLSTATE | [ERR_FLAG, ERR_CD, ERR_MSG, log payload] | RETURN / GOTO / rollback / skip write / log / continue / abort | [blocks update, skips downstream call, returns status, continues] | [EV-*] |
+
+### Message / Error Code Inventory
+
+| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
 | --- | --- | --- | --- | --- |
-| [Error type] | MONITOR block / IF statement / Indicator / File operation | [Description of how error is caught] | [Recovery action or result] | [EV-[SLUG]-[NNN]] |
+| [CPFxxxx / UCCxxxx / literal code] | MONMSG / ON-ERROR / MOVE / SNDPGMMSG / MSGF / SQL | [meaning if explicit; otherwise TBD] | [routine or generic handler] | [EV-*] |
 
 **Unhandled exceptions:**
 - [Description of unhandled error conditions if any]
+
+**Generic handlers:**
+- [MONMSG *ANY / bare ON-ERROR / generic ERROR-HANDLER]: [coverage and limits; do not infer specific message IDs]
 
 **Logged errors:**
 - [Description of error logging, message queues, spool output]
 
 **Evidence links:**
 - [EV-[SLUG]-[NNN]: RPGLE MONITOR blocks / CLLE MONMSG / COBOL ON ERROR]
+
+---
+
+## Redundancy Candidate Notes
+
+Purpose: mark possible redundancy without deleting or suppressing code facts.
+Only mark `yes` when the candidate is not observed in calculation, condition,
+file mutation, log/message, exception path, external output, parameter handoff,
+or persisted field lineage.
+
+| Candidate | Location | Candidate Redundancy | Reason | Trace / Last Observed Use | Evidence | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| [field / move / routine / branch] | [lines XX-YY] | yes / no / unknown | [why it is or is not safe to mark] | [source -> work variable -> final use] | [EV-*] | preserve / mark / pending_source / pending_sme_judgment |
 
 ---
 
@@ -304,10 +380,13 @@ Before approval, SME must validate:
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
 - [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] File I/O matches job design (no hallucinated key fields or unobserved operations)
+- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling aligns with production reliability requirements
+- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access
 - [ ] All evidence links reference existing inventory items (OBJ-*, EV-*)

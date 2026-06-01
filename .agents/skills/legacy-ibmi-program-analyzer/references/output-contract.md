@@ -16,11 +16,14 @@ Each program analysis follows this markdown structure:
 ## Deep Read Windows
 ## Entry Points & Parameters
 ## Object Dependencies
+## Logic Decomposition Ledger
 ## Data Touch Map
+## Key File & Field Logic
 ## Control Flow
 ## File I/O
 ## External Calls
 ## Error Handling
+## Redundancy Candidate Notes
 ## TBDs & Blocking Status
 ## Review Checklist
 ```
@@ -513,6 +516,51 @@ If the shop's `F5-OBJREF TREE` output is provided as input:
 
 ---
 
+## Logic Decomposition Ledger Section
+
+The Logic Decomposition Ledger preserves rule-bearing code before it is
+compressed into narrative. It exists because phrases like "amount
+calculation", "validation", or "status processing" are not enough for
+equivalent replay.
+
+```markdown
+## Logic Decomposition Ledger
+
+| Logic ID | Routine / Lines | Logic Type | Source Inputs / Constants | Operation / Condition | Result Field / Action | Branch Priority / Loop Scope | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LOG-AUTH-001 | SR110 lines 410-418 | arithmetic | AMT_PRIN, AMT_INTR, AMT_FEE | ADD principal + interest, SUB fee | AMT_TOTAL | executes before limit comparison | EV-AUTH-041 |
+| LOG-AUTH-002 | SR130 lines 520-545 | nested IF | TRANAMT, RATE_FEE literals | tiered amount comparison | RATE_FEE assigned | mutually exclusive tiers; final ELSE fallback | EV-AUTH-042 |
+| LOG-AUTH-003 | SR160 lines 700-735 | file loop | TRANFIL, TRANTYP='01' | READ/DOW + IF filter | VALID_TOTAL accumulated | loop until %EOF(TRANFIL) | EV-AUTH-043 |
+```
+
+### Required Coverage
+
+Capture every observed rule-bearing instance of:
+
+- arithmetic and expression operations (`ADD`, `SUB`, `MULT`, `DIV`,
+  `EVAL`, SQL expressions)
+- precision behavior (`ZONED`, rounding, truncation, scale conversion,
+  packed/zoned movement when it changes value shape)
+- string construction (`CAT`, substring, concatenation, generated
+  numbers, message or queue payload assembly)
+- constants and literals used for limits, rates, status values,
+  return/error codes, message IDs, flags, branch decisions, or persisted
+  values
+- single-condition, compound-condition, nested-condition, `SELECT` /
+  `CASE`, and fallback branches
+- loops and file scans that affect totals, selection, reporting,
+  posting, deletes, or downstream calls
+
+### Branch-Preservation Rule
+
+Do not flatten nested or mutually exclusive logic into unrelated rows
+when priority affects behavior. The ledger must preserve ordering,
+fallback, and loop scope. If priority is unclear because source windows
+or copybooks are missing, create a TBD rather than invent a simplified
+rule.
+
+---
+
 ## Data Touch Map Section
 
 The Data Touch Map is the program-local data movement and state-change
@@ -580,22 +628,115 @@ interface contract.
 
 ---
 
+## Key File & Field Logic Section
+
+This section turns the Data Touch Map into a replayable field story. It
+answers: "Which files and fields are load-bearing, why, where do values
+come from, and where do they land?"
+
+### Format
+
+```markdown
+## Key File & Field Logic
+
+### Key Files
+
+| File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| CUST_PHY | state-update | SR210 | CHAIN then UPDATE when %FOUND | CUST_NO | PHY_CUST_AMT, CUST_TRAN_FLG | EV-AUTH-051 |
+| TRAN_DTL | detail-insert | SR240 | WRITE when ERR_FLAG='N' and TRAN_AMT>0 | DTL_SNO | DTL_CUSTNO, DTL_AMT, DTL_TYP, DTL_STS | EV-AUTH-052 |
+| ERRMSGQ | queue-message | SR900 | SNDPGMMSG on validation failure | MSGID / ERR_CD | ERR_MSG payload | EV-AUTH-053 |
+
+### Key Fields
+
+| Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| CUST_NO | input parameter / CUST_PHY key | access-key | CHAIN CUST_PHY; CALL SUBPGM02 | copied from parameter | determines account row updated and downstream handoff | EV-AUTH-054 |
+| TMP_CUST_AMT | work variable | calculation-result / branch-condition | balance deduction and insufficient-balance IF | derived from BUSI_AMT - TRAN_AMT | blocks write when < 0; otherwise persisted back | EV-AUTH-055 |
+| ERR_CD | work variable / return payload | error-code | validation failure paths | 'D003', 'E501' | returned to caller and logged | EV-AUTH-056 |
+
+### Field Lineage
+
+| Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LIN-AUTH-001 | CUST_PHY.PHY_CUST_AMT | VIEW_CUST_BAL | BUSI_AMT, TMP_CUST_AMT | SUB TRAN_AMT; IF TMP_CUST_AMT < 0 | VIEW_CUST_BAL | CUST_PHY.PHY_CUST_AMT | EV-AUTH-057 |
+```
+
+### Key File Roles
+
+Use one or more of these role labels:
+
+- `driver`: source of the main loop or primary transaction selection
+- `lookup/reference`: read-only source used to validate, enrich, or
+  calculate
+- `state-update`: existing record whose state is changed
+- `detail-insert`: new detail, journal, staging, or transaction row
+- `audit-log`: persistent event, error, report, spool, or journal output
+- `screen-report`: DSPF/PRTF interaction
+- `queue-message`: message queue or data queue payload carrier
+- `parameter-DS`: call parameter data structure or copybook carrier
+
+### Key Field Roles
+
+Use one or more of these role labels:
+
+- `access-key`
+- `input`
+- `derived`
+- `calculation-operand`
+- `calculation-result`
+- `branch-condition`
+- `status-flag`
+- `return-code`
+- `error-code`
+- `message-id`
+- `external-parameter`
+- `persisted-field`
+- `audit-output`
+
+### Lineage Requirements
+
+- Every field involved in money, inventory, customer/account status,
+  posting, approval/decline, compliance, auditability, external
+  payloads, or error outcomes must appear either in Key Fields or in a
+  Field Lineage row.
+- A Field Lineage row must connect the most concrete source available
+  to the final persisted/output field. If the physical field is hidden
+  behind a DDS/copybook alias, include the alias and create a TBD if the
+  physical mapping is missing.
+- Work variables are included when they carry or transform critical
+  values. Do not enumerate unrelated temporary variables.
+- Do not infer a key-file role or field role from a name alone. Use
+  source evidence, DDS/copybook metadata, runtime evidence, or SME
+  confirmation.
+
+---
+
 ## File I/O Section
 
 ```markdown
 ## File I/O
 
-| File | Type | Operations | Key Fields | Purpose | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| CREDFILE | PF | CHAIN | CUSTID | Fetch credit profile | [EV-CREDIT-CHECK-002] |
-| CUSTFILE | LF | READE | CUSTID | Iterate customer records for validation | [EV-CREDIT-CHECK-003] |
-| LIMITTBL | PF | SETLL, READE | COUNTRY, CATEGORY | Lookup credit limit by country/category | [EV-CREDIT-CHECK-004] |
+### File Access Summary
+
+| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| CREDFILE | CREDR | PF | CHAIN | CUSTID | before validation branch | *IN99 / %FOUND | EV-CREDIT-CHECK-002 |
+| CUSTFILE | CUSTR | LF | READE | CUSTID | loop until EOF | EOF indicator / %EOF | EV-CREDIT-CHECK-003 |
+| CUST_MAST | CUSTMR | PF | CHAIN, UPDATE | CUST_NO, CUSTSTS | only when ERR_FLAG='N' and %FOUND | %FOUND, %ERROR | EV-CREDIT-CHECK-004 |
+
+### Field Mutation Matrix
+
+| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(CUST_NO, CUSTSTS), %FOUND(CUST_MAST) | CUST_BAL | CUST_BAL - TRAN_AMT | EV-CREDIT-CHECK-012 | %ERROR -> TRANS_ERR='Y', TRANS_ERR_CD='E501', RETURN |
+| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(CUST_NO, CUSTSTS), %FOUND(CUST_MAST) | CUST_TRAN_FLG | literal 'Y' | EV-CREDIT-CHECK-013 | same UPDATE handler |
 
 **Operation details:**
 
 - **CREDFILE / CHAIN on CUSTID:** Fetch entire customer credit record. Key field: CUSTID (numeric). Result: populated *IN99 (not found indicator).
 - **CUSTFILE / READE on CUSTID:** Loop through all customer records matching CUSTID. Continue until EOF or error.
-- **LIMITTBL / SETLL + READE:** Locate and read limit table by (COUNTRY, CATEGORY). If SETLL finds no match, skip READE.
+- **CUST_MAST / UPDATE after CHAIN:** Persist fields assigned before the update; handler sets transaction error fields if `%ERROR` is observed.
 
 **Evidence links:**
 - [EV-CREDIT-CHECK-002: DB2 for i table definitions]
@@ -606,8 +747,12 @@ interface contract.
 ```
 
 **Requirements:**
-- One table row per file accessed
-- Columns: File name, Type (PF / LF / DSPF / PRTF), Operations, Key fields, Purpose, Evidence link
+- One File Access Summary row per file accessed
+- One Field Mutation Matrix row per persisted field touched by `WRITE`,
+  `UPDATE`, `DELETE`, or SQL DML. For `DELETE`, use the deleted record
+  or selection predicate as the persisted mutation.
+- File Access Summary columns: File name, record format, Type (PF / LF / DSPF / PRTF), Operations, Key fields, read/mutation conditions, indicators/status checks, Evidence link
+- Field Mutation Matrix columns: File, operation, routine/line range, access key or record condition, field mutated/persisted, source value or expression, assignment evidence, error/rollback handling
 - Supported operations:
   - Sequential: READ (next record), READP / READPE (read previous)
   - Random: SETLL (set lower limit), READE (read equal), CHAIN (random access)
@@ -618,9 +763,16 @@ interface contract.
   - Key fields used in access (e.g., CHAIN on CUSTID)
   - Indicators set (e.g., *IN99 for not found) or status variables (SQLCODE)
   - Expected record count or iteration scope
+  - Branch condition that permits `WRITE`, `UPDATE`, `DELETE`, or SQL DML
+  - Every field assignment that feeds a persisted write/update, including
+    literals, source fields, expressions, copied aliases, and calculated values
+  - Pre-mutation checks (`%FOUND`, indicators, validation flags) and
+    post-mutation checks (`%ERROR`, `SQLCODE`, `SQLSTATE`, return codes)
 - Reference file definitions from inventory (EV-*) and DDS / SQL schema where available
 - Tag evidence as `confirmed_from_code` or `needs_sme_review`
-- Create TBD for missing DDS, unclear key fields, SQL schema not documented, or undocumented access patterns
+- Create TBD for missing DDS, unclear key fields, unknown record formats,
+  SQL schema not documented, undocumented access patterns, or a persisted
+  field whose source assignment cannot be proven
 
 ---
 
@@ -671,15 +823,29 @@ interface contract.
 ```markdown
 ## Error Handling
 
-| Error Condition | Detected By | Handling | Recovery | Evidence |
+### Exception Closure Ledger
+
+| Exception / Error Condition | Trigger / Source | Message ID / Error Code / RC | Detected By | Fields Set / Messages Sent | Handling Action | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Balance would become negative | TMP_CUST_AMT < 0 | D003 | IF validation branch | ERR_FLAG='Y', ERR_CD='D003', ERR_MSG=literal text | RETURN | blocks account update and downstream posting | EV-CREDIT-CHECK-010 |
+| CUST_MAST update failure | UPDATE CUST_MAST then %ERROR | E501 | %ERROR after UPDATE | TRANS_ERR='Y', TRANS_ERR_CD='E501' | RETURN | caller receives transaction error; no further writes observed | EV-CREDIT-CHECK-011 |
+| File not found during open | OPEN CREDFILE | CPF4101 | ON-ERROR CPF4101 | ERR_CD='F001', SNDPGMMSG | GOTO ERRHANDLR | stops processing before reads | EV-CREDIT-CHECK-012 |
+| Unexpected system exception | MONITOR protected block | generic / *ANY | bare ON-ERROR | ERR_CD='9999' | log and RETURN | generic coverage only; exact message ID not inferred | EV-CREDIT-CHECK-013 |
+
+### Message / Error Code Inventory
+
+| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
 | --- | --- | --- | --- | --- |
-| File not found (CREDFILE) | MONITOR block (lines 200–210) | Write error message to QSYSOPR | Return -1 (error code) | [EV-CREDIT-CHECK-008] |
-| Program not found (GETRATE) | CALL exception (CPDA error) | Log to error queue, skip rate lookup | Use default rate = 0, continue | [EV-CREDIT-CHECK-009] |
-| Unexpected amount (< 0) | IF statement (line 115) | Write validation error | Return 0 (denied) | [EV-CREDIT-CHECK-010] |
-| No records found (READE EOF) | SETOF indicator (lines 160–180) | Exit loop, proceed to next step | No error, expected path | [EV-CREDIT-CHECK-011] |
+| D003 | MOVE literal to ERR_CD | balance insufficient; transaction blocked | validation branch in SR120 | EV-CREDIT-CHECK-010 |
+| E501 | MOVE literal to TRANS_ERR_CD | account update failed | %ERROR branch after UPDATE | EV-CREDIT-CHECK-011 |
+| CPF4101 | ON-ERROR CPF4101 | file not found/open failure | SR900 error handler | EV-CREDIT-CHECK-012 |
+| *ANY / generic | MONMSG MSGID(*ANY) or bare ON-ERROR | catch-all only; no specific message inferred | SR999 generic handler | EV-CREDIT-CHECK-013 |
 
 **Unhandled exceptions:**
 - CUSTFILE READE fails with I/O error: no MONITOR block → Program will abnormally terminate → TBD-CREDIT-CHECK-005: Confirm error handling intent
+
+**Generic handlers:**
+- MONMSG `MSGID(*ANY)` / bare `ON-ERROR` / generic error paragraphs are recorded as generic coverage. They do not prove that any specific CPF/CPD/MCH/RNX/SQL/shop-local message is handled unless that message ID is explicitly named elsewhere.
 
 **Logged errors:**
 - Error messages written to QSYSOPR (message queue)
@@ -692,13 +858,63 @@ interface contract.
 ```
 
 **Requirements:**
-- One table row per monitored error condition
-- Columns: Error condition (what goes wrong), Detected by (MONITOR block / IF statement / indicator check / etc.), Handling (what code does), Recovery (result for caller), Evidence
+- One Exception Closure Ledger row per observed business, parameter,
+  file I/O, SQL, call, queue/message, display/report, or system
+  exception path.
+- Columns: exception/error condition, trigger/source, message ID/error
+  code/return code, detection mechanism, fields set/messages sent,
+  handling action, downstream impact, evidence.
+- One Message / Error Code Inventory row per observed message ID, error
+  code, return code, or generic catch-all token.
+- Include all observed message families: `CPF*`, `CPD*`, `MCH*`,
+  `RNX*`, `SQL*`, shop-local `UCC*` / `LCC*`, literal business error
+  codes, and return/status codes visible in source.
+- Do not limit extraction to shop-local prefixes.
+- Generic handlers (`*ANY`, bare `ON-ERROR`, generic error paragraphs)
+  must be marked as generic coverage and must not be expanded into
+  specific message IDs without source evidence.
 - Separate section for unhandled exceptions (errors NOT caught)
 - Note which errors log messages and where
+- State downstream impact: continue, return, skip write, rollback,
+  abort, call downstream, suppress downstream call, or unknown
 - Reference evidence links
 - Tag evidence strength
-- Create TBD for unclear error codes, missing error handling, or context-dependent behavior
+- Create TBD for unclear error codes, missing error handling,
+  context-dependent behavior, generic-only coverage that is not
+  production-realistic, or any error branch whose downstream impact is
+  unknown
+
+---
+
+## Redundancy Candidate Notes Section
+
+This section is optional only when no plausible redundancy candidates are
+observed. It is a marking surface, not a deletion instruction.
+
+```markdown
+## Redundancy Candidate Notes
+
+| Candidate | Location | Candidate Redundancy | Reason | Trace / Last Observed Use | Evidence | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| TMP_CUST_AMT | lines 520-545 | no | participates in deduction, insufficient-balance branch, and write-back lineage | VIEW_CUST_BAL -> BUSI_AMT -> TMP_CUST_AMT -> CUST_PHY.PHY_CUST_AMT | EV-AUTH-061 | preserve |
+| MOVE WORK_A WORK_B | lines 760-761 | unknown | downstream called program source missing | WORK_A -> WORK_B -> CALL SUBPGM02 parameter | EV-AUTH-062 | pending_source |
+```
+
+### Conservative Marking Rule
+
+Mark `candidate_redundancy: yes` only when the candidate is not observed
+in any:
+
+- calculation or precision conversion
+- branch condition, loop control, CASE/SELECT, or return decision
+- file write/update/delete or SQL DML
+- log, message, spool, report, screen, data queue, or message queue
+- exception handling, rollback, skip, return, or error-code path
+- external program parameter handoff
+- field lineage from source to persisted/output field
+
+If source is missing or cross-program use is unclear, mark `unknown` and
+create a TBD. The analysis never removes code facts.
 
 ---
 
@@ -754,10 +970,13 @@ Before approval, SME must validate:
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] File I/O matches job design (no hallucinated key fields or unobserved operations)
+- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling aligns with production reliability requirements
+- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access
 - [ ] All evidence links reference existing inventory items (OBJ-*, EV-*)
@@ -777,7 +996,9 @@ Before approval, SME must validate:
 
 ## Evidence Strength Taxonomy
 
-Every claim (entry point, control flow step, file I/O, external call, error handling) must carry one evidence strength:
+Every claim (entry point, logic rule, field lineage, field mutation,
+control flow step, file I/O, external call, error handling, redundancy
+candidate) must carry one evidence strength:
 
 | Strength | Meaning | Example |
 | --- | --- | --- |

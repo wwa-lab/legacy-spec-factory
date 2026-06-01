@@ -12,6 +12,8 @@ You produce **one spec per `CAP-*`** capability seed listed in
 ## Need before starting
 
 - `04_modules/<MODULE-SLUG>/` — overview + all 4 views, all approved
+  (prefer module-analyzer v0.2.0 evidence summaries for replay, field
+  lineage, persistence, and exception recovery)
 - `05_brds/<CAPABILITY-SLUG>/` — approved BRD Package with `brd.md`,
   `brd-review.md`, `validation-scenarios.md`, `traceability.md`, and review /
   approval evidence; bypass allowed only when explicitly recorded as a risk
@@ -19,12 +21,15 @@ You produce **one spec per `CAP-*`** capability seed listed in
   follow-new-system, or pending-decision and is ready to move beyond discovery
 - A single `CAP-*` from `module-overview.md` to scope this spec
 - Linked `BR-*` rules and `evidence_id`s for that capability
+- Analyzer v0.2 evidence (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`,
+  `EXCHAIN-*`) consumed where it exists for observed behaviors, outputs, data
+  model fields, and exceptions
 - SME availability for `inferred_business_rule` confirmation and the
   `draft → in_review → approved` transitions
 
 ## Run
 
-- **Skill:** `legacy-spec-writer` (Implemented v0.1.3)
+- **Skill:** `legacy-spec-writer` (Implemented v0.1.4)
 - **Manual fallback:** Use `schemas/spec.schema.yaml` and the templates in
   `skills/legacy-spec-writer/references/`
 
