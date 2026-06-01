@@ -55,8 +55,19 @@ Accept:
 
 - **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four
   views at `approved` or `approved_with_non_blocking_tbd`)
+  - Prefer module-analyzer v0.2.0 or later outputs that include Module
+    Program-Chain Readiness, Module Persistence & Critical Field Summary,
+    Module Exception & Recovery Summary, View 3 Replay Coverage Summary, and
+    View 4 Module Persistence Matrix / Critical Field Lineage / Exception-Aware
+    Data Risks.
 - **All approved flow analyses** referenced by that module
+  - Prefer flow-analyzer v0.2.0 or later outputs that include Flow Replay Path,
+    Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
+    Propagation Chain.
 - **All approved program analyses** referenced by those flows
+  - Prefer program-analyzer v0.2.0 or later outputs that include Logic
+    Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix, and
+    Exception Closure Ledger.
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
@@ -198,11 +209,11 @@ field-level rules. The summary below is normative for this skill.
 ### Execution
 
 - **Procedure**: see the Workflow section below (11 ordered steps).
-- **Allowed inference**: lifting `BEH-*` from flow control flow / branch
-  points / error propagation; aggregating evidence from upstream
-  artifacts; mapping legacy data objects to target entities; sketching
-  modernization decisions whose rationale ties back to `BR-*`, `BEH-*`,
-  or platform constraints.
+- **Allowed inference**: lifting `BEH-*` from flow replay paths, branch
+  points, persistence outcomes, and exception chains; aggregating evidence from
+  upstream artifacts; mapping legacy data objects and critical fields to target
+  entities; sketching modernization decisions whose rationale ties back to
+  `BR-*`, `BEH-*`, or platform constraints.
 - **Forbidden assumptions**: inventing business rules beyond upstream
   seeds + SME confirmation; promoting a "weak" `BR-*` to `approved`
   without explicit SME approval; generating `AC-*` for unapproved `BR-*`;
@@ -286,8 +297,12 @@ to the orchestrator. The Forward Handoff Gate
      stop and request evidence authorization review
 
 3. **Lift Observed Behaviors (BEH-*)**
-   - From flow analyses' control flow + branch points + error propagation
-     (factual statements about what the legacy system does)
+   - From flow analyses' Flow Replay Path, control flow, branch points,
+     Flow Persistence Matrix, and Exception Propagation Chain (factual
+     statements about what the legacy system does)
+   - Cross-check with program analyses' Logic Decomposition Ledger,
+     Key File & Field Logic, Field Mutation Matrix, and Exception Closure
+     Ledger where the behavior depends on program-level detail
    - Each BEH must trace to ≥1 EV-*
    - These are *factual* — what the system does, not why
 
@@ -313,22 +328,28 @@ to the orchestrator. The Forward Handoff Gate
 6. **Define Data Model**
    - For each target entity, map to legacy `OBJ-*` (the originating PF/LF)
    - For each entity field, map to legacy field name + target type
-   - Use the module's View 4 (Data Flow) as primary input
+   - Use the module's View 4 (Data Flow), Module Persistence Matrix, and
+     Critical Field Lineage Across Module as primary input
    - Capture lifecycle hints (immutable / mutable / append-only)
+   - Preserve critical legacy field lineage and persistence constraints as
+     evidence-backed notes or `TBD-*`; do not reduce field-level behavior to a
+     file-level dependency
 
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
    - `process_flow.steps[]` from the relevant flow's business-visible phases
-     and major outcomes, using the Transaction Call Map only as evidence
+     and major outcomes, using Flow Replay Path and the Transaction Call Map as
+     evidence
    - Use the approved BRD Package's section 6 as the business-readable
      process-flow framing and cross-check it against module / flow evidence
    - `inputs[]` from flow analysis Trigger Context, UI surfaces' input fields,
      and BRD sections 3-5 (channels, user touchpoints, system interfaces)
-   - `outputs[]` from flow analysis exit nodes, Cross-Program Data Flow
-     carriers with `external handoff`, `creates`, or `updates` state impact,
-     and BRD sections 4-5 where a business-visible response, report, message,
-     or interface result is SME-reviewed
-   - `exceptions[]` from flow analysis Error Propagation, program analyses'
-     error handling, and BRD section 8
+   - `outputs[]` from flow analysis exit nodes, Flow Persistence Matrix rows,
+     Cross-Program Data Flow carriers with `external handoff`, `creates`, or
+     `updates` state impact, and BRD sections 4-5 where a business-visible
+     response, report, message, or interface result is SME-reviewed
+   - `exceptions[]` from BRD section 8, module Exception & Recovery Summary /
+     Exception-Aware Data Risks, flow Exception Propagation Chain, and program
+     Exception Closure Ledger
    - `open_questions[]` carries any BRD section 1-9 coverage gaps or
      accepted-with-TBD review decisions that remain unresolved
    - Do not copy program nodes or call-chain order directly into
@@ -471,6 +492,11 @@ Canonical: `skills/legacy-spec-writer/SKILL.md`
 Synced to all four runtime adapters.
 
 ## Version History
+
+- v0.1.4 (2026-06-01): Aligned spec synthesis inputs with analyzer v0.2.0.
+  Observed behaviors, outputs, data model fields, and exceptions now prefer
+  replay, field-lineage, persistence, and exception-chain evidence from
+  module / flow / program analysis before producing downstream spec content.
 
 - v0.1.3 (2026-05-30): Added migration-discovery promotion gate. Approved BRD
   no longer automatically implies spec-writing; No-gap, Gap1, and

@@ -1,8 +1,8 @@
 # Stage 03: Program Analysis (one program at a time)
 
 **You are here if:** inventory is approved AND you want to analyze one
-program's behavior (control flow, file I/O, calls, error handling) before
-tracing the full call chain.
+program's behavior (control flow, key file/field logic, field-level File I/O,
+calls, exception handling) before tracing the full call chain.
 
 You will produce **one program-analysis file per in-scope program**. Loop
 through programs one at a time before moving to flow analysis.
@@ -17,7 +17,7 @@ through programs one at a time before moving to flow analysis.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.1.0)
+- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.2.0)
 - **Manual fallback:** Use the program-analysis skeleton in
   `skills/legacy-ibmi-program-analyzer/references/` and fill it section by
   section against the source
@@ -41,9 +41,11 @@ Optional companions (run in parallel when applicable):
   e.g. `docs/XXX260004-demo/02_programs/CREDIT-CHECK/ORDENTR/program-analysis.md`
 - **Consumed by:** `legacy-ibmi-flow-analyzer`
 
-Required sections: Metadata, Entry Points, Control Flow, File I/O, External
-Calls, Error Handling, Open Questions (TBD-*). Every row cites an
-`evidence_id`.
+Required sections: Metadata, Analysis Coverage & Scope, Program Call Map,
+Logic Decomposition Ledger, Key File & Field Logic, Entry Points, Control
+Flow, File I/O with Field Mutation Matrix, External Calls, Error Handling,
+Exception Closure Ledger, Redundancy Candidate Notes, Open Questions
+(`TBD-*`). Every row cites an `evidence_id`.
 
 ## Gate before advancing
 
@@ -55,10 +57,13 @@ Calls, Error Handling, Open Questions (TBD-*). Every row cites an
      → every triggered DSPF / PRTF / menu has an approved
      `screen-report-analysis.md` under
      `02_programs/<MODULE>/screens/`
-  3. IF `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
+  3. each approved program analysis includes Logic Decomposition Ledger, Key
+     File & Field Logic, Field Mutation Matrix, and Exception Closure Ledger,
+     or records named non-blocking / blocking `TBD-*` gaps
+  4. IF `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
      → `04_modules/<MODULE>/data-model/dictionary.md` exists at
      `review_status: approved` or `approved_with_non_blocking_tbd`
-- **Blocks if:** any of (1), (2), (3) fail; OR any analysis has
+- **Blocks if:** any of (1), (2), (3), (4) fail; OR any analysis has
   `review_status: needs_sme_review` for a money / inventory / compliance
   / customer-status branch
 
@@ -72,7 +77,8 @@ become required. Trigger rules:
 - **Required:** for any branch affecting money, inventory, compliance,
   customer status, or posting
 - **Ask:** "Is this branch's observed behavior correct in production? Are
-  any conditions or exceptions missing?"
+  any key fields, field updates, message IDs, return codes, skipped writes, or
+  exception outcomes missing?"
 - **Recorded in:** `program-analysis.md` → `review_status` per row +
   `Open Questions` table
 

@@ -246,6 +246,48 @@ Escalate to field-level detail only for:
 - audit IDs, journal IDs, external message IDs
 - fields crossing an external system boundary
 
+## Flow-Level Lineage Rule
+
+When the field is critical and crosses program boundaries, add it to the
+flow's Cross-Program Field Lineage table. The lineage should stitch
+program-local field lineages through a visible carrier:
+
+```text
+NODE-A source field
+  -> EDGE/DATA carrier field
+  -> NODE-B input or work field
+  -> NODE-B calculation / branch / mutation
+  -> PERSIST-* or output response/report/message
+```
+
+Valid stitching evidence includes:
+
+- upstream program-analysis `Key File & Field Logic` and Field Lineage rows
+- CALL parameter lists and callee parameter contracts
+- DDS/copybook field mappings
+- data-area, data-queue, message-queue, IFS, screen, or spool payload fields
+- shared-file write/read keys and record formats
+- SME-confirmed manual handoffs
+
+Do not connect fields merely because names look similar. If the carrier
+field or physical-field mapping is missing, create a `TBD-*`.
+
+## Flow Persistence Matrix Rule
+
+Shared files and durable outputs must be summarized at flow level when they
+change transaction outcome or downstream behavior. Use upstream
+program-analysis Field Mutation Matrix rows to identify:
+
+- which node writes, updates, deletes, sends, or spools
+- which fields/payloads are persisted or skipped
+- which upstream `DATA-*` or `LINEAGE-*` row drives the mutation
+- when that state becomes durable or externally visible
+- what downstream node, flow, operator, or external system consumes it
+
+For read-only flows, state `N/A — read-only flow` only when the upstream
+program analyses confirm no durable file mutation, queue send, message,
+spool, IFS, or external output changes state.
+
 ---
 
 ## Aggregation Rule for Module Analysis

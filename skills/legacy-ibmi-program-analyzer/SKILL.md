@@ -119,7 +119,7 @@ field-level rules. The summary below is normative for this skill.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (10 ordered steps).
+- **Procedure**: see the Workflow section below (11 ordered steps).
 - **Large-program mode**: when source is greater than 10,000 lines,
   contains more than 25 routines, contains more than 20 external calls,
   or cannot safely fit in context with evidence windows, use
@@ -127,9 +127,12 @@ field-level rules. The summary below is normative for this skill.
   business narrative until the source index, routine cards, Program Call
   Map, Data Touch Map, and coverage ledger exist.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
-  file I/O from F-spec and I/O statements; error paths from MONITOR/
-  MONMSG/ON-ERROR; pattern-based labeling tagged `strongly_inferred` or
-  `medium_confidence` with explicit notes.
+  calculations and branch logic from source statements; file I/O from
+  F-spec and I/O statements; field lineage from visible assignments,
+  DDS/copybooks, and parameter lists; error paths from MONITOR/
+  MONMSG/ON-ERROR or explicit return/status checks; pattern-based
+  labeling tagged `strongly_inferred` or `medium_confidence` with
+  explicit notes.
 - **Forbidden assumptions**: inventing subroutines, file access beyond
   what I/O statements show, business meaning from field names, external
   call parameters absent from source or copybooks, error codes not
@@ -143,8 +146,10 @@ field-level rules. The summary below is normative for this skill.
 - **Canonical artifact**: `program-analysis-<OBJ-ID>.md` (one per program).
 - **Required sections**: `Metadata`, `Analysis Coverage & Scope`,
   `Program Call Map`, `Routine Cards`, `Deep Read Windows`,
-  `Entry Points & Parameters`, `Object Dependencies`, `Data Touch Map`,
-  `Control Flow`, `File I/O`, `External Calls`, `Error Handling`,
+  `Entry Points & Parameters`, `Object Dependencies`,
+  `Logic Decomposition Ledger`, `Data Touch Map`,
+  `Key File & Field Logic`, `Control Flow`, `File I/O`,
+  `External Calls`, `Error Handling`, `Redundancy Candidate Notes`,
   `TBDs & Blocking Status`, `Review Checklist`.
 - **Required IDs**: reuses `OBJ-*` and `EV-*` from inventory; mints
   program-local `BEH-*`, `EX-*`, and `TBD-*`. Does not mint `BR-*`,
@@ -160,10 +165,10 @@ field-level rules. The summary below is normative for this skill.
   call/object reference resolves against inventory; every TBD has a
   blocking-status tag; required sections all present.
 - **AI semantic**: behaviors are consistent with the linked source lines;
-  no invented subroutines, fields, files, or error codes; evidence
-  strength not overstated (no `weakly_inferred` posing as
-  `confirmed_from_code`); flow header (if present) reconciled against
-  the code-derived program call map.
+  no invented subroutines, fields, files, field mutations, message IDs,
+  or error codes; evidence strength not overstated (no
+  `weakly_inferred` posing as `confirmed_from_code`); flow header (if
+  present) reconciled against the code-derived program call map.
 - **SME / human approval**: SME signs entry points, parameter contracts,
   file I/O semantics, external interface contracts, and error handling
   realism. Required when the program affects money, inventory,
@@ -208,13 +213,27 @@ to the orchestrator.
    - Tag with evidence: `confirmed_from_code` (from source headers or RPGLE specifications)
    - Create TBD if parameter contract is undocumented or unclear
 
-4. **Trace Main Control Flow**
+4. **Trace Main Control Flow & Logic Ledger**
    - Document procedure call sequence (what calls what, in what order)
    - Identify conditional branching:
      - RPGLE: IF, SELECT, indicator-driven branching
      - CLLE: IF, ELSE, GOTO
      - COBOL: IF, EVALUATE, PERFORM … UNTIL
    - Identify loops and exit conditions (DO, DOWHILE, PERFORM, VARYING)
+   - Build the **Logic Decomposition Ledger** for rules that must not be
+     compressed into generic prose:
+     - arithmetic operations (`ADD`, `SUB`, `MULT`, `DIV`, `EVAL`
+       expressions) with source operands, result fields, and rounding or
+       precision behavior
+     - string construction (`CAT`, `MOVE`, substring operations) where it
+       creates business identifiers, keys, or external payload fields
+     - constants and literals used in limits, status values, rates,
+       return codes, message IDs, flags, or branch decisions
+     - single-condition, compound-condition, nested-condition, `SELECT` /
+       `CASE`, and loop rules with explicit branch priority
+   - Preserve condition order and nesting when it changes behavior. Do
+     not flatten mutually exclusive tiers or fallback branches into
+     unrelated bullet points.
    - Document handled vs. unhandled paths
    - Tag each non-trivial control structure: `confirmed_from_code` or `medium_confidence` if inferred
    - Create TBD for unclear program flow (missing subroutines, undefined labels)
@@ -265,7 +284,7 @@ to the orchestrator.
    - This section is the **flat parent list**; deeper per-object analysis happens in steps 7 (Data Touch Map + File I/O) and 8 (External Calls).
    - Tag: `confirmed_from_code` (visible in F-spec, D-spec, /COPY, or CALL statement)
 
-7. **Document Data Touch Map & File I/O**
+7. **Document Data Touch Map, Key Fields & File I/O**
    - Build a program-local **Data Touch Map** before the detailed File
      I/O table. This is the data companion to the Program Call Map: it
      shows which routines touch which data carriers and where state
@@ -286,6 +305,20 @@ to the orchestrator.
      - state impact (`read-only`, `creates`, `updates`, `deletes`,
        `async send`, `async receive`, `external handoff`)
      - evidence and TBDs for unclear payload structure or direction
+   - Build the **Key File & Field Logic** section:
+     - classify each key file as driver, lookup/reference, state update,
+       transaction/detail insert, audit/log, screen/report, queue/message,
+       or parameter/data-structure carrier
+     - classify each key field by role: access key, input, derived value,
+       calculation operand/result, branch condition, status/flag,
+       return/error code, message ID, external parameter, persisted field,
+       or audit/output field
+     - show field lineage for critical fields as
+       `physical/source field -> alias/data structure -> work variable ->
+       calculation/condition -> write-back alias -> persisted field`
+     - create TBDs when DDS/copybook metadata is missing, physical-field
+       mapping is unclear, or a variable participates in a critical path
+       but its source cannot be proven
    - For each file from step 6 (PF / LF / DSPF / PRTF), classify operations:
      - Sequential read: READ (next record), READP / READPE (read previous)
      - Random read: SETLL (set lower limit), READE (read equal), CHAIN (random access)
@@ -293,6 +326,15 @@ to the orchestrator.
      - Display file: EXFMT (format + read interaction with DSPF for menus, input screens)
      - Embedded SQL / SQLRPGLE: EXEC SQL blocks, cursor operations, SQLCODE / SQLSTATE error handling
      - Note key fields used in each operation (e.g., CHAIN on CUSTID)
+   - For every WRITE / UPDATE / DELETE / SQL mutation, produce a
+     field-level mutation row that names:
+     - record format and access key
+     - branch condition that permits the mutation
+     - fields assigned immediately before the mutation
+     - source value, literal, expression, or copied field used for each
+       persisted field
+     - indicators, `%FOUND`, `%ERROR`, `SQLCODE`, `SQLSTATE`, or return
+       codes checked before and after the mutation
    - Reference file definitions from inventory via evidence ID (EV-\*)
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
    - Create TBD if DDS is missing, key field unclear, or SQL schema is not documented
@@ -316,11 +358,35 @@ to the orchestrator.
    - Document error codes and recovery paths (retry, log, return error)
    - Document logged errors or message writes (DSPLY, message queue, spool)
    - Document unhandled exceptions (crash, abort)
+   - Build an **Exception Closure Ledger** that covers every observed
+     business, parameter, and system I/O exception path. Each row must
+     include trigger condition, message ID / error code / return code,
+     detection mechanism, fields set, handling action (`RETURN`, `GOTO`,
+     rollback, skip write, log, send message, continue), and downstream
+     impact.
+   - List every message ID observed in source or message-file references,
+     including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
+     `UCC*` / `LCC*`, and literal business error codes. Do not limit the
+     inventory to shop-local message prefixes.
+   - When a catch-all handler is present (`MONMSG MSGID(*ANY)`, bare
+     `ON-ERROR`, generic exception paragraph), mark it as generic
+     coverage and still list the specific observed messages handled
+     elsewhere. Do not infer specific message IDs from a generic handler.
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
    - Create TBD if error handling is unclear or context-dependent
 
-10. **Prepare for SME Review**
-   - Consolidate all TBDs created in steps 3–9 with clear blocking status:
+10. **Mark Redundancy Candidates Conservatively**
+   - Do not delete or suppress code during program analysis.
+   - Mark a move, assignment, temporary variable, branch, or routine as
+     `candidate_redundancy: yes` only when it is not observed in any
+     calculation, condition, file mutation, log/message, exception path,
+     external output, parameter handoff, or persisted field lineage.
+   - Use `candidate_redundancy: unknown` when downstream source,
+     copybooks, DDS, or called-program behavior is missing.
+   - Preserve the trace that proves the decision.
+
+11. **Prepare for SME Review**
+   - Consolidate all TBDs created in steps 3–10 with clear blocking status:
      - `pending_source` — missing DDS, incomplete source
      - `pending_sme_judgment` — behavior unclear from source alone
      - `non_blocking` — known gaps that don't affect downstream analysis
@@ -378,6 +444,10 @@ analysis describes what the code actually does.
 - **Business logic** from field names alone (e.g., a field named CREDLIMIT does not explain *why* the limit exists or how it's used)
 - **External call parameters** if not visible in source headers, copybooks, or CALL statements
 - **Error codes** if not explicitly caught or returned
+- **Key-file roles, field lineage, or field mutations** when the source
+  only proves a generic file reference
+- **Message IDs** from generic handlers or message prefix conventions
+  alone
 
 **Instead:**
 
@@ -398,10 +468,13 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] File I/O matches job design (no hallucinated key fields or unobserved operations)
+- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling aligns with production reliability requirements
+- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] Analysis contains no invented subroutines or undocumented file access
 
@@ -426,3 +499,6 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Evidence tagging and TBD handling
   - SME review checklist
   - Positive and negative examples
+- v0.2.0 (2026-06-01): Program-chain readiness tightening
+  - Added Logic Decomposition Ledger, Key File & Field Logic, field-level File I/O mutation matrix, Exception Closure Ledger, and conservative redundancy candidate notes
+  - Required every observed message ID / error code and every critical field lineage or mutation to carry evidence or a TBD

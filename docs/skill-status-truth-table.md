@@ -8,7 +8,7 @@ The table is built from scorecard frontmatter under `docs/reviews/`. Run
 `scripts/verify-skill-claims.py` to detect drift between this table,
 README, runtime-matrix, and scorecard frontmatter.
 
-Last regenerated: 2026-05-30
+Last regenerated: 2026-06-01
 
 ## How to Read This Table
 
@@ -30,20 +30,20 @@ Last regenerated: 2026-05-30
 
 | Skill | Version | Static | Decision | Codex | Claude Code | OpenCode | Last Verified | Scorecard |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | v0.2.6 | 9.49 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-modernization-orchestrator-v0.2.6-scorecard.md) |
+| `legacy-modernization-orchestrator` | v0.2.8 | 9.50 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-modernization-orchestrator-v0.2.8-scorecard.md) |
 | `legacy-flow-context-normalizer` | v0.1.9 | 9.51 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-flow-context-normalizer-v0.1.9-scorecard.md) |
 | `legacy-module-context-intake` | v0.1.4 | 9.46 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-module-context-intake-v0.1.4-scorecard.md) |
 | `legacy-document-evidence-intake` | v0.1.0 | 9.42 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-document-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
-| `legacy-ibmi-program-analyzer` | v0.1.0 | 9.39 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-program-analyzer-v0.1.0-scorecard.md) |
+| `legacy-ibmi-program-analyzer` | v0.2.0 | 9.55 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-ibmi-program-analyzer-v0.2.0-scorecard.md) |
 | `legacy-ibmi-data-model-analyzer` | v0.1.0 | 9.32 | repo-ready | passed | synced | passed | 2026-05-16 | [link](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
-| `legacy-ibmi-flow-analyzer` | v0.1.2 | 9.62 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-ibmi-flow-analyzer-v0.1.2-scorecard.md) |
-| `legacy-ibmi-module-analyzer` | v0.1.4 | 9.36 | repo-ready | synced | synced | synced | 2026-05-29 | [link](reviews/legacy-ibmi-module-analyzer-v0.1.4-scorecard.md) |
+| `legacy-ibmi-flow-analyzer` | v0.2.0 | 9.58 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-ibmi-flow-analyzer-v0.2.0-scorecard.md) |
+| `legacy-ibmi-module-analyzer` | v0.2.0 | 9.56 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-ibmi-module-analyzer-v0.2.0-scorecard.md) |
 | `legacy-brd-writer` | v0.1.6 | 9.48 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-brd-writer-v0.1.6-scorecard.md) |
-| `legacy-spec-writer` | v0.1.3 | 9.39 | repo-ready | synced | synced | synced | 2026-05-30 | [link](reviews/legacy-spec-writer-v0.1.3-scorecard.md) |
+| `legacy-spec-writer` | v0.1.4 | 9.45 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-spec-writer-v0.1.4-scorecard.md) |
 | `legacy-modernization-decision-writer` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-modernization-decision-writer-v0.1.0-scorecard.md) |
 | `legacy-sme-review-facilitator` | v0.1.2 | 9.40 | repo-ready | synced | synced | synced | 2026-05-26 | [link](reviews/legacy-sme-review-facilitator-v0.1.2-scorecard.md) |
 | `legacy-brd-to-sdd-handoff` | v0.1.0 | 9.63 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-brd-to-sdd-handoff-v0.1.0-scorecard.md) |
@@ -51,17 +51,17 @@ Last regenerated: 2026-05-30
 | `legacy-runtime-matrix-tester` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) |
 | `legacy-golden-master-test-planner` | v0.1.0 | 9.59 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) |
 | `legacy-step-contract` | v0.1.2 | 9.52 | field-pilot ready | passed | passed | passed | 2026-05-29 | [link](reviews/legacy-step-contract-v0.1.2-scorecard.md) |
-| `legacy-step-validator` | v0.1.1 | 9.53 | field-pilot ready | passed | passed | passed | 2026-05-14 | [link](reviews/legacy-step-validator-v0.1.1-scorecard.md) |
+| `legacy-step-validator` | v0.1.2 | 9.52 | repo-ready | synced | synced | synced | 2026-06-01 | [link](reviews/legacy-step-validator-v0.1.2-scorecard.md) |
 | `legacy-html-exporter` | v0.1.0 | 9.31 | repo-ready | passed | failed | passed | 2026-05-19 | [link](reviews/legacy-html-exporter-v0.1.0-scorecard.md) |
 
 ## Summary
 
 | Decision | Count |
 | --- | ---: |
-| `field-pilot ready` (all three runtimes `passed`) | 10 |
-| `repo-ready` (runtime cap or partial coverage) | 13 |
+| `field-pilot ready` (all three runtimes `passed`) | 9 |
+| `repo-ready` (runtime cap or partial coverage) | 14 |
 
-**23 skills total** in canonical source; **23 superseded scorecards** kept
+**23 skills total** in canonical source; **26 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

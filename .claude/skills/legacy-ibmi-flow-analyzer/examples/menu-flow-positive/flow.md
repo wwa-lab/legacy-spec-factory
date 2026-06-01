@@ -129,6 +129,46 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 ---
 
+## Flow Replay Path
+
+| Replay Step | Trigger / Node / Edge | Input / Carrier | Logic / Decision | Persistence / Output | Error / Alternate Path | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| REPLAY-CUST-INQUIRY-01 | MENU option 5 -> NODE-01 | CSRMENU option and user profile | CUSTINQ displays search panel | UI-CUST-INQUIRY-01 | no persistence | EV-CUST-INQUIRY-001 |
+| REPLAY-CUST-INQUIRY-02 | EDGE-CUST-INQUIRY-02 | CustID from DSPF | CUSTLKP chains CUSTMSTR | UI-CUST-INQUIRY-02 shows detail when RC=0 | not found -> EXCHAIN-CUST-INQUIRY-01 | EV-CUST-INQUIRY-002 |
+| REPLAY-CUST-INQUIRY-03 | EDGE-CUST-INQUIRY-03 | CustID and F11 branch | TXNHIST reads TXNLOGPF for last 90 days | UI-CUST-INQUIRY-03 subfile output | I/O error -> EXCHAIN-CUST-INQUIRY-03 | EV-CUST-INQUIRY-003 |
+| REPLAY-CUST-INQUIRY-04 | NODE-01 subfile option 5 | selected subfile row | display transaction detail subwindow | DSPF detail format only | unknown option -> silent ignore seed | EV-CUST-INQUIRY-004 |
+
+**Replay summary:**
+```text
+CSR selects menu option -> enters CustID -> CUSTLKP returns customer data
+or not-found RC -> optional F11 history call -> TXNHIST returns subfile
+buffer -> CUSTINQ displays history/detail -> F12 returns to menu.
+```
+
+---
+
+## Cross-Program Field Lineage
+
+| Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LINEAGE-CUST-INQUIRY-01 | Customer identity | CUSTINQD CustID input / NODE-01 | DATA-CUST-INQUIRY-01 via EDGE-02 | CUSTLKP CustID / NODE-02 | CHAIN CUSTMSTR; RC decides found/not-found | CUSTINQD2 detail panel or not-found message | EV-CUST-INQUIRY-002 |
+| LINEAGE-CUST-INQUIRY-02 | Customer detail | CUSTMSTR record / NODE-02 | CustData DS out parameter | CUSTINQ display fields / NODE-01 | no transform observed | CUSTINQD2 fields | EV-CUST-INQUIRY-002 |
+| LINEAGE-CUST-INQUIRY-03 | Transaction history | TXNLOGPF rows / NODE-03 | SubfileBuffer out parameter | CUSTINQ subfile / NODE-01 | last-90-days filter | TXNHISTD subfile rows | EV-CUST-INQUIRY-003 |
+
+**Unresolved lineage:**
+- TBD-CUST-INQUIRY-002: Confirm business rationale for the 90-day transaction history filter.
+
+---
+
+## Flow Persistence Matrix
+
+N/A — read-only flow. Upstream program analyses show CUSTLKP and TXNHIST read
+CUSTMSTR/TXNLOGPF and return data to CUSTINQ; no `WRITE`, `UPDATE`, `DELETE`,
+SQL DML, data-queue send, message-queue send, spool output, IFS output, or
+other durable state mutation is part of this inquiry flow.
+
+---
+
 ## Branch Points
 
 | Branch Ref | Location | Decider | Alternatives | Evidence |
@@ -170,6 +210,14 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 | CUSTMSTR unavailable | Generic error; flow returns to menu | QSYSOPR | DBA / ops investigates |
 | TXNLOGPF unavailable | Generic error; CSR can still see customer detail (NODE-02 already succeeded) | QSYSOPR | DBA / ops investigates |
 
+### Exception Propagation Chain
+
+| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-CUST-INQUIRY-01 | NODE-02 | RC=-1 | CALL out parameter RC | NODE-01 shows not-found message | EDGE-03 not available until valid customer detail | no persistence | CSR may re-enter CustID | EV-CUST-INQUIRY-002 |
+| EXCHAIN-CUST-INQUIRY-02 | NODE-02 | RC=-2 | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic error | EDGE-03 skipped | no persistence | flow returns to menu / CSR retries later | EV-CUST-INQUIRY-002 |
+| EXCHAIN-CUST-INQUIRY-03 | NODE-03 | RC=-1 | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic history error | customer detail remains visible; history display skipped | no persistence | CSR can continue with customer detail only | EV-CUST-INQUIRY-003 |
+
 ### Commit Boundaries
 
 This flow is **read-only** — no writes to any file. There are no commit
@@ -181,9 +229,9 @@ boundaries. Every error is fully recoverable by the user.
 
 | Seed ID | Candidate Rule / Capability | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- | --- |
-| SEED-CUST-INQUIRY-01 | CSR role must be authorised to view customer transaction history | Customer transaction history is sensitive and gated by staff role | Menu option 5 visibility depends on CSR group; data shown is sensitive | What governs CSR access — group profile only, or finer-grained authorities? |
-| SEED-CUST-INQUIRY-02 | Unknown inquiry actions may be ignored instead of shown as errors | Unrecognised user actions do not create a visible business response | NODE-CUST-INQUIRY-01 subfile dispatch ignores unrecognised option codes | Is silent drop intentional or should an error be shown? |
-| SEED-CUST-INQUIRY-03 | Transaction history may be limited to 90 days | Inquiry history has an observed age boundary | NODE-03 hard-coded 90-day window | Is 90 days a regulatory limit, performance choice, or arbitrary? |
+| SEED-CUST-INQUIRY-01 | CSR role must be authorised to view customer transaction history | Customer transaction history is sensitive and gated by staff role | REPLAY-01; menu option visibility depends on CSR group; LINEAGE-03 data shown is sensitive | What governs CSR access — group profile only, or finer-grained authorities? |
+| SEED-CUST-INQUIRY-02 | Unknown inquiry actions may be ignored instead of shown as errors | Unrecognised user actions do not create a visible business response | REPLAY-04; branch point subfile option dispatch ignores unrecognised option codes | Is silent drop intentional or should an error be shown? |
+| SEED-CUST-INQUIRY-03 | Transaction history may be limited to 90 days | Inquiry history has an observed age boundary | LINEAGE-03; NODE-03 hard-coded 90-day window | Is 90 days a regulatory limit, performance choice, or arbitrary? |
 
 ---
 
@@ -215,11 +263,15 @@ boundaries. Every error is fully recoverable by the user.
 - [X] All nodes in scope
 - [X] All edges reflect actual production calls
 - [X] Cross-program data flow captures carriers, producers, consumers, timing, and state impact
+- [X] Flow Replay Path can be followed from trigger to final outcome
+- [X] Cross-program field lineage preserves critical source, carrier, mutation, and output fields
+- [X] Flow Persistence Matrix lists transaction-level writes, updates, deletes, skipped mutations, and commit/rollback impacts — N/A read-only flow, explicitly proven
 - [X] Branch points capture user-visible decisions (incl. F-keys and subfile options)
 - [X] UI surfaces match production screens — 3 DSPFs documented
 - [X] Error propagation matches operational reality
+- [X] Exception Propagation Chain lists observed message IDs, error codes, return codes, skipped downstream edges, and final outcomes
 - [X] Commit boundaries: N/A — read-only flow (explicitly documented)
-- [X] Capability seeds are reasonable questions
+- [X] Capability seeds are reasonable questions backed by replay, lineage, persistence, or exception evidence; not invented rules
 - [X] All node program-analyses approved
 
 ### SME Sign-Off

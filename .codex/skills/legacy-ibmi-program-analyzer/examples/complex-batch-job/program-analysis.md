@@ -187,6 +187,21 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 
 ---
 
+## Logic Decomposition Ledger
+
+| Logic ID | Routine / Lines | Logic Type | Source Inputs / Constants | Operation / Condition | Result Field / Action | Branch Priority / Loop Scope | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LOG-ORDER-BATCH-001 | ProcessOrders lines 46-49 | file loop | ORDFILE, `%EOF(ORDFILE)` | READ then EOF check | exit loop when EOF | Controls all per-order processing | EV-ORDER-BATCH-002 |
+| LOG-ORDER-BATCH-002 | ProcessOrders lines 57-68 | IF / external-call branch | CreditStatus, literals 'D', 0 | If denied, skip ship/risk; else call GetShipCost and UPDTRISK, then check RC | ErrorCount, OrderCount, RC | UPDTRISK only occurs after credit approval | EV-ORDER-BATCH-006, EV-ORDER-BATCH-008, EV-ORDER-BATCH-009 |
+| LOG-ORDER-BATCH-003 | ValidateCredit lines 88-94 | IF / comparison | CustID, RequestAmt, CREDLIMIT | CHAIN CUSTMSTR; if not found deny; else compare RequestAmt > CREDLIMIT | return 'D' or 'A' | Not-found branch precedes amount comparison | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
+| LOG-ORDER-BATCH-004 | GetShipCost lines 107-112 | lookup fallback / arithmetic | OrderAmount, SHIP_COST, literal 0.0100 | CHAIN SHIPFILE; if not found calculate OrderAmount * 0.0100 | ShipCost return | fallback calculation only when lookup not found | EV-ORDER-BATCH-004 |
+
+**Unresolved:**
+- TBD-ORDER-BATCH-002: Confirm SHIPFILE key field and whether fallback multiplication is the intended rate.
+- TBD-ORDER-BATCH-003: Confirm full UPDTRISK return-code domain.
+
+---
+
 ## Data Touch Map
 
 ### Data Touches
@@ -211,6 +226,42 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 **Unresolved:**
 - TBD-ORDER-BATCH-001: Confirm ORDFILE record structure.
 - TBD-ORDER-BATCH-003: Confirm UPDTRISK return-code contract.
+
+---
+
+## Key File & Field Logic
+
+### Key Files
+
+| File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| ORDFILE | driver | ProcessOrders | sequential READ loop | implicit sequential access | OrdID, CustID, OrderAmount read; no write observed | EV-ORDER-BATCH-002 |
+| CUSTMSTR | lookup/reference with update-capable file mode | ValidateCredit | CHAIN by CustID; no UPDATE observed in excerpt | CustID | CREDLIMIT read-only in observed source | EV-ORDER-BATCH-005 |
+| SHIPFILE | lookup/reference | GetShipCost | CHAIN by OrderAmount, fallback calculation if not found | OrderAmount | SHIP_COST read-only in observed source | EV-ORDER-BATCH-004 |
+| UPDTRISK parameter list | parameter-DS / external handoff | ProcessOrders | CALL in/out | CustID, OrderAmount | RC output controls counters | EV-ORDER-BATCH-006, EV-ORDER-BATCH-009 |
+| QSYSOPR | queue-message | ProcessOrders ON-ERROR | SNDPGMMSG in generic handler | message text | operator-visible failure message | EV-ORDER-BATCH-007 |
+
+### Key Fields
+
+| Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| CustID | ORDFILE / CUSTMSTR / UPDTRISK | access-key / external-parameter | CUSTMSTR CHAIN, UPDTRISK CALL | record field; type pending DDS | selects customer, passed to risk update | EV-ORDER-BATCH-002, EV-ORDER-BATCH-005, EV-ORDER-BATCH-006 |
+| OrderAmount | ORDFILE / SHIPFILE / UPDTRISK | calculation-operand / access-key / external-parameter | credit comparison, SHIPFILE CHAIN, fallback multiplication, UPDTRISK CALL | decimal amount; exact type pending DDS | controls credit, ship cost, and risk update | EV-ORDER-BATCH-002, EV-ORDER-BATCH-004, EV-ORDER-BATCH-006 |
+| CREDLIMIT | CUSTMSTR / CREDFILE DS | branch-condition | ValidateCredit comparison | DDS pending | returns denied when RequestAmt exceeds limit | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
+| CreditStatus | ValidateCredit return | return-code / branch-condition | ProcessOrders IF branch | 'A', 'D' | determines whether shipping and risk update happen | EV-ORDER-BATCH-008 |
+| RC | UPDTRISK parameter / ProcessOrders work field | return-code | IF RC = 0 branch | 0 success; non-zero error pending SME | increments OrderCount or ErrorCount | EV-ORDER-BATCH-006, EV-ORDER-BATCH-009 |
+
+### Field Lineage
+
+| Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LIN-ORDER-BATCH-001 | ORDFILE.CustID | order record field | CustID parameter | CHAIN CUSTMSTR; CALL UPDTRISK | N/A | UPDTRISK CustID input parameter | EV-ORDER-BATCH-002, EV-ORDER-BATCH-006 |
+| LIN-ORDER-BATCH-002 | ORDFILE.OrderAmount | order record field | OrderAmt / RequestAmt | ValidateCredit comparison; GetShipCost lookup/fallback; CALL UPDTRISK | N/A | UPDTRISK OrderAmount input parameter | EV-ORDER-BATCH-002, EV-ORDER-BATCH-004, EV-ORDER-BATCH-006 |
+| LIN-ORDER-BATCH-003 | CUSTMSTR.CREDLIMIT | CREDFILE DS via EXTNAME; inventory gap | none | if RequestAmt > CREDLIMIT | N/A | ValidateCredit Decision return | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
+
+**Unresolved:**
+- TBD-ORDER-BATCH-001: Confirm ORDFILE physical field names and types.
+- TBD-ORDER-BATCH-008: Add CREDFILE / DS mapping to inventory.
 
 ---
 
@@ -253,18 +304,26 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 
 ## File I/O
 
-| File | Type | Operations | Key Fields | Purpose | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| ORDFILE | PF | READ (loop) | (implicit sequential) | Read pending orders one by one | [EV-ORDER-BATCH-002] |
-| CUSTFILE | LF | (Declared, not accessed) | — | Not used in this program | [EV-ORDER-BATCH-003] |
-| SHIPFILE | PF | CHAIN | OrderAmount | Lookup shipping cost table by order amount | [EV-ORDER-BATCH-004] |
-| CUSTMSTR | UF | CHAIN | CustID | Fetch and lock customer master record for update | [EV-ORDER-BATCH-005] |
+### File Access Summary
+
+| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ORDFILE | pending DDS | PF | READ loop | implicit sequential | ProcessOrders loop until EOF | `%EOF(ORDFILE)` | EV-ORDER-BATCH-002 |
+| CUSTFILE | pending DDS | LF | declared only | — | no observed I/O | none observed | EV-ORDER-BATCH-003 |
+| SHIPFILE | pending DDS | PF | CHAIN | OrderAmount | GetShipCost lookup before fallback calculation | `%FOUND(SHIPFILE)` | EV-ORDER-BATCH-004 |
+| CUSTMSTR | pending DDS | UF | CHAIN | CustID | ValidateCredit lookup before credit comparison | `%FOUND(CUSTMSTR)` | EV-ORDER-BATCH-005 |
+
+### Field Mutation Matrix
+
+| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| (none) | N/A | N/A | N/A | No `WRITE`, `UPDATE`, `DELETE`, or SQL DML observed in representative excerpt | N/A | DRW-ORDER-BATCH-002 through DRW-ORDER-BATCH-004 | MONITOR catches generic exceptions but no persisted file mutation is observed |
 
 **Operation details:**
 
 - **ORDFILE / READ:** Sequential read in loop. Continues until %EOF(ORDFILE) returns true. Each iteration processes one pending order.
 - **SHIPFILE / CHAIN:** Random lookup by OrderAmount (assumed numeric key). If found, use SHIP_COST; else calculate.
-- **CUSTMSTR / CHAIN:** Fetch customer record by CustID. Record is locked (UF = Update File).
+- **CUSTMSTR / CHAIN:** Fetch customer record by CustID. File is declared update-capable (`UF`), but no `UPDATE` statement is observed in this representative excerpt.
 
 **Evidence links:**
 - [EV-ORDER-BATCH-002: F-spec lines 15–18; READ statement line 46]
@@ -303,15 +362,31 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 
 ## Error Handling
 
-| Error Condition | Detected By | Handling | Recovery | Evidence |
+### Exception Closure Ledger
+
+| Exception / Error Condition | Trigger / Source | Message ID / Error Code / RC | Detected By | Fields Set / Messages Sent | Handling Action | Downstream Impact | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Generic file/call exception in ProcessOrders | OPEN/READ/CHAIN/CALL inside MONITOR | generic / bare ON-ERROR, ReturnCode -99 | MONITOR / ON-ERROR block | ReturnCode = -99; SNDPGMMSG literal to QSYSOPR | send operator message and exit batch job | terminates current batch; no recovery loop observed | EV-ORDER-BATCH-007 |
+| Invalid credit / denied decision | CreditStatus = 'D' | CreditStatus 'D'; RC = -1 | IF CreditStatus = 'D' | ErrorCount incremented; RC = -1 | skip GetShipCost and UPDTRISK for this order | continue to next ORDFILE record | EV-ORDER-BATCH-008 |
+| UPDTRISK returns error | RC <> 0 after CALL | non-zero RC; exact values TBD | IF RC = 0 / ELSE | ErrorCount incremented | continue loop | order is not counted as successful; no rollback observed in caller | EV-ORDER-BATCH-009 |
+
+### Message / Error Code Inventory
+
+| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
 | --- | --- | --- | --- | --- |
-| File operation error (OPEN/READ/CHAIN) | MONITOR / ON-ERROR block (lines 38–85) | Catch any unhandled exception; set ReturnCode = -99; send message to QSYSOPR | Send message and exit batch job | [EV-ORDER-BATCH-007] |
-| Invalid credit (validation fails) | IF CreditStatus = 'D' | Increment ErrorCount; set RC = -1; skip order processing | Continue to next order | [EV-ORDER-BATCH-008] |
-| UPDTRISK returns error | IF RC ≠ 0 | Increment ErrorCount; continue loop | Continue to next order | [EV-ORDER-BATCH-009] |
+| -99 | ReturnCode assignment | generic unexpected batch failure | ON-ERROR handler | EV-ORDER-BATCH-007 |
+| 'D' | ValidateCredit return | denied credit decision | ProcessOrders denial branch | EV-ORDER-BATCH-008 |
+| -1 | RC assignment | denied order / skipped processing | CreditStatus='D' branch | EV-ORDER-BATCH-008 |
+| 0 | UPDTRISK RC check | external risk update success | RC = 0 branch | EV-ORDER-BATCH-009 |
+| non-zero RC | UPDTRISK RC check | external risk update error | RC <> 0 branch | EV-ORDER-BATCH-009 |
+| generic / bare ON-ERROR | MONITOR block | catch-all system exception coverage only | ProcessOrders ON-ERROR | EV-ORDER-BATCH-007 |
 
 **Unhandled exceptions:**
 - If any file is already open: OPEN statement will fail, caught by MONITOR, job terminates.
 - If ORDFILE sequential read encounters I/O error: not explicitly handled within DOWHILE; MONITOR catches, job terminates.
+
+**Generic handlers:**
+- The `MONITOR / ON-ERROR` block is generic coverage. No specific `CPF*`, `CPD*`, `MCH*`, `RNX*`, or `SQL*` message ID is named in the representative source excerpt.
 
 **Logged errors:**
 - SNDPGMMSG 'Batch job failed unexpectedly' sent to QSYSOPR if MONITOR catches exception [confirmed_from_code, line 84]
@@ -321,6 +396,15 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 - [EV-ORDER-BATCH-007: MONITOR / ON-ERROR block lines 38–79]
 - [EV-ORDER-BATCH-008: IF statement line 59 checking CreditStatus]
 - [EV-ORDER-BATCH-009: IF statement line 68 checking RC from UPDTRISK]
+
+---
+
+## Redundancy Candidate Notes
+
+| Candidate | Location | Candidate Redundancy | Reason | Trace / Last Observed Use | Evidence | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| CUSTFILE declaration | F-spec line 17 | unknown | File is declared but not accessed in the representative excerpt; full production source and SME intent needed before marking redundant. | declared only; no observed runtime touch in deep-read windows | EV-ORDER-BATCH-003 | pending_sme_judgment via TBD-ORDER-BATCH-005 |
+| CUSTMSTR `UF` update-capable mode | F-spec line 19 | no | Although no `UPDATE` is observed, update-capable open mode may be required for lock semantics or omitted source paths outside excerpt. | CUSTMSTR -> CHAIN in ValidateCredit -> credit decision | EV-ORDER-BATCH-005 | preserve |
 
 ---
 
@@ -377,10 +461,13 @@ Before approval, SME must validate:
 
 - [X] External entry points and callable procedures are correct and complete — Main program plus 3 callable procedures documented
 - [X] Parameter contracts match actual usage — All parameters confirmed from procedure specifications
+- [X] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior — ORDFILE loop, denial branch, external RC branch, and shipping fallback captured
 - [X] Data Touch Map captures critical carriers, keys, payloads, and state impacts — ORDFILE, CUSTMSTR, SHIPFILE, UPDTRISK, and QSYSOPR paths captured
-- [X] File I/O matches job design — ORDFILE sequential, CUSTMSTR CHAIN on CustID, SHIPFILE CHAIN on OrderAmount
+- [X] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields — driver, lookup, external handoff, and queue-message fields captured
+- [X] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped — no persisted file mutation observed in the representative excerpt
 - [X] External calls match system interfaces — UPDTRISK called with correct parameters
-- [ ] Error handling aligns with production reliability requirements — **See TBD-ORDER-BATCH-004**
+- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact — generic handler and observed return codes captured; **See TBD-ORDER-BATCH-004**
+- [ ] Redundancy candidates are conservative and do not remove hidden rules — CUSTFILE is unknown; CUSTMSTR `UF` preserved
 - [ ] TBDs are non-blocking or properly flagged for follow-up — 8 TBDs; 3 pending source (incl. 1 inventory gap), 3 pending SME, 2 non-blocking
 - [X] No invented subroutines or undocumented file access — All behaviors confirmed from source
 - [X] All evidence links reference existing inventory items — EV-* IDs align with ORDER-BATCH scope

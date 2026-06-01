@@ -117,6 +117,57 @@ map but must remain in this table and in the edge table.
 
 ---
 
+## Flow Replay Path
+
+Purpose: replay the business transaction from trigger to terminal outcome,
+using only evidence-backed nodes, edges, data exchanges, persistence rows,
+exception chains, and UI surfaces.
+
+| Replay Step | Trigger / Node / Edge | Input / Carrier | Logic / Decision | Persistence / Output | Error / Alternate Path | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| REPLAY-[SLUG]-01 | [trigger or NODE-*] | [field, parameter, file, UI, queue] | [decision, call, branch, loop, or N/A] | [PERSIST-* / UI-* / response / N/A] | [EXCHAIN-* / branch / N/A] | [EV-*] |
+
+**Replay summary:**
+```text
+[trigger]
+  -> [NODE / data handoff]
+  -> [decision]
+  -> [persistence/output]
+  -> [final outcome]
+```
+
+---
+
+## Cross-Program Field Lineage
+
+Purpose: stitch program-local field lineages across CALL parameters, shared
+files, data areas, queues, screens, spool, IFS files, and manual handoffs.
+
+| Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LINEAGE-[SLUG]-01 | [customer id / amount / status / error code] | [NODE + field] | [EDGE/DATA/object] | [NODE + field] | [calculation / branch / no transform] | [PERSIST-* / response / report / UI] | [EV-*] |
+
+**Unresolved lineage:**
+- TBD-[SLUG]-[NNN]: [missing program-analysis lineage, carrier field, DDS/copybook, or SME handoff confirmation]
+
+---
+
+## Flow Persistence Matrix
+
+Purpose: aggregate program-level field mutations into transaction-level data
+outcomes. Do not repeat every program-local assignment; include only writes,
+updates, deletes, skipped mutations, and external durable outputs that matter
+to the flow outcome.
+
+| Persist ID | Node / Routine | File / Object | Operation | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PERSIST-[SLUG]-01 | [NODE / routine] | [PF/LF/DSPF/PRTF/DTAQ/MSGQ/IFS/API] | WRITE / UPDATE / DELETE / SQL DML / send / spool / N/A skipped | [key and branch condition] | [field names or output payload] | [LINEAGE-* / DATA-* / literal / RC] | [commit, rollback, retry, skipped] | [node/system/user] | [EV-*] |
+
+**Read-only flow:** N/A only when all upstream program analyses confirm no
+persisted file mutations or durable external outputs.
+
+---
+
 ## Branch Points
 
 | Branch Ref | Location (node + line) | Decider | Alternatives | Evidence |
@@ -148,6 +199,12 @@ map but must remain in this table and in the edge table.
 
 | Trigger Error | What Happens | Operator Visibility | Recovery |
 | --- | --- | --- | --- |
+
+### Exception Propagation Chain
+
+| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-[SLUG]-01 | [NODE-*] | [CPF*/SQL*/UCC*/literal/RC] | [CALL out parm / MSGQ / exception / file status] | [branch, return, retry, abort, continue] | [EDGE-* skipped/allowed] | [PERSIST-* committed/skipped/rolled back] | [decline / abort / continue / operator action] | [EV-*] |
 
 ### Commit Boundaries
 
@@ -198,11 +255,15 @@ Before approval, SME must validate:
 - [ ] All nodes in scope (no missing, no extras)
 - [ ] All edges reflect actual production calls
 - [ ] Cross-program data flow captures carriers, producers, consumers, timing, and state impacts
+- [ ] Flow Replay Path can be followed from trigger to final outcome
+- [ ] Cross-program field lineage preserves critical source, carrier, mutation, and output fields
+- [ ] Flow Persistence Matrix lists transaction-level writes, updates, deletes, skipped mutations, and commit/rollback impacts
 - [ ] Branch points capture user-visible decisions
 - [ ] UI surfaces match production screens (interactive flows only)
 - [ ] Error propagation matches operational reality
+- [ ] Exception Propagation Chain lists observed message IDs, error codes, return codes, skipped downstream edges, and final outcomes
 - [ ] Commit boundaries correctly identified
-- [ ] Capability seeds are reasonable questions, not invented rules
+- [ ] Capability seeds are reasonable questions backed by replay, lineage, persistence, or exception evidence; not invented rules
 - [ ] All node program-analyses are approved
 
 ### SME Sign-Off

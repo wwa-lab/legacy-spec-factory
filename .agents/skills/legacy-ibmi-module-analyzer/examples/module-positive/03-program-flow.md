@@ -33,6 +33,14 @@ flowchart TD
 | FLOW-MANUAL-AUTH-001 | Manual override via CSR | Interactive Menu | MANAUTH | MANAUTH | sync, interactive, sub-second |
 | FLOW-NIGHTLY-RECON-001 | Nightly reconciliation | Scheduler+Batch | RECONCL | RECONSQL | async, batch, 1–3 hours |
 
+## Replay Coverage Summary
+
+| Flow ID | Replay Paths Covered | Key Decision / Exception Paths | Persisted Outcomes | Missing Replay / Lineage / Persistence Gaps |
+| --- | --- | --- | --- | --- |
+| FLOW-ONUS-AUTH-001 | `REPLAY-ONUS-AUTH-001` MQ trigger → CU101A → CREDITCHK → TXNLOGWR → CU199Z response | approve / decline / `EXCHAIN-ONUS-AUTH-001` MQ timeout | `PERSIST-ONUS-AUTH-001` TXNLOGPF auth row + MQ response | CVV lineage question carried by TBD-CARD-AUTH-003 |
+| FLOW-MANUAL-AUTH-001 | `REPLAY-MANUAL-AUTH-001` CSR menu → MANAUTH → CREDITCHK → TXNLOGWR → screen response | supervisor approval / decline / `EXCHAIN-MANUAL-AUTH-001` validation failure | `PERSIST-MANUAL-AUTH-001` TXNLOGPF manual row + screen response | none |
+| FLOW-NIGHTLY-RECON-001 | `REPLAY-NIGHTLY-RECON-001` scheduler → RECONCL → RECONSQL → GL handoff / spool | normal posting / `EXCHAIN-NIGHTLY-RECON-001` RC=-2 threshold breach | `PERSIST-NIGHTLY-RECON-001` GLPOSTPF, RECONDTAQ, RECONPRT, HSSDTAR002 checkpoint | exception threshold owner carried by TBD-CARD-AUTH-002 |
+
 ## Cross-Flow Dependencies
 
 | From Flow | To Flow | Mechanism | Reason | Evidence |

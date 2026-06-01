@@ -87,7 +87,10 @@ flowchart TD
   EXC_THRESHOLD -->|no| EXC_CLOSE
 ```
 
-Source: Anna Chen 2026-05-12.
+Source: Anna Chen 2026-05-12, cross-checked against
+`EXCHAIN-NIGHTLY-RECON-001`. The online authorization timeout path
+(`EXCHAIN-ONUS-AUTH-001`) returns a decline response and leaves no GL posting
+impact; partner retry ownership remains with the upstream network contract.
 
 ## Business Rule Seeds (Module-Level)
 

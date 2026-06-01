@@ -12,8 +12,9 @@ Treat a 20k-30k+ line RPG program as an evidence-driven program-understanding
 problem, not as a large-text summarization problem.
 
 The analyzer must first turn the source into a compact, auditable structure:
-source index, Program Call Map, Data Touch Map, routine cards, deep-read
-windows, and coverage ledger. Only then may it synthesize behavior.
+source index, Program Call Map, Logic Decomposition Ledger, Data Touch Map,
+Key File & Field Logic, routine cards, deep-read windows, and coverage ledger.
+Only then may it synthesize behavior.
 
 The goal is not to "read every line into context." The goal is to preserve the
 program's call topology, state changes, data movement, evidence, and known gaps
@@ -46,11 +47,14 @@ The safe pipeline is:
 2. Deterministic source index.
 3. Routine-level cards.
 4. Program Call Map.
-5. Data Touch Map.
-6. Deep-read windows for hot paths, state changers, external boundaries, and
+5. Logic Decomposition Ledger.
+6. Data Touch Map.
+7. Key File & Field Logic and field-level File I/O mutation matrix.
+8. Exception Closure Ledger.
+9. Deep-read windows for hot paths, state changers, external boundaries, and
    error handling.
-7. Coverage ledger.
-8. Evidence-backed synthesis.
+10. Coverage ledger.
+11. Evidence-backed synthesis.
 
 ## Source Index
 
@@ -67,10 +71,16 @@ Capture:
 - `EXSR`, `CALL`, `CALLP`, `CALLPRC`, `PERFORM`, and CL `CALLSUBR` sites
 - file operations: `CHAIN`, `SETLL`, `READE`, `READ`, `WRITE`, `UPDATE`,
   `DELETE`
+- assignments immediately before `WRITE`, `UPDATE`, `DELETE`, or SQL DML so
+  persisted field mutations can be reconstructed
 - display/report operations: `EXFMT`, `WRITE` to DSPF/PRTF, printer overflow
 - commit and rollback operations
 - message/data-queue/API operations
+- constants, literals, arithmetic, string construction, precision conversion,
+  `IF`, `SELECT` / `CASE`, loops, and branch fallback order
 - indicators and error handlers that affect branching or I/O outcome
+- observed message IDs, error codes, return/status codes, and generic catch-all
+  handlers
 
 ## Routine Card
 
@@ -84,7 +94,7 @@ Each routine card records one semantic unit:
 | Calls Out | Internal and external calls made by this routine |
 | Data Touches | Files, queues, screens, reports, parameters, and critical fields |
 | State Impact | `read-only`, `creates`, `updates`, `deletes`, `external handoff`, `unknown` |
-| Error Handling | Local monitor, indicator checks, message writes, propagated status |
+| Error Handling | Local monitor, indicator checks, message IDs/error codes, message writes, propagated status |
 | Evidence | Source evidence IDs and line ranges |
 | Coverage | `indexed_only`, `deep_read`, or `blocked` |
 | Open Questions | Source gaps, SME questions, or contradiction references |

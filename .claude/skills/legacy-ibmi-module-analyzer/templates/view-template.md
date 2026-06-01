@@ -20,10 +20,13 @@ Diagram rules:
   exception, and rule-seed labels.
 - View 2 should show upstream systems, interfaces, the IBM i module boundary,
   downstream systems, and security boundaries.
-- View 3 should show flow entry points, entry programs, shared programs, exit
-  programs, and external response or batch outcomes.
-- View 4 should show data movement across flows and objects, with edge labels
-  such as `creates`, `updates`, `reads`, `hands off`, `archives`, or `purges`.
+- View 3 should show flow entry points, replay paths, entry programs, shared
+  programs, exit programs, persisted outcomes, exception branches, and
+  external response or batch outcomes.
+- View 4 should show data movement, critical field lineage, persistence
+  effects, and exception-state impacts across flows and objects, with edge
+  labels such as `creates`, `updates`, `reads`, `hands off`, `skips write`,
+  `rolls back`, `archives`, or `purges`.
 - Use stable node IDs that mirror `ACTOR-*`, `EVENT-*`, `SYS-*`, `IF-*`,
   `FLOW-*`, `PGM-*`, `DATA-*`, `OBJ-*`, `BR-*`, or `TBD-*`, replacing hyphens
   with underscores.
@@ -38,11 +41,12 @@ Manual Interventions / Exception Lifecycle / Business Rule Seeds
 For View 2 (System Flow): Upstream / Downstream / External Interfaces /
 Integration Patterns / Security Boundaries
 
-For View 3 (Program Flow): Flow Inventory / Cross-Flow Dependencies /
-Shared Sub-Programs / Overall Call Topology
+For View 3 (Program Flow): Flow Inventory / Replay Coverage Summary /
+Cross-Flow Dependencies / Shared Sub-Programs / Overall Call Topology
 
-For View 4 (Data Flow): Data Objects / Lifecycle / Coupling Hotspots /
-Critical Data Trails / DB Relationships / Cross-Module Dependencies
+For View 4 (Data Flow): Data Objects / Lifecycle / Module Persistence Matrix /
+Critical Field Lineage Across Module / Exception-Aware Data Risks / Coupling
+Hotspots / Critical Data Trails / DB Relationships / Cross-Module Dependencies
 
 ## TBDs
 
@@ -62,8 +66,8 @@ this view in `references/output-contract.md`:
 
 - For **View 1 (Operation Flow):** Business actors, BAU rhythm, exception procedures, business-rule seeds, and evidence linking
 - For **View 2 (System Flow):** Upstream/downstream systems, integration patterns, SLAs, security boundaries, and evidence linking
-- For **View 3 (Program Flow):** All flows in scope, cross-flow dependencies, shared sub-programs, call topology, and evidence linking
-- For **View 4 (Data Flow):** Data lifecycle, coupling hotspots, cross-module dependencies, DB relationships, and evidence linking
+- For **View 3 (Program Flow):** All flows in scope, replay coverage, persisted outcomes, exception branches, cross-flow dependencies, shared sub-programs, call topology, and evidence linking
+- For **View 4 (Data Flow):** Data lifecycle, critical field lineage, module persistence matrix, exception-aware data risks, coupling hotspots, cross-module dependencies, DB relationships, and evidence linking
 
 ## SME Sign-Off
 - **Reviewer:** ____

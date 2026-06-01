@@ -3,7 +3,8 @@ skill: legacy-step-validator
 scorecard_version: v0.1.1
 static_score: 9.53
 decision: field-pilot ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-step-validator-v0.1.2-scorecard.md
 last_verified: 2026-05-14
 runtimes_tested:
   codex: { status: passed, model: gpt-5.4-mini, date: 2026-05-14 }

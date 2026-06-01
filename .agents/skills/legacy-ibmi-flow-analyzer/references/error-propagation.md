@@ -7,6 +7,36 @@ commit / rollback boundaries.
 
 ---
 
+## Exception Chain Rule
+
+Flow analysis consumes each node's program-analysis Exception Closure
+Ledger. For every exception, error code, message ID, return code, status
+flag, or generic handler that changes the flow outcome, create an
+Exception Propagation Chain row.
+
+Capture:
+
+- source node and upstream exception/error reference
+- observed `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local message
+  ID, literal business error code, return code, status flag, or generic
+  handler token
+- propagation carrier: CALL output parameter, exception, message queue,
+  shared file status, SQL state, data queue, screen message, or manual
+  operator action
+- caller reaction: branch, retry, rollback, skip, abort, continue,
+  message/log, or response build
+- skipped or allowed downstream edges
+- persistence impact: which `PERSIST-*` rows commit, roll back, are
+  skipped, or become retry-sensitive
+- final flow outcome
+
+Generic handlers (`MONMSG *ANY`, bare `ON-ERROR`, generic error
+paragraphs) stay generic. They do not prove coverage of specific message
+IDs unless the specific ID appears in source, message-file references,
+runtime evidence, or SME-approved notes.
+
+---
+
 ## Error Propagation Patterns
 
 ### Pattern A: Return Code Propagation
@@ -146,6 +176,13 @@ mechanisms.
 | Credit-check failure at NODE-03 | Decline response sent; nothing logged | none | n/a |
 | DB I/O error at NODE-03 | Flow aborts; caller times out | QSYSOPR msg | manual retry by ops |
 | Unhandled exception at NODE-05 | Job ends; caller times out; no audit row | QSYSOPR + job log | manual retry by ops |
+
+### Exception Propagation Chain
+
+| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-FLOW-01 | NODE-02 | RC=-2 | CALL out parameter RC | NODE-01 logs + GOTO ERREXIT | skips NODE-03 and NODE-04 | PERSIST-GLPOST skipped; no completion flag | job ends with reconciliation failure | EV-... |
+| EXCHAIN-FLOW-02 | NODE-04 | SQLCODE < 0 / SQLSTATE | CALL out parameter RC + QSYSOPR message | NODE-01 ABEND | downstream GL consolidation blocked | GLPOST rows may already be durable; completion flag skipped | partial restart needed | EV-... |
 
 ### Commit Boundaries
 

@@ -486,6 +486,12 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.2 (2026-06-01): Aligned validation checklists with analyzer v0.2.0
+  contracts. Program validation now checks key file/field logic, field-level
+  File I/O mutation, and complete exception closure; flow validation checks
+  replay, field lineage, persistence, and exception chains; module validation
+  checks module readiness summaries and BRD-first handoff gates.
+
 - v0.1.1 (2026-05-14): Fixed compact result semantics by splitting
   downstream advancement from remediation (`downstream_next_step`,
   `remediation_step`), aligned blocked example findings, documented SME

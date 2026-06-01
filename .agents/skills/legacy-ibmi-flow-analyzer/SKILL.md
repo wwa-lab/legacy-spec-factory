@@ -71,6 +71,14 @@ Accept:
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
 
+Each upstream program-analysis should expose the program-chain readiness
+sections from `legacy-ibmi-program-analyzer` v0.2.0 or later:
+`Logic Decomposition Ledger`, `Key File & Field Logic`, field-level
+`File I/O` mutation matrix, `Exception Closure Ledger`, and
+`Redundancy Candidate Notes`. If an older approved program-analysis is
+used, the flow must either route back for refresh or record a named SME
+waiver for the missing detail.
+
 Stop and require clarification if:
 
 - Any program in the chain lacks an approved `program-analysis-<OBJ-ID>.md`
@@ -156,40 +164,51 @@ field-level rules. The summary below is normative for this skill.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (10 ordered steps).
+- **Procedure**: see the Workflow section below (11 ordered steps).
 - **Allowed inference**: assembling cross-program call edges from
   upstream program analyses; classifying call types (CALL / CALLP /
   CALLPRC / SBMJOB / remote); deriving branch destinations from DSPF
-  option tables; reading scheduler / trigger / API configuration exports
-  as tier-1 evidence.
+  option tables; stitching cross-program field lineage only through
+  upstream Key File & Field Logic, field mutation matrices, visible
+  carrier fields, or SME-confirmed handoffs; reading scheduler /
+  trigger / API configuration exports as tier-1 evidence.
 - **Forbidden assumptions**: calls not visible in any program-analysis
   External Calls section; data flow whose parameter semantics require
   guessing; branch destinations not in DSPF DDS; trigger conditions
   without configuration export; scheduler frequency without
   `WRKJOBSCDE`; commit boundaries without code or SME confirmation;
-  business rules (these are seeds, never facts).
+  flow-level field lineage not backed by upstream lineage or a visible
+  carrier; persisted file/field updates absent from upstream mutation
+  matrices; exception propagation not backed by upstream Exception
+  Closure Ledgers; business rules (these are seeds, never facts).
 - **TBD handling**: missing program-analysis → `TBD: pending_source`
   routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
   `TBD: pending_sme_judgment`; unnamed business event → stop and request
   the name from SME (do not autogenerate from program names).
 - **Coverage propagation**: consume each upstream program's Analysis
-  Coverage & Scope, Routine Cards, and Deep Read Windows before using
+  Coverage & Scope, Routine Cards, Deep Read Windows, Logic
+  Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix,
+  Exception Closure Ledger, and Redundancy Candidate Notes before using
   program-level evidence in a flow. If the requested flow relies on a
   routine that was only `indexed_only` and that routine changes state,
-  performs external handoff, handles commit/rollback, or controls error
-  outcome, flow analysis is blocked until the routine is `deep_read` or a
-  named SME waiver is recorded in review metadata.
+  performs external handoff, handles commit/rollback, controls error
+  outcome, supplies critical field lineage, or mutates persisted fields,
+  flow analysis is blocked until the routine is `deep_read` or a named
+  SME waiver is recorded in review metadata.
 
 ### Output
 
 - **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
 - **Required sections**: trigger model & entry point, transaction call
-  map, nodes, edges, common dependencies, cross-program data flow, branch
-  points, UI surfaces (or `N/A — non-interactive`), error propagation &
-  commit boundaries, capability seeds, SME review checklist.
+  map, nodes, edges, common dependencies, cross-program data flow, flow
+  replay path, cross-program field lineage, flow persistence matrix,
+  branch points, UI surfaces (or `N/A — non-interactive`), error
+  propagation & commit boundaries, exception propagation chain,
+  capability seeds, SME review checklist.
 - **Required IDs**: mints `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`,
-  `SEED-*`, `TBD-*`; reuses `OBJ-*`, `EV-*`, and program-level `BEH-*`
-  from upstream. Flow analysis does not mint `BR-*`; branch points are
+  `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, `EXCHAIN-*`, `SEED-*`,
+  `TBD-*`; reuses `OBJ-*`, `EV-*`, and program-level `BEH-*` from
+  upstream. Flow analysis does not mint `BR-*`; branch points are
   represented by `NODE-*` / `EDGE-*` entries and capability questions by
   `SEED-*`.
 - **Handoff status**: `status: draft` → `needs_sme_review` →
@@ -203,12 +222,17 @@ field-level rules. The summary below is normative for this skill.
   statement, config export, or integration contract); every data exchange
   traces to a source line; every UI surface traces to a DSPF/PRTF/`*MENU`
   in inventory; every trigger has evidence type 2 plus SME confirmation
-  of business meaning; every node carries upstream coverage state and
-  any blocking coverage gaps; all required sections populated.
+  of business meaning; every replay step maps to `NODE-*`, `EDGE-*`,
+  `DATA-*`, `PERSIST-*`, or `EXCHAIN-*`; every field lineage is backed
+  by upstream field lineage or visible carrier fields; every persistence
+  row is backed by an upstream field mutation matrix; every node carries
+  upstream coverage state and any blocking coverage gaps; all required
+  sections populated.
 - **AI semantic**: edges match upstream program-analyses (no invented
   calls); branch destinations match DSPF option tables; error
-  propagation matches each node's program-analysis; commit boundaries
-  are evidenced, not assumed; flow evidence is not taken from
+  propagation matches each node's program-analysis Exception Closure
+  Ledger; commit boundaries are evidenced, not assumed; flow evidence is
+  not taken from
   `indexed_only` or `blocked` routines when those routines have business
   state impact unless a named SME waiver is recorded; capability seeds
   are *questions*, not rule claims.
@@ -328,7 +352,34 @@ to the orchestrator.
    - Assign `DATA-<SLUG>-<NNN>` for each distinct data exchange.
    - Tag evidence; cross-reference to source line numbers via EV-\*.
 
-6. **Branch Points & Decision Nodes**
+6. **Build Flow Replay Path, Field Lineage & Persistence Matrix**
+   - Build a **Flow Replay Path** from trigger to terminal outcome:
+     trigger, entry parameters, node execution, data handoff, key
+     decisions, persisted mutations, commit/rollback/output, and final
+     response or operator-visible state.
+   - Each replay step must reference existing `NODE-*`, `EDGE-*`,
+     `DATA-*`, `PERSIST-*`, `EXCHAIN-*`, or `UI-*` rows. Do not invent
+     a replay step that is not supported by an upstream program-analysis
+     or flow evidence.
+   - Build **Cross-Program Field Lineage** for critical fields that
+     cross program boundaries. Stitch program-local lineages through
+     CALL parameters, shared files, data areas, queues, screens, IFS,
+     spool, or SME-confirmed manual handoffs.
+   - Build the **Flow Persistence Matrix** by aggregating each
+     program-analysis Field Mutation Matrix into transaction-level
+     outcomes:
+     - node and routine that performs the mutation
+     - file and field persisted, updated, deleted, or skipped
+     - upstream field / parameter / carrier that drives it
+     - downstream readers or consumers
+     - commit / rollback / retry impact
+     - evidence and TBDs for missing DDS, mutation source, or rollback
+       behavior
+   - For read-only flows, explicitly mark the persistence matrix
+     `N/A — read-only flow` and cite the upstream analyses proving no
+     persisted mutations.
+
+7. **Branch Points & Decision Nodes**
    - Identify points where the flow forks (subfile option, F-key,
      conditional CALL, trigger event).
    - For each branch point:
@@ -336,7 +387,7 @@ to the orchestrator.
      - the alternatives and which target node each leads to
      - whether unhandled options/keys exist (silently dropped vs. error)
 
-7. **UI Surfaces (interactive flows only)**
+8. **UI Surfaces (interactive flows only)**
    - List every DSPF / PRTF / MENU the user sees during the flow.
    - For each:
      - object name + `OBJ-*`
@@ -347,18 +398,24 @@ to the orchestrator.
    - For non-interactive flows (batch, trigger, scheduler, API), this
      section may be `N/A — non-interactive flow`.
 
-8. **Error Propagation**
+9. **Error Propagation & Exception Chain**
    - For each node, summarise (from its `program-analysis` Error Handling
      section) what happens when each error condition occurs.
    - Trace propagation: does the error abort the whole flow, roll back to
      a checkpoint, log-and-continue, or branch to an error handler?
+   - Build an **Exception Propagation Chain** from every upstream
+     Exception Closure Ledger row that affects this flow. Each row must
+     show source node, observed message ID / error code / return code,
+     propagation carrier, caller reaction, skipped/allowed downstream
+     edges, persistence impact, operator/user visibility, and final flow
+     outcome.
    - Identify **commit boundaries**: where does the flow consider work
      "committed" vs "rolled back"?
    - Identify **unhandled error windows**: nodes where an unhandled
      error would crash the entire flow without recovery (create TBD).
    - See `references/error-propagation.md`.
 
-9. **Business Capability Seeds**
+10. **Business Capability Seeds**
    - Extract `SEED-*` candidates (business rule seeds) that this flow
      plausibly enforces — **without inventing rules**.
    - Each seed is a *question* for SME review (e.g., "Does the rule
@@ -367,13 +424,16 @@ to the orchestrator.
      business event, business object, decision, outcome, control, or
      exception. Put program names, node IDs, field names, and file names in
      `Evidence Basis`, not in the candidate statement.
+   - Evidence Basis should reference replay path, cross-program field
+     lineage, persistence matrix, or exception chain rows when those
+     rows are the real support for the seed.
    - The spec-writer skill will resolve seeds into approved rules; the
      flow analyzer never approves rules itself.
    - **Note:** flow analysis does not mint `BR-*` IDs. Branch points are
      represented by `NODE-*` / `EDGE-*` entries; capability seeds use
      `SEED-*` IDs.
 
-10. **Prepare for SME Review**
+11. **Prepare for SME Review**
    - Consolidate all TBDs grouped by blocking status (`pending_source` /
      `pending_sme_judgment` / `non_blocking`).
    - **If any blocking TBDs exist:**
@@ -446,6 +506,14 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 - **Calls** not visible in any program's `program-analysis` External Calls section
 - **Data flow** that requires guessing parameter semantics (use only what
   source explicitly shows or SME confirms)
+- **Cross-program field lineage** that cannot be stitched through
+  upstream program-analysis lineage, carrier fields, or SME-approved
+  manual handoff
+- **Persistence outcomes** not present in upstream Field Mutation
+  Matrix rows or SQL/file evidence
+- **Exception chains** not present in upstream Exception Closure Ledger
+  rows, return-code checks, message IDs, or SME-confirmed operational
+  recovery notes
 - **Branch destinations** for F-keys / options not visible in DSPF DDS
 - **Trigger conditions** for DB triggers without seeing trigger configuration export
 - **Scheduler frequency or submitted command** without WRKJOBSCDE evidence
@@ -487,12 +555,20 @@ covering:
 - [ ] All edges (calls) reflect actual production behavior
 - [ ] Cross-program data flow captures carriers, producers, consumers,
       timing, state impacts, and no undocumented shared files or data areas
+- [ ] Flow Replay Path can be followed from trigger to final outcome
+- [ ] Cross-program field lineage preserves critical source, carrier,
+      mutation, and output fields
+- [ ] Flow Persistence Matrix lists transaction-level writes, updates,
+      deletes, skipped mutations, and commit/rollback impacts
 - [ ] Branch points correctly capture user-visible decision points
 - [ ] UI surfaces match production screens (interactive flows only)
 - [ ] Error propagation matches operational reality (what actually
       happens when this fails in prod)
+- [ ] Exception Propagation Chain lists observed message IDs, error
+      codes, return codes, skipped downstream edges, and final outcomes
 - [ ] Commit boundaries are correct (one transaction vs. multiple)
-- [ ] Capability seeds are reasonable questions, not invented rules
+- [ ] Capability seeds are reasonable questions backed by replay,
+      lineage, persistence, or exception evidence; not invented rules
 
 ## Runtime Portability
 
@@ -508,6 +584,19 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.0 (2026-06-01): Replayable program-chain hardening
+  - Added Flow Replay Path, Cross-Program Field Lineage, Flow
+    Persistence Matrix, and Exception Propagation Chain requirements
+  - Required flow analysis to consume program-analyzer v0.2.0 ledgers
+    where available
+  - Tightened capability seeds so evidence basis can reference replay,
+    lineage, persistence, and exception-chain rows
+
+- v0.1.2 (2026-05-26): Business-readable seed hardening
+  - Reframed capability seeds as business-language questions
+  - Kept technical node, program, field, and object references in
+    `Evidence Basis`
 
 - v0.1.1 (2026-05-14): Field-pilot hardening
   - Added smoke test prompts and evidence taxonomy

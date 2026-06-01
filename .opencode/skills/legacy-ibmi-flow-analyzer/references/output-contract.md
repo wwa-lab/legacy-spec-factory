@@ -15,9 +15,13 @@ This document defines the precise shape and required fields for every
 ## Edges (Calls Between Nodes)
 ## Common Dependencies
 ## Cross-Program Data Flow
+## Flow Replay Path
+## Cross-Program Field Lineage
+## Flow Persistence Matrix
 ## Branch Points
 ## UI Surfaces                       (N/A for non-interactive flows)
 ## Error Propagation & Commit Boundaries
+## Exception Propagation Chain
 ## Business Capability Seeds
 ## TBDs & Blocking Status
 ## Review Checklist
@@ -183,6 +187,12 @@ NODE-03 (CU205A)  ── customer history detail
 - Every Node must carry upstream program coverage state from the program
   analysis, including any routine-level `deep_read`, `indexed_only`, or
   `blocked` gaps that affect flow readiness.
+- For program-analysis v0.2.0 and later, every Node must expose whether
+  the flow consumed the upstream Logic Decomposition Ledger, Key File &
+  Field Logic, Field Mutation Matrix, Exception Closure Ledger, and
+  Redundancy Candidate Notes. Older analyses require refresh or a named
+  SME waiver before their missing details can support replay, lineage,
+  persistence, or exception-chain claims.
 - Node IDs are sequence-numbered (`NODE-<SLUG>-01`, `NODE-<SLUG>-02`, …).
 - A program that is called multiple times in different roles may appear
   as multiple nodes (with different sequence numbers), or as one node
@@ -313,6 +323,101 @@ recon -> GLPOSTPF`.
 
 ---
 
+## Flow Replay Path Section
+
+The Flow Replay Path is the transaction-level "can we run this in our
+heads?" view. It links trigger, data handoff, decision, persistence,
+exception, and final outcome without repeating every program-local detail.
+
+```markdown
+### Flow Replay Path
+
+| Replay Step | Trigger / Node / Edge | Input / Carrier | Logic / Decision | Persistence / Output | Error / Alternate Path | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| REPLAY-ONUS-AUTH-01 | API trigger -> NODE-01 | inbound auth payload | payload accepted | no persistence | malformed payload -> EXCHAIN-01 | EV-... |
+| REPLAY-ONUS-AUTH-02 | EDGE-02 NODE-01 -> NODE-02 | DATA-01 Amount, CardNo, CustID | validation passed | no persistence | validation fail -> decline response | EV-... |
+| REPLAY-ONUS-AUTH-03 | NODE-04 | LINEAGE-03 Decision | approved path | PERSIST-01 writes TXNLOGPF | write fail -> EXCHAIN-04 | EV-... |
+```
+
+**Requirements:**
+
+- One row per replay-significant step, not one row per source statement.
+- Each row must reference existing `NODE-*`, `EDGE-*`, `DATA-*`,
+  `LINEAGE-*`, `PERSIST-*`, `EXCHAIN-*`, or `UI-*` rows.
+- Include happy path and material alternate/error paths.
+- If a flow cannot be replayed because an upstream program-analysis lacks
+  field lineage, mutation, or exception details, create a blocking TBD
+  or record a named SME waiver.
+
+---
+
+## Cross-Program Field Lineage Section
+
+Cross-Program Field Lineage stitches program-local field lineage into a
+flow-level chain. It answers: "Where did this critical value originate,
+which carrier moved it, which node consumed or transformed it, and where
+did it land?"
+
+```markdown
+### Cross-Program Field Lineage
+
+| Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LINEAGE-ONUS-AUTH-01 | Authorization amount | inbound payload Amount / NODE-01 | DATA-01 via EDGE-02 | AuthAmount / NODE-02 | currency conversion in NODE-02 | PERSIST-01 TXNLOGPF.AUTH_AMT | EV-... |
+| LINEAGE-ONUS-AUTH-02 | Decline reason | NODE-03 ERR_CD | DATA-02 out parameter | NODE-02 DecisionReason | maps to response code | outbound response field RespCode | EV-... |
+```
+
+**Requirements:**
+
+- Capture critical fields that affect money, inventory, customer/account
+  status, posting, approval/decline, compliance, auditability, external
+  payloads, return codes, message IDs, or error outcomes.
+- Stitch through visible carriers: CALL parameters, shared files, data
+  areas, queues, screen fields, spool, IFS files, APIs, or SME-confirmed
+  manual handoffs.
+- Do not infer a field match from similar names alone. The source must
+  be an upstream program-analysis Field Lineage / Key Field row, a
+  visible carrier field, DDS/copybook metadata, runtime evidence, or SME
+  confirmation.
+- Use `TBD-*` when the physical field, alias mapping, direction, or
+  downstream consumer is unclear.
+
+---
+
+## Flow Persistence Matrix Section
+
+The Flow Persistence Matrix aggregates program-level Field Mutation
+Matrix rows into transaction-level outcomes. It answers: "What durable
+state changes because this flow ran, what was skipped, and who consumes
+that state later?"
+
+```markdown
+### Flow Persistence Matrix
+
+| Persist ID | Node / Routine | File / Object | Operation | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PERSIST-ONUS-AUTH-01 | NODE-04 SR800 | TXNLOGPF | WRITE | if Decision in A/D | AuthNo, Amount, Decision, RC | LINEAGE-01, LINEAGE-02 | durable before response | nightly recon flow | EV-... |
+| PERSIST-ONUS-AUTH-02 | NODE-05 | CUST_MAST | UPDATE | only if approval path | LAST_AUTH_DT, AUTH_AMT | LINEAGE-01 | rolled back on ROLBK before COMMIT | customer inquiry | EV-... |
+| PERSIST-ONUS-AUTH-03 | NODE-03 | CUST_MAST | skipped update | decline path | balance/status not updated | EXCHAIN-02 | no mutation by design | N/A | EV-... |
+```
+
+**Requirements:**
+
+- Include PF/LF/SQL writes, updates, deletes, skipped mutations that are
+  material to the flow, data queue sends, message queue sends, spool
+  outputs, IFS/API durable external outputs, and completion/checkpoint
+  data-area updates.
+- Every persisted file/field mutation must be backed by an upstream
+  program-analysis Field Mutation Matrix row or direct SQL/file evidence.
+- `Driven By` should point to `LINEAGE-*`, `DATA-*`, error/return code,
+  literal, or SME-confirmed manual handoff.
+- `Commit / Rollback Impact` must say whether the mutation commits,
+  rolls back, is externally visible, is retry-sensitive, or is skipped.
+- For read-only flows, state `N/A — read-only flow` and cite the
+  upstream program analyses that prove no durable mutation occurs.
+
+---
+
 ## Branch Points Section
 
 ```markdown
@@ -371,6 +476,38 @@ confirm idempotency strategy.
 
 ---
 
+## Exception Propagation Chain Section
+
+The Exception Propagation Chain is the flow-level form of the upstream
+program `Exception Closure Ledger`. It shows how local node exceptions
+become transaction outcomes.
+
+```markdown
+### Exception Propagation Chain
+
+| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-ONUS-AUTH-01 | NODE-03 | D003 / RC=-1 | CALL out parameter RC | NODE-02 sets Decision='D' | skips EDGE-04, allows EDGE-06 response builder | PERSIST-01 writes decline audit; customer balance update skipped | decline response returned | EV-... |
+| EXCHAIN-ONUS-AUTH-02 | NODE-04 | CPF4101 | unhandled exception | caller has no MONITOR | skips all downstream edges | no commit after failure | job abort / caller timeout | EV-... |
+```
+
+**Requirements:**
+
+- Include every observed upstream exception/error/return path that
+  changes the flow outcome, skips a downstream edge, triggers rollback,
+  writes a message/log/report, or changes operator/user visibility.
+- Carry forward observed `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`,
+  shop-local message IDs, literal business error codes, return codes,
+  status flags, and generic catch-all handlers.
+- Generic handlers remain generic. Do not infer specific message IDs from
+  `*ANY`, bare `ON-ERROR`, or a generic error paragraph.
+- Link `Persistence Impact` to `PERSIST-*` rows where possible,
+  including skipped updates/deletes and committed partial state.
+- Create a TBD when caller reaction, downstream edge behavior,
+  persistence impact, or operator recovery is unclear.
+
+---
+
 ## Business Capability Seeds Section
 
 Each seed is a **business-language question for SME**, with technical pointers
@@ -385,9 +522,9 @@ flow analyzer does not declare rules.
 
 | Seed ID | Candidate Rule / Capability | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- | --- |
-| SEED-ONUS-AUTH-01 | Credit limit must be respected on every authorization | Authorization decision is made before approval is returned | NODE-02 CU110A always calls credit check before approval | Is "no authorization above credit limit" a required business rule for this flow, or only one implementation path? |
-| SEED-ONUS-AUTH-02 | CVV/CVC verification may be required for ATM/POS transactions | Transaction type changes the validation path | NODE-05 conditional on transaction-type field | Which transaction types require CVV/CVC verification? |
-| SEED-ONUS-AUTH-03 | Authorization decisions may require durable audit before response | The flow records the decision before responding | NODE-04 writes TXNLOGPF before NODE-06 builds response | Is decision logging a hard audit requirement, or best-effort operational logging? |
+| SEED-ONUS-AUTH-01 | Credit limit must be respected on every authorization | Authorization decision is made before approval is returned | REPLAY-02, LINEAGE-01, EXCHAIN-01 | Is "no authorization above credit limit" a required business rule for this flow, or only one implementation path? |
+| SEED-ONUS-AUTH-02 | CVV/CVC verification may be required for ATM/POS transactions | Transaction type changes the validation path | REPLAY-04, LINEAGE-03, branch EDGE-08 | Which transaction types require CVV/CVC verification? |
+| SEED-ONUS-AUTH-03 | Authorization decisions may require durable audit before response | The flow records the decision before responding | PERSIST-01 before outbound response boundary | Is decision logging a hard audit requirement, or best-effort operational logging? |
 ```
 
 ---
@@ -416,11 +553,15 @@ Before approval, SME must validate:
 - [ ] All nodes in scope (no missing, no extras)
 - [ ] All edges reflect actual production calls
 - [ ] Cross-program data flow captures carriers, producers, consumers, timing, and state impacts
+- [ ] Flow Replay Path can be followed from trigger to final outcome
+- [ ] Cross-program field lineage preserves critical source, carrier, mutation, and output fields
+- [ ] Flow Persistence Matrix lists transaction-level writes, updates, deletes, skipped mutations, and commit/rollback impacts
 - [ ] Branch points capture user-visible decisions
 - [ ] UI surfaces match production screens (interactive flows only)
 - [ ] Error propagation matches operational reality
+- [ ] Exception Propagation Chain lists observed message IDs, error codes, return codes, skipped downstream edges, and final outcomes
 - [ ] Commit boundaries correctly identified
-- [ ] Capability seeds are reasonable questions, not invented rules
+- [ ] Capability seeds are reasonable questions backed by replay, lineage, persistence, or exception evidence; not invented rules
 - [ ] All node program-analyses are approved
 
 ### SME Sign-Off
@@ -435,7 +576,9 @@ Before approval, SME must validate:
 
 ## Evidence Taxonomy
 
-Flow analysis requires **evidence** for every edge, data exchange, branch point, and trigger. This section defines what counts as authoritative evidence.
+Flow analysis requires **evidence** for every edge, data exchange,
+replay step, lineage row, persistence row, exception chain, branch point,
+and trigger. This section defines what counts as authoritative evidence.
 
 ### Evidence Types
 
@@ -493,6 +636,10 @@ If an edge or feature lacks evidence:
 | `NODE-` | one program participating in the flow | `NODE-ONUS-AUTH-03` |
 | `EDGE-` | one call between two nodes | `EDGE-ONUS-AUTH-04` |
 | `DATA-` | one data exchange / carrier touch (parameter set, DTAARA, DTAQ, shared file, screen field, message, IFS, manual handoff) | `DATA-ONUS-AUTH-02` |
+| `REPLAY-` | one replay step in the end-to-end transaction | `REPLAY-ONUS-AUTH-03` |
+| `LINEAGE-` | one cross-program critical-field lineage | `LINEAGE-ONUS-AUTH-01` |
+| `PERSIST-` | one transaction-level persistence/output outcome | `PERSIST-ONUS-AUTH-02` |
+| `EXCHAIN-` | one flow-level exception propagation chain | `EXCHAIN-ONUS-AUTH-01` |
 | `UI-` | a UI surface (DSPF / PRTF / MENU) | `UI-ONUS-AUTH-01` |
 | `SEED-` | a business-capability seed (question for SME) | `SEED-ONUS-AUTH-02` |
 | `TBD-` | an open question | `TBD-ONUS-AUTH-005` |

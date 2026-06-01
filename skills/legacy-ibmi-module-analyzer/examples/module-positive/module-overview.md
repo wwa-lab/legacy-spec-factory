@@ -5,11 +5,14 @@
 - **Business Name:** Card Authorization
 - **Scope Statement:** Processes on-us card authorization requests from external networks (Visa, Mastercard), supports manual authorization via CSR menu, and performs nightly reconciliation against GL. Excludes settlement (handled by separate module SETTLEMENT) and dispute handling (CHARGEBACK module).
 - **Module Owner:** Anna Chen (Card Operations Lead) — confirmed scope and boundaries 2026-05-12
+- **Evidence Mode:** code_backed
 - **In-scope Flows:**
   - FLOW-ONUS-AUTH-001 — On-us authorization request (API/MQ)
   - FLOW-MANUAL-AUTH-001 — Manual authorization via CSR menu
   - FLOW-NIGHTLY-RECON-001 — Nightly reconciliation (Scheduler+Batch)
 - **Status:** draft → needs_sme_review
+- **Mermaid Preview Status:** not_requested
+- **Completion Boundary:** stop_after_writeback
 
 ## View Index
 | View | File | Status | Reviewer |
@@ -33,6 +36,29 @@
 - **TBD-CARD-AUTH-004** (pending_analysis): CSR menu screen/report analysis
   is still needed to enrich BRD section 4, but it does not block module review.
 
+## Module Program-Chain Readiness
+
+| Flow ID | Replay Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
+| --- | --- | --- | --- | --- | --- |
+| FLOW-ONUS-AUTH-001 | complete (`REPLAY-ONUS-AUTH-001`) | partial (`LINEAGE-ONUS-AUTH-001`, CVV path TBD) | complete (`PERSIST-ONUS-AUTH-001`) | complete (`EXCHAIN-ONUS-AUTH-001`) | TBD-CARD-AUTH-003 |
+| FLOW-MANUAL-AUTH-001 | complete (`REPLAY-MANUAL-AUTH-001`) | complete (`LINEAGE-MANUAL-AUTH-001`) | complete (`PERSIST-MANUAL-AUTH-001`) | complete (`EXCHAIN-MANUAL-AUTH-001`) | none |
+| FLOW-NIGHTLY-RECON-001 | complete (`REPLAY-NIGHTLY-RECON-001`) | complete (`LINEAGE-NIGHTLY-RECON-001`) | complete (`PERSIST-NIGHTLY-RECON-001`) | partial (`EXCHAIN-NIGHTLY-RECON-001`, threshold owner TBD) | TBD-CARD-AUTH-002 |
+
+## Module Persistence & Critical Field Summary
+
+| Data / Field / Outcome | Source Flows | Persistence / Output | Downstream Consumer | Risk / TBD |
+| --- | --- | --- | --- | --- |
+| Authorization decision / status | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | TXNLOGPF status row + MQ/menu response | Card network, CSR, nightly reconciliation | none |
+| GL posting amount and exception count | FLOW-NIGHTLY-RECON-001 (`LINEAGE-NIGHTLY-RECON-001`, `PERSIST-NIGHTLY-RECON-001`) | GLPOSTPF, RECONPRT, RECONDTAQ | GL system, Finance Analyst, Risk Monitoring | TBD-CARD-AUTH-001, TBD-CARD-AUTH-002 |
+| CVV verification result | FLOW-ONUS-AUTH-001 (`LINEAGE-ONUS-AUTH-002`) | transient decision field; no stored value confirmed | authorization response | TBD-CARD-AUTH-003 |
+
+## Module Exception & Recovery Summary
+
+| Exception Cluster | Source Flow / EXCHAIN | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
+| --- | --- | --- | --- | --- |
+| Online auth timeout / MQ failure | FLOW-ONUS-AUTH-001 (`EXCHAIN-ONUS-AUTH-001`) | decline response, no GL impact | partner retry; Ops monitors queue depth | covered |
+| Nightly recon RC=-2 threshold breach | FLOW-NIGHTLY-RECON-001 (`EXCHAIN-NIGHTLY-RECON-001`) | GL posting deferred, RECONPRT spool generated | Finance Analyst review, Card Ops escalation | TBD-CARD-AUTH-002 |
+
 ## Capability Seeds For BRD / Spec
 
 | CAP Seed | Business Signal | Evidence Basis | SME Question |
@@ -46,14 +72,14 @@
 | BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Coverage Status | Carry-Forward TBD |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Function Purpose | View 1 Business Scope + module scope statement | EVENT-CARD-AUTH-01, EVENT-CARD-AUTH-02 | covered | none |
-| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001 | covered | none |
+| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001, REPLAY-NIGHTLY-RECON-001 | covered | none |
 | 3 | Channels | View 2 Upstream Systems + flow Trigger Context | SYS-CARD-AUTH-01, FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 | covered | none |
 | 4 | User Interface / User Touchpoints | View 1 Manual Intervention + manual auth flow | FLOW-MANUAL-AUTH-001 | partial | TBD-CARD-AUTH-004 (screen-report analysis for CSR menu pending) |
 | 5 | System Interfaces | View 2 Upstream / Downstream Systems | SYS-CARD-AUTH-01, SYS-CARD-AUTH-10, IF-CARD-AUTH-01 | covered | none |
-| 6 | Process Flow | View 1 Events + View 3 Flow Inventory | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001 | covered | none |
-| 7 | Validation Rules | View 1 Business Rule Seeds | BR-CARD-AUTH-01, BR-CARD-AUTH-02, BR-CARD-AUTH-03 | partial | TBD-CARD-AUTH-003 |
-| 8 | Error Handling | View 1 Exception Lifecycle + flow error paths | FLOW-ONUS-AUTH-001, FLOW-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-002 |
-| 9 | Dependencies | View 2 System Flow + View 4 Data Flow | SYS-CARD-AUTH-10, DATA-AUTHLOG, DATA-GLPOST | partial | TBD-CARD-AUTH-001 |
+| 6 | Process Flow | View 1 Events + View 3 Replay Coverage Summary | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001 | covered | none |
+| 7 | Validation Rules | View 1 Business Rule Seeds + field lineage + exception-chain seeds | BR-CARD-AUTH-01, BR-CARD-AUTH-02, BR-CARD-AUTH-03, LINEAGE-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-003 |
+| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | EXCHAIN-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-002 |
+| 9 | Dependencies | View 2 System Flow + View 4 Data Flow / Persistence Matrix | SYS-CARD-AUTH-10, DATA-AUTHLOG, DATA-GLPOST, PERSIST-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-001 |
 | 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | IF-CARD-AUTH-01 | optional_covered | none |
 | 11 | Workflow / Design Notes (optional) | View 3 topology | FLOW-ONUS-AUTH-001 | optional_covered | none |
 | 12 | Source Document Mapping (optional) | Not supplied in this module example | none | not_evidenced | none |
@@ -65,7 +91,11 @@
   - [X] Every actor in View 1 maps to entry node in View 3 — Cardholder/Merchant → Visa MQ entry, Risk Officer → manual_actor: yes
   - [X] Every system in View 2 appears in View 3 — Visa, GL, Risk Monitoring all referenced
   - [X] Every BR seed in View 1 references supporting evidence — all 4 seeds traced
+  - [X] Every replay path maps to a business event or exception outcome
+  - [X] Durable persistence outputs map to View 2 consumers or View 4 objects
   - [X] Every data object in View 4 traces to flow in View 3 — all traced
+- [ ] Replay / field-lineage / persistence / exception-chain coverage summarized
+- [ ] Critical field lineage and persistence risks carried into BRD crosswalk
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs
 - [ ] No blocking TBDs remain — 3 blocking TBDs pending
 - [ ] Capability seeds list is complete and SME-confirmed
