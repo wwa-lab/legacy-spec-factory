@@ -13,18 +13,20 @@ business / SME review artifact before any spec is produced.
 ## Need before starting
 
 - `03_flows/<MODULE-SLUG>/flow-*.md` for every flow (all approved, preferably
-  flow-analyzer v0.2.0 with Flow Replay Path, Cross-Program Field Lineage,
-  Flow Persistence Matrix, and Exception Propagation Chain)
+  flow-analyzer v0.2.1 with Flow Replay Path, edge Evidence Source /
+  Resolution, Cross-Program Field Lineage, Flow Persistence Matrix, and
+  Exception Propagation Chain)
 - `02_programs/<MODULE-SLUG>/<OBJ>/program-analysis.md` for every program
-  (preferably program-analyzer v0.2.0 with key file/field logic, field-level
-  File I/O, and exception closure)
+  (preferably program-analyzer v0.2.1 with Call Evidence, key file/field
+  source identifiers plus meanings, File I/O Purpose, dynamic-call resolution,
+  Error Code Inventory, and exception closure)
 - `01_inventory/inventory.yaml` (approved)
 - SME-confirmed BAU notes for the module (any operational quirks,
   workarounds, undocumented rules)
 
 ## Run
 
-- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.2.0)
+- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.2.1)
 - **Manual fallback:** Build the 4 views by hand following
   `docs/module-analysis-model.md` and the templates in
   `skills/legacy-ibmi-module-analyzer/references/`
@@ -33,8 +35,8 @@ business / SME review artifact before any spec is produced.
 
 - **Artifact:** 4 view files + a module overview
   - `module-overview.md` — module identity, in-scope flows, program-chain
-    readiness, persistence / critical field summary, exception / recovery
-    summary, capability seeds (`CAP-*`), and BRD crosswalk
+    readiness, edge-resolution coverage, persistence / critical field summary,
+    exception / recovery summary, capability seeds (`CAP-*`), and BRD crosswalk
   - `01-operation-flow.md` — user/operator perspective + business rule seeds (`BR-*`)
   - `02-system-flow.md` — system interaction perspective
   - `03-program-flow.md` — program-level sequencing + replay coverage
@@ -57,7 +59,8 @@ business / SME review artifact before any spec is produced.
   (`confirmed_from_code` | `inferred_business_rule` | `observed_in_runtime` | `modernization_decision`)
 - **Blocks if:** any view missing, no capability seeds, or any BR seed
   lacking evidence linkage, or a code-backed module lacks replay / lineage /
-  persistence / exception-chain coverage without named `TBD-*` gaps
+  edge-resolution / persistence / exception-chain coverage without named
+  `TBD-*` gaps
 
 ## SME action
 

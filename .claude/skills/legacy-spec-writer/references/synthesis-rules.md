@@ -20,15 +20,15 @@ tells you **where each value comes from**.
 | `business_goal` | approved BRD section 1, cross-checked against module View 1 Business Scope | one-sentence summary |
 | `scope.in_scope` / `scope.out_of_scope` | approved BRD section 1 + SME + module overview Scope Statement | per-capability narrowing of module scope |
 | `evidence[]` | every EV-* referenced by any in-scope flow / program analysis and approved BRD traceability | one row per EV; never inline raw sensitive data |
-| `observed_behaviors[]` | flow analyses' Flow Replay Path, branch points, Flow Persistence Matrix, Exception Propagation Chain + program analyses' Logic Decomposition Ledger / Exception Closure Ledger | factual: what the legacy does |
+| `observed_behaviors[]` | flow analyses' Flow Replay Path, branch points, edge Evidence Source / Resolution, Flow Persistence Matrix, Exception Propagation Chain + program analyses' Logic Decomposition Ledger / Error Code Inventory / Exception Closure Ledger | factual: what the legacy does |
 | `business_rules[]` | module View 1 BR seeds + SME confirmation | one BR per confirmed candidate |
 | `modernization_decisions[]` | derived from BRs + target_platform constraints + SME | each DEC has rationale |
 | `data_model.entities[]` | module View 4 (Data Flow), Module Persistence Matrix, DDS / SQL definitions | each major PF/LF/SQL table or durable output that the target system will own |
 | `data_model.entities[].fields[]` | DDS / SQL definitions + Critical Field Lineage Across Module + flow Cross-Program Field Lineage | type maps to target type per platform; semantics stay evidence-backed |
 | `process_flow.steps[]` | approved BRD section 6 + business-visible phases and outcomes from the relevant Flow Replay Path; Transaction Call Map is supporting evidence | one STEP per business step, not one STEP per program node |
 | `inputs[]` | approved BRD sections 3-5 + flow analysis Trigger Context + UI surfaces input fields | source = api/screen/batch/file/integration/manual |
-| `outputs[]` | approved BRD sections 4-5 + flow analysis exit nodes + Flow Persistence Matrix + Cross-Program Data Flow carriers with external handoff / creates / updates state impact | target = api_response/event/database/report/spool/file/integration |
-| `exceptions[]` | approved BRD section 8 + module Exception & Recovery Summary / Exception-Aware Data Risks + flow Exception Propagation Chain + program Exception Closure Ledger | each EX has severity and recovery / persistence impact where evidenced |
+| `outputs[]` | approved BRD sections 4-5 + flow analysis exit nodes + Flow Persistence Matrix with Purpose + Cross-Program Data Flow carriers with external handoff / creates / updates state impact | target = api_response/event/database/report/spool/file/integration |
+| `exceptions[]` | approved BRD section 8 + module Exception & Recovery Summary / Exception-Aware Data Risks + flow Exception Propagation Chain + program Error Code Inventory / Exception Closure Ledger | each EX has severity and recovery / persistence impact where evidenced |
 | `acceptance_criteria[]` | each approved BR → ≥1 AC | Gherkin preferred for procedural; checklist for declarative |
 | `tests[]` | optional sketch only; defers to future equivalence-test skill | TC-* IDs only |
 | `open_questions[]` | every unresolved TBD-* from upstream analyses, approved BRD section coverage decisions, and new TBDs from synthesis | preserve `blocking` status |
@@ -68,7 +68,7 @@ section as `accepted_with_tbd`, carry the named `TBD-*` into
 `open_questions[]`. If a section is `blocked` or `needs_more_evidence`, the
 spec must not move to `approved`.
 
-When module-analyzer v0.2.0 evidence is available, use the BRD crosswalk plus
+When module-analyzer v0.2.1 evidence is available, use the BRD crosswalk plus
 the module's replay, lineage, persistence, and exception summaries as the
 source map. Do not fall back to older file-level or generic error summaries if
 field-level `LINEAGE-*`, durable `PERSIST-*`, or exception `EXCHAIN-*` evidence

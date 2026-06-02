@@ -41,28 +41,28 @@ document defines the *file format*; that document defines the *intent*.
 (Aggregate of `pending_source` and `pending_sme_judgment` TBDs from all four views.)
 
 ## Module Program-Chain Readiness
-| Flow ID | Replay Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
-| --- | --- | --- | --- | --- | --- |
-| FLOW-AUTH-001 | complete (`REPLAY-AUTH-001`) | partial (`LINEAGE-AUTH-001`) | complete (`PERSIST-AUTH-001`) | complete (`EXCHAIN-AUTH-001`) | TBD-* or none |
+| Flow ID | Replay Coverage | Edge Resolution Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| FLOW-AUTH-001 | complete (`REPLAY-AUTH-001`) | complete (no unresolved dynamic edges) | partial (`LINEAGE-AUTH-001`) | complete (`PERSIST-AUTH-001`) | complete (`EXCHAIN-AUTH-001`) | TBD-* or none |
 
-This table is the module-level coverage check for flow-analyzer v0.2.0
+This table is the module-level coverage check for flow-analyzer v0.2.1
 surfaces. A code-backed module should not summarize a flow as understood if
-replay, critical field lineage, persistence, or exception-chain coverage is
-missing without a named `TBD-*` or waiver.
+replay, edge resolution, critical field lineage, persistence, or
+exception-chain coverage is missing without a named `TBD-*` or waiver.
 
 ## Module Persistence & Critical Field Summary
-| Data / Field / Outcome | Source Flows | Persistence / Output | Downstream Consumer | Risk / TBD |
+| Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |
 | --- | --- | --- | --- | --- |
-| AUTH_STATUS / decision response | FLOW-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | response + AUTHLOGPF write | external partner + nightly recon | TBD-* or none |
+| AUTH_STATUS (authorization status) / decision response | FLOW-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | response + AUTHLOGPF write (audit authorization outcome) | external partner + nightly recon | TBD-* or none |
 
 Use this table to surface module-level field and durable-state behavior that
 BRD dependencies, validation rules, or downstream SDD data contracts must
 preserve.
 
 ## Module Exception & Recovery Summary
-| Exception Cluster | Source Flow / EXCHAIN | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
-| --- | --- | --- | --- | --- |
-| RC=-2 / message family | FLOW-BATCH-001 (`EXCHAIN-*`) | GL posting skipped, spool generated | Finance review next morning | covered / TBD-* |
+| Exception Cluster | Source Flow / EXCHAIN | Error Type / Output Carrier | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
+| --- | --- | --- | --- | --- | --- |
+| RC=-2 / message family | FLOW-BATCH-001 (`EXCHAIN-*`) | validation threshold / RC out parameter + spool | GL posting skipped, spool generated | Finance review next morning | covered / TBD-* |
 
 Use this table to keep error handling reviewable at module scope. Do not reduce
 multiple message IDs or return-code paths into a generic "error handled" row.
@@ -238,7 +238,7 @@ either appear here or be carried as a named `TBD-*`.]
 | --- | --- | --- | --- | --- |
 | BR-AUTH-MODULE-01 | Eligibility threshold must be respected for every primary event | Primary event is allowed/blocked based on threshold decision | FLOW-AUTH-001 SEED-01 | Regulatory or operational? |
 | BR-AUTH-MODULE-02 | Audit row must persist before response | Business decision is recorded before the response is returned | FLOW-AUTH-001 SEED-03 | Hard requirement or best-effort? |
-| ... | ... | ... | ... |
+| ... | ... | ... | ... | ... |
 
 ## TBDs
 (Group by blocking status, with the SME each TBD requires.)
@@ -381,9 +381,10 @@ diagram with an ASCII tree.
 | --- | --- | --- | --- | --- |
 | FLOW-AUTH-001 | `REPLAY-AUTH-001` trigger → validation → response | approve / decline / `EXCHAIN-AUTH-001` timeout | `PERSIST-AUTH-001` AUTHLOGPF write + response | none |
 
-Replay coverage is required for code-backed module analysis. If a legacy flow
-analysis predates flow-analyzer v0.2.0, refresh the flow or record the missing
-coverage as `TBD-*` / waiver instead of silently summarizing call topology.
+Replay and edge-resolution coverage are required for code-backed module
+analysis. If a legacy flow analysis predates flow-analyzer v0.2.1, refresh the
+flow or record the missing coverage as `TBD-*` / waiver instead of silently
+summarizing call topology.
 
 ## Cross-Flow Dependencies
 | From Flow | To Flow | Mechanism | Reason |
@@ -453,8 +454,8 @@ objects, with edge labels such as `creates`, `updates`, `reads`, `hands off`,
 
 ## Data Objects in Scope
 (Aggregated from every flow's Cross-Program Data Flow section, backed by
-program Data Touch Maps, Object Dependencies, Field Mutation Matrix rows, and
-Key File & Field Logic.)
+program Data Touch Maps, Object Dependencies, File I/O Purpose, Field Mutation
+Matrix rows, Key File & Field Logic, and Error Code Inventory.)
 
 | Object / Carrier | Type | Inventory ID | Producer Flows | Consumer Flows | State Impact Summary | Coupling Score | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -469,7 +470,7 @@ Key File & Field Logic.)
 | DATA-TXN-LOG | FLOW-AUTH-001 (per event) | (none — append-only) | FLOW-BATCH-001, FLOW-MANUAL-001 | n/a | (monthly archive job — out of module) | (yearly purge — out of module) |
 
 ## Module Persistence Matrix
-| Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Operation Summary | Commit / Retry / Recovery Notes | Evidence |
+| Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Purpose / Operation Summary | Commit / Retry / Recovery Notes | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | DATA-TXN-LOG.STATUS | FLOW-AUTH-001 (`PERSIST-AUTH-001`) | FLOW-BATCH-001 | write auth result before response | rollback sends decline response; retry not automatic | EV-* |
 
@@ -594,7 +595,8 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | `EV-` | evidence | `EV-AUTH-MODULE-012` |
 
 Flow / Node / Edge / Data IDs from flow-analyzer remain valid in View 3 / 4.
-Flow-analyzer v0.2.0 IDs (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and
-`EXCHAIN-*`) remain valid in module overview, View 1, View 3, and View 4.
+Flow-analyzer v0.2.1 IDs (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and
+`EXCHAIN-*`) plus edge Evidence Source / Resolution values remain valid in
+module overview, View 1, View 3, and View 4.
 Object IDs (`OBJ-*`) and evidence IDs (`EV-*`) from inventory and
 program-analyzer remain valid throughout.

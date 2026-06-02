@@ -5,12 +5,21 @@
 - **Program ID:** OBJ-[SLUG]-[NNN]
 - **Program Name:** [SOURCE_PROGRAM_NAME]
 - **Program Type:** RPGLE | CLLE | COBOL
-- **Library:** [LIBRARY_NAME]
+- **Library:** [LIBRARY_NAME or "not recorded in inventory"]
+- **Build Target:** [BUILD_LIBRARY/PROGRAM or "not recorded"]
+- **Build / Library Evidence:**
+  - [EV-[SLUG]-[NNN]: inventory/build/member evidence]
 - **Source Location:** [file path or collection ID]
 - **Collection Date:** YYYY-MM-DD
 - **Entry Points:** [List entry point names]
-- **Files Accessed:** [List file names and types]
-- **External Calls:** [List called program/service names]
+- **Files Accessed:**
+  - `[FILE_NAME]` ([PF/LF/DSPF/PRTF/etc.])
+- **Static Calls:**
+  - `[PROGRAM_NAME]`
+- **Dynamic Calls:**
+  - `[VARIABLE_NAME]` -> `[RESOLVED_TARGET]` | dynamic_unresolved
+- **Evidence IDs:**
+  - [EV-[SLUG]-[NNN]]
 - **Status:** draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 
 ---
@@ -45,7 +54,7 @@ a business-process diagram.
 
 ### Visual Overview
 
-Source: source-level flow header (lines [XX-YY]) | derived-from-code | both (matched)
+Evidence basis: source-level flow header + derived call analysis | derived call analysis only | header_only
 
 ```mermaid
 flowchart LR
@@ -70,29 +79,15 @@ flowchart LR
 **Orphaned subroutines/procedures:**
 - [SR_NAME] -> TBD-[SLUG]-[NNN]: confirm whether dead code, callback entry, or shop convention
 
-### Call Tree
+### Call Evidence
 
-Source: source-level flow header (lines [XX-YY]) | derived-from-code | both (matched)
+Evidence basis: source-level flow header + derived call analysis
 
-```text
-Main line                    Main flow control
-|-- [SR_NAME]                [description from header, if present]
-|    |-- [SR_NAME]           [description]
-|         |-- [SR_NAME]      [description]
-|-- [SR_NAME]                [description]
-```
-
-**Evidence:**
-- [EV-[SLUG]-[NNN]: source-level flow header lines XX-YY] (if header present)
-- [EV-[SLUG]-[NNN]: EXSR / CALL / PERFORM statements] (code-derived)
+| Caller | Callee | Call Type | Condition | Source Lines | Evidence Source | Resolution |
+| --- | --- | --- | --- | --- | --- | --- |
+| `[CALLER]` | `[CALLEE]` | mainline / subroutine / procedure / external_call / dynamic_call / service_program / data_queue / batch_job | always / in loop / only if X / first-time-only | lines [XX-YY] | flow_header / derived_code / flow_header + derived_code / header_only / derived_code_only | confirmed / inferred / unresolved / resolved / partially_resolved / dynamic_unresolved |
 
 **Header vs. code:** matched | drift detected -> see TBD-[SLUG]-[NNN]
-
-### Call Edge Table
-
-| From | To | Type | Line | Call Condition / Context | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| [CALLER] | [CALLEE] | EXSR / CALLP / CALL / PERFORM / CALLPRC | [LINE] | always / in loop / only if X / first-time-only | [EV-[SLUG]-[NNN]] |
 
 ### Reverse Caller Index
 
@@ -175,6 +170,12 @@ SELECT behavior before translating anything into business prose.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | LOG-[SLUG]-[NNN] | [SRxxx lines XX-YY] | arithmetic / string-build / precision / constant / IF / SELECT / loop | [fields, literals, constants] | [ADD/SUB/MULT/DIV/CAT/IF/WHEN/etc.] | [field set, return, call, write, skip] | [nested order, fallback, EOF scope] | [EV-*] |
 
+### Routine / Window Data Flow
+
+| Routine / Window | Purpose | Input Variables | Transformation Logic | Output Variables | Side Effects | Source Lines | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `[ROUTINE_OR_WINDOW]` | [business/technical purpose] | `[VARIABLE_NAME]` (business meaning) [input]<br>`[VARIABLE_NAME]` (business meaning) [control] | [maps, validates, calculates, branches, formats, or assigns values] | `[VARIABLE_NAME]` (business meaning) [output] | CHAIN `[FILE]` / WRITE `[FILE]` / CALL `[PROGRAM]` / send DTAQ response / none observed | lines [XX-YY] | [EV-*]; confirmed / inferred / unresolved |
+
 **Unresolved:**
 - TBD-[SLUG]-[NNN]: [Question about operand source, constant meaning, branch priority, precision, or loop scope]
 
@@ -190,16 +191,16 @@ working variable.
 
 | Data Object / Carrier | Mechanism | Operation | Routine / Procedure | Key / Payload | Critical Fields Touched | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [FILE_NAME] | PF / LF | CHAIN / READ / READE / WRITE / UPDATE / DELETE | [SRxxx / procedure] | key=[FIELD] | [amount/status/customer/account/RC/etc.] | read-only / creates / updates / deletes | [EV-*] |
-| [DTAARA_NAME] | *DTAARA | IN / OUT / CHGDTAARA / RTVDTAARA | [SRxxx / procedure] | [value or structure] | [critical fields] | reads shared state / updates shared state | [EV-*] |
-| [DTAQ_NAME] | *DTAQ | SNDDTAQ / RCVDTAQ / QSNDDTAQ / QRCVDTAQ | [SRxxx / procedure] | [message structure] | [critical fields] | async send / async receive | [EV-*] |
-| [CALL_TARGET] | CALL parameters | in / out / inout | [SRxxx / procedure] | [parameter list] | [decision/status/error fields] | passes state across program boundary | [EV-*] |
+| `[FILE_NAME]` | PF / LF | CHAIN / READ / READE / WRITE / UPDATE / DELETE | `[SRxxx]` / procedure | key=`[FIELD_NAME]` (business meaning) | `[FIELD_NAME]` (business meaning) | read-only / creates / updates / deletes | [EV-*] |
+| `[DTAARA_NAME]` | *DTAARA | IN / OUT / CHGDTAARA / RTVDTAARA | `[SRxxx]` / procedure | `[VALUE_OR_STRUCTURE]` | `[FIELD_NAME]` (business meaning) | reads shared state / updates shared state | [EV-*] |
+| `[DTAQ_NAME]` | *DTAQ | SNDDTAQ / RCVDTAQ / QSNDDTAQ / QRCVDTAQ | `[SRxxx]` / procedure | `[MESSAGE_STRUCTURE]` | `[FIELD_NAME]` (business meaning) | async send / async receive | [EV-*] |
+| `[CALL_TARGET]` | CALL parameters | in / out / inout | `[SRxxx]` / procedure | `[PARAMETER_LIST]` | `[FIELD_NAME]` (business meaning) | passes state across program boundary | [EV-*] |
 
 ### Critical Field Watchlist
 
 | Field / Data Structure | Object / Carrier | Why It Matters | Observed Operations | Evidence |
 | --- | --- | --- | --- | --- |
-| [FIELD_NAME] | [OBJECT] | amount / status / customer / account / inventory / posting / approval / error code | read / written / compared / returned | [EV-*] |
+| `[FIELD_NAME]` (business meaning) | `[OBJECT]` | amount / status / customer / account / inventory / posting / approval / error code | read / written / compared / returned | [EV-*] |
 
 **Unresolved:**
 - TBD-[SLUG]-[NNN]: [Question about payload structure, key field, direction, or state impact]
@@ -212,23 +213,30 @@ Purpose: identify the files and fields that define the program's replayable
 behavior: access keys, calculation inputs/results, branch drivers, error/status
 fields, external parameters, and persisted fields.
 
+Field and variable identity rule: every key field or variable must preserve
+the source identifier plus business meaning when resolvable:
+`FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning)
+[direction]. Use `field unresolved` (business meaning), `FIELD_NAME` (meaning
+unresolved), or `FIELD_NAME` (business meaning; inferred) when evidence is
+partial.
+
 ### Key Files
 
 | File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| [FILE_NAME] | driver / lookup / state-update / detail-insert / audit-log / screen-report / queue-message / parameter-DS | [SRxxx] | [READ loop / CHAIN lookup / UPDATE / WRITE / DELETE / EXFMT / CALL inout] | [FIELD_NAMES] | [FIELD_NAMES] | [EV-*] |
+| `[FILE_NAME]` | driver / lookup / state-update / detail-insert / audit-log / screen-report / queue-message / parameter-DS | `[SRxxx]` | [READ loop / CHAIN lookup / UPDATE / WRITE / DELETE / EXFMT / CALL inout] | `[FIELD_NAME]` (business meaning)<br>`[FIELD_NAME]` (business meaning) | `[FIELD_NAME]` (business meaning)<br>`[FIELD_NAME]` (business meaning) | [EV-*] |
 
 ### Key Fields
 
 | Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| [FIELD_NAME] | [FILE / DS / parameter / work variable] | access-key / input / derived / calculation-result / branch-condition / status-flag / return-code / error-code / message-id / external-parameter / persisted-field / audit-output | [routine, condition, mutation, call] | [literal/domain/range if visible] | [write, return, skip, error, external handoff] | [EV-*] |
+| `[FIELD_NAME]` (business meaning) | `[FILE]` / DS / parameter / work variable | access-key / input / derived / calculation-result / branch-condition / status-flag / return-code / error-code / message-id / external-parameter / persisted-field / audit-output | [routine, condition, mutation, call] | [literal/domain/range if visible] | [write, return, skip, error, external handoff] | [EV-*]; confirmed / inferred / unresolved |
 
 ### Field Lineage
 
 | Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LIN-[SLUG]-[NNN] | [FILE.FIELD or parameter] | [alias/copybook field] | [work variables] | [operation or branch] | [alias field] | [FILE.FIELD / message / call parameter] | [EV-*] |
+| LIN-[SLUG]-[NNN] | `[FILE.FIELD]` (business meaning) or parameter | `[ALIAS_FIELD]` (business meaning) | `[VARIABLE_NAME]` (business meaning) [local] | [operation or branch] | `[ALIAS_FIELD]` (business meaning) | `[FILE.FIELD]` (business meaning) / message / call parameter | [EV-*] |
 
 **Unresolved:**
 - TBD-[SLUG]-[NNN]: [Question about missing DDS/copybook, physical-field mapping, alias meaning, or critical-field source]
@@ -269,15 +277,15 @@ evidence-backed sections above.
 
 ### File Access Summary
 
-| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [FILE_NAME] | [FORMAT] | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | [KEY_FIELD_NAMES] | [IF/loop/SELECT context] | [*INxx / %FOUND / %ERROR / SQLCODE / SQLSTATE] | [EV-*] |
+| File | Record Format | Type | Operations | Key Fields | Purpose | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `[FILE_NAME]` | `[FORMAT]` | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | `[KEY_FIELD]` (business meaning)<br>`[KEY_FIELD]` (business meaning) | Validate / read / detect / write / send / log [specific file access behavior]. | [IF/loop/SELECT context] | [*INxx / %FOUND / %ERROR / SQLCODE / SQLSTATE] | [EV-*] |
 
 ### Field Mutation Matrix
 
 | File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [FILE_NAME] | WRITE / UPDATE / DELETE / EXEC SQL | [SRxxx lines XX-YY] | [key fields and condition] | [FIELD_NAME or record delete] | [literal, source field, calculation, moved value] | [EV-* assignment lines] | [handler, message ID, return code, or unhandled] |
+| `[FILE_NAME]` | WRITE / UPDATE / DELETE / EXEC SQL | `[SRxxx]` lines [XX-YY] | `[KEY_FIELD]` (business meaning) and condition | `[FIELD_NAME]` (business meaning) or record delete | literal / source field / calculation / moved value | [EV-* assignment lines] | [handler, message ID, return code, or unhandled] |
 
 **Operation details:**
 
@@ -293,13 +301,13 @@ evidence-backed sections above.
 
 ## External Calls
 
-| Called Program | Type | Parameters (In / Out) | Purpose | Evidence |
-| --- | --- | --- | --- | --- |
-| [PROGRAM_NAME] | RPGLE Program / CLLE Program / Service Program / API / etc. | (param1: type, param2: type) → (return: type) | [Purpose description] | [EV-[SLUG]-[NNN]] |
+| Program | Call Type | Caller Routine | Source Lines | Parameters | Resolution Status | Purpose | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `[PROGRAM_NAME]` or `[VARIABLE_NAME]` -> `[TARGET]` | external_call / dynamic_call / service_program / data_queue / batch_job | `[CALLER]` | lines [XX-YY] | `[PARAM_NAME]` (business meaning) [input/output/input-output] | resolved / partially_resolved / dynamic_unresolved / inferred / confirmed | [Purpose description grounded in call site and parameters] | [EV-[SLUG]-[NNN]] |
 
 **Call details:**
 
-- **[PROGRAM_NAME]:** [Description of parameters, return values, synchronous/asynchronous, known error handling].
+- **[PROGRAM_NAME]:** [Description of parameters, return values, synchronous/asynchronous, known error handling, target variable assignment if dynamic].
 
 **Parameter contracts:**
 - [PROGRAM_NAME] expects [parameter description]. [Evidence or TBD status].
@@ -317,11 +325,13 @@ evidence-backed sections above.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Error type] | [condition, file op, call, SQL, validation] | [CPFxxxx / CPDxxxx / MCHxxxx / RNXxxxx / SQLCODE / UCC* / LCC* / literal code / none] | MONMSG / MONITOR ON-ERROR / %ERROR / indicator / IF / RC check / SQLSTATE | [ERR_FLAG, ERR_CD, ERR_MSG, log payload] | RETURN / GOTO / rollback / skip write / log / continue / abort | [blocks update, skips downstream call, returns status, continues] | [EV-*] |
 
-### Message / Error Code Inventory
+### Error Code Inventory
 
-| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
-| --- | --- | --- | --- | --- |
-| [CPFxxxx / UCCxxxx / literal code] | MONMSG / ON-ERROR / MOVE / SNDPGMMSG / MSGF / SQL | [meaning if explicit; otherwise TBD] | [routine or generic handler] | [EV-*] |
+| Error Code | Meaning | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `[CPFxxxx / UCCxxxx / literal / status value]` | [meaning if explicit; otherwise meaning unresolved] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
+
+**Error codes unresolved:** [state whether status/message fields were detected but literal assignments were not fully traced, or write "None."]
 
 **Unhandled exceptions:**
 - [Description of unhandled error conditions if any]
@@ -352,6 +362,12 @@ or persisted field lineage.
 
 ## TBDs & Blocking Status
 
+### Open Items / Limitations
+
+| Open Item | Impact | Evidence Gap | Suggested Follow-up |
+| --- | --- | --- | --- |
+| [unresolved dynamic call / field meaning / error code assignment / file role] | [why it matters downstream] | [missing source, runtime value, DDS, SME note, called program, or line evidence] | [specific follow-up] |
+
 ### Pending Source
 - **TBD-[SLUG]-[NNN]:** [Question about missing DDS, source, or documentation]
   - Blocking: pending_source
@@ -379,13 +395,18 @@ Before approval, SME must validate:
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
 - [ ] No whole-program business summary exceeds the documented coverage
+- [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
+- [ ] Routine / Window Data Flow shows input variables, transformations, output variables, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
+- [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes why each file is accessed
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
-- [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
+- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
+- [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access

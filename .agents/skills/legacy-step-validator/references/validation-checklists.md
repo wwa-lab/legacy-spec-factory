@@ -116,12 +116,12 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 | --- | --- | --- |
 | File exists and follows `templates/program-analysis.md` section order | 3 | blocking |
 | Header cites `OBJ-*` from an `approved` / `approved_with_non_blocking_tbd` inventory | 1 | blocking |
-| Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + call tree + call edge table + reverse caller index), Routine Cards, Deep Read Windows, entry points, object dependencies, Data Touch Map, Logic Decomposition Ledger, Key File & Field Logic, control flow, File I/O with Field Mutation Matrix, external calls, Error Handling, Exception Closure Ledger, TBDs, SME checklist sections present | 3 | blocking |
+| Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + Call Evidence + reverse caller index), Routine Cards, Deep Read Windows, entry points, object dependencies, Data Touch Map, Logic Decomposition Ledger, Key File & Field Logic, Routine / Window Data Flow, control flow, File I/O with Purpose + Field Mutation Matrix, External Calls with dynamic-call resolution status, Error Handling with Error Code Inventory + Exception Closure Ledger, Redundancy Candidate Notes, Open Items / Limitations, SME checklist sections present | 3 | blocking |
 | Analysis mode is one of `standard`, `segmented`, or `large_program` | 3 | blocking |
 | Coverage Ledger records routines found, routines deep-read, external edges resolved, data touches resolved, blocking gaps, and non-blocking gaps | 3 | blocking |
 | Segmented or large-program mode includes Routine Cards and Deep Read Windows | 3 | blocking |
 | Every non-trivial behaviour has ≥1 `EV-*` link | 4 | blocking |
-| TBDs grouped by `pending_source` / `pending_sme_judgment` / `non_blocking` | 8 | blocking |
+| Open Items / Limitations grouped by `pending_source` / `pending_sme_judgment` / `non_blocking`, with resolver role and blocking status | 8 | blocking |
 | No `BR-*` or `CAP-*` minted (only program-local `BEH-*`, `EX-*`, `TBD-*`) | 3 | blocking |
 
 ### Semantic
@@ -130,10 +130,12 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 | --- | --- | --- |
 | Behaviours are consistent with linked source lines | 4 | blocking |
 | No invented subroutines, fields, files, jobs, or error codes | 4 | blocking |
-| Key file / key field logic is grounded in source operations, DDS / externally described fields, or named SME notes; no field semantics are invented from names alone | 4 | blocking |
-| File I/O updates identify the specific file/object, operation, affected field(s), condition, before/after/source value where evidenced, and skipped/no-op cases where relevant | 3 | blocking |
-| Exception Closure Ledger inventories every observed message ID, return code, indicator, SQLSTATE/status, CPF/MCH escape, or user-defined error code; it is not limited to known prefixes such as UCC* / LCC* | 4 | blocking |
-| Flow-header (if present) reconciled against code-derived Program Call Map; mismatches recorded as TBDs | 9 | blocking |
+| Key file / key field logic is grounded in source operations, DDS / externally described fields, or named SME notes; every resolvable key field or variable preserves source identifier plus business meaning; no field semantics are invented from names alone | 4 | blocking |
+| File I/O rows identify the specific file/object, operation, Purpose, key fields with source identifier + meaning, affected field(s), condition, before/after/source value where evidenced, and skipped/no-op cases where relevant | 3 | blocking |
+| External/dynamic calls carry a resolution status; unresolved or `needs_sme_review` dynamic calls are listed in Open Items / Limitations and not treated as confirmed | 4 | blocking |
+| Error Code Inventory inventories every observed message ID, return code, indicator, SQLSTATE/status, CPF/MCH escape, user-defined error code, output carrier, downstream effect, and evidence status; it is not limited to known prefixes such as UCC* / LCC* | 4 | blocking |
+| Exception Closure Ledger cross-references Error Code Inventory rows and covers generic catch-all handlers without inventing specific message IDs | 4 | blocking |
+| Flow-header (if present) reconciled against code-derived Program Call Map Call Evidence; mismatches recorded as Open Items / Limitations | 9 | blocking |
 | Evidence strength not overstated (no `weakly_inferred` posing as `confirmed_from_code`) | 5 | blocking |
 | Knowledge type matches each statement's nature (observed vs inferred) | 5 | blocking |
 | Whole-program summary does not claim more certainty than the coverage ledger supports | 5 | blocking |
@@ -154,8 +156,11 @@ Program analysis is ready for flow analysis when:
 
 - `status` ∈ `approved`, `approved_with_non_blocking_tbd`
 - SME sign-off recorded when required by the program's risk class
-- Logic Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix,
-  and Exception Closure Ledger are present or their gaps are named `TBD-*`
+- Program Call Map Call Evidence, Logic Decomposition Ledger, Key File &
+  Field Logic, File I/O Purpose, Field Mutation Matrix, External/Dynamic Call
+  Resolution Status, Error Code Inventory, Exception Closure Ledger, Routine /
+  Window Data Flow, and Open Items / Limitations are present or their gaps are
+  named `TBD-*`
 
 ## Flow analysis step
 
@@ -168,7 +173,7 @@ Detected when a single `flow-<FLOW-SLUG>.md` is supplied.
 | File exists with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, Error Propagation & Commit Boundaries, and Exception Propagation Chain | 3 | blocking |
 | `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, `EXCHAIN-*`, `SEED-*`, `TBD-*` minted; no `BR-*` minted by flow analysis | 3 | blocking |
 | Every node cites an approved `program-analysis-<OBJ-ID>.md` | 1 | blocking |
-| Every edge traces to evidence type 1, 2, or 3 (source statement, config export, integration contract) | 4 | blocking |
+| Every edge traces to evidence type 1, 2, or 3 (source statement, config export, integration contract) and carries Evidence Source + Resolution when derived from program-analysis Call Evidence | 4 | blocking |
 | Every UI surface references a DSPF / PRTF / `*MENU` `OBJ-*` from inventory | 4 | blocking |
 | Trigger model is one of the seven allowed types | 3 | blocking |
 | Every node records upstream program coverage status and blocking coverage gaps | 3 | blocking |
@@ -177,12 +182,12 @@ Detected when a single `flow-<FLOW-SLUG>.md` is supplied.
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| Calls match the upstream program-analyses' External Calls sections and Program Call Map edge tables | 4 | blocking |
+| Calls match the upstream program-analyses' Call Evidence and External Calls sections; unresolved dynamic calls do not support approved edges without named SME waiver | 4 | blocking |
 | Branch destinations match DSPF option tables | 4 | blocking |
 | Flow Replay Path covers trigger through final response, durable persistence, rollback, or manual outcome for every major path | 3 | blocking |
-| Cross-Program Field Lineage preserves critical fields across program boundaries using upstream Key File & Field Logic / Field Mutation Matrix evidence | 4 | blocking |
-| Flow Persistence Matrix preserves field-level writes, updates, deletes, skipped mutations, queues, spool, IFS, response payloads, and checkpoints | 4 | blocking |
-| Exception Propagation Chain matches each node's Exception Closure Ledger and documents message IDs / return codes / skipped work / retry or rollback effects | 4 | blocking |
+| Cross-Program Field Lineage preserves critical fields across program boundaries using upstream Key File & Field Logic / Routine Data Flow / Field Mutation Matrix evidence and keeps source identifier + business meaning pairs intact | 4 | blocking |
+| Flow Persistence Matrix preserves File I/O Purpose, field-level writes, updates, deletes, skipped mutations, queues, spool, IFS, response payloads, and checkpoints | 4 | blocking |
+| Exception Propagation Chain matches each node's Error Code Inventory / Exception Closure Ledger and documents message IDs / return codes / output carriers / evidence status / skipped work / retry or rollback effects | 4 | blocking |
 | Commit boundaries are evidenced, not assumed | 9 | blocking |
 | Business event name comes from SME, not autogenerated from program names | 6 | blocking |
 | Capability seeds are questions, not approved rules | 5 | blocking |

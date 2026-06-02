@@ -82,7 +82,7 @@ a statement-level flowchart. Internal subroutines remain folded into a
 ```markdown
 ### Transaction Call Map
 
-Source: derived-from-code + SME confirmed | header (if present) | both (matched)
+Evidence basis: derived-from-code | source-level flow header | both (matched) | SME confirmed
 
 ```mermaid
 flowchart LR
@@ -187,12 +187,13 @@ NODE-03 (CU205A)  ── customer history detail
 - Every Node must carry upstream program coverage state from the program
   analysis, including any routine-level `deep_read`, `indexed_only`, or
   `blocked` gaps that affect flow readiness.
-- For program-analysis v0.2.0 and later, every Node must expose whether
-  the flow consumed the upstream Logic Decomposition Ledger, Key File &
-  Field Logic, Field Mutation Matrix, Exception Closure Ledger, and
-  Redundancy Candidate Notes. Older analyses require refresh or a named
-  SME waiver before their missing details can support replay, lineage,
-  persistence, or exception-chain claims.
+- For program-analysis v0.2.1 and later, every Node must expose whether
+  the flow consumed the upstream Call Evidence, Logic Decomposition Ledger,
+  Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Error
+  Code Inventory, Exception Closure Ledger, Routine / Window Data Flow,
+  Redundancy Candidate Notes, and Open Items / Limitations. Older analyses
+  require refresh or a named SME waiver before their missing details can
+  support replay, lineage, persistence, or exception-chain claims.
 - Node IDs are sequence-numbered (`NODE-<SLUG>-01`, `NODE-<SLUG>-02`, …).
 - A program that is called multiple times in different roles may appear
   as multiple nodes (with different sequence numbers), or as one node
@@ -221,14 +222,14 @@ review notes, or sign-off. It is not a coverage value.
 ```markdown
 ### Edges
 
-| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| EDGE-ONUS-AUTH-01 | (trigger) -> NODE-01 | N/A | API inbound | (Visa contract) | always | EV-ONUS-AUTH-001 |
-| EDGE-ONUS-AUTH-02 | NODE-01 -> NODE-02 | SR100 | CALLP | CU101A:245 | if validation passed | EV-ONUS-AUTH-002 |
-| EDGE-ONUS-AUTH-03 | NODE-02 -> NODE-03 | SR300 | CALLP | CU110A:312 | always | EV-ONUS-AUTH-003 |
-| EDGE-ONUS-AUTH-04 | NODE-02 -> NODE-04 | SR350 | CALLP | CU110A:330 | if credit OK | EV-ONUS-AUTH-004 |
-| EDGE-ONUS-AUTH-05 | NODE-04 -> NODE-05 | N/A | CALLP | CU120A:185 | always | EV-ONUS-AUTH-005 |
-| EDGE-ONUS-AUTH-06 | NODE-05 -> NODE-06 | N/A | CALLP | CU130A:90 | always | EV-ONUS-AUTH-006 |
+| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence Source | Resolution | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EDGE-ONUS-AUTH-01 | (trigger) -> NODE-01 | N/A | API inbound | (Visa contract) | always | integration contract | confirmed_from_code | EV-ONUS-AUTH-001 |
+| EDGE-ONUS-AUTH-02 | NODE-01 -> NODE-02 | SR100 | CALLP | CU101A:245 | if validation passed | program-analysis Call Evidence | confirmed_from_code | EV-ONUS-AUTH-002 |
+| EDGE-ONUS-AUTH-03 | NODE-02 -> NODE-03 | SR300 | CALLP | CU110A:312 | always | program-analysis Call Evidence | confirmed_from_code | EV-ONUS-AUTH-003 |
+| EDGE-ONUS-AUTH-04 | NODE-02 -> NODE-04 | SR350 | CALLP | CU110A:330 | if credit OK | program-analysis Call Evidence | confirmed_from_code | EV-ONUS-AUTH-004 |
+| EDGE-ONUS-AUTH-05 | NODE-04 -> NODE-05 | N/A | CALLP | CU120A:185 | always | program-analysis Call Evidence | confirmed_from_code | EV-ONUS-AUTH-005 |
+| EDGE-ONUS-AUTH-06 | NODE-05 -> NODE-06 | N/A | CALLP | CU130A:90 | always | program-analysis Call Evidence | confirmed_from_code | EV-ONUS-AUTH-006 |
 ```
 
 **Call types:** `CALL`, `CALLP`, `CALLPRC` (service program), `SBMJOB`,
@@ -241,6 +242,15 @@ record`, `error path`, `option = 4`, `F6 pressed`
 **Via:** the internal routine/procedure from the caller's Program Call Map
 that crosses the program/system boundary. Use `N/A` only when the call is
 the trigger itself or no meaningful internal site applies.
+
+**Evidence Source:** cite the upstream surface used to derive the edge:
+`program-analysis Call Evidence`, `External Calls`, `WRKJOBSCDE`, DSPF DDS,
+integration contract, runtime observation, or SME-confirmed handoff.
+
+**Resolution:** carry the upstream call resolution label. Use
+`confirmed_from_code`, `observed_in_runtime`, `sme_confirmed`,
+`needs_sme_review`, or `unresolved`; unresolved dynamic calls cannot support
+approved flow edges without a named SME waiver.
 
 ---
 
@@ -288,11 +298,11 @@ detail only for critical fields.
 
 | Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DATA-ONUS-AUTH-01 | EDGE-02 | NODE-01 | NODE-02 | CALL parameters | CustID, CardNo, Amount, Currency | sync in | read-only handoff | EV-... |
-| DATA-ONUS-AUTH-02 | EDGE-02 | NODE-02 | NODE-01 | CALL parameter (out) | Decision, AuthCode, ErrorMsg | sync out | decision returned | EV-... |
-| DATA-ONUS-AUTH-03 | HSSDTAR002 | NODE-02 | NODE-04 | Shared data area | BatchRunDate | out-of-band shared state | read/update shared state | EV-... |
-| DATA-ONUS-AUTH-04 | ONUSDTAQ | NODE-04 | NODE-06 | DTAQ | TxnLogMessage | async | external handoff | EV-... |
-| DATA-ONUS-AUTH-05 | TXNLOGPF | NODE-04 | NODE-06 | Shared file | full transaction record keyed by AuthNo | batch-later / file handoff | creates then reads persistent row | EV-... |
+| DATA-ONUS-AUTH-01 | EDGE-02 | NODE-01 | NODE-02 | CALL parameters | CustID (customer identifier), CardNo (card number), Amount (authorization amount), Currency (ISO currency) | sync in | read-only handoff | EV-... |
+| DATA-ONUS-AUTH-02 | EDGE-02 | NODE-02 | NODE-01 | CALL parameter (out) | Decision (approval/decline), AuthCode (authorization code), ErrorMsg (customer-facing error text) | sync out | decision returned | EV-... |
+| DATA-ONUS-AUTH-03 | HSSDTAR002 | NODE-02 | NODE-04 | Shared data area | BatchRunDate (settlement date) | out-of-band shared state | read/update shared state | EV-... |
+| DATA-ONUS-AUTH-04 | ONUSDTAQ | NODE-04 | NODE-06 | DTAQ | TxnLogMessage (authorization log message) | async | external handoff | EV-... |
+| DATA-ONUS-AUTH-05 | TXNLOGPF | NODE-04 | NODE-06 | Shared file | full transaction record keyed by AuthNo (authorization number) | batch-later / file handoff | creates then reads persistent row | EV-... |
 ```
 
 **Mechanism taxonomy:**
@@ -311,6 +321,11 @@ detail only for critical fields.
 **Required:** every entry traces to source (parameter declaration, data
 area access, queue send / receive, file write / read, screen field,
 message send, or SME note).
+
+**Field identity rule:** when the upstream program-analysis resolves both
+source identifier and meaning, preserve it as `FIELD_NAME` (business meaning)
+or `VARIABLE_NAME` (business meaning) [direction]. Use `unresolved` only when
+the upstream artifact also named the gap.
 
 **Critical field rule:** identify fields that affect money, inventory,
 customer/account status, posting, approval/decline, compliance, audit,
@@ -363,8 +378,8 @@ did it land?"
 
 | Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LINEAGE-ONUS-AUTH-01 | Authorization amount | inbound payload Amount / NODE-01 | DATA-01 via EDGE-02 | AuthAmount / NODE-02 | currency conversion in NODE-02 | PERSIST-01 TXNLOGPF.AUTH_AMT | EV-... |
-| LINEAGE-ONUS-AUTH-02 | Decline reason | NODE-03 ERR_CD | DATA-02 out parameter | NODE-02 DecisionReason | maps to response code | outbound response field RespCode | EV-... |
+| LINEAGE-ONUS-AUTH-01 | Authorization amount | Amount (authorization amount) / NODE-01 | DATA-01 via EDGE-02 | AuthAmount (normalized authorization amount) / NODE-02 | currency conversion in NODE-02 | PERSIST-01 TXNLOGPF.AUTH_AMT (posted authorization amount) | EV-... |
+| LINEAGE-ONUS-AUTH-02 | Decline reason | ERR_CD (decline/error code) / NODE-03 | DATA-02 out parameter | DecisionReason (decline reason) / NODE-02 | maps to response code | outbound response field RespCode (network response code) | EV-... |
 ```
 
 **Requirements:**
@@ -379,6 +394,8 @@ did it land?"
   be an upstream program-analysis Field Lineage / Key Field row, a
   visible carrier field, DDS/copybook metadata, runtime evidence, or SME
   confirmation.
+- Preserve upstream source identifiers with business meanings; do not shorten
+  a resolved `FIELD_NAME` (business meaning) pair into an unlabeled prose noun.
 - Use `TBD-*` when the physical field, alias mapping, direction, or
   downstream consumer is unclear.
 
@@ -394,11 +411,11 @@ that state later?"
 ```markdown
 ### Flow Persistence Matrix
 
-| Persist ID | Node / Routine | File / Object | Operation | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PERSIST-ONUS-AUTH-01 | NODE-04 SR800 | TXNLOGPF | WRITE | if Decision in A/D | AuthNo, Amount, Decision, RC | LINEAGE-01, LINEAGE-02 | durable before response | nightly recon flow | EV-... |
-| PERSIST-ONUS-AUTH-02 | NODE-05 | CUST_MAST | UPDATE | only if approval path | LAST_AUTH_DT, AUTH_AMT | LINEAGE-01 | rolled back on ROLBK before COMMIT | customer inquiry | EV-... |
-| PERSIST-ONUS-AUTH-03 | NODE-03 | CUST_MAST | skipped update | decline path | balance/status not updated | EXCHAIN-02 | no mutation by design | N/A | EV-... |
+| Persist ID | Node / Routine | File / Object | Operation | Purpose | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PERSIST-ONUS-AUTH-01 | NODE-04 SR800 | TXNLOGPF | WRITE | audit authorization outcome | if Decision in A/D | AuthNo (authorization number), Amount (authorization amount), Decision (approval/decline), RC (return code) | LINEAGE-01, LINEAGE-02 | durable before response | nightly recon flow | EV-... |
+| PERSIST-ONUS-AUTH-02 | NODE-05 | CUST_MAST | UPDATE | refresh customer authorization state | only if approval path | LAST_AUTH_DT (last authorization date), AUTH_AMT (last authorized amount) | LINEAGE-01 | rolled back on ROLBK before COMMIT | customer inquiry | EV-... |
+| PERSIST-ONUS-AUTH-03 | NODE-03 | CUST_MAST | skipped update | preserve customer state on decline | decline path | balance/status not updated | EXCHAIN-02 | no mutation by design | N/A | EV-... |
 ```
 
 **Requirements:**
@@ -408,7 +425,8 @@ that state later?"
   outputs, IFS/API durable external outputs, and completion/checkpoint
   data-area updates.
 - Every persisted file/field mutation must be backed by an upstream
-  program-analysis Field Mutation Matrix row or direct SQL/file evidence.
+  program-analysis File I/O Purpose + Field Mutation Matrix row or direct
+  SQL/file evidence.
 - `Driven By` should point to `LINEAGE-*`, `DATA-*`, error/return code,
   literal, or SME-confirmed manual handoff.
 - `Commit / Rollback Impact` must say whether the mutation commits,
@@ -479,16 +497,16 @@ confirm idempotency strategy.
 ## Exception Propagation Chain Section
 
 The Exception Propagation Chain is the flow-level form of the upstream
-program `Exception Closure Ledger`. It shows how local node exceptions
-become transaction outcomes.
+program `Error Code Inventory` plus `Exception Closure Ledger`. It shows how
+local node exceptions become transaction outcomes.
 
 ```markdown
 ### Exception Propagation Chain
 
-| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EXCHAIN-ONUS-AUTH-01 | NODE-03 | D003 / RC=-1 | CALL out parameter RC | NODE-02 sets Decision='D' | skips EDGE-04, allows EDGE-06 response builder | PERSIST-01 writes decline audit; customer balance update skipped | decline response returned | EV-... |
-| EXCHAIN-ONUS-AUTH-02 | NODE-04 | CPF4101 | unhandled exception | caller has no MONITOR | skips all downstream edges | no commit after failure | job abort / caller timeout | EV-... |
+| Chain ID | Source Node | Error Code / Message / RC | Error Type | Output Carrier | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence Status | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-ONUS-AUTH-01 | NODE-03 | D003 / RC=-1 | business decline | RC out parameter | CALL out parameter RC | NODE-02 sets Decision='D' | skips EDGE-04, allows EDGE-06 response builder | PERSIST-01 writes decline audit; customer balance update skipped | decline response returned | confirmed_from_code | EV-... |
+| EXCHAIN-ONUS-AUTH-02 | NODE-04 | CPF4101 | system I/O exception | joblog / exception | unhandled exception | caller has no MONITOR | skips all downstream edges | no commit after failure | job abort / caller timeout | needs_sme_review | EV-... |
 ```
 
 **Requirements:**

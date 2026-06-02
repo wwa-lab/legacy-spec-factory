@@ -130,14 +130,18 @@ Strip line breaks; cap at 80 characters; append `…` if truncated.
 ### `Key pending decisions`
 
 For analyzed programs only. Take rows in `program-analysis.md` where
-`review_status: needs_sme_review`. Pick **top 3** by significance:
+`review_status: needs_sme_review`, plus unresolved rows from `Open Items /
+Limitations`. Pick **top 3** by significance:
 
 1. Rows whose table is "Control Flow" or "Error Handling" AND touch
    money / posting / compliance / customer-status (look at the
    Description column for keywords: `posting`, `credit`, `compliance`,
    `customer status`, `inventory`, `price`, `discount`, `payment`)
-2. Rows in "External Calls" with `TBD-*` IDs
-3. Any other `needs_sme_review` row
+2. Rows in "External Calls" / Program Call Map Call Evidence with `TBD-*`,
+   `unresolved`, or `needs_sme_review` dynamic-call resolution
+3. Rows in "Error Code Inventory" with `needs_sme_review` or unresolved
+   output carrier / downstream effect
+4. Any other `needs_sme_review` row
 
 Format: `<short-description-from-description-column>` — no `Step ID`,
 no row reference. Comma-separated. Cap each at 60 characters.
@@ -146,8 +150,9 @@ If no `needs_sme_review` rows: write `(none)`.
 
 ### `TBDs`
 
-Count of rows in the "Open Questions" table whose `Resolution` column is
-empty (or absent). For not-yet-analyzed programs: blank.
+Count of rows in the "Open Items / Limitations" table whose `Resolution`
+column is empty (or absent). For older program-analysis artifacts, fall back
+to the legacy "Open Questions" table. For not-yet-analyzed programs: blank.
 
 ### `Status`
 

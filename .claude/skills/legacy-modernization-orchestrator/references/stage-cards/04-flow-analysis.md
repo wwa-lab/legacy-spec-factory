@@ -3,7 +3,8 @@
 **You are here if:** every in-scope program has an approved
 `program-analysis.md` AND you want to trace one complete business
 transaction end-to-end across all the programs it touches, including replay,
-critical field lineage, persistence, and exception outcomes.
+edge resolution, critical field lineage, persistence purpose, and exception
+outcomes.
 
 You will produce **one flow file per business transaction** (e.g. "submit
 order", "post AR invoice"). A flow may cover one of seven trigger models:
@@ -21,7 +22,7 @@ scheduler, API/remote.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.2.0)
+- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.2.1)
 - **Manual fallback:** Use the flow skeleton in
   `skills/legacy-ibmi-flow-analyzer/references/` and synthesize across the
   per-program analyses
@@ -40,6 +41,9 @@ Flow Replay Path, Nodes, Edges, Cross-Program Data Flow, Cross-Program Field
 Lineage, Branch Points, Flow Persistence Matrix, UI Surfaces, Error Propagation
 & Commit Boundaries, Exception Propagation Chain, and Business-Capability Seeds
 (`SEED-*`).
+Edges must carry Evidence Source + Resolution when derived from upstream
+program Call Evidence, and data/lineage/persistence rows must preserve source
+identifier + business meaning pairs where program-analysis resolved them.
 
 ## Gate before advancing
 
@@ -48,12 +52,12 @@ Lineage, Branch Points, Flow Persistence Matrix, UI Surfaces, Error Propagation
   flow before module analysis is complete
 - **Check:** `flow-*.md` files cover every named transaction the SME lists
   for this module, and each approved flow exposes Flow Replay Path,
-  Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
-  Propagation Chain
+  edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow
+  Persistence Matrix with Purpose, and Exception Propagation Chain
 - **Blocks if:** a known business transaction has no flow, OR any flow is
   at `status: draft` with money / inventory / compliance impact, OR a
-  code-backed flow lacks replay / lineage / persistence / exception-chain
-  coverage without a named waiver
+  code-backed flow lacks replay / edge-resolution / lineage / persistence /
+  exception-chain coverage without a named waiver
 
 ## SME action
 

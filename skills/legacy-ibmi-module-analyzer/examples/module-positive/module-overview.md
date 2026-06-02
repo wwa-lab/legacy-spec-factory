@@ -38,26 +38,26 @@
 
 ## Module Program-Chain Readiness
 
-| Flow ID | Replay Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
-| --- | --- | --- | --- | --- | --- |
-| FLOW-ONUS-AUTH-001 | complete (`REPLAY-ONUS-AUTH-001`) | partial (`LINEAGE-ONUS-AUTH-001`, CVV path TBD) | complete (`PERSIST-ONUS-AUTH-001`) | complete (`EXCHAIN-ONUS-AUTH-001`) | TBD-CARD-AUTH-003 |
-| FLOW-MANUAL-AUTH-001 | complete (`REPLAY-MANUAL-AUTH-001`) | complete (`LINEAGE-MANUAL-AUTH-001`) | complete (`PERSIST-MANUAL-AUTH-001`) | complete (`EXCHAIN-MANUAL-AUTH-001`) | none |
-| FLOW-NIGHTLY-RECON-001 | complete (`REPLAY-NIGHTLY-RECON-001`) | complete (`LINEAGE-NIGHTLY-RECON-001`) | complete (`PERSIST-NIGHTLY-RECON-001`) | partial (`EXCHAIN-NIGHTLY-RECON-001`, threshold owner TBD) | TBD-CARD-AUTH-002 |
+| Flow ID | Replay Coverage | Edge Resolution Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| FLOW-ONUS-AUTH-001 | complete (`REPLAY-ONUS-AUTH-001`) | complete (no unresolved dynamic edges) | partial (`LINEAGE-ONUS-AUTH-001`, CVV path TBD) | complete (`PERSIST-ONUS-AUTH-001`) | complete (`EXCHAIN-ONUS-AUTH-001`) | TBD-CARD-AUTH-003 |
+| FLOW-MANUAL-AUTH-001 | complete (`REPLAY-MANUAL-AUTH-001`) | complete (no unresolved dynamic edges) | complete (`LINEAGE-MANUAL-AUTH-001`) | complete (`PERSIST-MANUAL-AUTH-001`) | complete (`EXCHAIN-MANUAL-AUTH-001`) | none |
+| FLOW-NIGHTLY-RECON-001 | complete (`REPLAY-NIGHTLY-RECON-001`) | complete (scheduler + CALL edges resolved) | complete (`LINEAGE-NIGHTLY-RECON-001`) | complete (`PERSIST-NIGHTLY-RECON-001`) | partial (`EXCHAIN-NIGHTLY-RECON-001`, threshold owner TBD) | TBD-CARD-AUTH-002 |
 
 ## Module Persistence & Critical Field Summary
 
-| Data / Field / Outcome | Source Flows | Persistence / Output | Downstream Consumer | Risk / TBD |
+| Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |
 | --- | --- | --- | --- | --- |
-| Authorization decision / status | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | TXNLOGPF status row + MQ/menu response | Card network, CSR, nightly reconciliation | none |
-| GL posting amount and exception count | FLOW-NIGHTLY-RECON-001 (`LINEAGE-NIGHTLY-RECON-001`, `PERSIST-NIGHTLY-RECON-001`) | GLPOSTPF, RECONPRT, RECONDTAQ | GL system, Finance Analyst, Risk Monitoring | TBD-CARD-AUTH-001, TBD-CARD-AUTH-002 |
-| CVV verification result | FLOW-ONUS-AUTH-001 (`LINEAGE-ONUS-AUTH-002`) | transient decision field; no stored value confirmed | authorization response | TBD-CARD-AUTH-003 |
+| AUTH_STATUS (authorization decision/status) | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 (`LINEAGE-*`, `PERSIST-*`) | TXNLOGPF status row (audit authorization outcome) + MQ/menu response | Card network, CSR, nightly reconciliation | none |
+| GLPOSTPF.POST_AMT (GL posting amount) and EXC_COUNT (exception count) | FLOW-NIGHTLY-RECON-001 (`LINEAGE-NIGHTLY-RECON-001`, `PERSIST-NIGHTLY-RECON-001`) | GLPOSTPF (GL staging handoff), RECONPRT (finance exception report), RECONDTAQ (monitoring status) | GL system, Finance Analyst, Risk Monitoring | TBD-CARD-AUTH-001, TBD-CARD-AUTH-002 |
+| CVV_RESULT (CVV verification result) | FLOW-ONUS-AUTH-001 (`LINEAGE-ONUS-AUTH-002`) | transient decision field; no stored value confirmed | authorization response | TBD-CARD-AUTH-003 |
 
 ## Module Exception & Recovery Summary
 
-| Exception Cluster | Source Flow / EXCHAIN | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
-| --- | --- | --- | --- | --- |
-| Online auth timeout / MQ failure | FLOW-ONUS-AUTH-001 (`EXCHAIN-ONUS-AUTH-001`) | decline response, no GL impact | partner retry; Ops monitors queue depth | covered |
-| Nightly recon RC=-2 threshold breach | FLOW-NIGHTLY-RECON-001 (`EXCHAIN-NIGHTLY-RECON-001`) | GL posting deferred, RECONPRT spool generated | Finance Analyst review, Card Ops escalation | TBD-CARD-AUTH-002 |
+| Exception Cluster | Source Flow / EXCHAIN | Error Type / Output Carrier | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
+| --- | --- | --- | --- | --- | --- |
+| Online auth timeout / MQ failure | FLOW-ONUS-AUTH-001 (`EXCHAIN-ONUS-AUTH-001`) | external handoff timeout / MQ status + response code | decline response, no GL impact | partner retry; Ops monitors queue depth | covered |
+| Nightly recon RC=-2 threshold breach | FLOW-NIGHTLY-RECON-001 (`EXCHAIN-NIGHTLY-RECON-001`) | validation threshold / RC out parameter + RECONPRT spool | GL posting deferred, RECONPRT spool generated | Finance Analyst review, Card Ops escalation | TBD-CARD-AUTH-002 |
 
 ## Capability Seeds For BRD / Spec
 

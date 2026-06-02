@@ -27,7 +27,7 @@
 
 ## Transaction Call Map
 
-Source: derived-from-code + SME confirmed
+Evidence basis: derived-from-code + SME confirmed
 
 ```mermaid
 flowchart LR
@@ -86,11 +86,11 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 ## Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Notes |
-| --- | --- | --- | --- | --- |
-| NODE-CUST-INQUIRY-01 | CUSTINQ (OBJ-CUST-INQ-001) | orchestrator + UI | program-analysis-OBJ-CUST-INQ-001.md | Drives 3 DSPFs; calls lookup and history workers |
-| NODE-CUST-INQUIRY-02 | CUSTLKP (OBJ-CUST-INQ-002) | data-access | program-analysis-OBJ-CUST-INQ-002.md | CHAIN on CUSTMSTR; pure lookup |
-| NODE-CUST-INQUIRY-03 | TXNHIST (OBJ-CUST-INQ-003) | data-access | program-analysis-OBJ-CUST-INQ-003.md | READE on TXNLOGPF; populates subfile buffer |
+| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| NODE-CUST-INQUIRY-01 | CUSTINQ (OBJ-CUST-INQ-001) | orchestrator + UI | program-analysis-OBJ-CUST-INQ-001.md | mode=segmented; readiness=approved; routines=deep_read | none | Drives 3 DSPFs; calls lookup and history workers |
+| NODE-CUST-INQUIRY-02 | CUSTLKP (OBJ-CUST-INQ-002) | data-access | program-analysis-OBJ-CUST-INQ-002.md | mode=standard; readiness=approved; routines=deep_read | none | CHAIN on CUSTMSTR; pure lookup |
+| NODE-CUST-INQUIRY-03 | TXNHIST (OBJ-CUST-INQ-003) | data-access | program-analysis-OBJ-CUST-INQ-003.md | mode=standard; readiness=approved; routines=deep_read | none | READE on TXNLOGPF; populates subfile buffer |
 
 **Missing program analyses:** none.
 
@@ -98,11 +98,11 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 ## Edges
 
-| Edge ID | From -> To | Via | Call Type | Site | Condition | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| EDGE-CUST-INQUIRY-01 | (MENU option 5) -> NODE-01 | N/A | MENU-option | CSRMENU opt 5 | user selects | EV-001 |
-| EDGE-CUST-INQUIRY-02 | NODE-01 -> NODE-02 | search-handler routine | CALLP | CUSTINQ:120 | always after CustID input | EV-002 |
-| EDGE-CUST-INQUIRY-03 | NODE-01 -> NODE-03 | F11-handler routine | CALLP | CUSTINQ:180 | user presses F11 on detail panel | EV-003 |
+| Edge ID | From -> To | Via | Call Type | Site | Condition | Evidence Source | Resolution | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EDGE-CUST-INQUIRY-01 | (MENU option 5) -> NODE-01 | N/A | MENU-option | CSRMENU opt 5 | user selects | MENU object + SME confirmation | sme_confirmed | EV-001 |
+| EDGE-CUST-INQUIRY-02 | NODE-01 -> NODE-02 | search-handler routine | CALLP | CUSTINQ:120 | always after CustID input | program-analysis Call Evidence | confirmed_from_code | EV-002 |
+| EDGE-CUST-INQUIRY-03 | NODE-01 -> NODE-03 | F11-handler routine | CALLP | CUSTINQ:180 | user presses F11 on detail panel | program-analysis Call Evidence | confirmed_from_code | EV-003 |
 
 ---
 
@@ -118,10 +118,10 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 | Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DATA-CUST-INQUIRY-01 | EDGE-02 | NODE-01 | NODE-02 / NODE-01 | CALL parameters | CustID (in), CustData DS (out), RC (out) | sync in/out | lookup result returned | EV-... |
-| DATA-CUST-INQUIRY-02 | EDGE-03 | NODE-01 | NODE-03 / NODE-01 | CALL parameters | CustID (in), SubfileBuffer (out array), RC (out) | sync in/out | history buffer returned | EV-... |
-| DATA-CUST-INQUIRY-03 | CUSTMSTR | NODE-02 | NODE-01 via EDGE-02 | Shared file | full customer master record keyed by CustID | sync lookup | read-only | EV-... |
-| DATA-CUST-INQUIRY-04 | TXNLOGPF | NODE-03 | NODE-01 via EDGE-03 | Shared file | last 90 days of CustID transactions | sync lookup | read-only | EV-... |
+| DATA-CUST-INQUIRY-01 | EDGE-02 | NODE-01 | NODE-02 / NODE-01 | CALL parameters | CustID (customer identifier) [in], CustData (customer detail data structure) [out], RC (lookup return status) [out] | sync in/out | lookup result returned | EV-... |
+| DATA-CUST-INQUIRY-02 | EDGE-03 | NODE-01 | NODE-03 / NODE-01 | CALL parameters | CustID (customer identifier) [in], SubfileBuffer (transaction-history subfile rows) [out], RC (history return status) [out] | sync in/out | history buffer returned | EV-... |
+| DATA-CUST-INQUIRY-03 | CUSTMSTR | NODE-02 | NODE-01 via EDGE-02 | Shared file | CUSTMSTR record keyed by CustID (customer identifier) | sync lookup | read-only | EV-... |
+| DATA-CUST-INQUIRY-04 | TXNLOGPF | NODE-03 | NODE-01 via EDGE-03 | Shared file | TXNLOGPF rows for last 90 days keyed by CustID (customer identifier) | sync lookup | read-only | EV-... |
 
 **Critical trails:**
 - Customer identity: DSPF input CustID -> CUSTINQ -> CUSTLKP -> CUSTMSTR -> CustData DS -> CUSTINQ detail panel.
@@ -151,9 +151,9 @@ buffer -> CUSTINQ displays history/detail -> F12 returns to menu.
 
 | Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LINEAGE-CUST-INQUIRY-01 | Customer identity | CUSTINQD CustID input / NODE-01 | DATA-CUST-INQUIRY-01 via EDGE-02 | CUSTLKP CustID / NODE-02 | CHAIN CUSTMSTR; RC decides found/not-found | CUSTINQD2 detail panel or not-found message | EV-CUST-INQUIRY-002 |
-| LINEAGE-CUST-INQUIRY-02 | Customer detail | CUSTMSTR record / NODE-02 | CustData DS out parameter | CUSTINQ display fields / NODE-01 | no transform observed | CUSTINQD2 fields | EV-CUST-INQUIRY-002 |
-| LINEAGE-CUST-INQUIRY-03 | Transaction history | TXNLOGPF rows / NODE-03 | SubfileBuffer out parameter | CUSTINQ subfile / NODE-01 | last-90-days filter | TXNHISTD subfile rows | EV-CUST-INQUIRY-003 |
+| LINEAGE-CUST-INQUIRY-01 | Customer identity | CustID (customer identifier) input on CUSTINQD / NODE-01 | DATA-CUST-INQUIRY-01 via EDGE-02 | CustID (customer identifier) in CUSTLKP / NODE-02 | CHAIN CUSTMSTR; RC decides found/not-found | CUSTINQD2 detail panel or not-found message | EV-CUST-INQUIRY-002 |
+| LINEAGE-CUST-INQUIRY-02 | Customer detail | CUSTMSTR record (customer master detail) / NODE-02 | CustData (customer detail data structure) out parameter | CUSTINQ display fields / NODE-01 | no transform observed | CUSTINQD2 fields | EV-CUST-INQUIRY-002 |
+| LINEAGE-CUST-INQUIRY-03 | Transaction history | TXNLOGPF rows (customer transactions) / NODE-03 | SubfileBuffer (transaction-history subfile rows) out parameter | CUSTINQ subfile / NODE-01 | last-90-days filter | TXNHISTD subfile rows | EV-CUST-INQUIRY-003 |
 
 **Unresolved lineage:**
 - TBD-CUST-INQUIRY-002: Confirm business rationale for the 90-day transaction history filter.
@@ -212,11 +212,11 @@ other durable state mutation is part of this inquiry flow.
 
 ### Exception Propagation Chain
 
-| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EXCHAIN-CUST-INQUIRY-01 | NODE-02 | RC=-1 | CALL out parameter RC | NODE-01 shows not-found message | EDGE-03 not available until valid customer detail | no persistence | CSR may re-enter CustID | EV-CUST-INQUIRY-002 |
-| EXCHAIN-CUST-INQUIRY-02 | NODE-02 | RC=-2 | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic error | EDGE-03 skipped | no persistence | flow returns to menu / CSR retries later | EV-CUST-INQUIRY-002 |
-| EXCHAIN-CUST-INQUIRY-03 | NODE-03 | RC=-1 | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic history error | customer detail remains visible; history display skipped | no persistence | CSR can continue with customer detail only | EV-CUST-INQUIRY-003 |
+| Chain ID | Source Node | Error Code / Message / RC | Error Type | Output Carrier | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence Status | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-CUST-INQUIRY-01 | NODE-02 | RC=-1 | not-found business condition | RC (lookup return status) | CALL out parameter RC | NODE-01 shows not-found message | EDGE-03 not available until valid customer detail | no persistence | CSR may re-enter CustID | confirmed_from_code | EV-CUST-INQUIRY-002 |
+| EXCHAIN-CUST-INQUIRY-02 | NODE-02 | RC=-2 | file I/O error | RC (lookup return status) + QSYSOPR message | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic error | EDGE-03 skipped | no persistence | flow returns to menu / CSR retries later | confirmed_from_code | EV-CUST-INQUIRY-002 |
+| EXCHAIN-CUST-INQUIRY-03 | NODE-03 | RC=-1 | history file I/O error | RC (history return status) + QSYSOPR message | CALL out parameter RC + QSYSOPR log | NODE-01 shows generic history error | customer detail remains visible; history display skipped | no persistence | CSR can continue with customer detail only | confirmed_from_code | EV-CUST-INQUIRY-003 |
 
 ### Commit Boundaries
 
