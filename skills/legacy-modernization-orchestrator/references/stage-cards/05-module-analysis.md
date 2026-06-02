@@ -18,10 +18,11 @@ business / SME review artifact before any spec is produced.
   evidence, Flow Persistence Matrix, and Exception Propagation Chain consuming
   routine-local exception closure)
 - `02_programs/<MODULE-SLUG>/<OBJ>/program-analysis.md` for every program
-  (preferably program-analyzer v0.2.4 with Call Evidence, Routine Logic
-  Details, routine-local carrier/lineage rows, routine-local exception closure,
-  key file/field source identifiers plus meanings, File I/O Purpose,
-  dynamic-call resolution, Error Code Inventory, and exception closure)
+  (preferably program-analyzer v0.2.5 with Call Evidence, Routine Logic
+  Details, conditioned calculation blocks, routine-local carrier/lineage rows,
+  routine-local exception closure, key file/field source identifiers plus
+  meanings, File I/O Purpose, dynamic-call resolution, Validation Logic,
+  and exception closure)
 - `01_inventory/inventory.yaml` (approved)
 - SME-confirmed BAU notes for the module (any operational quirks,
   workarounds, undocumented rules)

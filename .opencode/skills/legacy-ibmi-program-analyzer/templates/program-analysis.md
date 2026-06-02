@@ -131,6 +131,18 @@ calculation".
 | --- | --- | --- | --- | --- | --- | --- |
 | `[FIELD_NAME]` (business meaning) | [literal / move / expression / formula] | `[FIELD_A]` (meaning), constant `[X]` | [IF/SELECT/loop condition or always] | [rounding, scale, data type conversion, substring, padding, N/A] | [returned, persisted, passed, error/status set, display/report output] | [EV-*] |
 
+**Conditioned calculation blocks:**
+
+| Block / Guard | Guard Type | Source Range | Guarded Statement Order | Calculation Chain | Final Output / Error Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| [Condition 5 / indicator combo / IF / ELSE / CASE / loop scope] | RPG conditioning indicator / named condition group / IF / ELSE / CASE / loop / CL IF / COBOL IF/EVALUATE | lines [XX-YY] | [1. statement/opcode; 2. statement/opcode; 3. branch/exit] | [`SOURCE_FIELD` -> `WORK_VAR` -> `TARGET_FIELD` -> message/status/output] | [returned status, persisted field, skipped update, error code, display/report/queue output] | [EV-*] |
+
+**Outcome reverse traces:**
+
+| Outcome Code / Field | Reverse Trigger Chain | Guard / Conditioned Block | Source Operands / Carriers | Downstream Effect | Cross-References | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| [message ID / status value / return code / indicator / error field] | [`SOURCE_FIELD` -> `WORK_VAR` -> comparison / threshold -> outcome code] | [Condition 5 / IF / ELSE / CASE / loop / exception block] | [file fields, parameters, constants, work variables] | [skipped update, returned status, log/message, rollback, downstream call] | [Validation Logic row, Exception Closure row, Lineage row, TBD if unresolved] | [EV-*] |
+
 **Routine field lineage / carriers:**
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
@@ -145,12 +157,47 @@ calculation".
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | [business / parameter / I/O / external-call / generic handler / none observed] | [condition, `%ERROR`, MONMSG, return code, indicator] | [ERR_FLAG, ERR_CD, ERR_MSG, TRANS_ERR, log/message fields] | RETURN / rollback / skip write / continue / abort / none | [skipped update/call, rollback, message queue, report, caller response] | [Message / Status Code row or N/A] | [EV-*] |
 
 **Unresolved routine logic:** [None, or TBD references for unclear operands,
 constants, branch priority, precision, called routine, or field meaning.]
+
+---
+
+## Validation Logic
+
+Purpose: front-load the validation, status, return-code, message, and generic
+handler outcomes so reviewers can find them before the deep supporting
+sections. Do not hide these rows later in the document.
+
+| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `[CPFxxxx / UCCxxxx / literal / response 00 / status value]` | [message description from message file, source literal/comment, runtime evidence, or SME note; otherwise `unresolved - message description not available`] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | [Routine Logic Details section + conditioned calculation block / outcome reverse trace / exception closure / source-backed TBD] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
+
+Validation logic rules:
+
+- Create one row per explicit message ID, status code, return code, response
+  value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined code, indicator-driven
+  outcome, or generic catch-all token.
+- Do not group multiple message IDs into one row and do not replace individual
+  descriptions with family summaries such as "validation messages" or
+  "call-specific message IDs".
+- If one branch assigns several message IDs, duplicate the branch context and
+  create one validation logic row for each message ID.
+- `Message Description` must be the best available description from a message
+  file, source literal, source comment, runtime trace, vendor reference, or SME
+  note. If no description is available, write
+  `unresolved - message description not available` and create an Open Item.
+- Every material row must point back to Routine Logic Details with the exact
+  conditioned calculation block or outcome reverse trace that explains why the
+  outcome is reached. If the reverse trigger chain is not visible, mark it as
+  unresolved and create a source-backed TBD.
+
+**Validation logic unresolved:** [state whether status/message fields were
+detected but literal assignments, descriptions, carriers, or reverse trigger
+chains were not fully traced, or write "None."]
 
 ---
 
@@ -369,28 +416,12 @@ evidence-backed sections above.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Error type] | [condition, file op, call, SQL, validation] | [CPFxxxx / CPDxxxx / MCHxxxx / RNXxxxx / SQLCODE / UCC* / LCC* / literal code / none] | MONMSG / MONITOR ON-ERROR / %ERROR / indicator / IF / RC check / SQLSTATE | [ERR_FLAG, ERR_CD, ERR_MSG, log payload] | RETURN / GOTO / rollback / skip write / log / continue / abort | [blocks update, skips downstream call, returns status, continues] | [EV-*] |
 
-### Error Code Inventory
+### Validation Logic Cross-Reference
 
-| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `[CPFxxxx / UCCxxxx / literal / response 00 / status value]` | [message description from message file, source literal/comment, runtime evidence, or SME note; otherwise `unresolved - message description not available`] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
-
-Inventory rules:
-
-- Create one row per explicit message ID, status code, return code, response
-  value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined code, or generic
-  catch-all token.
-- Do not group multiple message IDs into one row and do not replace individual
-  descriptions with family summaries such as "validation messages" or
-  "call-specific message IDs".
-- If one branch assigns several message IDs, duplicate the branch context and
-  create one inventory row for each message ID.
-- `Message Description` must be the best available description from a message
-  file, source literal, source comment, runtime trace, vendor reference, or SME
-  note. If no description is available, write
-  `unresolved - message description not available` and create an Open Item.
-
-**Error codes unresolved:** [state whether status/message fields were detected but literal assignments were not fully traced, or write "None."]
+Validation/status/message code rows are front-loaded in `## Validation Logic`.
+Every exception row with a message, status, return code, response value, or
+generic handler must cross-reference that section through the visible code,
+carrier, or source-backed TBD.
 
 **Unhandled exceptions:**
 - [Description of unhandled error conditions if any]
@@ -453,7 +484,8 @@ Before approval, SME must validate:
 - [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
-- [ ] Routine Logic Details explain each load-bearing subroutine/procedure/mainline segment, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
+- [ ] Routine Logic Details explain each load-bearing subroutine/procedure/mainline segment, including field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
+- [ ] Routine Logic Details include outcome reverse traces from material message/status/error/return outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
 - [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
@@ -464,7 +496,7 @@ Before approval, SME must validate:
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes why each file is accessed
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Validation Logic is front-loaded after Routine Logic Details, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules

@@ -13,6 +13,8 @@ Each program analysis follows this markdown structure:
 ## Analysis Coverage & Scope
 ## Program Call Map
 ## Routine Cards
+## Routine Logic Details
+## Validation Logic
 ## Deep Read Windows
 ## Entry Points & Parameters
 ## Object Dependencies
@@ -396,12 +398,24 @@ transaction amount is loaded.
 | `ERR_CD` (error code) | literal `D003` | constant `D003` | `TMP_CUST_AMT < 0` | N/A | returned denial message code | EV-CREDIT-CHECK-015 |
 | `APPROVED_AMT` (approved amount) | `TRAN_AMT` | `TRAN_AMT` (transaction amount) | `TMP_CUST_AMT >= 0` | same scale as input | authorizes requested amount | EV-CREDIT-CHECK-016 |
 
+**Conditioned calculation blocks:**
+
+| Block / Guard | Guard Type | Source Range | Guarded Statement Order | Calculation Chain | Final Output / Error Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `IF TMP_CUST_AMT < 0` | IF branch | lines 120-126 | 1. compare `TMP_CUST_AMT`; 2. set `ERR_FLAG`; 3. set `ERR_CD`; 4. return | `CUST_BAL - TRAN_AMT -> TMP_CUST_AMT -> ERR_CD='D003'` | returns denial and skips CUST_MAST update | EV-CREDIT-CHECK-014, EV-CREDIT-CHECK-015 |
+
+**Outcome reverse traces:**
+
+| Outcome Code / Field | Reverse Trigger Chain | Guard / Conditioned Block | Source Operands / Carriers | Downstream Effect | Cross-References | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `D003` / `ERR_CD` | `CUST_MAST.CUST_BAL - TRAN_AMT -> TMP_CUST_AMT < 0 -> ERR_CD='D003'` | conditioned block `IF TMP_CUST_AMT < 0` | `CUST_MAST.CUST_BAL`, `TRAN_AMT`, `TMP_CUST_AMT` | returns denial and skips CUST_MAST update | Validation Logic `D003`; Exception Closure insufficient balance | EV-CREDIT-CHECK-014, EV-CREDIT-CHECK-015 |
+
 **Routine field lineage / carriers:**
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `TMP_CUST_AMT` (post-transaction balance) | `CUST_MAST.CUST_BAL` (customer balance), `TRAN_AMT` parameter | `TMP_CUST_AMT` | `CUST_MAST.CUST_BAL` update in SR210 | LIN-CREDIT-CHECK-004 / CUST_MAST mutation row | EV-CREDIT-CHECK-014 |
-| `ERR_CD` (error code) | literal `D003` | `ERR_CD` | return parameter / message field | Error Code Inventory row `D003` | EV-CREDIT-CHECK-015 |
+| `ERR_CD` (error code) | literal `D003` | `ERR_CD` | return parameter / message field | Validation Logic row `D003` | EV-CREDIT-CHECK-015 |
 | `APPROVED_AMT` (approved amount) | `TRAN_AMT` parameter | `APPROVED_AMT` | return parameter | LIN-CREDIT-CHECK-005 | EV-CREDIT-CHECK-016 |
 
 **Branch outcomes:**
@@ -413,7 +427,7 @@ transaction amount is loaded.
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | insufficient balance business guard | `TMP_CUST_AMT < 0` | `ERR_FLAG='Y'`, `ERR_CD='D003'`, `ERR_MSG='balance insufficient'` | RETURN | skips CUST_MAST update and downstream posting | `D003` | EV-CREDIT-CHECK-015 |
 | no exception observed on approved branch | `TMP_CUST_AMT >= 0` | none | continue | update path remains eligible | N/A | EV-CREDIT-CHECK-016 |
@@ -436,6 +450,31 @@ transaction amount is loaded.
   variable, its exact expression or literal assignment, source operands,
   branch/guard, precision/conversion behavior when visible, business effect,
   and evidence.
+- Conditioned calculation blocks must list every material guard-scoped
+  calculation chain that affects money, percentage, quantity, status, return
+  value, message/error code, persisted field, display/report field, queue
+  payload, or downstream branch. Include RPG fixed-format conditioning
+  indicators, named/numbered condition groups, result indicators, `IFxx` /
+  `ELSE` / `ENDIF`, `CASxx`, `DO` scopes, operation-level indicators, CL
+  labels/GOTO guards, and COBOL IF/EVALUATE branches when they guard
+  calculations or assignments. Each block must preserve guarded statement
+  order, source range, target fields, intermediate variables, final
+  output/error effect, and evidence.
+- If a shop or analyzer labels a source window as `Condition 5`, `C5`, an
+  indicator combination, or another condition group, keep that label and
+  analyze the guarded statements inside the matching routine. Do not leave it
+  only in Logic Decomposition Ledger, Branch Outcomes, or a prose summary.
+- Outcome reverse traces must start from each material message ID, status
+  code, return code, response value, indicator-driven outcome, or error field
+  and walk backwards to the branch/guard, conditioned calculation block,
+  comparison threshold, intermediate variables, and source operands/carriers
+  that make the outcome true. If the trigger chain cannot be fully traced,
+  keep the outcome row and name the missing operand, branch, or source window
+  as a `TBD-*`.
+- A generic outcome explanation such as "warning/reject condition",
+  "validation failed", or "product/group control check" is invalid when source
+  code exposes calculated intermediates, thresholds, or operands. The reverse
+  trace must show those fields and the guarded calculation order.
 - Routine field lineage / carriers must connect calculated or assigned fields
   to source carriers, intermediate variables, output/persisted carriers, and
   the matching Field Lineage / Field Mutation Matrix row where one exists. If a
@@ -444,8 +483,8 @@ transaction amount is loaded.
 - Routine exception closure must capture each business, parameter, I/O,
   external-call, return-code, indicator, or generic handler path visible inside
   the routine. Include trigger, error/status/message fields, handling action,
-  skipped downstream write/call/output or rollback behavior, Error Code
-  Inventory link, and evidence. If a routine has no observed exception path,
+  skipped downstream write/call/output or rollback behavior, Validation Logic
+  link, and evidence. If a routine has no observed exception path,
   write one `none observed` row with evidence or mark the gap as TBD.
 - Do not use generic descriptions such as "calculates amount", "validates
   fields", or "sets status" without target fields, operands, conditions, and
@@ -453,6 +492,71 @@ transaction amount is loaded.
 - If the expression, operand meaning, constant meaning, precision behavior, or
   branch priority is unclear, keep the row and mark the unresolved part with a
   TBD instead of omitting the calculation.
+
+---
+
+## Validation Logic Section
+
+Validation Logic is a front-loaded inventory of the program's validation,
+status, return-code, response, message, and generic-handler outcomes. It must
+appear immediately after `Routine Logic Details` and before `Deep Read Windows`
+so reviewers can find outcome logic without hunting through late error-handling
+prose. Do not duplicate this table later under `Error Handling`.
+
+```markdown
+## Validation Logic
+
+| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| D003 | Balance would become negative; transaction is blocked | validation_error | `ERR_CD` assignment, SR120 lines 520-525 | TMP_CUST_AMT < 0 | Routine Logic Details `SR120 ValidateExposure` -> outcome reverse trace `D003`; `CUST_BAL - TRAN_AMT -> TMP_CUST_AMT < 0 -> D003` | return parameter / message field | blocks account update and downstream posting | confirmed |
+| E501 | Customer master update failed | file_io_error | `TRANS_ERR_CD` assignment after UPDATE, lines 610-640 | %ERROR after UPDATE CUST_MAST | Exception Closure Ledger `CUST_MAST update failure`; no arithmetic chain | status field | caller receives transaction error; no further writes observed | confirmed |
+| CPF4101 | File not found or file open failed | file_io_error | ON-ERROR CPF4101, SR900 lines 900-930 | OPEN CREDFILE failure | Exception Closure Ledger `File not found during open`; no arithmetic chain | display/message API | stops processing before reads | confirmed |
+| *ANY / generic | Generic catch-all handler; exact message ID unresolved | unresolved | MONMSG MSGID(*ANY) or bare ON-ERROR | unexpected system exception | generic handler only; exact triggering code unresolved -> TBD-CREDIT-CHECK-006 | exception-log path or return parameter | generic coverage only; exact message ID unresolved | unresolved |
+
+**Validation logic unresolved:** status/message fields were detected, but
+literal code assignments were not fully traced.
+```
+
+**Requirements:**
+- Validation Logic must be placed before `Deep Read Windows`, not buried inside
+  `Error Handling`.
+- Create one row per observed explicit message ID, error code, status code,
+  response code, return code, SQLSTATE, CPF/MCH/RNX/CPD message,
+  indicator-driven error branch, exception/log output code, data queue response
+  status value, or generic catch-all token.
+- Do not group multiple message IDs into one row. A row containing
+  `UCC0120, UCC5127, UCC5135` with a family-level description such as
+  "validation messages" is invalid; create separate rows and duplicate the
+  branch/source context as needed.
+- Each row must include a `Message Description` for that specific code. The
+  description must come from a message file, source literal, source comment,
+  runtime evidence, vendor reference, or SME note. If no description is
+  available, write `unresolved - message description not available`, mark
+  Evidence Status `unresolved`, and create an Open Item / TBD.
+- Columns: Message / Status Code, Message Description, Validation / Error Type,
+  Set By / Source Lines, Trigger Condition, Reverse Trigger Chain / Routine
+  Logic Link, Output Carrier, Downstream Effect, Evidence Status.
+- Include all observed message families: `CPF*`, `CPD*`, `MCH*`,
+  `RNX*`, `SQL*`, shop-local `UCC*` / `LCC*`, literal business error
+  codes, return/status codes visible in source, and message/status
+  fields assigned during validation or file I/O failures.
+- Validation / Error Type values: `validation_error`, `file_io_error`,
+  `business_rule_error`, `external_call_error`, `data_queue_error`,
+  `response_status`, `exception_log`, `unresolved`.
+- Output Carrier examples: response DS, message field, status field,
+  data queue message, exception/log file, return parameter, display/message
+  API.
+- Reverse Trigger Chain / Routine Logic Link must point to the Routine Logic
+  Details subsection, conditioned calculation block, outcome reverse trace,
+  exception closure row, or source-backed TBD that explains why the code is
+  set. When source exposes intermediates or thresholds, this column must show
+  the field chain instead of a generic family label.
+- Do not limit extraction to shop-local prefixes.
+- Generic handlers (`*ANY`, bare `ON-ERROR`, generic error paragraphs)
+  must be marked as generic coverage and must not be expanded into
+  specific message IDs without source evidence.
+- If validation logic cannot be fully traced, add an explicit
+  **Validation logic unresolved:** sentence explaining the gap.
 
 ---
 
@@ -983,16 +1087,12 @@ Use one or more of these role labels:
 | File not found during open | OPEN CREDFILE | CPF4101 | ON-ERROR CPF4101 | ERR_CD='F001', SNDPGMMSG | GOTO ERRHANDLR | stops processing before reads | EV-CREDIT-CHECK-012 |
 | Unexpected system exception | MONITOR protected block | generic / *ANY | bare ON-ERROR | ERR_CD='9999' | log and RETURN | generic coverage only; exact message ID not inferred | EV-CREDIT-CHECK-013 |
 
-### Error Code Inventory
+### Validation Logic Cross-Reference
 
-| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| D003 | Balance would become negative; transaction is blocked | validation_error | `ERR_CD` assignment, SR120 lines 520-525 | TMP_CUST_AMT < 0 | return parameter / message field | blocks account update and downstream posting | confirmed |
-| E501 | Customer master update failed | file_io_error | `TRANS_ERR_CD` assignment after UPDATE, lines 610-640 | %ERROR after UPDATE CUST_MAST | status field | caller receives transaction error; no further writes observed | confirmed |
-| CPF4101 | File not found or file open failed | file_io_error | ON-ERROR CPF4101, SR900 lines 900-930 | OPEN CREDFILE failure | display/message API | stops processing before reads | confirmed |
-| *ANY / generic | Generic catch-all handler; exact message ID unresolved | unresolved | MONMSG MSGID(*ANY) or bare ON-ERROR | unexpected system exception | exception-log path or return parameter | generic coverage only; exact message ID unresolved | unresolved |
-
-**Error codes unresolved:** status/message fields were detected, but literal code assignments were not fully traced.
+Validation/status/message code rows are front-loaded in `## Validation Logic`.
+Every exception row with a message, status, return code, response value, or
+generic handler must cross-reference that section through the visible code,
+carrier, or source-backed TBD.
 
 **Unhandled exceptions:**
 - CUSTFILE READE fails with I/O error: no MONITOR block → Program will abnormally terminate → TBD-CREDIT-CHECK-005: Confirm error handling intent
@@ -1017,37 +1117,9 @@ Use one or more of these role labels:
 - Columns: exception/error condition, trigger/source, message ID/error
   code/return code, detection mechanism, fields set/messages sent,
   handling action, downstream impact, evidence.
-- One Error Code Inventory row per observed explicit message ID, error code,
-  status code, response code, return code, SQLSTATE, CPF/MCH/RNX/CPD message,
-  indicator-driven error branch, exception/log output code, data queue response
-  status value, or generic catch-all token.
-- Do not group multiple message IDs into one inventory row. A row containing
-  `UCC0120, UCC5127, UCC5135` with a family-level description such as
-  "validation messages" is invalid; create separate rows and duplicate the
-  branch/source context as needed.
-- Each row must include a `Message Description` for that specific code. The
-  description must come from a message file, source literal, source comment,
-  runtime evidence, vendor reference, or SME note. If no description is
-  available, write `unresolved - message description not available`, mark
-  Evidence Status `unresolved`, and create an Open Item / TBD.
-- Columns: Message / Status Code, Message Description, Error Type, Set By / Source Lines,
-  Trigger Condition, Output Carrier, Downstream Effect, Evidence Status.
-- Include all observed message families: `CPF*`, `CPD*`, `MCH*`,
-  `RNX*`, `SQL*`, shop-local `UCC*` / `LCC*`, literal business error
-  codes, return/status codes visible in source, and message/status
-  fields assigned during validation or file I/O failures.
-- Error Type values: `validation_error`, `file_io_error`,
-  `business_rule_error`, `external_call_error`, `data_queue_error`,
-  `response_status`, `exception_log`, `unresolved`.
-- Output Carrier examples: response DS, message field, status field,
-  data queue message, exception/log file, return parameter, display/message
-  API.
-- Do not limit extraction to shop-local prefixes.
-- Generic handlers (`*ANY`, bare `ON-ERROR`, generic error paragraphs)
-  must be marked as generic coverage and must not be expanded into
-  specific message IDs without source evidence.
-- If error codes are not fully traced, add an explicit
-  **Error codes unresolved:** sentence explaining the gap.
+- Cross-reference the front-loaded `Validation Logic` row for every observed
+  message/status/return/response/generic outcome. Do not duplicate the
+  Validation Logic table inside Error Handling.
 - Separate section for unhandled exceptions (errors NOT caught)
 - Note which errors log messages and where
 - State downstream impact: continue, return, skip write, rollback,
@@ -1164,7 +1236,7 @@ Before approval, SME must validate:
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Validation Logic is front-loaded after Routine Logic Details, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules

@@ -191,7 +191,7 @@ NODE-03 (CU205A)  ── customer history detail
   the flow consumed the upstream Call Evidence, Logic Decomposition Ledger,
   Routine Logic Details, routine-local field lineage / carrier rows,
   routine-local exception closure rows, Key File & Field Logic, File I/O
-  Purpose, Field Mutation Matrix, Error Code Inventory, Exception Closure
+  Purpose, Field Mutation Matrix, Validation Logic, Exception Closure
   Ledger, Routine / Window Data Flow, Redundancy Candidate Notes, and Open
   Items / Limitations. Older analyses
   require refresh or a named SME waiver before their missing details can
@@ -499,7 +499,7 @@ confirm idempotency strategy.
 ## Exception Propagation Chain Section
 
 The Exception Propagation Chain is the flow-level form of the upstream
-program `Error Code Inventory` plus `Exception Closure Ledger` plus
+program `Validation Logic` plus `Exception Closure Ledger` plus
 Routine Logic Details' routine-local exception closure. It shows how local
 node exceptions become transaction outcomes.
 
@@ -517,9 +517,9 @@ node exceptions become transaction outcomes.
 - Include every observed upstream exception/error/return path that
   changes the flow outcome, skips a downstream edge, triggers rollback,
   writes a message/log/report, or changes operator/user visibility.
-- For program-analysis v0.2.4 inputs, consume routine-local exception closure
+- For program-analysis v0.2.5 inputs, consume routine-local exception closure
   rows first when they identify the exact routine trigger, status/message
-  fields, downstream skip/rollback/output, or Error Code Inventory link for a
+  fields, downstream skip/rollback/output, or Validation Logic link for a
   flow-affecting path.
 - Carry forward observed `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`,
   shop-local message IDs, literal business error codes, return codes,

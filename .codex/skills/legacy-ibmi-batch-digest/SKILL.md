@@ -185,7 +185,7 @@ the inventory `role` field (whichever is more specific). Do NOT invent.
 Each row's "Key pending decisions" comes from the program-analysis.md
 rows with `review_status: needs_sme_review` and the `Open Items /
 Limitations` table. Take the top 3 by significance (money/posting paths,
-unresolved dynamic calls, and Error Code Inventory gaps first). If none, write
+unresolved dynamic calls, and Validation Logic gaps first). If none, write
 `(none)`.
 
 Each row's "TBDs" is the count of rows in `Open Items / Limitations` whose

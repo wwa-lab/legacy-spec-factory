@@ -18,7 +18,7 @@ through programs one at a time before moving to flow analysis.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.2.4)
+- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.2.5)
 - **Manual fallback:** Use the program-analysis skeleton in
   `skills/legacy-ibmi-program-analyzer/references/` and fill it section by
   section against the source
@@ -47,8 +47,8 @@ Call Evidence, Routine Logic Details with routine-local field lineage /
 carriers and routine-local exception closure, Logic Decomposition Ledger, Key
 File & Field Logic preserving source identifiers plus business meanings, Entry
 Points, Routine / Window Data Flow, Control Flow, File I/O with Purpose + Field
-Mutation Matrix, External Calls with dynamic-call resolution status, Error
-Handling with Error Code Inventory + Exception Closure Ledger, Redundancy
+Mutation Matrix, External Calls with dynamic-call resolution status, front-loaded
+Validation Logic, Error Handling with Exception Closure Ledger, Redundancy
 Candidate Notes, Open Items / Limitations (`TBD-*`). Every row cites an
 `evidence_id`.
 

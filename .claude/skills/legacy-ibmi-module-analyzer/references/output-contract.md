@@ -456,7 +456,7 @@ objects, with edge labels such as `creates`, `updates`, `reads`, `hands off`,
 ## Data Objects in Scope
 (Aggregated from every flow's Cross-Program Data Flow section, backed by
 program Data Touch Maps, Object Dependencies, File I/O Purpose, Field Mutation
-Matrix rows, Key File & Field Logic, and Error Code Inventory.)
+Matrix rows, Key File & Field Logic, and Validation Logic.)
 
 | Object / Carrier | Type | Inventory ID | Producer Flows | Consumer Flows | State Impact Summary | Coupling Score | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |

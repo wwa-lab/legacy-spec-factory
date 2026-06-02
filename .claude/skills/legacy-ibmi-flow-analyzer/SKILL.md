@@ -72,13 +72,13 @@ Accept:
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
 
 Each upstream program-analysis should expose the program-chain readiness
-sections from `legacy-ibmi-program-analyzer` v0.2.4 or later:
+sections from `legacy-ibmi-program-analyzer` v0.2.5 or later:
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
-`Routine Logic Details` with routine-local field lineage / carriers and
-routine-local exception closure,
+`Routine Logic Details` with conditioned calculation blocks, routine-local
+field lineage / carriers, and routine-local exception closure,
 `Key File & Field Logic` with source identifiers plus business meanings,
 `File I/O` Purpose plus Field Mutation Matrix, `External Calls` with
-dynamic-call resolution status, `Error Code Inventory`, `Exception Closure
+dynamic-call resolution status, `Validation Logic`, `Exception Closure
 Ledger`, `Routine / Window Data Flow`, `Redundancy Candidate Notes`, and
 `Open Items / Limitations`. If an older approved program-analysis is used,
 the flow must either route back for refresh or record a named SME waiver for
@@ -186,16 +186,17 @@ field-level rules. The summary below is normative for this skill.
   confirmation; flow-level field lineage not backed by upstream lineage,
   source identifier + business meaning pairs, or a visible carrier; persisted
   file/field updates absent from upstream mutation matrices; exception
-  propagation not backed by upstream Error Code Inventory / Exception Closure
+  propagation not backed by upstream Validation Logic / Exception Closure
   Ledger rows; business rules (these are seeds, never facts).
 - **TBD handling**: missing program-analysis → `TBD: pending_source`
   routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
   `TBD: pending_sme_judgment`; unnamed business event → stop and request
   the name from SME (do not autogenerate from program names).
 - **Coverage propagation**: consume each upstream program's Analysis
-  Coverage & Scope, Routine Cards, Deep Read Windows, Call Evidence, Logic
-  Decomposition Ledger, Key File & Field Logic, File I/O Purpose, Field
-  Mutation Matrix, Error Code Inventory, Exception Closure Ledger, Routine /
+  Coverage & Scope, Routine Cards, Routine Logic Details, front-loaded
+  Validation Logic, Deep Read Windows, Call Evidence, Logic Decomposition
+  Ledger, Key File & Field Logic, File I/O Purpose, Field Mutation Matrix,
+  Exception Closure Ledger, Routine /
   Window Data Flow, Redundancy Candidate Notes, and Open Items / Limitations
   before using program-level evidence in a flow. If the requested flow relies on a
   routine that was only `indexed_only` and that routine changes state,
@@ -377,10 +378,11 @@ to the orchestrator.
      CALL parameters, shared files, data areas, queues, screens, IFS,
      spool, or SME-confirmed manual handoffs. Do not collapse a resolved
      source identifier and business meaning into a plain field label.
-     For program-analyzer v0.2.4 inputs, prefer Routine Logic Details'
-     routine-local field lineage / carrier rows when they provide the
-     source carrier, intermediate variable, output/persisted carrier, or
-     lineage/mutation reference for a cross-program value.
+     For program-analyzer v0.2.5 inputs, prefer Routine Logic Details'
+     conditioned calculation blocks and routine-local field lineage / carrier
+     rows when they provide the guard-scoped source carrier, intermediate
+     variable, output/persisted carrier, or lineage/mutation reference for a
+     cross-program value.
    - Build the **Flow Persistence Matrix** by aggregating each
      program-analysis File I/O Purpose and Field Mutation Matrix into transaction-level
      outcomes:
@@ -529,7 +531,7 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
   pairs, carrier fields, or SME-approved manual handoff
 - **Persistence outcomes** not present in upstream File I/O Purpose / Field
   Mutation Matrix rows or SQL/file evidence
-- **Exception chains** not present in upstream Error Code Inventory /
+- **Exception chains** not present in upstream Validation Logic /
   Exception Closure Ledger rows, return-code checks, message IDs, or
   SME-confirmed operational recovery notes
 - **Branch destinations** for F-keys / options not visible in DSPF DDS
@@ -608,7 +610,7 @@ No runtime-specific assumptions are embedded in the canonical source.
 
 - v0.2.1 (2026-06-02): Program-analysis v0.2.1 consumption alignment
   - Required flow analysis to consume Call Evidence, File I/O Purpose,
-    dynamic-call resolution status, Error Code Inventory, Routine / Window
+    dynamic-call resolution status, Validation Logic, Routine / Window
     Data Flow, and Open Items / Limitations
   - Required flow field, lineage, persistence, and exception tables to
     preserve source identifiers with business meanings where upstream

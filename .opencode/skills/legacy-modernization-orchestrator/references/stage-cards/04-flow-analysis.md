@@ -15,10 +15,10 @@ scheduler, API/remote.
 
 - `02_programs/<MODULE>/<OBJ>/program-analysis.md` for every program the
   flow touches (all at `approved` or `approved_with_non_blocking_tbd`;
-  prefer program-analyzer v0.2.4 outputs with Routine Logic Details,
-  routine-local carrier/lineage rows, routine-local exception closure,
-  File I/O Purpose, source identifier + business meaning fields, and Error
-  Code Inventory)
+  prefer program-analyzer v0.2.5 outputs with Routine Logic Details,
+  conditioned calculation blocks, routine-local carrier/lineage rows,
+  routine-local exception closure, File I/O Purpose, source identifier +
+  business meaning fields, and Validation Logic)
 - `01_inventory/inventory.yaml` (approved)
 - The trigger artifact for this flow: the menu, scheduler entry, DB trigger
   binding, API surface, or batch JOBSCDE entry
