@@ -36,7 +36,7 @@ This map shows the cross-program and cross-boundary call structure for
 the flow; internal subroutines remain in the `Via` field unless they are
 needed to explain the transaction.
 
-Source: derived-from-code | source-level flow header | both (matched)
+Evidence basis: derived-from-code | source-level flow header | both (matched) | SME confirmed
 
 ```mermaid
 flowchart LR
@@ -76,7 +76,7 @@ NODE-[SLUG]-02 ([PROGRAM])  ── [one-line role]
 
 | Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | `program-analysis-OBJ-[SLUG]-[NNN].md` | mode=<standard|segmented|large_program>; readiness=<approved|warning|blocked>; routines=<deep_read|indexed_only|blocked> | none / TBD-[SLUG]-[NNN] [routine indexed_only with state impact; route to program analyzer unless named SME waiver recorded] | [notes] |
+| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | `program-analysis-OBJ-[SLUG]-[NNN].md` | mode=<standard/segmented/large_program>; readiness=<approved/warning/blocked>; routines=<deep_read/indexed_only/blocked> | none / TBD-[SLUG]-[NNN] [routine indexed_only with state impact; route to program analyzer unless named SME waiver recorded] | [notes] |
 
 **Missing program analyses:** none | TBD-[SLUG]-[NNN] for each
 
@@ -84,10 +84,10 @@ NODE-[SLUG]-02 ([PROGRAM])  ── [one-line role]
 
 ## Edges
 
-| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| EDGE-[SLUG]-01 | (trigger) -> NODE-[SLUG]-01 | N/A | [type] | [pointer] | always | EV-... |
-| EDGE-[SLUG]-02 | NODE-[SLUG]-01 -> NODE-[SLUG]-02 | [SRxxx / procedure / N/A] | CALL / CALLP / CALLPRC / DTAQ | [PROGRAM]:[LINE] | [always / condition] | EV-... |
+| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence Source | Resolution | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EDGE-[SLUG]-01 | (trigger) -> NODE-[SLUG]-01 | N/A | [type] | [pointer] | always | [WRKJOBSCDE / DSPF DDS / integration contract / SME] | [confirmed_from_code / sme_confirmed] | EV-... |
+| EDGE-[SLUG]-02 | NODE-[SLUG]-01 -> NODE-[SLUG]-02 | [SRxxx / procedure / N/A] | CALL / CALLP / CALLPRC / DTAQ | [PROGRAM]:[LINE] | [always / condition] | program-analysis Call Evidence | [confirmed_from_code / observed_in_runtime / needs_sme_review / unresolved] | EV-... |
 
 ---
 
@@ -110,7 +110,7 @@ map but must remain in this table and in the edge table.
 
 | Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DATA-[SLUG]-01 | EDGE-[SLUG]-01 / [OBJECT] | NODE-[SLUG]-01 | NODE-[SLUG]-02 | CALL parameters / DTAARA / DTAQ / shared file / spool / IFS / MSGQ / DSPF / actgrp-globals / out-of-band | [field name + type / record / message] | sync in / sync out / async / batch-later / manual | read-only / creates / updates / deletes / external handoff | EV-... |
+| DATA-[SLUG]-01 | EDGE-[SLUG]-01 / [OBJECT] | NODE-[SLUG]-01 | NODE-[SLUG]-02 | CALL parameters / DTAARA / DTAQ / shared file / spool / IFS / MSGQ / DSPF / actgrp-globals / out-of-band | [FIELD_NAME (business meaning) / VARIABLE_NAME (business meaning) [in/out/inout] / record / message] | sync in / sync out / async / batch-later / manual | read-only / creates / updates / deletes / external handoff | EV-... |
 
 **Critical trails:**
 - [Business data item]: [producer] -> [carrier/object] -> [consumer] -> [downstream outcome]
@@ -145,7 +145,7 @@ files, data areas, queues, screens, spool, IFS files, and manual handoffs.
 
 | Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LINEAGE-[SLUG]-01 | [customer id / amount / status / error code] | [NODE + field] | [EDGE/DATA/object] | [NODE + field] | [calculation / branch / no transform] | [PERSIST-* / response / report / UI] | [EV-*] |
+| LINEAGE-[SLUG]-01 | [customer id / amount / status / error code] | [FIELD_NAME (business meaning) / NODE] | [EDGE/DATA/object] | [FIELD_NAME (business meaning) / NODE] | [calculation / branch / no transform] | [PERSIST-* / response / report / UI] | [EV-*] |
 
 **Unresolved lineage:**
 - TBD-[SLUG]-[NNN]: [missing program-analysis lineage, carrier field, DDS/copybook, or SME handoff confirmation]
@@ -159,9 +159,9 @@ outcomes. Do not repeat every program-local assignment; include only writes,
 updates, deletes, skipped mutations, and external durable outputs that matter
 to the flow outcome.
 
-| Persist ID | Node / Routine | File / Object | Operation | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PERSIST-[SLUG]-01 | [NODE / routine] | [PF/LF/DSPF/PRTF/DTAQ/MSGQ/IFS/API] | WRITE / UPDATE / DELETE / SQL DML / send / spool / N/A skipped | [key and branch condition] | [field names or output payload] | [LINEAGE-* / DATA-* / literal / RC] | [commit, rollback, retry, skipped] | [node/system/user] | [EV-*] |
+| Persist ID | Node / Routine | File / Object | Operation | Purpose | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PERSIST-[SLUG]-01 | [NODE / routine] | [PF/LF/DSPF/PRTF/DTAQ/MSGQ/IFS/API] | WRITE / UPDATE / DELETE / SQL DML / send / spool / N/A skipped | [why this object is accessed or changed] | [key and branch condition] | [FIELD_NAME (business meaning) or output payload] | [LINEAGE-* / DATA-* / literal / RC] | [commit, rollback, retry, skipped] | [node/system/user] | [EV-*] |
 
 **Read-only flow:** N/A only when all upstream program analyses confirm no
 persisted file mutations or durable external outputs.
@@ -202,9 +202,9 @@ persisted file mutations or durable external outputs.
 
 ### Exception Propagation Chain
 
-| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EXCHAIN-[SLUG]-01 | [NODE-*] | [CPF*/SQL*/UCC*/literal/RC] | [CALL out parm / MSGQ / exception / file status] | [branch, return, retry, abort, continue] | [EDGE-* skipped/allowed] | [PERSIST-* committed/skipped/rolled back] | [decline / abort / continue / operator action] | [EV-*] |
+| Chain ID | Source Node | Error Code / Message / RC | Error Type | Output Carrier | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence Status | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-[SLUG]-01 | [NODE-*] | [CPF*/SQL*/UCC*/literal/RC] | [business / technical / system / validation] | [CALL out parm / MSGQ / joblog / display field / file status] | [CALL out parm / MSGQ / exception / file status] | [branch, return, retry, abort, continue] | [EDGE-* skipped/allowed] | [PERSIST-* committed/skipped/rolled back] | [decline / abort / continue / operator action] | [confirmed_from_code / observed_in_runtime / needs_sme_review] | [EV-*] |
 
 ### Commit Boundaries
 

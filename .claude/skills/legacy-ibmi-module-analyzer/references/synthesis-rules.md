@@ -169,8 +169,9 @@ For each pair of flows (A, B):
   durable outputs, rollback, retry, or skipped writes
 - Every program's Data Touch Map and Object Dependencies sections (from
   each `program-analysis-<OBJ-ID>.md`)
-- Every program's Key File & Field Logic and Field Mutation Matrix where
-  supplied by program-analyzer v0.2.0
+- Every program's Key File & Field Logic, File I/O Purpose, Field Mutation
+  Matrix, and Error Code Inventory where supplied by program-analyzer v0.2.1;
+  preserve source identifiers plus business meanings for critical fields
 - inventory.yaml (for cross-reference)
 
 ### Aggregation Rules

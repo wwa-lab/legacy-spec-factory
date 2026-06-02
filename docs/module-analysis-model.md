@@ -123,8 +123,8 @@ them.
 every `flow-<FLOW-SLUG>.md`, backed by flow `Cross-Program Field Lineage`,
 `Flow Persistence Matrix`, and `Exception Propagation Chain` sections; every
 program's `Data Touch Map`, `Object Dependencies`, `Key File & Field Logic`,
-and `Field Mutation Matrix`; DDS definitions from inventory; SME notes on data
-ownership and retention.
+`File I/O Purpose`, `Field Mutation Matrix`, and `Error Code Inventory`; DDS
+definitions from inventory; SME notes on data ownership and retention.
 
 ## View Independence vs Cross-View Linking
 
@@ -182,7 +182,7 @@ Module
 ├─ Capability   (BR-* groups; spec.yaml unit)
 ├─ Flow         (business transaction; flow-*.md)
 │   └─ Program  (program-analysis-*.md)
-│       └─ Object Dependencies + Field Mutation Matrix
+│       └─ Object Dependencies + File I/O Purpose + Field Mutation Matrix
 ├─ Replay / Lineage / Persistence / Exception evidence
 └─ BAU notes    (manual, periodic, exception-handling processes)
 ```

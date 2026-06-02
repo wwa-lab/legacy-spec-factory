@@ -27,7 +27,7 @@
 
 ## Transaction Call Map
 
-Source: derived-from-code + SME confirmed
+Evidence basis: derived-from-code + SME confirmed
 
 ```mermaid
 flowchart LR
@@ -73,12 +73,12 @@ NODE-04 (RECONSQL) ── SQLRPG: cross-checks GLPOSTPF against ledger via embed
 
 ## Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Notes |
-| --- | --- | --- | --- | --- |
-| NODE-NIGHTLY-RECON-01 | RECONCL (OBJ-CARD-AUTH-101) | orchestrator (CL) | program-analysis-OBJ-CARD-AUTH-101.md | Sets up env, manages overall job |
-| NODE-NIGHTLY-RECON-02 | RECON01R (OBJ-CARD-AUTH-102) | worker | program-analysis-OBJ-CARD-AUTH-102.md | Heaviest worker; per-row validation & GL prep |
-| NODE-NIGHTLY-RECON-03 | RECON02R (OBJ-CARD-AUTH-103) | reporter | program-analysis-OBJ-CARD-AUTH-103.md | Spool generation only; no data mutation |
-| NODE-NIGHTLY-RECON-04 | RECONSQL (OBJ-CARD-AUTH-104) | data-access (SQLRPG) | program-analysis-OBJ-CARD-AUTH-104.md | Final cross-check; embedded SQL over GL |
+| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| NODE-NIGHTLY-RECON-01 | RECONCL (OBJ-CARD-AUTH-101) | orchestrator (CL) | program-analysis-OBJ-CARD-AUTH-101.md | mode=standard; readiness=approved; routines=deep_read | none | Sets up env, manages overall job |
+| NODE-NIGHTLY-RECON-02 | RECON01R (OBJ-CARD-AUTH-102) | worker | program-analysis-OBJ-CARD-AUTH-102.md | mode=segmented; readiness=approved; routines=deep_read | none | Heaviest worker; per-row validation & GL prep |
+| NODE-NIGHTLY-RECON-03 | RECON02R (OBJ-CARD-AUTH-103) | reporter | program-analysis-OBJ-CARD-AUTH-103.md | mode=standard; readiness=approved; routines=deep_read | none | Spool generation only; no data mutation |
+| NODE-NIGHTLY-RECON-04 | RECONSQL (OBJ-CARD-AUTH-104) | data-access (SQLRPG) | program-analysis-OBJ-CARD-AUTH-104.md | mode=standard; readiness=approved; routines=deep_read | none | Final cross-check; embedded SQL over GL |
 
 **Missing program analyses:** none — all four approved.
 
@@ -86,12 +86,12 @@ NODE-04 (RECONSQL) ── SQLRPG: cross-checks GLPOSTPF against ledger via embed
 
 ## Edges
 
-| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| EDGE-NIGHTLY-RECON-01 | (scheduler) -> NODE-01 | N/A | scheduler-fire -> SBMJOB | (WRKJOBSCDE entry) | always at 22:00 weekday | EV-NIGHTLY-RECON-001 |
-| EDGE-NIGHTLY-RECON-02 | NODE-01 -> NODE-02 | N/A | CALL | RECONCL:38 | always | EV-NIGHTLY-RECON-002 |
-| EDGE-NIGHTLY-RECON-03 | NODE-01 -> NODE-03 | N/A | CALL | RECONCL:52 | only if NODE-02 returned RC=0 | EV-NIGHTLY-RECON-003 |
-| EDGE-NIGHTLY-RECON-04 | NODE-01 -> NODE-04 | N/A | CALL | RECONCL:66 | only if NODE-03 returned RC=0 | EV-NIGHTLY-RECON-004 |
+| Edge ID | From -> To | Via | Call Type | Site (program:line) | Condition | Evidence Source | Resolution | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EDGE-NIGHTLY-RECON-01 | (scheduler) -> NODE-01 | N/A | scheduler-fire -> SBMJOB | (WRKJOBSCDE entry) | always at 22:00 weekday | WRKJOBSCDE export + SME cadence confirmation | sme_confirmed | EV-NIGHTLY-RECON-001 |
+| EDGE-NIGHTLY-RECON-02 | NODE-01 -> NODE-02 | N/A | CALL | RECONCL:38 | always | program-analysis Call Evidence | confirmed_from_code | EV-NIGHTLY-RECON-002 |
+| EDGE-NIGHTLY-RECON-03 | NODE-01 -> NODE-03 | N/A | CALL | RECONCL:52 | only if NODE-02 returned RC=0 | program-analysis Call Evidence | confirmed_from_code | EV-NIGHTLY-RECON-003 |
+| EDGE-NIGHTLY-RECON-04 | NODE-01 -> NODE-04 | N/A | CALL | RECONCL:66 | only if NODE-03 returned RC=0 | program-analysis Call Evidence | confirmed_from_code | EV-NIGHTLY-RECON-004 |
 
 ---
 
@@ -107,13 +107,13 @@ NODE-04 (RECONSQL) ── SQLRPG: cross-checks GLPOSTPF against ledger via embed
 
 | Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DATA-NIGHTLY-RECON-01 | EDGE-02/03/04 | NODE-01 | NODE-02/03/04 | CALL parameter | RUNDATE (char 8) | sync in | run-date handoff | EV-... |
-| DATA-NIGHTLY-RECON-02 | EDGE-02/03/04 | NODE-02/03/04 | NODE-01 | CALL parameter (out) | RC (numeric 4) | sync out | return status controls next edge | EV-... |
-| DATA-NIGHTLY-RECON-03 | TXNLOGPF | upstream auth flow | NODE-02 | Shared file | day's transactions keyed by RUNDATE | batch-later | reads persistent transaction rows | EV-... |
-| DATA-NIGHTLY-RECON-04 | GLPOSTPF | NODE-02 | NODE-04 and downstream GL consolidation | Shared file | GL staging rows | batch-later | creates rows, later read by SQL / GL | EV-... |
-| DATA-NIGHTLY-RECON-05 | RECONPRT | NODE-03 | Finance team | Spool / PRTF | exception report | next-morning human review | report handoff | EV-... |
-| DATA-NIGHTLY-RECON-06 | RECONDTAQ | NODE-04 | monitoring system | DTAQ | "RECON COMPLETE / FAILED" status message | async | external status handoff | EV-... |
-| DATA-NIGHTLY-RECON-07 | HSSDTAR002 | NODE-01 / NODE-04 | NODE-01 / NODE-04 | Shared data area | BatchRunDate + completion flag | shared state | reads run date; updates checkpoint | EV-... |
+| DATA-NIGHTLY-RECON-01 | EDGE-02/03/04 | NODE-01 | NODE-02/03/04 | CALL parameter | RUNDATE (reconciliation run date) [in] | sync in | run-date handoff | EV-... |
+| DATA-NIGHTLY-RECON-02 | EDGE-02/03/04 | NODE-02/03/04 | NODE-01 | CALL parameter (out) | RC (return status) [out] | sync out | return status controls next edge | EV-... |
+| DATA-NIGHTLY-RECON-03 | TXNLOGPF | upstream auth flow | NODE-02 | Shared file | TXNLOGPF rows keyed by RUNDATE (reconciliation run date) | batch-later | reads persistent transaction rows | EV-... |
+| DATA-NIGHTLY-RECON-04 | GLPOSTPF | NODE-02 | NODE-04 and downstream GL consolidation | Shared file | GLPOSTPF rows (GL staging records) | batch-later | creates rows, later read by SQL / GL | EV-... |
+| DATA-NIGHTLY-RECON-05 | RECONPRT | NODE-03 | Finance team | Spool / PRTF | RECONPRT (exception report) | next-morning human review | report handoff | EV-... |
+| DATA-NIGHTLY-RECON-06 | RECONDTAQ | NODE-04 | monitoring system | DTAQ | STATUSMSG ("RECON COMPLETE / FAILED" monitoring status) | async | external status handoff | EV-... |
+| DATA-NIGHTLY-RECON-07 | HSSDTAR002 | NODE-01 / NODE-04 | NODE-01 / NODE-04 | Shared data area | BatchRunDate (reconciliation run date) + CompleteFlag (completion checkpoint) | shared state | reads run date; updates checkpoint | EV-... |
 
 **Critical trails:**
 - Run date: HSSDTAR002 -> RECONCL -> CALL parameters -> RECON01R/RECON02R/RECONSQL.
@@ -143,9 +143,9 @@ checkpoint -> downstream GL reads GLPOSTPF after cut-off.
 
 | Lineage ID | Business Data Item | Source Field / Node | Carrier / Edge | Consumer Field / Node | Transform / Decision | Final Persistence / Output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LINEAGE-NIGHTLY-RECON-01 | Reconciliation run date | HSSDTAR002 BatchRunDate / NODE-01 | DATA-NIGHTLY-RECON-01 via EDGE-02/03/04 | RUNDATE parameter in NODE-02/03/04 | used as transaction selection key | GLPOSTPF run-date rows, RECONPRT, HSSDTAR002 checkpoint | EV-NIGHTLY-RECON-001 to EV-NIGHTLY-RECON-004 |
-| LINEAGE-NIGHTLY-RECON-02 | Return status | NODE-02/03/04 RC | DATA-NIGHTLY-RECON-02 out parameter | NODE-01 RC checks | controls next call or ERREXIT/ABEND | skipped or allowed EDGE-03/04; final job status | EV-NIGHTLY-RECON-002 to EV-NIGHTLY-RECON-004 |
-| LINEAGE-NIGHTLY-RECON-03 | GL staging rows | TXNLOGPF day transactions / NODE-02 | DATA-NIGHTLY-RECON-04 GLPOSTPF | NODE-04 SQL cross-check and downstream GL | validation filters and posting transformation inside NODE-02 | GLPOSTPF rows consumed by RECONSQL and GL consolidation | EV-NIGHTLY-RECON-002, EV-NIGHTLY-RECON-004 |
+| LINEAGE-NIGHTLY-RECON-01 | Reconciliation run date | BatchRunDate (reconciliation run date) / NODE-01 | DATA-NIGHTLY-RECON-01 via EDGE-02/03/04 | RUNDATE (reconciliation run date) parameter in NODE-02/03/04 | used as transaction selection key | GLPOSTPF run-date rows, RECONPRT, HSSDTAR002 CompleteFlag (completion checkpoint) | EV-NIGHTLY-RECON-001 to EV-NIGHTLY-RECON-004 |
+| LINEAGE-NIGHTLY-RECON-02 | Return status | RC (return status) from NODE-02/03/04 | DATA-NIGHTLY-RECON-02 out parameter | RC (return status) check in NODE-01 | controls next call or ERREXIT/ABEND | skipped or allowed EDGE-03/04; final job status | EV-NIGHTLY-RECON-002 to EV-NIGHTLY-RECON-004 |
+| LINEAGE-NIGHTLY-RECON-03 | GL staging rows | TXNLOGPF rows (authorized transactions for run date) / NODE-02 | DATA-NIGHTLY-RECON-04 GLPOSTPF | GLPOSTPF rows consumed by NODE-04 SQL cross-check and downstream GL | validation filters and posting transformation inside NODE-02 | GLPOSTPF rows consumed by RECONSQL and GL consolidation | EV-NIGHTLY-RECON-002, EV-NIGHTLY-RECON-004 |
 
 **Unresolved lineage:**
 - TBD-NIGHTLY-RECON-003: HSSDTAR002 checkpoint field format is not documented.
@@ -154,12 +154,12 @@ checkpoint -> downstream GL reads GLPOSTPF after cut-off.
 
 ## Flow Persistence Matrix
 
-| Persist ID | Node / Routine | File / Object | Operation | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PERSIST-NIGHTLY-RECON-01 | NODE-02 | GLPOSTPF | WRITE | per TXNLOGPF row selected by RUNDATE | GL staging rows | LINEAGE-NIGHTLY-RECON-01, LINEAGE-NIGHTLY-RECON-03 | non-journaled rows durable per write; partial restart risk | NODE-04 and downstream GL consolidation | EV-NIGHTLY-RECON-002 |
-| PERSIST-NIGHTLY-RECON-02 | NODE-03 | RECONPRT | spool / PRTF output | only if NODE-02 RC=0 | exception report | LINEAGE-NIGHTLY-RECON-01 | spool entry durable after report creation | Finance team | EV-NIGHTLY-RECON-003 |
-| PERSIST-NIGHTLY-RECON-03 | NODE-04 | RECONDTAQ | DTAQ send | after SQL cross-check | completion/failure status message | LINEAGE-NIGHTLY-RECON-02 | external monitor sees status; DTAQ timeout is non-fatal | monitoring system | EV-NIGHTLY-RECON-004 |
-| PERSIST-NIGHTLY-RECON-04 | NODE-04 | HSSDTAR002 | data-area update | final successful cross-check | completion flag/checkpoint | LINEAGE-NIGHTLY-RECON-01 | durable checkpoint; skipped on SQL failure | scheduler/operators and later runs | EV-NIGHTLY-RECON-004 |
+| Persist ID | Node / Routine | File / Object | Operation | Purpose | Key / Condition | Fields Mutated / Output | Driven By | Commit / Rollback Impact | Downstream Consumer | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PERSIST-NIGHTLY-RECON-01 | NODE-02 | GLPOSTPF | WRITE | create GL staging rows for reconciliation | per TXNLOGPF row selected by RUNDATE | GLPOSTPF rows (GL staging records) | LINEAGE-NIGHTLY-RECON-01, LINEAGE-NIGHTLY-RECON-03 | non-journaled rows durable per write; partial restart risk | NODE-04 and downstream GL consolidation | EV-NIGHTLY-RECON-002 |
+| PERSIST-NIGHTLY-RECON-02 | NODE-03 | RECONPRT | spool / PRTF output | produce exception report for finance review | only if NODE-02 RC=0 | RECONPRT (exception report) | LINEAGE-NIGHTLY-RECON-01 | spool entry durable after report creation | Finance team | EV-NIGHTLY-RECON-003 |
+| PERSIST-NIGHTLY-RECON-03 | NODE-04 | RECONDTAQ | DTAQ send | notify monitor of reconciliation outcome | after SQL cross-check | STATUSMSG (completion/failure monitoring status) | LINEAGE-NIGHTLY-RECON-02 | external monitor sees status; DTAQ timeout is non-fatal | monitoring system | EV-NIGHTLY-RECON-004 |
+| PERSIST-NIGHTLY-RECON-04 | NODE-04 | HSSDTAR002 | data-area update | record completion checkpoint for later runs | final successful cross-check | CompleteFlag (completion checkpoint) | LINEAGE-NIGHTLY-RECON-01 | durable checkpoint; skipped on SQL failure | scheduler/operators and later runs | EV-NIGHTLY-RECON-004 |
 
 ---
 
@@ -201,12 +201,12 @@ N/A — non-interactive flow (batch).
 
 ### Exception Propagation Chain
 
-| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EXCHAIN-NIGHTLY-RECON-01 | NODE-02 | RC=-1 or RC=-2 | CALL out parameter RC | NODE-01 logs and GOTO ERREXIT | EDGE-03 and EDGE-04 skipped | PERSIST-01 may be absent or partial; PERSIST-02/03/04 skipped | job ends before report/cross-check | EV-NIGHTLY-RECON-002 |
-| EXCHAIN-NIGHTLY-RECON-02 | NODE-03 | RC=-1 | CALL out parameter RC | NODE-01 logs and GOTO ERREXIT | EDGE-04 skipped | PERSIST-01 durable; PERSIST-02 failed; PERSIST-03/04 skipped | job ends with GLPOSTPF rows but no completion flag | EV-NIGHTLY-RECON-003 |
-| EXCHAIN-NIGHTLY-RECON-03 | NODE-04 | SQLCODE < 0 / RC=-1 | CALL out parameter RC + QSYSOPR | NODE-01 logs and ABENDs | no further downstream edge | PERSIST-01 durable; PERSIST-04 skipped; partial restart needed | job ABEND; downstream GL blocked until recovery | EV-NIGHTLY-RECON-004 |
-| EXCHAIN-NIGHTLY-RECON-04 | NODE-04 | DTAQ send timeout warning | MONITOR/log path | NODE-04 continues with RC=0 warning | all edges already complete | PERSIST-04 still updates checkpoint; monitor message may be missing | reconciliation completes with monitoring gap | EV-NIGHTLY-RECON-004 |
+| Chain ID | Source Node | Error Code / Message / RC | Error Type | Output Carrier | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence Status | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-NIGHTLY-RECON-01 | NODE-02 | RC=-1 or RC=-2 | validation / file I/O | RC (return status) | CALL out parameter RC | NODE-01 logs and GOTO ERREXIT | EDGE-03 and EDGE-04 skipped | PERSIST-01 may be absent or partial; PERSIST-02/03/04 skipped | job ends before report/cross-check | confirmed_from_code | EV-NIGHTLY-RECON-002 |
+| EXCHAIN-NIGHTLY-RECON-02 | NODE-03 | RC=-1 | report/spool error | RC (return status) | CALL out parameter RC | NODE-01 logs and GOTO ERREXIT | EDGE-04 skipped | PERSIST-01 durable; PERSIST-02 failed; PERSIST-03/04 skipped | job ends with GLPOSTPF rows but no completion flag | confirmed_from_code | EV-NIGHTLY-RECON-003 |
+| EXCHAIN-NIGHTLY-RECON-03 | NODE-04 | SQLCODE < 0 / RC=-1 | SQL error | RC (return status) + QSYSOPR message | CALL out parameter RC + QSYSOPR | NODE-01 logs and ABENDs | no further downstream edge | PERSIST-01 durable; PERSIST-04 skipped; partial restart needed | job ABEND; downstream GL blocked until recovery | confirmed_from_code | EV-NIGHTLY-RECON-004 |
+| EXCHAIN-NIGHTLY-RECON-04 | NODE-04 | DTAQ send timeout warning | external handoff warning | QSYSOPR warning message | MONITOR/log path | NODE-04 continues with RC=0 warning | all edges already complete | PERSIST-04 still updates checkpoint; monitor message may be missing | reconciliation completes with monitoring gap | needs_sme_review | EV-NIGHTLY-RECON-004 |
 
 ### Commit Boundaries
 

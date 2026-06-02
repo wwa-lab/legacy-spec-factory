@@ -486,6 +486,15 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.3 (2026-06-02): Aligned validation checklists with
+  program-analyzer v0.2.1 and flow-analyzer v0.2.1 contracts. Program
+  validation now checks Call Evidence, source identifier + business meaning
+  field preservation, File I/O Purpose, dynamic-call resolution status, Error
+  Code Inventory, Routine / Window Data Flow, and Open Items / Limitations;
+  flow validation now checks Evidence Source / Resolution, source-meaning
+  lineage preservation, File I/O Purpose propagation, and Error Code Inventory
+  consumption.
+
 - v0.1.2 (2026-06-01): Aligned validation checklists with analyzer v0.2.0
   contracts. Program validation now checks key file/field logic, field-level
   File I/O mutation, and complete exception closure; flow validation checks

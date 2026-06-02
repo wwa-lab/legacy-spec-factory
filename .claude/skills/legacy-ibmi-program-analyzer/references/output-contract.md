@@ -38,20 +38,37 @@ Each program analysis follows this markdown structure:
 - **Program ID:** OBJ-CREDIT-CHECK-003
 - **Program Name:** CREDITCHK
 - **Program Type:** RPGLE | CLLE | COBOL
-- **Library:** CREDITLIB
+- **Library:** CREDITLIB or not recorded in inventory
+- **Build Target:** &TGTLIB/CREDITCHK or not recorded
+- **Build / Library Evidence:**
+  - EV-CREDIT-CHECK-000: build member creates &TGTLIB/CREDITCHK
 - **Source Location:** [file path or collection ID]
 - **Collection Date:** YYYY-MM-DD
 - **Entry Points:** MAIN, VALIDATECREDIT
-- **Files Accessed:** CREDFILE (PF), CUSTFILE (LF)
-- **External Calls:** GETRATE, CHECKEXPOSE
+- **Files Accessed:**
+  - `CREDFILE` (PF)
+  - `CUSTFILE` (LF)
+- **Static Calls:**
+  - `GETRATE`
+  - `CHECKEXPOSE`
+- **Dynamic Calls:**
+  - `TARGET_PGM` -> dynamic_unresolved
+- **Evidence IDs:**
+  - EV-CREDIT-CHECK-001
+  - EV-CREDIT-CHECK-002
 - **Status:** draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 ```
 
 **Required fields:**
 - Program ID (OBJ-*) — must exist in approved inventory
 - Program Name and Type
-- Library
+- Library, Build Target, and Build / Library Evidence when known. If the
+  current source mixes these concepts, split them rather than storing a
+  long combined value.
 - At least one entry point
+- Static Calls and Dynamic Calls as separate multi-line lists. Do not put
+  long call lists in one bullet.
+- Evidence IDs as a multi-line list or compact table.
 - Status (default: draft)
 
 ---
@@ -153,14 +170,14 @@ which mainline, subroutine, procedure, external program, API, queue, and
 service nodes call which. It is a call map, not a business-process
 diagram and not a statement-level control-flow chart.
 
-**Five required views:**
+**Four required views:**
 
 ### View 1: Visual Overview
 
 ```markdown
 ### Visual Overview
 
-Source: source-level flow header (lines 8-22) | derived-from-code | both (matched)
+Evidence basis: source-level flow header + derived call analysis
 
 ```mermaid
 flowchart LR
@@ -174,7 +191,7 @@ flowchart LR
 
 **Rules:**
 - Prefer a compact graph over a complete visual tangle. The full edge
-  table remains the source of truth.
+  evidence table remains the source of truth.
 - Include internal nodes (`EXSR`, procedure calls) and external boundary
   nodes (`CALL`, `CALLP`, API, data queue, message queue, service
   program) when they help a reader understand the program quickly.
@@ -205,61 +222,54 @@ Program`, `Service Program`, `API`, `DTAQ`, `MSGQ`, `File`, `Copybook`.
 - Nodes with many inbound calls are listed as hub/common candidates; the
   analyzer records the count and evidence, not a business interpretation.
 
-### View 3: Call Tree (matches IBM i flow-header convention)
+### View 3: Call Evidence
 
 ```markdown
-### Call Tree
+### Call Evidence
 
-Source: source-level flow header (lines 8–22) | derived-from-code | both (matched)
+Evidence basis: source-level flow header + derived call analysis
 
-```text
-Main line                    Main flow control
-|-- SR990                    First time initialization
-|-- SR995                    Re-initialization
-|-- SR100                    Card, account and product preliminary validation
-|    |-- SR110               Convert authorization amount to LCY/billing
-|    |    |-- SR111          Convert transaction amount (LCY/billing)
-|    |    |-- SR112          Convert auth amount (non-ATMP)
-|    |    |-- SR113          Convert auth amount (ATMP)
-|    |-- SR120               Extract track information
-|    |-- SR121               Classify recurring transactions
-|    |-- SR130               Validate CVV/CVC 1
-```
-
-Evidence: [EV-SLUG-NNN: source-level flow header lines 8–22] + [EV-SLUG-NNN: EXSR statements lines 145–890]
+| Caller | Callee | Call Type | Condition | Source Lines | Evidence Source | Resolution |
+| --- | --- | --- | --- | --- | --- | --- |
+| Main | SR990 | mainline | first-time-only (LR off) | line 145 | flow_header + derived_code | confirmed |
+| Main | SR100 | subroutine | every call | line 152 | flow_header + derived_code | confirmed |
+| SR100 | SR110 | subroutine | always | line 320 | derived_code_only | confirmed |
+| SR100 | TARGET_PGM | dynamic_call | only if approved | lines 515-520 | derived_code_only | dynamic_unresolved |
 ```
 
 **Rules:**
-- If the program has a source-level flow-header comment, reproduce it verbatim (with line numbers).
-- If the code-derived graph matches the header, mark "both (matched)".
-- If they differ, show both trees side-by-side and create a TBD.
-- If no header exists, derive purely from code and mark "derived-from-code".
-
-### View 4: Call Edge Table
-
-```markdown
-### Call Edge Table
-
-| From | To | Type | Line | Call Condition / Context | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| Main | SR990 | EXSR (internal) | 145 | first-time-only (LR off) | confirmed_from_code |
-| Main | SR100 | EXSR (internal) | 152 | every call | confirmed_from_code |
-| SR100 | SR110 | EXSR (internal) | 320 | always | confirmed_from_code |
-| SR110 | SR111 | EXSR (internal) | 410 | currency = LCY | confirmed_from_code |
-| SR110 | SR112 | EXSR (internal) | 422 | trans_type ≠ ATMP | confirmed_from_code |
-| SR110 | SR113 | EXSR (internal) | 434 | trans_type = ATMP | confirmed_from_code |
-| SR100 | UPDTRISK | CALL (external) | 520 | only if approved | confirmed_from_code |
-```
+- `Call Evidence` replaces the old tree-style subsection. It is an
+  auditable table, not a second visual tree.
+- If the program has a source-level flow-header comment, use it as
+  navigation evidence and summarize its contribution in `Evidence
+  Source`; do not reproduce another tree unless preserving a short
+  source excerpt is necessary for a drift TBD.
+- Independently derive call relations from code. Code-derived call sites
+  are authoritative for behavior facts.
+- Dynamic calls must name the variable that carries the target, cite the
+  assignment lines if visible, and mark `resolved`, `partially_resolved`,
+  or `dynamic_unresolved`.
+- `Evidence Source` values: `flow_header`, `derived_code`,
+  `flow_header + derived_code`, `header_only`, `derived_code_only`.
+- `Resolution` values: `confirmed`, `inferred`, `unresolved`,
+  `resolved`, `partially_resolved`, `dynamic_unresolved`.
 
 **Required columns:**
-- **From / To:** subroutine, procedure, program, API, queue, service, or
-  other node names
-- **Type:** `EXSR (internal)`, `CALLP (internal)`, `CALL (external)`, `PERFORM (internal)`, `CALLPRC (external)`, etc.
-- **Line:** source line of the call site
-- **Call Condition:** when this call happens (`always`, `in DOWHILE loop`, `only if X`, `first-time only`, etc.) — derived from surrounding control flow
-- **Evidence:** evidence strength + EV-* link
+- **Caller / Callee:** subroutine, procedure, program, API, queue,
+  service, variable-held target, or other node names.
+- **Call Type:** `mainline`, `subroutine`, `procedure`,
+  `external_call`, `dynamic_call`, `service_program`, `data_queue`,
+  `batch_job`.
+- **Condition:** when this call happens (`always`, `in DOWHILE loop`,
+  `only if X`, `first-time only`, etc.) derived from surrounding control
+  flow.
+- **Source Lines:** exact source line or range for the call edge and
+  target assignment if dynamic.
+- **Evidence Source:** flow header and/or code-derived evidence basis.
+- **Resolution:** whether the relation and target are confirmed or still
+  unresolved.
 
-### View 5: Reverse Caller Index
+### View 4: Reverse Caller Index
 
 ```markdown
 ### Reverse Caller Index
@@ -279,17 +289,15 @@ Evidence: [EV-SLUG-NNN: source-level flow header lines 8–22] + [EV-SLUG-NNN: E
 - **Visual Overview** -> gives an RDi-like first read of the program.
 - **Node Inventory** -> ensures every routine and external boundary is
   accounted for.
-- **Call Tree** -> matches IBM i convention; SME can compare to source
-  header at a glance.
-- **Call Edge Table** -> captures *condition* of each call (the thing
-  diagrams cannot show reliably).
+- **Call Evidence** -> captures caller, callee, condition, source lines,
+  evidence source, and resolution status in an auditable table.
 - **Reverse Caller Index** -> exposes orphaned subroutines (declared but
   never called -> dead code TBD) and hotspots (one node called from many
   sites).
 
 ### Source-Level Flow Header Handling
 
-If the source has a flow-header comment block (common in IBM i shops), the analyzer **must** reproduce it verbatim under "Call Tree" as documented intent and navigation evidence. The header is useful for orientation and SME comparison, but it is not authoritative when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
+If the source has a flow-header comment block (common in IBM i shops), the analyzer uses it as documented intent and navigation evidence in `Visual Overview` and `Call Evidence`. The header is useful for orientation and SME comparison, but it is not authoritative when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
 
 **Then** independently derive a Program Call Map from code. Actual call
 sites are authoritative for behavior facts and code-derived call edges.
@@ -531,6 +539,12 @@ equivalent replay.
 | LOG-AUTH-001 | SR110 lines 410-418 | arithmetic | AMT_PRIN, AMT_INTR, AMT_FEE | ADD principal + interest, SUB fee | AMT_TOTAL | executes before limit comparison | EV-AUTH-041 |
 | LOG-AUTH-002 | SR130 lines 520-545 | nested IF | TRANAMT, RATE_FEE literals | tiered amount comparison | RATE_FEE assigned | mutually exclusive tiers; final ELSE fallback | EV-AUTH-042 |
 | LOG-AUTH-003 | SR160 lines 700-735 | file loop | TRANFIL, TRANTYP='01' | READ/DOW + IF filter | VALID_TOTAL accumulated | loop until %EOF(TRANFIL) | EV-AUTH-043 |
+
+### Routine / Window Data Flow
+
+| Routine / Window | Purpose | Input Variables | Transformation Logic | Output Variables | Side Effects | Source Lines | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| SR110 | Convert requested amount into billing amount | `P0HCCM` (request card number) [input]<br>`WQCHNT` (channel) [input] | Maps request fields to lookup key; validates card master; sets response status/message | `WRTTNC` (process status) [output]<br>`WRMSG` (response message) [output] | CHAIN `CCCDMSP`; CALL dynamic `CU138` | lines 410-455 | EV-AUTH-044; inferred field meanings marked inline |
 ```
 
 ### Required Coverage
@@ -550,6 +564,9 @@ Capture every observed rule-bearing instance of:
   `CASE`, and fallback branches
 - loops and file scans that affect totals, selection, reporting,
   posting, deletes, or downstream calls
+- variable-level data flow for each routine/window that drives calls,
+  file I/O, field mutation, response status, error handling, or external
+  payloads
 
 ### Branch-Preservation Rule
 
@@ -558,6 +575,21 @@ when priority affects behavior. The ledger must preserve ordering,
 fallback, and loop scope. If priority is unclear because source windows
 or copybooks are missing, create a TBD rather than invent a simplified
 rule.
+
+### Routine / Window Data Flow Requirements
+
+- Show input variables, transformed variables, output variables, side
+  effects, source lines, and evidence for every load-bearing routine or
+  deep-read window.
+- Variable format is `VARIABLE_NAME` (business meaning) [direction].
+- Direction values: `input`, `output`, `input-output`, `local`,
+  `control`.
+- If the variable name is unresolved but meaning is known, use
+  `variable unresolved` (business meaning) [direction].
+- If the variable name is known but meaning is unresolved, use
+  `VARIABLE_NAME` (meaning unresolved) [direction].
+- If meaning is inferred, mark it inline:
+  `VARIABLE_NAME` (business meaning; inferred) [direction].
 
 ---
 
@@ -634,6 +666,16 @@ This section turns the Data Touch Map into a replayable field story. It
 answers: "Which files and fields are load-bearing, why, where do values
 come from, and where do they land?"
 
+Every key field, critical field, and important variable must preserve the
+source identifier and business meaning when resolvable:
+
+- Preferred field format: `FIELD_NAME` (business meaning)
+- Preferred variable format: `VARIABLE_NAME` (business meaning)
+  [direction]
+- Known meaning, unresolved source name: `field unresolved` (business meaning)
+- Known source name, unresolved meaning: `FIELD_NAME` (meaning unresolved)
+- Inferred meaning: `FIELD_NAME` (business meaning; inferred)
+
 ### Format
 
 ```markdown
@@ -643,23 +685,23 @@ come from, and where do they land?"
 
 | File / Carrier | Role in Program | Routines | Access / Mutation Pattern | Key Fields | Critical Persisted / Output Fields | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| CUST_PHY | state-update | SR210 | CHAIN then UPDATE when %FOUND | CUST_NO | PHY_CUST_AMT, CUST_TRAN_FLG | EV-AUTH-051 |
-| TRAN_DTL | detail-insert | SR240 | WRITE when ERR_FLAG='N' and TRAN_AMT>0 | DTL_SNO | DTL_CUSTNO, DTL_AMT, DTL_TYP, DTL_STS | EV-AUTH-052 |
-| ERRMSGQ | queue-message | SR900 | SNDPGMMSG on validation failure | MSGID / ERR_CD | ERR_MSG payload | EV-AUTH-053 |
+| CUST_PHY | state-update | SR210 | CHAIN then UPDATE when %FOUND | `CUST_NO` (customer number) | `PHY_CUST_AMT` (customer balance), `CUST_TRAN_FLG` (transaction flag) | EV-AUTH-051 |
+| TRAN_DTL | detail-insert | SR240 | WRITE when ERR_FLAG='N' and TRAN_AMT>0 | `DTL_SNO` (detail sequence number) | `DTL_CUSTNO` (customer number), `DTL_AMT` (transaction amount), `DTL_TYP` (transaction type), `DTL_STS` (transaction status) | EV-AUTH-052 |
+| ERRMSGQ | queue-message | SR900 | SNDPGMMSG on validation failure | `MSGID` (message identifier), `ERR_CD` (error code) | `ERR_MSG` (error message payload) | EV-AUTH-053 |
 
 ### Key Fields
 
 | Field / Data Structure | Source Object / Carrier | Role | Used In | Values / Domain Observed | Downstream Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| CUST_NO | input parameter / CUST_PHY key | access-key | CHAIN CUST_PHY; CALL SUBPGM02 | copied from parameter | determines account row updated and downstream handoff | EV-AUTH-054 |
-| TMP_CUST_AMT | work variable | calculation-result / branch-condition | balance deduction and insufficient-balance IF | derived from BUSI_AMT - TRAN_AMT | blocks write when < 0; otherwise persisted back | EV-AUTH-055 |
-| ERR_CD | work variable / return payload | error-code | validation failure paths | 'D003', 'E501' | returned to caller and logged | EV-AUTH-056 |
+| `CUST_NO` (customer number) | input parameter / CUST_PHY key | access-key | CHAIN CUST_PHY; CALL SUBPGM02 | copied from parameter | determines account row updated and downstream handoff | EV-AUTH-054 |
+| `TMP_CUST_AMT` (temporary customer balance) | work variable | calculation-result / branch-condition | balance deduction and insufficient-balance IF | derived from BUSI_AMT - TRAN_AMT | blocks write when < 0; otherwise persisted back | EV-AUTH-055 |
+| `ERR_CD` (error code) | work variable / return payload | error-code | validation failure paths | 'D003', 'E501' | returned to caller and logged | EV-AUTH-056 |
 
 ### Field Lineage
 
 | Lineage ID | Source / Physical Field | Alias / Data Structure | Work Variables | Calculation / Condition | Write-Back Alias | Persisted / Output Field | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LIN-AUTH-001 | CUST_PHY.PHY_CUST_AMT | VIEW_CUST_BAL | BUSI_AMT, TMP_CUST_AMT | SUB TRAN_AMT; IF TMP_CUST_AMT < 0 | VIEW_CUST_BAL | CUST_PHY.PHY_CUST_AMT | EV-AUTH-057 |
+| LIN-AUTH-001 | `CUST_PHY.PHY_CUST_AMT` (customer balance) | `VIEW_CUST_BAL` (view customer balance) | `BUSI_AMT` (business amount), `TMP_CUST_AMT` (temporary customer balance) | SUB TRAN_AMT; IF TMP_CUST_AMT < 0 | `VIEW_CUST_BAL` (view customer balance) | `CUST_PHY.PHY_CUST_AMT` (customer balance) | EV-AUTH-057 |
 ```
 
 ### Key File Roles
@@ -709,6 +751,9 @@ Use one or more of these role labels:
 - Do not infer a key-file role or field role from a name alone. Use
   source evidence, DDS/copybook metadata, runtime evidence, or SME
   confirmation.
+- Do not output only a business description such as "card number", and
+  do not output only a source name such as `K0CRNO` when meaning is
+  resolvable. Use `K0CRNO` (card number).
 
 ---
 
@@ -719,23 +764,23 @@ Use one or more of these role labels:
 
 ### File Access Summary
 
-| File | Record Format | Type | Operations | Key Fields | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| CREDFILE | CREDR | PF | CHAIN | CUSTID | before validation branch | *IN99 / %FOUND | EV-CREDIT-CHECK-002 |
-| CUSTFILE | CUSTR | LF | READE | CUSTID | loop until EOF | EOF indicator / %EOF | EV-CREDIT-CHECK-003 |
-| CUST_MAST | CUSTMR | PF | CHAIN, UPDATE | CUST_NO, CUSTSTS | only when ERR_FLAG='N' and %FOUND | %FOUND, %ERROR | EV-CREDIT-CHECK-004 |
+| File | Record Format | Type | Operations | Key Fields | Purpose | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CREDFILE | CREDR | PF | CHAIN | `CUSTID` (customer identifier) | Validate customer credit record existence before approval logic. | before validation branch | *IN99 / %FOUND | EV-CREDIT-CHECK-002 |
+| CUSTFILE | CUSTR | LF | READE | `CUSTID` (customer identifier) | Read matching customer records for validation scope. | loop until EOF | EOF indicator / %EOF | EV-CREDIT-CHECK-003 |
+| CUST_MAST | CUSTMR | PF | CHAIN, UPDATE | `CUST_NO` (customer number), `CUSTSTS` (customer status) | Validate customer record and persist transaction flag changes. | only when ERR_FLAG='N' and %FOUND | %FOUND, %ERROR | EV-CREDIT-CHECK-004 |
 
 ### Field Mutation Matrix
 
 | File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(CUST_NO, CUSTSTS), %FOUND(CUST_MAST) | CUST_BAL | CUST_BAL - TRAN_AMT | EV-CREDIT-CHECK-012 | %ERROR -> TRANS_ERR='Y', TRANS_ERR_CD='E501', RETURN |
-| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(CUST_NO, CUSTSTS), %FOUND(CUST_MAST) | CUST_TRAN_FLG | literal 'Y' | EV-CREDIT-CHECK-013 | same UPDATE handler |
+| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(`CUST_NO` (customer number), `CUSTSTS` (customer status)), %FOUND(CUST_MAST) | `CUST_BAL` (customer balance) | CUST_BAL - TRAN_AMT | EV-CREDIT-CHECK-012 | %ERROR -> TRANS_ERR='Y', TRANS_ERR_CD='E501', RETURN |
+| CUST_MAST | UPDATE | SR210 lines 610-640 | key=(`CUST_NO` (customer number), `CUSTSTS` (customer status)), %FOUND(CUST_MAST) | `CUST_TRAN_FLG` (customer transaction flag) | literal 'Y' | EV-CREDIT-CHECK-013 | same UPDATE handler |
 
 **Operation details:**
 
-- **CREDFILE / CHAIN on CUSTID:** Fetch entire customer credit record. Key field: CUSTID (numeric). Result: populated *IN99 (not found indicator).
-- **CUSTFILE / READE on CUSTID:** Loop through all customer records matching CUSTID. Continue until EOF or error.
+- **CREDFILE / CHAIN on CUSTID:** Validate customer credit record existence. Key field: `CUSTID` (customer identifier). Result: populated *IN99 (not found indicator).
+- **CUSTFILE / READE on CUSTID:** Read all matching customer records for validation scope. Key field: `CUSTID` (customer identifier). Continue until EOF or error.
 - **CUST_MAST / UPDATE after CHAIN:** Persist fields assigned before the update; handler sets transaction error fields if `%ERROR` is observed.
 
 **Evidence links:**
@@ -751,8 +796,14 @@ Use one or more of these role labels:
 - One Field Mutation Matrix row per persisted field touched by `WRITE`,
   `UPDATE`, `DELETE`, or SQL DML. For `DELETE`, use the deleted record
   or selection predicate as the persisted mutation.
-- File Access Summary columns: File name, record format, Type (PF / LF / DSPF / PRTF), Operations, Key fields, read/mutation conditions, indicators/status checks, Evidence link
+- File Access Summary columns: File name, record format, Type (PF / LF / DSPF / PRTF), Operations, Key fields, Purpose, read/mutation conditions, indicators/status checks, Evidence link
 - Field Mutation Matrix columns: File, operation, routine/line range, access key or record condition, field mutated/persisted, source value or expression, assignment evidence, error/rollback handling
+- Key Fields must use `FIELD_NAME` (business meaning) whenever
+  resolvable. If unresolved, use `field unresolved` (business meaning) or
+  `FIELD_NAME` (meaning unresolved).
+- Purpose must describe why the file is accessed with an action verb
+  such as validate, read, detect, write, send, or log. Purpose must not
+  replace field descriptions.
 - Supported operations:
   - Sequential: READ (next record), READP / READPE (read previous)
   - Random: SETLL (set lower limit), READE (read equal), CHAIN (random access)
@@ -781,17 +832,17 @@ Use one or more of these role labels:
 ```markdown
 ## External Calls
 
-| Called Program | Type | Parameters (In / Out) | Purpose | Evidence |
-| --- | --- | --- | --- | --- |
-| GETRATE | RPGLE Service Program | (RateCode: char) → (Rate: decimal) | Fetch interest rate by code | [EV-CREDIT-CHECK-005] |
-| CHECKEXPOSE | RPGLE Program | (Amount: decimal, CustID: numeric) → (Decision: char) | Check credit exposure limits | [EV-CREDIT-CHECK-006] |
-| UPDATEJNL | COBOL Program | (JournalCode: char, Timestamp: timestamp) → (RC: numeric) | Write to audit journal | [EV-CREDIT-CHECK-007] |
+| Program | Call Type | Caller Routine | Source Lines | Parameters | Resolution Status | Purpose | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GETRATE | service_program | SR100 | line 175 | `RateCode` (rate code) [input] -> `Rate` (interest rate) [output] | resolved | Fetch interest rate by code. | EV-CREDIT-CHECK-005 |
+| CHECKEXPOSE | external_call | SR120 | line 210 | `Amount` (credit amount) [input], `CustID` (customer identifier) [input] -> `Decision` (exposure decision) [output] | confirmed | Check credit exposure limits. | EV-CREDIT-CHECK-006 |
+| TARGET_PGM -> UPDATEJNL | dynamic_call | SR900 | lines 300-312 | `JournalCode` (journal code) [input], `Timestamp` (event timestamp) [input], `RC` (return code) [output] | partially_resolved | Write to audit journal; target assigned from TARGET_PGM. | EV-CREDIT-CHECK-007 |
 
 **Call details:**
 
 - **GETRATE:** CALLP GETRATE(RateCode), returns RATE field. Error handling: if call fails, MONITOR catches and logs error.
 - **CHECKEXPOSE:** CALL CHECKEXPOSE (Amount, CustID, Decision). Synchronous, blocks until return.
-- **UPDATEJNL:** CALL 'UPDATEJNL' (JournalCode, Timestamp, RC). Called only if audit flag is set.
+- **TARGET_PGM -> UPDATEJNL:** dynamic CALL through TARGET_PGM. TARGET_PGM is assigned to UPDATEJNL before the call; called only if audit flag is set.
 
 **Parameter contracts:**
 - GETRATE expects RateCode to match RATE_TABLE key (uppercase, 3 chars). Undocumented → TBD-CREDIT-CHECK-003
@@ -804,17 +855,26 @@ Use one or more of these role labels:
 ```
 
 **Requirements:**
-- One table row per external call (program call, service program call, remote interface)
-- Columns: Called program/interface name, Type (RPGLE Program / CLLE Program / Service Program / HTTP API / Message Queue / etc.), Parameters with types (In/Out), Purpose, Evidence
+- One table row per external call (program call, service program call,
+  dynamic call, remote interface, service program, data queue, batch job)
+- Columns: Program, Call Type, Caller Routine, Source Lines, Parameters,
+  Resolution Status, Purpose, Evidence
 - For each call, document:
   - Parameter types and expected ranges
   - Return value or status code
   - Synchronous vs. asynchronous
   - Error handling (if monitored)
   - When the call is made (conditional or always)
+  - Dynamic target variable, assignment source lines, and resolution
+    status when a target is built from a variable
 - Reference evidence links (EV-*)
+- Resolution Status values: `resolved`, `partially_resolved`,
+  `dynamic_unresolved`, `inferred`, `confirmed`
+- Dynamic calls must not be marked `confirmed` unless the concrete target
+  is actually resolved from code or other evidence.
 - Tag evidence as `confirmed_from_code` or `needs_sme_review`
-- Create TBD for undocumented parameters, missing documentation, or unclear network behavior
+- Create TBD for undocumented parameters, missing documentation, unclear
+  network behavior, or unresolved dynamic targets
 
 ---
 
@@ -832,14 +892,16 @@ Use one or more of these role labels:
 | File not found during open | OPEN CREDFILE | CPF4101 | ON-ERROR CPF4101 | ERR_CD='F001', SNDPGMMSG | GOTO ERRHANDLR | stops processing before reads | EV-CREDIT-CHECK-012 |
 | Unexpected system exception | MONITOR protected block | generic / *ANY | bare ON-ERROR | ERR_CD='9999' | log and RETURN | generic coverage only; exact message ID not inferred | EV-CREDIT-CHECK-013 |
 
-### Message / Error Code Inventory
+### Error Code Inventory
 
-| Message ID / Code | Source | Meaning Observed In Code | Handler / Branch | Evidence |
-| --- | --- | --- | --- | --- |
-| D003 | MOVE literal to ERR_CD | balance insufficient; transaction blocked | validation branch in SR120 | EV-CREDIT-CHECK-010 |
-| E501 | MOVE literal to TRANS_ERR_CD | account update failed | %ERROR branch after UPDATE | EV-CREDIT-CHECK-011 |
-| CPF4101 | ON-ERROR CPF4101 | file not found/open failure | SR900 error handler | EV-CREDIT-CHECK-012 |
-| *ANY / generic | MONMSG MSGID(*ANY) or bare ON-ERROR | catch-all only; no specific message inferred | SR999 generic handler | EV-CREDIT-CHECK-013 |
+| Error Code | Meaning | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| D003 | balance insufficient; transaction blocked | validation_error | `ERR_CD` assignment, SR120 lines 520-525 | TMP_CUST_AMT < 0 | return parameter / message field | blocks account update and downstream posting | confirmed |
+| E501 | account update failed | file_io_error | `TRANS_ERR_CD` assignment after UPDATE, lines 610-640 | %ERROR after UPDATE CUST_MAST | status field | caller receives transaction error; no further writes observed | confirmed |
+| CPF4101 | file not found/open failure | file_io_error | ON-ERROR CPF4101, SR900 lines 900-930 | OPEN CREDFILE failure | display/message API | stops processing before reads | confirmed |
+| *ANY / generic | catch-all only; no specific message inferred | unresolved | MONMSG MSGID(*ANY) or bare ON-ERROR | unexpected system exception | exception-log path or return parameter | generic coverage only; exact message ID unresolved | unresolved |
+
+**Error codes unresolved:** status/message fields were detected, but literal code assignments were not fully traced.
 
 **Unhandled exceptions:**
 - CUSTFILE READE fails with I/O error: no MONITOR block → Program will abnormally terminate → TBD-CREDIT-CHECK-005: Confirm error handling intent
@@ -864,15 +926,28 @@ Use one or more of these role labels:
 - Columns: exception/error condition, trigger/source, message ID/error
   code/return code, detection mechanism, fields set/messages sent,
   handling action, downstream impact, evidence.
-- One Message / Error Code Inventory row per observed message ID, error
-  code, return code, or generic catch-all token.
+- One Error Code Inventory row per observed explicit error code, status
+  code, message ID, response code, indicator-driven error branch,
+  exception/log output code, data queue response status value, or
+  generic catch-all token.
+- Columns: Error Code, Meaning, Error Type, Set By / Source Lines,
+  Trigger Condition, Output Carrier, Downstream Effect, Evidence Status.
 - Include all observed message families: `CPF*`, `CPD*`, `MCH*`,
   `RNX*`, `SQL*`, shop-local `UCC*` / `LCC*`, literal business error
-  codes, and return/status codes visible in source.
+  codes, return/status codes visible in source, and message/status
+  fields assigned during validation or file I/O failures.
+- Error Type values: `validation_error`, `file_io_error`,
+  `business_rule_error`, `external_call_error`, `data_queue_error`,
+  `response_status`, `exception_log`, `unresolved`.
+- Output Carrier examples: response DS, message field, status field,
+  data queue message, exception/log file, return parameter, display/message
+  API.
 - Do not limit extraction to shop-local prefixes.
 - Generic handlers (`*ANY`, bare `ON-ERROR`, generic error paragraphs)
   must be marked as generic coverage and must not be expanded into
   specific message IDs without source evidence.
+- If error codes are not fully traced, add an explicit
+  **Error codes unresolved:** sentence explaining the gap.
 - Separate section for unhandled exceptions (errors NOT caught)
 - Note which errors log messages and where
 - State downstream impact: continue, return, skip write, rollback,
@@ -923,6 +998,14 @@ create a TBD. The analysis never removes code facts.
 ```markdown
 ## TBDs & Blocking Status
 
+### Open Items / Limitations
+
+| Open Item | Impact | Evidence Gap | Suggested Follow-up |
+| --- | --- | --- | --- |
+| Dynamic call target unresolved | May miss downstream dependency | Target built from runtime field | Review target assignment source and runtime values |
+| Field meaning unresolved | Weakens business interpretation | DDS/reference field missing | Review DDS or SME notes |
+| Error code assignments incomplete | May miss response behavior | Literal assignments not fully traced | Trace status/message fields |
+
 ### Pending Source
 - **TBD-CREDIT-CHECK-002:** Confirm CUSTFILE includes historical records or active only
   - Blocking: pending_source — missing CUSTFILE DDS field documentation
@@ -952,6 +1035,9 @@ create a TBD. The analysis never removes code facts.
   - `pending_source` — missing DDS, incomplete source
   - `pending_sme_judgment` — behavior unclear from source alone
   - `non_blocking` — known gaps that don't affect downstream analysis
+- Keep `Open Items / Limitations` as the centralized unresolved-item
+  summary for reviewers. Do not scatter unresolved dynamic calls, field
+  meanings, or error-code gaps only inside earlier sections.
 - For each TBD, include:
   - Question statement
   - Blocking status
@@ -969,13 +1055,18 @@ create a TBD. The analysis never removes code facts.
 Before approval, SME must validate:
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
+- [ ] Program Call Map keeps Visual Overview compact and uses Call Evidence for auditable caller/callee evidence
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
+- [ ] Routine / Window Data Flow shows input variables, transformation logic, output variables, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
+- [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
-- [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
+- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
+- [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access
@@ -1007,6 +1098,42 @@ candidate) must carry one evidence strength:
 | `strongly_inferred` | Multiple evidence points support this (call site + default behavior) | External call always preceded by data validation → likely required validation |
 | `needs_sme_review` | Evidence present but interpretation ambiguous (multiple possible meanings) | Error code returned but undocumented; could mean multiple things |
 | `missing` | Evidence required but not available (DDS missing, source incomplete) | File accessed but DDS not in inventory → TBD |
+
+## Evidence Source / Resolution Labels
+
+Use these labels consistently when marking call targets, field meanings,
+file roles, routine/window data flow, external call parameters, dynamic
+calls, and error-code meanings:
+
+| Label | Use When |
+| --- | --- |
+| `confirmed` | Evidence directly proves the conclusion. |
+| `inferred` | Evidence suggests the conclusion but does not fully prove it. |
+| `unresolved` | Evidence is insufficient; reviewer follow-up is required. |
+| `flow_header` | Source-level flow header contributes evidence. |
+| `derived_code` | Source statements or code-derived analysis contributes evidence. |
+| `flow_header + derived_code` | Header and code-derived evidence agree. |
+| `header_only` | Only the flow header supports the item; create a TBD if behavior matters. |
+| `derived_code_only` | Only code-derived evidence supports the item. |
+| `partially_resolved` | Some target/meaning details are known, but material details remain open. |
+| `dynamic_unresolved` | Dynamic target is built at runtime and concrete target is not resolved. |
+
+## Rendering Requirements
+
+Generated `program-analysis.md` artifacts must remain readable in
+Markdown and HTML export:
+
+- Wrap code identifiers in backticks.
+- Do not allow file names, field names, program names, routine names, or
+  variable names to be split vertically or across arbitrary line breaks.
+- Use one identifier per line, `<br>`, or a short detail list for long
+  file/field/call lists.
+- Prefer summary tables plus detail bullets when a table becomes too
+  wide.
+- Do not put long call lists, evidence lists, or field lists in one
+  bullet.
+- Purpose text must be allowed to wrap naturally; source identifiers
+  must remain visually intact.
 
 ---
 

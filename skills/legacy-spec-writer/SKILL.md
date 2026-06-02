@@ -55,19 +55,22 @@ Accept:
 
 - **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four
   views at `approved` or `approved_with_non_blocking_tbd`)
-  - Prefer module-analyzer v0.2.0 or later outputs that include Module
-    Program-Chain Readiness, Module Persistence & Critical Field Summary,
+  - Prefer module-analyzer v0.2.1 or later outputs that include Module
+    Program-Chain Readiness with edge-resolution coverage, Module Persistence
+    & Critical Field Summary with source identifier + business meaning fields,
     Module Exception & Recovery Summary, View 3 Replay Coverage Summary, and
-    View 4 Module Persistence Matrix / Critical Field Lineage / Exception-Aware
-    Data Risks.
+    View 4 Module Persistence Matrix / Critical Field Lineage /
+    Exception-Aware Data Risks.
 - **All approved flow analyses** referenced by that module
-  - Prefer flow-analyzer v0.2.0 or later outputs that include Flow Replay Path,
-    Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
-    Propagation Chain.
+  - Prefer flow-analyzer v0.2.1 or later outputs that include Flow Replay Path,
+    edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow
+    Persistence Matrix with File I/O Purpose, and Exception Propagation Chain.
 - **All approved program analyses** referenced by those flows
-  - Prefer program-analyzer v0.2.0 or later outputs that include Logic
-    Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix, and
-    Exception Closure Ledger.
+  - Prefer program-analyzer v0.2.1 or later outputs that include Call Evidence,
+    Logic Decomposition Ledger, Key File & Field Logic with source identifiers
+    plus business meanings, File I/O Purpose, Field Mutation Matrix,
+    dynamic-call resolution status, Error Code Inventory, and Exception
+    Closure Ledger.
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
@@ -297,12 +300,13 @@ to the orchestrator. The Forward Handoff Gate
      stop and request evidence authorization review
 
 3. **Lift Observed Behaviors (BEH-*)**
-   - From flow analyses' Flow Replay Path, control flow, branch points,
-     Flow Persistence Matrix, and Exception Propagation Chain (factual
-     statements about what the legacy system does)
+   - From flow analyses' Flow Replay Path, control flow, branch points, edge
+     Evidence Source / Resolution, Flow Persistence Matrix, and Exception
+     Propagation Chain (factual statements about what the legacy system does)
    - Cross-check with program analyses' Logic Decomposition Ledger,
-     Key File & Field Logic, Field Mutation Matrix, and Exception Closure
-     Ledger where the behavior depends on program-level detail
+     Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Error
+     Code Inventory, and Exception Closure Ledger where the behavior depends on
+     program-level detail
    - Each BEH must trace to ≥1 EV-*
    - These are *factual* — what the system does, not why
 
@@ -343,13 +347,14 @@ to the orchestrator. The Forward Handoff Gate
      process-flow framing and cross-check it against module / flow evidence
    - `inputs[]` from flow analysis Trigger Context, UI surfaces' input fields,
      and BRD sections 3-5 (channels, user touchpoints, system interfaces)
-   - `outputs[]` from flow analysis exit nodes, Flow Persistence Matrix rows,
-     Cross-Program Data Flow carriers with `external handoff`, `creates`, or
-     `updates` state impact, and BRD sections 4-5 where a business-visible
-     response, report, message, or interface result is SME-reviewed
+   - `outputs[]` from flow analysis exit nodes, Flow Persistence Matrix rows
+     (including Purpose), Cross-Program Data Flow carriers with `external
+     handoff`, `creates`, or `updates` state impact, and BRD sections 4-5 where
+     a business-visible response, report, message, or interface result is
+     SME-reviewed
    - `exceptions[]` from BRD section 8, module Exception & Recovery Summary /
      Exception-Aware Data Risks, flow Exception Propagation Chain, and program
-     Exception Closure Ledger
+     Error Code Inventory / Exception Closure Ledger
    - `open_questions[]` carries any BRD section 1-9 coverage gaps or
      accepted-with-TBD review decisions that remain unresolved
    - Do not copy program nodes or call-chain order directly into
@@ -492,6 +497,13 @@ Canonical: `skills/legacy-spec-writer/SKILL.md`
 Synced to all four runtime adapters.
 
 ## Version History
+
+- v0.1.5 (2026-06-02): Aligned spec synthesis inputs with analyzer v0.2.1.
+  Observed behaviors, outputs, data model fields, and exceptions now preserve
+  edge Evidence Source / Resolution, source identifier + business meaning
+  fields, File I/O Purpose, Error Code Inventory, and exception-chain evidence
+  from module / flow / program analysis before producing downstream spec
+  content.
 
 - v0.1.4 (2026-06-01): Aligned spec synthesis inputs with analyzer v0.2.0.
   Observed behaviors, outputs, data model fields, and exceptions now prefer

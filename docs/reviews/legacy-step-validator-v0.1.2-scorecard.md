@@ -3,7 +3,7 @@ skill: legacy-step-validator
 scorecard_version: v0.1.2
 static_score: 9.52
 decision: repo-ready
-status: current
+status: superseded
 last_verified: 2026-06-01
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-01 }
@@ -74,4 +74,3 @@ Decision: **repo-ready, not field-pilot ready**
 | ID | Severity | Finding | Required Change |
 | --- | --- | --- | --- |
 | STEP-VAL-020 | Medium | v0.1.2 checklist changes have not been smoke-executed across the three target runtimes. | Run positive and blocked validations for analyzer v0.2.0 artifacts and update runtime evidence. |
-

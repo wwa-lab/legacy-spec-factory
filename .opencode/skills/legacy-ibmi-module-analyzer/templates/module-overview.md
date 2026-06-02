@@ -25,23 +25,23 @@
 (Aggregate of `pending_source` and `pending_sme_judgment` from all views.)
 
 ## Module Program-Chain Readiness
-| Flow ID | Replay Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
-| --- | --- | --- | --- | --- | --- |
-| FLOW-[SLUG]-001 | complete / partial / missing (`REPLAY-*`) | complete / partial / missing (`LINEAGE-*`) | complete / partial / missing (`PERSIST-*`) | complete / partial / missing (`EXCHAIN-*`) | none / TBD-[SLUG]-[NNN] |
+| Flow ID | Replay Coverage | Edge Resolution Coverage | Critical Lineage Coverage | Persistence Coverage | Exception Chain Coverage | Blocking Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| FLOW-[SLUG]-001 | complete / partial / missing (`REPLAY-*`) | complete / partial / missing (Evidence Source + Resolution) | complete / partial / missing (`LINEAGE-*`) | complete / partial / missing (`PERSIST-*`) | complete / partial / missing (`EXCHAIN-*`) | none / TBD-[SLUG]-[NNN] |
 
 Use this section to show whether the module can be replayed end-to-end from
 business trigger through program chain, field movement, persistence, exception
 handling, and final outcome.
 
 ## Module Persistence & Critical Field Summary
-| Data / Field / Outcome | Source Flows | Persistence / Output | Downstream Consumer | Risk / TBD |
+| Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |
 | --- | --- | --- | --- | --- |
-| [critical field or durable outcome] | FLOW-[SLUG]-001 (`LINEAGE-*`, `PERSIST-*`) | [file / DTAQ / spool / IFS / response / skipped write] | [system / actor / module] | none / TBD-[SLUG]-[NNN] |
+| [FIELD_NAME (business meaning) or durable outcome] | FLOW-[SLUG]-001 (`LINEAGE-*`, `PERSIST-*`) | [file / DTAQ / spool / IFS / response / skipped write + purpose] | [system / actor / module] | none / TBD-[SLUG]-[NNN] |
 
 ## Module Exception & Recovery Summary
-| Exception Cluster | Source Flow / EXCHAIN | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
-| --- | --- | --- | --- | --- |
-| [message / RC / error family] | FLOW-[SLUG]-001 (`EXCHAIN-*`) | [response / rollback / retry / skipped persistence / manual review] | [owner / procedure / unknown] | covered / TBD-[SLUG]-[NNN] |
+| Exception Cluster | Source Flow / EXCHAIN | Error Type / Output Carrier | Business Outcome | Manual / Operational Recovery | BRD Coverage / TBD |
+| --- | --- | --- | --- | --- | --- |
+| [message / RC / error family] | FLOW-[SLUG]-001 (`EXCHAIN-*`) | [business / technical / system + output carrier] | [response / rollback / retry / skipped persistence / manual review] | [owner / procedure / unknown] | covered / TBD-[SLUG]-[NNN] |
 
 ## Capability Seeds For BRD / Spec
 | CAP Seed | Business Signal | Evidence Basis | SME Question |

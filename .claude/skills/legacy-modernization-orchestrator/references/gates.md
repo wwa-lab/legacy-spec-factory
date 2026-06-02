@@ -63,13 +63,16 @@ analysis or standard BRD
 - every in-scope program has an approved or
   `approved_with_non_blocking_tbd`
   `02_programs/<MODULE>/<OBJ>/program-analysis.md`
-  with key file/field logic, field-level File I/O mutation, and exception
-  closure coverage, or named `TBD-*` gaps
+  with Call Evidence, key file/field logic preserving source identifiers plus
+  business meanings, File I/O Purpose, field-level mutation, dynamic-call
+  resolution, Error Code Inventory, and exception closure coverage, or named
+  `TBD-*` gaps
 - every in-scope business transaction has an approved or
   `approved_with_non_blocking_tbd`
   `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`
-  with Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix,
-  and Exception Propagation Chain coverage, or named `TBD-*` gaps / waiver
+  with Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field
+  Lineage, Flow Persistence Matrix, and Exception Propagation Chain coverage,
+  or named `TBD-*` gaps / waiver
 - module View 3 and View 4 claims that cite code use code-derived evidence,
   not only document or RAG context
 - module overview summarizes program-chain readiness, persistence / critical
@@ -90,10 +93,11 @@ code-derived artifact exists.
 1. Route to `legacy-ibmi-inventory` if `object-map.md` is missing or partial.
 2. Route to `legacy-ibmi-program-analyzer` for missing in-scope
    `program-analysis-<OBJ-ID>.md` files or older program analyses that lack key
-   file/field, field mutation, or exception closure coverage.
+   file/field meaning, File I/O Purpose, field mutation, dynamic-call
+   resolution, Error Code Inventory, or exception closure coverage.
 3. Route to `legacy-ibmi-flow-analyzer` for missing in-scope
    `flow-<FLOW-SLUG>.md` files or older flow analyses that lack replay,
-   lineage, persistence, or exception-chain coverage.
+   edge resolution, lineage, persistence, or exception-chain coverage.
 4. Refuse BRD approval and spec-writing until the gate passes or a
    context-only draft exception is recorded.
 

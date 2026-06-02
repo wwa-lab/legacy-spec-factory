@@ -3,7 +3,7 @@ skill: legacy-modernization-orchestrator
 scorecard_version: v0.2.8
 static_score: 9.50
 decision: repo-ready
-status: current
+status: superseded
 last_verified: 2026-06-01
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-01 }
@@ -70,4 +70,3 @@ Decision: **repo-ready, not field-pilot ready**
 | ID | Severity | Finding | Required Change |
 | --- | --- | --- | --- |
 | ORCH-REV-028 | Medium | v0.2.8 has not yet been smoke-executed for analyzer v0.2 routing and gate language. | Run expanded route smoke covering stale program/flow/module artifacts and BRD-first routing. |
-

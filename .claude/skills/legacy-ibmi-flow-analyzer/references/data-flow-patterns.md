@@ -213,7 +213,7 @@ For each data exchange in the flow:
 ```markdown
 | Data ID | Carrier | Producer | Consumer | Mechanism | Payload / Key Fields | Direction & Timing | State Impact | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DATA-FLOW-01 | EDGE-02 | NODE-02 | NODE-01 | CALL parameter (out) | Decision: char 1 | sync out | decision returned | EV-FLOW-005 |
+| DATA-FLOW-01 | EDGE-02 | NODE-02 | NODE-01 | CALL parameter (out) | Decision (approval/decline result): char 1 | sync out | decision returned | EV-FLOW-005 |
 ```
 
 For each, capture:
@@ -225,7 +225,9 @@ For each, capture:
   manual actor that receives/reads the data
 - **Mechanism** — one of the 9 categories above
 - **Payload / Key Fields** — what's actually communicated (record,
-  message, parameter list, key fields, critical fields)
+  message, parameter list, key fields, critical fields). Preserve upstream
+  `FIELD_NAME` (business meaning) or `VARIABLE_NAME` (business meaning)
+  [direction] when available.
 - **Direction & Timing** — sync in/out/inout, async, batch-later,
   polling, manual, external handoff
 - **State Impact** — read-only, creates, updates, deletes, sends,
@@ -262,7 +264,8 @@ NODE-A source field
 
 Valid stitching evidence includes:
 
-- upstream program-analysis `Key File & Field Logic` and Field Lineage rows
+- upstream program-analysis `Key File & Field Logic`, Routine / Window Data
+  Flow, and Field Lineage rows with source identifiers plus business meanings
 - CALL parameter lists and callee parameter contracts
 - DDS/copybook field mappings
 - data-area, data-queue, message-queue, IFS, screen, or spool payload fields
@@ -276,7 +279,7 @@ field or physical-field mapping is missing, create a `TBD-*`.
 
 Shared files and durable outputs must be summarized at flow level when they
 change transaction outcome or downstream behavior. Use upstream
-program-analysis Field Mutation Matrix rows to identify:
+program-analysis File I/O Purpose and Field Mutation Matrix rows to identify:
 
 - which node writes, updates, deletes, sends, or spools
 - which fields/payloads are persisted or skipped

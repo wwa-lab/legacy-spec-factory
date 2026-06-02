@@ -179,10 +179,10 @@ mechanisms.
 
 ### Exception Propagation Chain
 
-| Chain ID | Source Node | Message ID / Error Code / RC | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EXCHAIN-FLOW-01 | NODE-02 | RC=-2 | CALL out parameter RC | NODE-01 logs + GOTO ERREXIT | skips NODE-03 and NODE-04 | PERSIST-GLPOST skipped; no completion flag | job ends with reconciliation failure | EV-... |
-| EXCHAIN-FLOW-02 | NODE-04 | SQLCODE < 0 / SQLSTATE | CALL out parameter RC + QSYSOPR message | NODE-01 ABEND | downstream GL consolidation blocked | GLPOST rows may already be durable; completion flag skipped | partial restart needed | EV-... |
+| Chain ID | Source Node | Error Code / Message / RC | Error Type | Output Carrier | Propagation Carrier | Caller Reaction | Skipped / Allowed Downstream Edges | Persistence Impact | Final Flow Outcome | Evidence Status | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EXCHAIN-FLOW-01 | NODE-02 | RC=-2 | validation / business threshold | RC (return status) | CALL out parameter RC | NODE-01 logs + GOTO ERREXIT | skips NODE-03 and NODE-04 | PERSIST-GLPOST skipped; no completion flag | job ends with reconciliation failure | confirmed_from_code | EV-... |
+| EXCHAIN-FLOW-02 | NODE-04 | SQLCODE < 0 / SQLSTATE | SQL error | RC (return status) + QSYSOPR message | CALL out parameter RC + QSYSOPR message | NODE-01 ABEND | downstream GL consolidation blocked | GLPOST rows may already be durable; completion flag skipped | partial restart needed | confirmed_from_code | EV-... |
 
 ### Commit Boundaries
 

@@ -183,11 +183,14 @@ Each row's "Role" comes from the program-analysis.md `Metadata.role` or
 the inventory `role` field (whichever is more specific). Do NOT invent.
 
 Each row's "Key pending decisions" comes from the program-analysis.md
-rows with `review_status: needs_sme_review`. Take the top 3 by
-significance (rows in money/posting paths first). If none, write `(none)`.
+rows with `review_status: needs_sme_review` and the `Open Items /
+Limitations` table. Take the top 3 by significance (money/posting paths,
+unresolved dynamic calls, and Error Code Inventory gaps first). If none, write
+`(none)`.
 
-Each row's "TBDs" is the count of rows in the `Open Questions` table
-with `Resolution` empty.
+Each row's "TBDs" is the count of rows in `Open Items / Limitations` whose
+`Resolution` column is empty. For older program-analysis artifacts, fall back
+to the legacy `Open Questions` table.
 
 ## Step Contract
 
@@ -266,7 +269,8 @@ with `Resolution` empty.
    analysis path` for analyzed; `OBJ-id → null` for not-yet-analyzed.
 3. **Extract per-row data**: for each analyzed program, read its
    Metadata block, its rows with `review_status: needs_sme_review`,
-   and its Open Questions table. Build the row tuple `(obj_id,
+   its Open Items / Limitations table, and, for older artifacts, its legacy
+   Open Questions table. Build the row tuple `(obj_id,
    role_one_line, top_3_decisions, tbd_count, status, detail_path)`.
 4. **Render markdown**: in the format specified in
    [`references/digest-format.md`](references/digest-format.md). Group

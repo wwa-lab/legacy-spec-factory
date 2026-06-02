@@ -3,7 +3,7 @@ skill: legacy-spec-writer
 scorecard_version: v0.1.4
 static_score: 9.45
 decision: repo-ready
-status: current
+status: superseded
 last_verified: 2026-06-01
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-01 }
@@ -69,4 +69,3 @@ Decision: **repo-ready, not field-pilot ready**
 | ID | Severity | Finding | Required Change |
 | --- | --- | --- | --- |
 | SPEC-REV-020 | Medium | v0.1.4 has not yet been smoke-executed using analyzer v0.2.0 upstream evidence. | Run positive and negative spec-writing smoke with BRD-approved replay / lineage / persistence / exception-chain evidence. |
-

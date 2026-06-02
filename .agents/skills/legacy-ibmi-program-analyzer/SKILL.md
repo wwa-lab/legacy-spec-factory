@@ -169,6 +169,11 @@ field-level rules. The summary below is normative for this skill.
   or error codes; evidence strength not overstated (no
   `weakly_inferred` posing as `confirmed_from_code`); flow header (if
   present) reconciled against the code-derived program call map.
+- **Report quality**: Program Call Map uses compact `Visual Overview`
+  plus auditable `Call Evidence`; key fields and variables preserve
+  `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning)
+  [direction]; external/dynamic calls and error codes carry resolution
+  status; unresolved items are centralized in TBDs / Open Items.
 - **SME / human approval**: SME signs entry points, parameter contracts,
   file I/O semantics, external interface contracts, and error handling
   realism. Required when the program affects money, inventory,
@@ -234,6 +239,11 @@ to the orchestrator.
    - Preserve condition order and nesting when it changes behavior. Do
      not flatten mutually exclusive tiers or fallback branches into
      unrelated bullet points.
+   - Add **Routine / Window Data Flow** for every load-bearing routine or
+     deep-read window: purpose, input variables, transformation logic,
+     output variables, side effects, source lines, and evidence. Use
+     `VARIABLE_NAME` (business meaning) [direction], and mark inferred or
+     unresolved meanings explicitly.
    - Document handled vs. unhandled paths
    - Tag each non-trivial control structure: `confirmed_from_code` or `medium_confidence` if inferred
    - Create TBD for unclear program flow (missing subroutines, undefined labels)
@@ -259,12 +269,17 @@ to the orchestrator.
      - If they match → tag `confirmed_from_code` (with source-level flow header as evidence)
      - If header exists but code differs → create TBD (comment drift, dead code, or missing subroutine)
      - If no header exists → use code-derived graph, tag `confirmed_from_code` (from EXSR/CALL/PERFORM statements)
-   - Produce five views (see `references/output-contract.md`):
+   - Produce the required views (see `references/output-contract.md`):
      - **Visual overview** (RDi-style orientation graph; compact by design)
      - **Node inventory** (mainline, internal routines, procedures, external programs, APIs, queues, services)
-     - **Call tree** (matches the IBM i flow-header convention)
-     - **Call edge table** (from, to, line, call condition such as "in DOWHILE loop" or "only if approved")
+     - **Call Evidence** (caller, callee, call type, condition, source
+       lines, evidence source, and resolution status)
      - **Reverse caller index** (for each node, who calls it)
+   - Use the wording `Evidence basis: source-level flow header + derived
+     call analysis` when header and code-derived evidence are both used.
+   - Treat dynamic calls as unresolved until a concrete target is proven
+     from source, runtime evidence, inventory, or SME notes. Capture the
+     target variable and assignment lines when available.
    - Identify hub/common candidates and orphaned routines. A hub/common
      label is structural only; do not promote it into a business service
      or modernization boundary without flow/module evidence and SME
@@ -316,6 +331,12 @@ to the orchestrator.
      - show field lineage for critical fields as
        `physical/source field -> alias/data structure -> work variable ->
        calculation/condition -> write-back alias -> persisted field`
+     - preserve source identifiers and business meaning together:
+       `FIELD_NAME` (business meaning). If one side is unresolved, write
+       `field unresolved` (business meaning) or `FIELD_NAME` (meaning
+       unresolved); mark inferred meanings inline.
+     - preserve variable flow as `VARIABLE_NAME` (business meaning)
+       [input/output/input-output/local/control]
      - create TBDs when DDS/copybook metadata is missing, physical-field
        mapping is unclear, or a variable participates in a critical path
        but its source cannot be proven
@@ -335,6 +356,9 @@ to the orchestrator.
        persisted field
      - indicators, `%FOUND`, `%ERROR`, `SQLCODE`, `SQLSTATE`, or return
        codes checked before and after the mutation
+     - a File Access Summary purpose using an action verb that explains
+       why the file is accessed; do not use Purpose as a substitute for
+       field descriptions
    - Reference file definitions from inventory via evidence ID (EV-\*)
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
    - Create TBD if DDS is missing, key field unclear, or SQL schema is not documented
@@ -347,6 +371,10 @@ to the orchestrator.
    - List external service program calls (binding)
    - List external interfaces: IFS, HTTP, message queues, data queues
    - Document parameter contract if visible in source (call statement, copybook)
+   - For dynamic calls, document the target variable, source lines where
+     the target is assigned, parameters, resolution status (`resolved`,
+     `partially_resolved`, `dynamic_unresolved`, `inferred`, `confirmed`),
+     and any evidence gap.
    - Tag: `confirmed_from_code` (source statement visible) or `needs_sme_review` (undocumented)
    - Create TBD if external interface is unknown or network-dependent
 
@@ -368,6 +396,14 @@ to the orchestrator.
      including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
      `UCC*` / `LCC*`, and literal business error codes. Do not limit the
      inventory to shop-local message prefixes.
+   - Build an explicit **Error Code Inventory** with Error Code, Meaning,
+     Error Type, Set By / Source Lines, Trigger Condition, Output Carrier,
+     Downstream Effect, and Evidence Status. Include status codes,
+     response codes, indicator-driven error branches, exception/log output
+     codes, data queue response status values, and message/status fields
+     assigned during validation or file I/O failures.
+   - If literal code assignments cannot be fully traced, state
+     `Error codes unresolved:` with the concrete tracing gap.
    - When a catch-all handler is present (`MONMSG MSGID(*ANY)`, bare
      `ON-ERROR`, generic exception paragraph), mark it as generic
      coverage and still list the specific observed messages handled
@@ -390,6 +426,8 @@ to the orchestrator.
      - `pending_source` — missing DDS, incomplete source
      - `pending_sme_judgment` — behavior unclear from source alone
      - `non_blocking` — known gaps that don't affect downstream analysis
+   - Add or preserve a centralized **Open Items / Limitations** table
+     with Open Item, Impact, Evidence Gap, and Suggested Follow-up.
    - Generate review checklist for SME validation
    - Mark analysis as `blocked_pending_source` when missing or incomplete
      source prevents safe analysis; otherwise mark as `draft` (ready for
@@ -467,13 +505,18 @@ analysis describes what the code actually does.
 The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before approval, SME must validate:
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
+- [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
+- [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
-- [ ] Key File & Field Logic shows source fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] Key File & Field Logic preserves source identifiers with business meanings for key fields, aliases, work variables, calculations/conditions, and persisted fields
+- [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
-- [ ] External calls match system interfaces (especially for undocumented calls)
-- [ ] Error handling lists every observed message ID / error code and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
+- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
+- [ ] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] Analysis contains no invented subroutines or undocumented file access
@@ -502,3 +545,7 @@ No runtime-specific assumptions are embedded in the canonical version.
 - v0.2.0 (2026-06-01): Program-chain readiness tightening
   - Added Logic Decomposition Ledger, Key File & Field Logic, field-level File I/O mutation matrix, Exception Closure Ledger, and conservative redundancy candidate notes
   - Required every observed message ID / error code and every critical field lineage or mutation to carry evidence or a TBD
+- v0.2.1 (2026-06-02): Evidence-first report format tightening
+  - Renamed the Program Call Map tree-style subsection to auditable `Call Evidence`
+  - Required source identifier + business meaning for key fields and variables
+  - Added File I/O Purpose, external/dynamic call resolution status, Error Code Inventory, Routine / Window Data Flow, and centralized Open Items / Limitations

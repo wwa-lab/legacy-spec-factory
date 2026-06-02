@@ -72,12 +72,15 @@ Accept:
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
 
 Each upstream program-analysis should expose the program-chain readiness
-sections from `legacy-ibmi-program-analyzer` v0.2.0 or later:
-`Logic Decomposition Ledger`, `Key File & Field Logic`, field-level
-`File I/O` mutation matrix, `Exception Closure Ledger`, and
-`Redundancy Candidate Notes`. If an older approved program-analysis is
-used, the flow must either route back for refresh or record a named SME
-waiver for the missing detail.
+sections from `legacy-ibmi-program-analyzer` v0.2.1 or later:
+`Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
+`Key File & Field Logic` with source identifiers plus business meanings,
+`File I/O` Purpose plus Field Mutation Matrix, `External Calls` with
+dynamic-call resolution status, `Error Code Inventory`, `Exception Closure
+Ledger`, `Routine / Window Data Flow`, `Redundancy Candidate Notes`, and
+`Open Items / Limitations`. If an older approved program-analysis is used,
+the flow must either route back for refresh or record a named SME waiver for
+each missing v0.2.1 detail.
 
 Stop and require clarification if:
 
@@ -165,31 +168,34 @@ field-level rules. The summary below is normative for this skill.
 ### Execution
 
 - **Procedure**: see the Workflow section below (11 ordered steps).
-- **Allowed inference**: assembling cross-program call edges from
-  upstream program analyses; classifying call types (CALL / CALLP /
-  CALLPRC / SBMJOB / remote); deriving branch destinations from DSPF
-  option tables; stitching cross-program field lineage only through
-  upstream Key File & Field Logic, field mutation matrices, visible
-  carrier fields, or SME-confirmed handoffs; reading scheduler /
-  trigger / API configuration exports as tier-1 evidence.
-- **Forbidden assumptions**: calls not visible in any program-analysis
-  External Calls section; data flow whose parameter semantics require
-  guessing; branch destinations not in DSPF DDS; trigger conditions
-  without configuration export; scheduler frequency without
-  `WRKJOBSCDE`; commit boundaries without code or SME confirmation;
-  flow-level field lineage not backed by upstream lineage or a visible
-  carrier; persisted file/field updates absent from upstream mutation
-  matrices; exception propagation not backed by upstream Exception
-  Closure Ledgers; business rules (these are seeds, never facts).
+- **Allowed inference**: assembling cross-program call edges from upstream
+  `Call Evidence` and `External Calls` rows; classifying call types (CALL /
+  CALLP / CALLPRC / SBMJOB / remote); deriving branch destinations from
+  DSPF option tables; stitching cross-program field lineage only through
+  upstream Key File & Field Logic, Routine / Window Data Flow, field
+  mutation matrices, visible carrier fields, or SME-confirmed handoffs;
+  reading scheduler / trigger / API configuration exports as tier-1 evidence.
+- **Forbidden assumptions**: calls not visible in upstream `Call Evidence`
+  or `External Calls` rows; dynamic calls whose upstream resolution is
+  `unresolved` or `needs_sme_review` unless a named SME waiver is recorded;
+  data flow whose parameter semantics require guessing; branch destinations
+  not in DSPF DDS; trigger conditions without configuration export; scheduler
+  frequency without `WRKJOBSCDE`; commit boundaries without code or SME
+  confirmation; flow-level field lineage not backed by upstream lineage,
+  source identifier + business meaning pairs, or a visible carrier; persisted
+  file/field updates absent from upstream mutation matrices; exception
+  propagation not backed by upstream Error Code Inventory / Exception Closure
+  Ledger rows; business rules (these are seeds, never facts).
 - **TBD handling**: missing program-analysis → `TBD: pending_source`
   routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
   `TBD: pending_sme_judgment`; unnamed business event → stop and request
   the name from SME (do not autogenerate from program names).
 - **Coverage propagation**: consume each upstream program's Analysis
-  Coverage & Scope, Routine Cards, Deep Read Windows, Logic
-  Decomposition Ledger, Key File & Field Logic, Field Mutation Matrix,
-  Exception Closure Ledger, and Redundancy Candidate Notes before using
-  program-level evidence in a flow. If the requested flow relies on a
+  Coverage & Scope, Routine Cards, Deep Read Windows, Call Evidence, Logic
+  Decomposition Ledger, Key File & Field Logic, File I/O Purpose, Field
+  Mutation Matrix, Error Code Inventory, Exception Closure Ledger, Routine /
+  Window Data Flow, Redundancy Candidate Notes, and Open Items / Limitations
+  before using program-level evidence in a flow. If the requested flow relies on a
   routine that was only `indexed_only` and that routine changes state,
   performs external handoff, handles commit/rollback, controls error
   outcome, supplies critical field lineage, or mutates persisted fields,
@@ -338,7 +344,10 @@ to the orchestrator.
      - signal flags (return codes, indicators, error fields)
    - For each `DATA-*`, capture carrier, producer, consumer, mechanism,
      payload/key fields, direction and timing, state impact, and
-     evidence. A carrier can be an `EDGE-*`, PF/LF, data area, data
+     evidence. Preserve critical fields as `FIELD_NAME` (business meaning)
+     or `VARIABLE_NAME` (business meaning) [direction] whenever the upstream
+     program-analysis resolved both identity and meaning. A carrier can be an
+     `EDGE-*`, PF/LF, data area, data
      queue, message queue, spool, IFS file, DSPF field set, or manual
      handoff.
    - Track object / record / critical-field granularity. Critical fields
@@ -364,9 +373,10 @@ to the orchestrator.
    - Build **Cross-Program Field Lineage** for critical fields that
      cross program boundaries. Stitch program-local lineages through
      CALL parameters, shared files, data areas, queues, screens, IFS,
-     spool, or SME-confirmed manual handoffs.
+     spool, or SME-confirmed manual handoffs. Do not collapse a resolved
+     source identifier and business meaning into a plain field label.
    - Build the **Flow Persistence Matrix** by aggregating each
-     program-analysis Field Mutation Matrix into transaction-level
+     program-analysis File I/O Purpose and Field Mutation Matrix into transaction-level
      outcomes:
      - node and routine that performs the mutation
      - file and field persisted, updated, deleted, or skipped
@@ -403,12 +413,12 @@ to the orchestrator.
      section) what happens when each error condition occurs.
    - Trace propagation: does the error abort the whole flow, roll back to
      a checkpoint, log-and-continue, or branch to an error handler?
-   - Build an **Exception Propagation Chain** from every upstream
-     Exception Closure Ledger row that affects this flow. Each row must
-     show source node, observed message ID / error code / return code,
-     propagation carrier, caller reaction, skipped/allowed downstream
-     edges, persistence impact, operator/user visibility, and final flow
-     outcome.
+   - Build an **Exception Propagation Chain** from every upstream Error Code
+     Inventory / Exception Closure Ledger row that affects this flow. Each
+     row must show source node, observed message ID / error code / return
+     code, error type, output carrier, evidence status, propagation carrier,
+     caller reaction, skipped/allowed downstream edges, persistence impact,
+     operator/user visibility, and final flow outcome.
    - Identify **commit boundaries**: where does the flow consider work
      "committed" vs "rolled back"?
    - Identify **unhandled error windows**: nodes where an unhandled
@@ -503,17 +513,18 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 
 **Do NOT invent:**
 
-- **Calls** not visible in any program's `program-analysis` External Calls section
+- **Calls** not visible in any program's `program-analysis` Call Evidence or
+  External Calls sections
 - **Data flow** that requires guessing parameter semantics (use only what
   source explicitly shows or SME confirms)
 - **Cross-program field lineage** that cannot be stitched through
-  upstream program-analysis lineage, carrier fields, or SME-approved
-  manual handoff
-- **Persistence outcomes** not present in upstream Field Mutation
-  Matrix rows or SQL/file evidence
-- **Exception chains** not present in upstream Exception Closure Ledger
-  rows, return-code checks, message IDs, or SME-confirmed operational
-  recovery notes
+  upstream program-analysis lineage, source identifier + business meaning
+  pairs, carrier fields, or SME-approved manual handoff
+- **Persistence outcomes** not present in upstream File I/O Purpose / Field
+  Mutation Matrix rows or SQL/file evidence
+- **Exception chains** not present in upstream Error Code Inventory /
+  Exception Closure Ledger rows, return-code checks, message IDs, or
+  SME-confirmed operational recovery notes
 - **Branch destinations** for F-keys / options not visible in DSPF DDS
 - **Trigger conditions** for DB triggers without seeing trigger configuration export
 - **Scheduler frequency or submitted command** without WRKJOBSCDE evidence
@@ -536,6 +547,9 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 **Evidence minimum** (see Evidence Taxonomy):
 
 - Every edge must trace to evidence type 1, 2, or 3 (source statement, config export, or integration contract)
+- Every edge derived from a program call must cite upstream Call Evidence
+  and carry its resolution status (`confirmed_from_code`, `observed_in_runtime`,
+  `sme_confirmed`, `needs_sme_review`, or `unresolved`)
 - Every data exchange must trace to source (parameter, data area, queue,
   file, screen field, message, IFS file, or SME note)
 - Every UI surface must trace to a DSPF / PRTF / MENU object in inventory
@@ -584,6 +598,14 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.1 (2026-06-02): Program-analysis v0.2.1 consumption alignment
+  - Required flow analysis to consume Call Evidence, File I/O Purpose,
+    dynamic-call resolution status, Error Code Inventory, Routine / Window
+    Data Flow, and Open Items / Limitations
+  - Required flow field, lineage, persistence, and exception tables to
+    preserve source identifiers with business meanings where upstream
+    program-analysis resolved them
 
 - v0.2.0 (2026-06-01): Replayable program-chain hardening
   - Added Flow Replay Path, Cross-Program Field Lineage, Flow

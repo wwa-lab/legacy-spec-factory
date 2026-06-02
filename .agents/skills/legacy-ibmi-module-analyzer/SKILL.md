@@ -67,9 +67,11 @@ Accept:
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
   - For code-backed runs, each approved flow should be
-    `legacy-ibmi-flow-analyzer` v0.2.0 or later, or otherwise expose the
+    `legacy-ibmi-flow-analyzer` v0.2.1 or later, or otherwise expose the
     equivalent `Flow Replay Path`, `Cross-Program Field Lineage`,
-    `Flow Persistence Matrix`, and `Exception Propagation Chain` sections.
+    `Flow Persistence Matrix` with File I/O Purpose, edge Evidence Source /
+    Resolution, and `Exception Propagation Chain` with Error Code Inventory
+    carry-forward sections.
     Older flow artifacts require refresh or a named SME waiver before they
     can support module-level replay, lineage, persistence, or exception
     claims.
@@ -107,9 +109,10 @@ Stop and require clarification if:
   (`legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, or
   `legacy-ibmi-flow-analyzer`) instead of approving module synthesis
 - The requested output is a standard code-backed BRD/spec input but in-scope
-  flow analyses do not expose replay, field-lineage, persistence, and
-  exception-chain coverage, and no named SME waiver exists → route back to
-  `legacy-ibmi-flow-analyzer` for v0.2.0 refresh
+  flow analyses do not expose replay, field-lineage, persistence, edge
+  Evidence Source / Resolution, and exception-chain coverage, and no named
+  SME waiver exists → route back to `legacy-ibmi-flow-analyzer` for v0.2.1
+  refresh
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
   or `legacy-ibmi-data-model-analyzer`), do NOT begin synthesis
@@ -206,7 +209,8 @@ field-level rules. The summary below is normative for this skill.
     data lineage, and known TBD ledgers are supplied.
   - `9-10 strong`: SME edge cases, exception examples, sample transactions,
     regulatory context, modernization decision context, and flow-analyzer
-    v0.2.0 replay / field-lineage / persistence / exception-chain sections
+    v0.2.1 replay / field-lineage / persistence / edge-resolution /
+    exception-chain sections
     are also supplied.
   - Missing architecture diagrams or regulatory references does not block the
     module analysis unless the module scope specifically depends on them.
@@ -323,8 +327,9 @@ to the orchestrator.
      canonical module views must be generated under `04_modules/<MODULE-SLUG>/`
    - List in-scope flows; check every one has an approved analysis
    - For code-backed runs, confirm each in-scope flow exposes `Flow Replay
-     Path`, `Cross-Program Field Lineage`, `Flow Persistence Matrix`, and
-     `Exception Propagation Chain`, or record a named SME waiver and `TBD-*`
+     Path`, `Cross-Program Field Lineage`, `Flow Persistence Matrix`, edge
+     Evidence Source / Resolution, and `Exception Propagation Chain`, or
+     record a named SME waiver and `TBD-*`
    - Confirm no in-scope flow actually belongs to a different module
    - Assign `MODULE-<SLUG>-001`
 
@@ -332,7 +337,9 @@ to the orchestrator.
    - List every program touched by any flow in scope (from each flow's
      Nodes section)
    - List every object and key field touched (from each program's Object
-     Dependencies, Key File & Field Logic, and Field Mutation Matrix sections)
+     Dependencies, Key File & Field Logic, File I/O Purpose, and Field
+     Mutation Matrix sections). Preserve source identifiers plus business
+     meanings for critical fields.
    - Cross-check against `01_inventory/inventory.yaml`; create
      `pending_source` TBDs for gaps
    - If the run is intended to feed an approvable BRD/spec and
@@ -390,7 +397,8 @@ to the orchestrator.
    - **Primary source: every flow's Cross-Program Data Flow,
      Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
      Propagation Chain sections, backed by every program's Data Touch Map,
-     Object Dependencies, Field Mutation Matrix, and Key File & Field Logic.**
+     Object Dependencies, File I/O Purpose, Field Mutation Matrix, Key File &
+     Field Logic, and Error Code Inventory.**
    - Compute data lifecycle per object (created / updated / read /
      archived / purged) by walking flows
    - Compute coupling score (number of flows touching each object)
@@ -578,6 +586,13 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.2.1 (2026-06-02): Aligned module synthesis with flow/program v0.2.1.
+  Code-backed module analysis now preserves flow edge Evidence Source /
+  Resolution, source identifier + business meaning field pairs, File I/O
+  Purpose, Error Code Inventory carry-forward, and upstream Open Items /
+  Limitations when aggregating readiness, data, exception, and BRD crosswalk
+  outputs.
 
 - v0.2.0 (2026-06-01): Aligned module synthesis with program/flow v0.2.0.
   Code-backed module analysis now requires or waives replay, critical field
