@@ -45,7 +45,7 @@ document defines the *file format*; that document defines the *intent*.
 | --- | --- | --- | --- | --- | --- | --- |
 | FLOW-AUTH-001 | complete (`REPLAY-AUTH-001`) | complete (no unresolved dynamic edges) | partial (`LINEAGE-AUTH-001`) | complete (`PERSIST-AUTH-001`) | complete (`EXCHAIN-AUTH-001`) | TBD-* or none |
 
-This table is the module-level coverage check for flow-analyzer v0.2.1
+This table is the module-level coverage check for flow-analyzer v0.2.2
 surfaces. A code-backed module should not summarize a flow as understood if
 replay, edge resolution, critical field lineage, persistence, or
 exception-chain coverage is missing without a named `TBD-*` or waiver.
@@ -382,9 +382,10 @@ diagram with an ASCII tree.
 | FLOW-AUTH-001 | `REPLAY-AUTH-001` trigger → validation → response | approve / decline / `EXCHAIN-AUTH-001` timeout | `PERSIST-AUTH-001` AUTHLOGPF write + response | none |
 
 Replay and edge-resolution coverage are required for code-backed module
-analysis. If a legacy flow analysis predates flow-analyzer v0.2.1, refresh the
-flow or record the missing coverage as `TBD-*` / waiver instead of silently
-summarizing call topology.
+analysis. If a legacy flow analysis predates flow-analyzer v0.2.2, refresh the
+flow or record the missing replay, lineage, persistence, exception-chain, or
+routine-local evidence carry-forward coverage as `TBD-*` / waiver instead of
+silently summarizing call topology.
 
 ## Cross-Flow Dependencies
 | From Flow | To Flow | Mechanism | Reason |
@@ -595,8 +596,9 @@ Per the SME Review Questions in SKILL.md, the reviewer should verify:
 | `EV-` | evidence | `EV-AUTH-MODULE-012` |
 
 Flow / Node / Edge / Data IDs from flow-analyzer remain valid in View 3 / 4.
-Flow-analyzer v0.2.1 IDs (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and
-`EXCHAIN-*`) plus edge Evidence Source / Resolution values remain valid in
-module overview, View 1, View 3, and View 4.
+Flow-analyzer v0.2.2 IDs (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and
+`EXCHAIN-*`) plus edge Evidence Source / Resolution values and routine-local
+evidence carry-forward remain valid in module overview, View 1, View 3, and
+View 4.
 Object IDs (`OBJ-*`) and evidence IDs (`EV-*`) from inventory and
 program-analyzer remain valid throughout.

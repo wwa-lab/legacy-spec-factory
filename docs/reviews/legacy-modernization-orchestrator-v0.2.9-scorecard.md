@@ -3,7 +3,8 @@ skill: legacy-modernization-orchestrator
 scorecard_version: v0.2.9
 static_score: 9.52
 decision: repo-ready
-status: current
+status: superseded_by_v0.2.10
+superseded_by: docs/reviews/legacy-modernization-orchestrator-v0.2.10-scorecard.md
 last_verified: 2026-06-02
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-02 }
@@ -68,4 +69,3 @@ Decision: **repo-ready, not field-pilot ready**
 | ID | Severity | Finding | Required Change |
 | --- | --- | --- | --- |
 | ORCH-REV-040 | Medium | v0.2.9 expanded analyzer-v0.2.1 routing has not yet been smoke-executed across the three target runtimes. | Run expanded route smoke covering program, flow, module, and spec handoff gates. |
-

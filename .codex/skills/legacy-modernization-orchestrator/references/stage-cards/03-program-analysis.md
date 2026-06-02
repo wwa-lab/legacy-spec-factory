@@ -18,7 +18,7 @@ through programs one at a time before moving to flow analysis.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.2.1)
+- **Skill:** `legacy-ibmi-program-analyzer` (Implemented v0.2.4)
 - **Manual fallback:** Use the program-analysis skeleton in
   `skills/legacy-ibmi-program-analyzer/references/` and fill it section by
   section against the source
@@ -43,12 +43,14 @@ Optional companions (run in parallel when applicable):
 - **Consumed by:** `legacy-ibmi-flow-analyzer`
 
 Required sections: Metadata, Analysis Coverage & Scope, Program Call Map with
-Call Evidence, Logic Decomposition Ledger, Key File & Field Logic preserving
-source identifiers plus business meanings, Entry Points, Routine / Window Data
-Flow, Control Flow, File I/O with Purpose + Field Mutation Matrix, External
-Calls with dynamic-call resolution status, Error Handling with Error Code
-Inventory + Exception Closure Ledger, Redundancy Candidate Notes, Open Items /
-Limitations (`TBD-*`). Every row cites an `evidence_id`.
+Call Evidence, Routine Logic Details with routine-local field lineage /
+carriers and routine-local exception closure, Logic Decomposition Ledger, Key
+File & Field Logic preserving source identifiers plus business meanings, Entry
+Points, Routine / Window Data Flow, Control Flow, File I/O with Purpose + Field
+Mutation Matrix, External Calls with dynamic-call resolution status, Error
+Handling with Error Code Inventory + Exception Closure Ledger, Redundancy
+Candidate Notes, Open Items / Limitations (`TBD-*`). Every row cites an
+`evidence_id`.
 
 ## Gate before advancing
 
@@ -61,10 +63,11 @@ Limitations (`TBD-*`). Every row cites an `evidence_id`.
      `screen-report-analysis.md` under
      `02_programs/<MODULE>/screens/`
   3. each approved program analysis includes Call Evidence, Logic Decomposition
-     Ledger, Key File & Field Logic, File I/O Purpose, Field Mutation Matrix,
-     External/Dynamic Call Resolution Status, Error Code Inventory, Exception
-     Closure Ledger, Routine / Window Data Flow, and Open Items / Limitations,
-     or records named non-blocking / blocking `TBD-*` gaps
+     Ledger, Routine Logic Details with routine-local carrier/lineage and
+     routine-local exception closure, Key File & Field Logic, File I/O Purpose,
+     Field Mutation Matrix, External/Dynamic Call Resolution Status, Error Code
+     Inventory, Exception Closure Ledger, Routine / Window Data Flow, and Open
+     Items / Limitations, or records named non-blocking / blocking `TBD-*` gaps
   4. IF `inventory.yaml.sme_review.downstream_required.data_model_analyzer.required: true`
      → `04_modules/<MODULE>/data-model/dictionary.md` exists at
      `review_status: approved` or `approved_with_non_blocking_tbd`

@@ -3,7 +3,8 @@ skill: legacy-spec-writer
 scorecard_version: v0.1.5
 static_score: 9.47
 decision: repo-ready
-status: current
+status: superseded_by_v0.1.6
+superseded_by: docs/reviews/legacy-spec-writer-v0.1.6-scorecard.md
 last_verified: 2026-06-02
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-02 }
@@ -67,4 +68,3 @@ Decision: **repo-ready, not field-pilot ready**
 | ID | Severity | Finding | Required Change |
 | --- | --- | --- | --- |
 | SPEC-REV-030 | Medium | v0.1.5 has not yet been smoke-executed across Codex, Claude Code, and OpenCode. | Run positive and negative spec-writing smoke and update runtime evidence. |
-

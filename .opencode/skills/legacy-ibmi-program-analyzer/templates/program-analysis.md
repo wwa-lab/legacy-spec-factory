@@ -110,6 +110,50 @@ coverage value.
 
 ---
 
+## Routine Logic Details
+
+Purpose: explain the internal logic of each load-bearing subroutine, procedure,
+paragraph, or mainline segment. This section must not collapse field
+calculations into generic labels such as "validation logic" or "amount
+calculation".
+
+### `[ROUTINE_OR_PROCEDURE_NAME]`
+
+**Execution trigger:** [called by / condition / loop scope / entry path]
+
+**Step-by-step logic:**
+1. [source-backed step, branch, loop, file access, assignment, or call]
+2. [source-backed step]
+
+**Field calculations and assignments:**
+
+| Target Field / Variable | Calculation / Assignment | Source Operands | Branch / Guard | Precision / Conversion | Business Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `[FIELD_NAME]` (business meaning) | [literal / move / expression / formula] | `[FIELD_A]` (meaning), constant `[X]` | [IF/SELECT/loop condition or always] | [rounding, scale, data type conversion, substring, padding, N/A] | [returned, persisted, passed, error/status set, display/report output] | [EV-*] |
+
+**Routine field lineage / carriers:**
+
+| Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| `[FIELD_NAME]` (business meaning) | `[FILE.FIELD]` / parameter / queue payload / display field / report field | `[WORK_VAR]` -> `[ALIAS]` | return parameter / `[FILE.FIELD]` / CALL parameter / message / queue / report | LIN-[SLUG]-[NNN] / mutation row / N/A-no persistence | [EV-*] |
+
+**Branch outcomes:**
+
+| Branch / Condition | Fields Set / Actions | Exit / Next Step | Evidence |
+| --- | --- | --- | --- |
+| [condition] | [assignments, calls, writes, skips] | [RETURN / EXSR / continue / loop / error path] | [EV-*] |
+
+**Routine exception closure:**
+
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| [business / parameter / I/O / external-call / generic handler / none observed] | [condition, `%ERROR`, MONMSG, return code, indicator] | [ERR_FLAG, ERR_CD, ERR_MSG, TRANS_ERR, log/message fields] | RETURN / rollback / skip write / continue / abort / none | [skipped update/call, rollback, message queue, report, caller response] | [Message / Status Code row or N/A] | [EV-*] |
+
+**Unresolved routine logic:** [None, or TBD references for unclear operands,
+constants, branch priority, precision, called routine, or field meaning.]
+
+---
+
 ## Deep Read Windows
 
 Purpose: identify the source windows used to support high-risk claims,
@@ -327,9 +371,24 @@ evidence-backed sections above.
 
 ### Error Code Inventory
 
-| Error Code | Meaning | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
+| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[CPFxxxx / UCCxxxx / literal / status value]` | [meaning if explicit; otherwise meaning unresolved] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
+| `[CPFxxxx / UCCxxxx / literal / response 00 / status value]` | [message description from message file, source literal/comment, runtime evidence, or SME note; otherwise `unresolved - message description not available`] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
+
+Inventory rules:
+
+- Create one row per explicit message ID, status code, return code, response
+  value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined code, or generic
+  catch-all token.
+- Do not group multiple message IDs into one row and do not replace individual
+  descriptions with family summaries such as "validation messages" or
+  "call-specific message IDs".
+- If one branch assigns several message IDs, duplicate the branch context and
+  create one inventory row for each message ID.
+- `Message Description` must be the best available description from a message
+  file, source literal, source comment, runtime trace, vendor reference, or SME
+  note. If no description is available, write
+  `unresolved - message description not available` and create an Open Item.
 
 **Error codes unresolved:** [state whether status/message fields were detected but literal assignments were not fully traced, or write "None."]
 
@@ -394,6 +453,7 @@ Before approval, SME must validate:
 - [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
+- [ ] Routine Logic Details explain each load-bearing subroutine/procedure/mainline segment, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
 - [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)

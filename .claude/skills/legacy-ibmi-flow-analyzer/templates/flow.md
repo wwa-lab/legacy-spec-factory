@@ -148,7 +148,7 @@ files, data areas, queues, screens, spool, IFS files, and manual handoffs.
 | LINEAGE-[SLUG]-01 | [customer id / amount / status / error code] | [FIELD_NAME (business meaning) / NODE] | [EDGE/DATA/object] | [FIELD_NAME (business meaning) / NODE] | [calculation / branch / no transform] | [PERSIST-* / response / report / UI] | [EV-*] |
 
 **Unresolved lineage:**
-- TBD-[SLUG]-[NNN]: [missing program-analysis lineage, carrier field, DDS/copybook, or SME handoff confirmation]
+- TBD-[SLUG]-[NNN]: [missing program-analysis routine-local carrier row, field lineage, carrier field, DDS/copybook, or SME handoff confirmation]
 
 ---
 
@@ -256,12 +256,12 @@ Before approval, SME must validate:
 - [ ] All edges reflect actual production calls
 - [ ] Cross-program data flow captures carriers, producers, consumers, timing, and state impacts
 - [ ] Flow Replay Path can be followed from trigger to final outcome
-- [ ] Cross-program field lineage preserves critical source, carrier, mutation, and output fields
+- [ ] Cross-program field lineage preserves critical source, carrier, mutation, output fields, and routine-local carrier evidence where available
 - [ ] Flow Persistence Matrix lists transaction-level writes, updates, deletes, skipped mutations, and commit/rollback impacts
 - [ ] Branch points capture user-visible decisions
 - [ ] UI surfaces match production screens (interactive flows only)
 - [ ] Error propagation matches operational reality
-- [ ] Exception Propagation Chain lists observed message IDs, error codes, return codes, skipped downstream edges, and final outcomes
+- [ ] Exception Propagation Chain lists observed message IDs, error codes, return codes, routine-local exception triggers, skipped downstream edges, persistence impact, and final outcomes
 - [ ] Commit boundaries correctly identified
 - [ ] Capability seeds are reasonable questions backed by replay, lineage, persistence, or exception evidence; not invented rules
 - [ ] All node program-analyses are approved

@@ -187,11 +187,13 @@ NODE-03 (CU205A)  ── customer history detail
 - Every Node must carry upstream program coverage state from the program
   analysis, including any routine-level `deep_read`, `indexed_only`, or
   `blocked` gaps that affect flow readiness.
-- For program-analysis v0.2.1 and later, every Node must expose whether
+- For program-analysis v0.2.4 and later, every Node must expose whether
   the flow consumed the upstream Call Evidence, Logic Decomposition Ledger,
-  Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Error
-  Code Inventory, Exception Closure Ledger, Routine / Window Data Flow,
-  Redundancy Candidate Notes, and Open Items / Limitations. Older analyses
+  Routine Logic Details, routine-local field lineage / carrier rows,
+  routine-local exception closure rows, Key File & Field Logic, File I/O
+  Purpose, Field Mutation Matrix, Error Code Inventory, Exception Closure
+  Ledger, Routine / Window Data Flow, Redundancy Candidate Notes, and Open
+  Items / Limitations. Older analyses
   require refresh or a named SME waiver before their missing details can
   support replay, lineage, persistence, or exception-chain claims.
 - Node IDs are sequence-numbered (`NODE-<SLUG>-01`, `NODE-<SLUG>-02`, …).
@@ -391,9 +393,9 @@ did it land?"
   areas, queues, screen fields, spool, IFS files, APIs, or SME-confirmed
   manual handoffs.
 - Do not infer a field match from similar names alone. The source must
-  be an upstream program-analysis Field Lineage / Key Field row, a
-  visible carrier field, DDS/copybook metadata, runtime evidence, or SME
-  confirmation.
+  be an upstream program-analysis Routine Logic Details field lineage /
+  carrier row, Field Lineage / Key Field row, a visible carrier field,
+  DDS/copybook metadata, runtime evidence, or SME confirmation.
 - Preserve upstream source identifiers with business meanings; do not shorten
   a resolved `FIELD_NAME` (business meaning) pair into an unlabeled prose noun.
 - Use `TBD-*` when the physical field, alias mapping, direction, or
@@ -497,8 +499,9 @@ confirm idempotency strategy.
 ## Exception Propagation Chain Section
 
 The Exception Propagation Chain is the flow-level form of the upstream
-program `Error Code Inventory` plus `Exception Closure Ledger`. It shows how
-local node exceptions become transaction outcomes.
+program `Error Code Inventory` plus `Exception Closure Ledger` plus
+Routine Logic Details' routine-local exception closure. It shows how local
+node exceptions become transaction outcomes.
 
 ```markdown
 ### Exception Propagation Chain
@@ -514,6 +517,10 @@ local node exceptions become transaction outcomes.
 - Include every observed upstream exception/error/return path that
   changes the flow outcome, skips a downstream edge, triggers rollback,
   writes a message/log/report, or changes operator/user visibility.
+- For program-analysis v0.2.4 inputs, consume routine-local exception closure
+  rows first when they identify the exact routine trigger, status/message
+  fields, downstream skip/rollback/output, or Error Code Inventory link for a
+  flow-affecting path.
 - Carry forward observed `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`,
   shop-local message IDs, literal business error codes, return codes,
   status flags, and generic catch-all handlers.

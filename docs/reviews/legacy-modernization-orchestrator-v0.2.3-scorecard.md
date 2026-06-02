@@ -3,7 +3,8 @@ skill: legacy-modernization-orchestrator
 scorecard_version: v0.2.3
 static_score: 9.38
 decision: repo-ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-modernization-orchestrator-v0.2.4-scorecard.md
 last_verified: 2026-05-28
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-05-28 }

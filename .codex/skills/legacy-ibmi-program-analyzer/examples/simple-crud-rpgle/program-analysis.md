@@ -105,6 +105,64 @@ Evidence basis: derived call analysis only
 
 ---
 
+## Routine Logic Details
+
+### CreditChk
+
+**Execution trigger:** Callable procedure entry point invoked by an external
+caller not provided in this single-program analysis.
+
+**Step-by-step logic:**
+1. Receive `CustID` (customer identifier), `RequestAmount` (requested amount),
+   and `ApprovedAmount` (approved amount output parameter).
+2. CHAIN `CREDFILE` by `CustID`.
+3. If no `CREDFILE` record is found, set `ApprovedAmount` to 0 and return
+   denial code `'D'`.
+4. If a record is found and `RequestAmount <= CREDLIMIT`, set
+   `ApprovedAmount` to `RequestAmount` and return approval code `'A'`.
+5. If a record is found and `RequestAmount > CREDLIMIT`, set
+   `ApprovedAmount` to `CREDLIMIT` and return denial code `'D'`.
+
+**Field calculations and assignments:**
+
+| Target Field / Variable | Calculation / Assignment | Source Operands | Branch / Guard | Precision / Conversion | Business Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ApprovedAmount` (approved amount) | literal 0 | constant 0 | `%found(CREDFILE)` false | same output parameter scale; no conversion observed | caller receives zero approved amount when no credit record exists | EV-CREDIT-VALIDATION-001 |
+| return code (approval decision) | literal `'D'` | constant `'D'` | `%found(CREDFILE)` false | char 1 | caller receives denial outcome | EV-CREDIT-VALIDATION-001 |
+| `ApprovedAmount` (approved amount) | `RequestAmount` | `RequestAmount` (requested amount) | `RequestAmount <= CREDLIMIT` | both decimal 7P2 where visible; DDS pending for `CREDLIMIT` | caller receives full requested amount | EV-CREDIT-VALIDATION-001 |
+| return code (approval decision) | literal `'A'` | constant `'A'` | `RequestAmount <= CREDLIMIT` | char 1 | caller receives approval outcome | EV-CREDIT-VALIDATION-001 |
+| `ApprovedAmount` (approved amount) | `CREDLIMIT` | `CREDLIMIT` (credit limit; inferred) | `RequestAmount > CREDLIMIT` | DDS pending for `CREDLIMIT`; output scale visible as 7P2 | caller receives capped approved amount | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| return code (approval decision) | literal `'D'` | constant `'D'` | `RequestAmount > CREDLIMIT` | char 1 | caller receives denial outcome | EV-CREDIT-VALIDATION-001 |
+
+**Routine field lineage / carriers:**
+
+| Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| `ApprovedAmount` (approved amount) | `RequestAmount` parameter / `CREDFILE.CREDLIMIT` (credit limit; inferred) / literal 0 | none | CreditChk output parameter | LIN-CREDIT-VALIDATION-001, LIN-CREDIT-VALIDATION-002 | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| return code (approval decision) | literals `'A'` and `'D'` | none | CreditChk return value | Error Code Inventory rows `'A'`, `'D'`; N/A-no persistence | EV-CREDIT-VALIDATION-001 |
+| `CREDLIMIT` (credit limit; inferred) | `CREDFILE` record field; DDS pending | none | read-only comparison operand | LIN-CREDIT-VALIDATION-002 | EV-CREDIT-VALIDATION-002 |
+
+**Branch outcomes:**
+
+| Branch / Condition | Fields Set / Actions | Exit / Next Step | Evidence |
+| --- | --- | --- | --- |
+| `%found(CREDFILE)` false | `ApprovedAmount = 0`; return `'D'` | return to caller | EV-CREDIT-VALIDATION-001 |
+| `RequestAmount <= CREDLIMIT` | `ApprovedAmount = RequestAmount`; return `'A'` | return to caller | EV-CREDIT-VALIDATION-001 |
+| `RequestAmount > CREDLIMIT` | `ApprovedAmount = CREDLIMIT`; return `'D'` | return to caller | EV-CREDIT-VALIDATION-001 |
+
+**Routine exception closure:**
+
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| customer credit record not found | `%found(CREDFILE)` false | `ApprovedAmount=0`; return code `'D'`; no message text observed | return to caller | no file mutation observed; caller receives denial | `'D'` | EV-CREDIT-VALIDATION-001 |
+| requested amount exceeds credit limit | `RequestAmount > CREDLIMIT` | `ApprovedAmount=CREDLIMIT`; return code `'D'`; no message text observed | return to caller | no file mutation observed; caller receives capped denial | `'D'` | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| I/O exception path unresolved | CHAIN I/O failure; no MONITOR block observed | none observed | abnormal termination likely; pending SME/source confirmation | no local rollback or message observed | N/A | EV-CREDIT-VALIDATION-001, TBD-CREDIT-VALIDATION-001 |
+
+**Unresolved routine logic:** TBD-CREDIT-VALIDATION-001: Confirm CREDFILE DDS
+field list and `CREDLIMIT` type.
+
+---
+
 ## Deep Read Windows
 
 | Window ID | Source Range | Coverage | Included Routines / Logic | Evidence | Notes |
@@ -301,7 +359,7 @@ From `01_inventory/inventory.yaml` `relationships` section.
 
 ### Error Code Inventory
 
-| Error Code | Meaning | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
+| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 'A' | approval decision | response_status | return literal, lines 35-36 | RequestAmount <= CREDLIMIT | return parameter | caller receives approval outcome | confirmed |
 | 'D' | denial decision | response_status | return literal, lines 31-32 and 38-39 | record not found or RequestAmount > CREDLIMIT | return parameter | caller receives denial outcome | confirmed |

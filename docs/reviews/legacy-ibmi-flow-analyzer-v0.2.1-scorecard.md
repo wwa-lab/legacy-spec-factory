@@ -3,7 +3,8 @@ skill: legacy-ibmi-flow-analyzer
 scorecard_version: v0.2.1
 static_score: 9.60
 decision: repo-ready
-status: current
+status: superseded_by_v0.2.2
+superseded_by: docs/reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md
 last_verified: 2026-06-02
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-02 }
@@ -80,4 +81,3 @@ Decision: **repo-ready, not field-pilot ready**
 | FLOW-REV-032 | Cross-program data/lineage could collapse field identity into prose. | Required `FIELD_NAME` / `VARIABLE_NAME` plus business meaning preservation. |
 | FLOW-REV-033 | Flow persistence could lose why a file/object is accessed. | Added Purpose propagation from program File I/O. |
 | FLOW-REV-034 | Error propagation could ignore program Error Code Inventory. | Updated exception-chain requirements to carry error type, output carrier, and evidence status. |
-

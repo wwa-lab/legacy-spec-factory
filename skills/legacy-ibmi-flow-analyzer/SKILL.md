@@ -72,15 +72,17 @@ Accept:
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
 
 Each upstream program-analysis should expose the program-chain readiness
-sections from `legacy-ibmi-program-analyzer` v0.2.1 or later:
+sections from `legacy-ibmi-program-analyzer` v0.2.4 or later:
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
+`Routine Logic Details` with routine-local field lineage / carriers and
+routine-local exception closure,
 `Key File & Field Logic` with source identifiers plus business meanings,
 `File I/O` Purpose plus Field Mutation Matrix, `External Calls` with
 dynamic-call resolution status, `Error Code Inventory`, `Exception Closure
 Ledger`, `Routine / Window Data Flow`, `Redundancy Candidate Notes`, and
 `Open Items / Limitations`. If an older approved program-analysis is used,
 the flow must either route back for refresh or record a named SME waiver for
-each missing v0.2.1 detail.
+each missing v0.2.4 detail.
 
 Stop and require clarification if:
 
@@ -375,6 +377,10 @@ to the orchestrator.
      CALL parameters, shared files, data areas, queues, screens, IFS,
      spool, or SME-confirmed manual handoffs. Do not collapse a resolved
      source identifier and business meaning into a plain field label.
+     For program-analyzer v0.2.4 inputs, prefer Routine Logic Details'
+     routine-local field lineage / carrier rows when they provide the
+     source carrier, intermediate variable, output/persisted carrier, or
+     lineage/mutation reference for a cross-program value.
    - Build the **Flow Persistence Matrix** by aggregating each
      program-analysis File I/O Purpose and Field Mutation Matrix into transaction-level
      outcomes:
@@ -414,7 +420,8 @@ to the orchestrator.
    - Trace propagation: does the error abort the whole flow, roll back to
      a checkpoint, log-and-continue, or branch to an error handler?
    - Build an **Exception Propagation Chain** from every upstream Error Code
-     Inventory / Exception Closure Ledger row that affects this flow. Each
+     Inventory / Exception Closure Ledger row and Routine Logic Details'
+     routine-local exception closure row that affects this flow. Each
      row must show source node, observed message ID / error code / return
      code, error type, output carrier, evidence status, propagation carrier,
      caller reaction, skipped/allowed downstream edges, persistence impact,
@@ -606,6 +613,14 @@ No runtime-specific assumptions are embedded in the canonical source.
   - Required flow field, lineage, persistence, and exception tables to
     preserve source identifiers with business meanings where upstream
     program-analysis resolved them
+
+- v0.2.2 (2026-06-02): Program-analysis v0.2.4 routine-local evidence
+  consumption alignment
+  - Required flow analysis to consume Routine Logic Details, routine-local
+    field lineage / carrier rows, and routine-local exception closure rows
+    when building Cross-Program Field Lineage and Exception Propagation Chain
+  - Updated older-program-analysis waiver language from v0.2.1 detail gaps to
+    v0.2.4 detail gaps
 
 - v0.2.0 (2026-06-01): Replayable program-chain hardening
   - Added Flow Replay Path, Cross-Program Field Lineage, Flow
