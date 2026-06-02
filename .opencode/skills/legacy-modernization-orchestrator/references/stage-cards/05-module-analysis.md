@@ -13,20 +13,22 @@ business / SME review artifact before any spec is produced.
 ## Need before starting
 
 - `03_flows/<MODULE-SLUG>/flow-*.md` for every flow (all approved, preferably
-  flow-analyzer v0.2.1 with Flow Replay Path, edge Evidence Source /
-  Resolution, Cross-Program Field Lineage, Flow Persistence Matrix, and
-  Exception Propagation Chain)
+  flow-analyzer v0.2.2 with Flow Replay Path, edge Evidence Source /
+  Resolution, Cross-Program Field Lineage consuming routine-local carrier
+  evidence, Flow Persistence Matrix, and Exception Propagation Chain consuming
+  routine-local exception closure)
 - `02_programs/<MODULE-SLUG>/<OBJ>/program-analysis.md` for every program
-  (preferably program-analyzer v0.2.1 with Call Evidence, key file/field
-  source identifiers plus meanings, File I/O Purpose, dynamic-call resolution,
-  Error Code Inventory, and exception closure)
+  (preferably program-analyzer v0.2.4 with Call Evidence, Routine Logic
+  Details, routine-local carrier/lineage rows, routine-local exception closure,
+  key file/field source identifiers plus meanings, File I/O Purpose,
+  dynamic-call resolution, Error Code Inventory, and exception closure)
 - `01_inventory/inventory.yaml` (approved)
 - SME-confirmed BAU notes for the module (any operational quirks,
   workarounds, undocumented rules)
 
 ## Run
 
-- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.2.1)
+- **Skill:** `legacy-ibmi-module-analyzer` (Implemented v0.2.2)
 - **Manual fallback:** Build the 4 views by hand following
   `docs/module-analysis-model.md` and the templates in
   `skills/legacy-ibmi-module-analyzer/references/`

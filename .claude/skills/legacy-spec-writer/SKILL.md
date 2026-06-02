@@ -55,22 +55,24 @@ Accept:
 
 - **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four
   views at `approved` or `approved_with_non_blocking_tbd`)
-  - Prefer module-analyzer v0.2.1 or later outputs that include Module
+  - Prefer module-analyzer v0.2.2 or later outputs that include Module
     Program-Chain Readiness with edge-resolution coverage, Module Persistence
     & Critical Field Summary with source identifier + business meaning fields,
-    Module Exception & Recovery Summary, View 3 Replay Coverage Summary, and
-    View 4 Module Persistence Matrix / Critical Field Lineage /
-    Exception-Aware Data Risks.
+    routine-local evidence carry-forward, Module Exception & Recovery Summary,
+    View 3 Replay Coverage Summary, and View 4 Module Persistence Matrix /
+    Critical Field Lineage / Exception-Aware Data Risks.
 - **All approved flow analyses** referenced by that module
-  - Prefer flow-analyzer v0.2.1 or later outputs that include Flow Replay Path,
+  - Prefer flow-analyzer v0.2.2 or later outputs that include Flow Replay Path,
     edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow
-    Persistence Matrix with File I/O Purpose, and Exception Propagation Chain.
+    Persistence Matrix with File I/O Purpose, and Exception Propagation Chain
+    consuming routine-local exception closure where available.
 - **All approved program analyses** referenced by those flows
-  - Prefer program-analyzer v0.2.1 or later outputs that include Call Evidence,
-    Logic Decomposition Ledger, Key File & Field Logic with source identifiers
-    plus business meanings, File I/O Purpose, Field Mutation Matrix,
-    dynamic-call resolution status, Error Code Inventory, and Exception
-    Closure Ledger.
+  - Prefer program-analyzer v0.2.4 or later outputs that include Call Evidence,
+    Routine Logic Details with routine-local field lineage / carriers and
+    routine-local exception closure, Logic Decomposition Ledger, Key File &
+    Field Logic with source identifiers plus business meanings, File I/O
+    Purpose, Field Mutation Matrix, dynamic-call resolution status, Error Code
+    Inventory, and Exception Closure Ledger.
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
@@ -304,9 +306,10 @@ to the orchestrator. The Forward Handoff Gate
      Evidence Source / Resolution, Flow Persistence Matrix, and Exception
      Propagation Chain (factual statements about what the legacy system does)
    - Cross-check with program analyses' Logic Decomposition Ledger,
-     Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Error
-     Code Inventory, and Exception Closure Ledger where the behavior depends on
-     program-level detail
+     Routine Logic Details, routine-local field lineage / carriers,
+     routine-local exception closure, Key File & Field Logic, File I/O
+     Purpose, Field Mutation Matrix, Error Code Inventory, and Exception
+     Closure Ledger where the behavior depends on program-level detail
    - Each BEH must trace to ≥1 EV-*
    - These are *factual* — what the system does, not why
 
@@ -338,6 +341,9 @@ to the orchestrator. The Forward Handoff Gate
    - Preserve critical legacy field lineage and persistence constraints as
      evidence-backed notes or `TBD-*`; do not reduce field-level behavior to a
      file-level dependency
+   - When program-analyzer v0.2.4 evidence is available, preserve routine-local
+     carrier/lineage rows that explain how a field was calculated, moved
+     through work variables, handed off, or persisted.
 
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
    - `process_flow.steps[]` from the relevant flow's business-visible phases
@@ -354,7 +360,8 @@ to the orchestrator. The Forward Handoff Gate
      SME-reviewed
    - `exceptions[]` from BRD section 8, module Exception & Recovery Summary /
      Exception-Aware Data Risks, flow Exception Propagation Chain, and program
-     Error Code Inventory / Exception Closure Ledger
+     Error Code Inventory / Exception Closure Ledger / routine-local exception
+     closure
    - `open_questions[]` carries any BRD section 1-9 coverage gaps or
      accepted-with-TBD review decisions that remain unresolved
    - Do not copy program nodes or call-chain order directly into
@@ -504,6 +511,13 @@ Synced to all four runtime adapters.
   fields, File I/O Purpose, Error Code Inventory, and exception-chain evidence
   from module / flow / program analysis before producing downstream spec
   content.
+
+- v0.1.6 (2026-06-02): Aligned spec synthesis inputs with
+  program-analyzer v0.2.4 routine-local evidence. Observed behaviors, data
+  model fields, outputs, and exceptions now preserve Routine Logic Details,
+  routine-local carrier/lineage rows, and routine-local exception closure when
+  those details explain field calculations, handoffs, persistence, skipped
+  work, rollback, or visible error outcomes.
 
 - v0.1.4 (2026-06-01): Aligned spec synthesis inputs with analyzer v0.2.0.
   Observed behaviors, outputs, data model fields, and exceptions now prefer

@@ -67,15 +67,20 @@ Accept:
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
   - For code-backed runs, each approved flow should be
-    `legacy-ibmi-flow-analyzer` v0.2.1 or later, or otherwise expose the
+    `legacy-ibmi-flow-analyzer` v0.2.2 or later, or otherwise expose the
     equivalent `Flow Replay Path`, `Cross-Program Field Lineage`,
     `Flow Persistence Matrix` with File I/O Purpose, edge Evidence Source /
-    Resolution, and `Exception Propagation Chain` with Error Code Inventory
-    carry-forward sections.
+    Resolution, and `Exception Propagation Chain` with Error Code Inventory /
+    routine-local exception closure carry-forward sections.
     Older flow artifacts require refresh or a named SME waiver before they
     can support module-level replay, lineage, persistence, or exception
     claims.
 - **Approved program analyses** for every program referenced by those flows
+  - For code-backed runs, prefer program-analyzer v0.2.4 or later where
+    Routine Logic Details include routine-local field lineage / carriers and
+    routine-local exception closure. Use these rows to preserve field
+    calculations, handoffs, skipped work, rollback, and visible error outcomes
+    when flow evidence references the underlying program-level detail.
 - **Approved inventory** with module scope confirmed
 - **BAU notes from SME** — operational rhythm, manual processes,
   exception handling, business context not in code
@@ -111,7 +116,7 @@ Stop and require clarification if:
 - The requested output is a standard code-backed BRD/spec input but in-scope
   flow analyses do not expose replay, field-lineage, persistence, edge
   Evidence Source / Resolution, and exception-chain coverage, and no named
-  SME waiver exists → route back to `legacy-ibmi-flow-analyzer` for v0.2.1
+  SME waiver exists → route back to `legacy-ibmi-flow-analyzer` for v0.2.2
   refresh
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
@@ -586,6 +591,12 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.2.2 (2026-06-02): Aligned module synthesis inputs with
+  program-analyzer v0.2.4 routine-local evidence. View 4 and readiness checks
+  now preserve Routine Logic Details' carrier/lineage and exception closure
+  evidence when it explains critical field calculations, persistence,
+  rollback/skipped work, or module-level exception-aware data risks.
 
 - v0.2.1 (2026-06-02): Aligned module synthesis with flow/program v0.2.1.
   Code-backed module analysis now preserves flow edge Evidence Source /

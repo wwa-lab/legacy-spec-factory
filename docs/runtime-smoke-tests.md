@@ -1101,6 +1101,7 @@ The response must include all of the following:
 - **Analysis Coverage & Scope:** `standard` mode, source index summary, coverage ledger, and no claim that analysis exceeds supplied source coverage
 - **Program Call Map:** RDi-style structural map, not a statement-level flowchart; includes Call Evidence rather than legacy call-tree / call-edge tables
 - **Routine Cards / Deep Read Windows:** `CreditChk` routine card with coverage value `deep_read`; coverage values, if present, use only `indexed_only`, `deep_read`, or `blocked`; Deep Read Windows may use `full-source-read` as the source range/reason for small programs
+- **Routine Logic Details:** `CreditChk` has step-by-step logic, field calculation / assignment rows for `ApprovedAmount` and return decision literals, routine-local field lineage / carrier rows, routine-local exception closure rows, branch outcomes, exits, evidence, and TBDs for unresolved DDS/precision/carrier/exception gaps
 - **Entry Points & Parameters:** CreditChk procedure with (CustID, RequestAmount) parameters and return decision code
 - **Data Touch Map:** CREDFILE lookup and CreditChk output/return carrier, including `ApprovedAmount` if source declares it
 - **Logic Decomposition Ledger:** decision points and business-relevant logic blocks are listed with evidence and no invented purpose
@@ -1109,7 +1110,7 @@ The response must include all of the following:
 - **File I/O:** CREDFILE with CHAIN operation and Purpose; CUSTFILE marked as declared but unused; field-level Field Mutation Matrix is present for any updated/returned fields
 - **External Calls:** None (correctly identifies no external CALLs)
 - **Dynamic call status:** no unresolved dynamic calls are treated as confirmed
-- **Error Code Inventory:** all visible indicators, return codes, message IDs, CPF/MCH/SQL statuses, or user-defined errors are listed with output carrier, downstream effect, and evidence status; not limited to UCC* / LCC* prefixes
+- **Error Code Inventory:** all visible indicators, return codes, message IDs, CPF/MCH/SQL statuses, or user-defined errors are listed with one row per explicit message/status code, code-specific Message Description, output carrier, downstream effect, and evidence status; not limited to UCC* / LCC* prefixes; unresolved descriptions become TBDs instead of grouped summaries
 - **Exception Closure Ledger:** cross-references Error Code Inventory rows and includes generic handlers without inventing specific message IDs
 - **Routine / Window Data Flow:** routine-level field/data movement is captured or named as a TBD
 - **Open Items / Limitations:** centralized blocking/non-blocking gaps are present when needed
@@ -1193,8 +1194,9 @@ Return only:
   `Deep Read Windows`, `Program Call Map` with Call Evidence, `Data Touch Map`,
   Logic Decomposition Ledger, Key File & Field Logic, File I/O Purpose, Field
   Mutation Matrix, dynamic-call resolution status, Error Code Inventory,
-  Exception Closure Ledger, Routine / Window Data Flow, and explicit
-  blocking/non-blocking gaps
+  Exception Closure Ledger, Routine Logic Details with routine-local
+  carrier/lineage and exception closure, Routine / Window Data Flow, and
+  explicit blocking/non-blocking gaps
 - refuses to produce a complete business summary before coverage ledger,
   call/data evidence, and deep-read windows support it
 - does not create or edit files
@@ -1211,9 +1213,10 @@ I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits
 a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry,
 orchestrator), RECON01R (validates transactions), RECON02R (builds exception
 report), RECONSQL (final cross-check with GL ledger via SQL). All four program
-analyses are approved. Help me analyze the complete flow, including data
-exchanges, replay path, cross-program field lineage, persistence outcomes,
-exception propagation, and commit boundaries.
+analyses are approved and include Routine Logic Details with routine-local
+carrier/lineage and exception closure. Help me analyze the complete flow,
+including data exchanges, replay path, cross-program field lineage, persistence
+outcomes, exception propagation, and commit boundaries.
 
 Return the flow analysis with all required sections populated, including
 Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program
@@ -1231,11 +1234,11 @@ The response must include all of the following:
 - **Nodes section:** 4 programs with roles (orchestrator, worker, reporter, data-access), all marked as approved program-analyses
 - **Edges section:** 5 edges including scheduler-fire edge and CALL edges between nodes, all with call sites and conditions
 - **Cross-Program Data Flow:** RUNDATE parameter, shared file TXNLOGPF, shared file GLPOSTPF, spool RECONPRT, DTAQ message, data area with completion flag; rows include carrier, producer, consumer, timing, and state impact
-- **Cross-Program Field Lineage:** RUNDATE, exception count/status, GL posting amount, and checkpoint fields traced across programs and carriers
+- **Cross-Program Field Lineage:** RUNDATE, exception count/status, GL posting amount, and checkpoint fields traced across programs and carriers, using routine-local carrier/lineage rows where available
 - **Flow Persistence Matrix:** GLPOSTPF writes, RECONPRT spool, DTAQ message, data-area checkpoint, skipped writes, and retry/rollback notes captured at field/output level
 - **Branch Points:** RC-driven conditional branches in orchestrator CL program
 - **Error Propagation & Commit Boundaries:** 3 commit boundaries clearly identified, vulnerable windows documented
-- **Exception Propagation Chain:** message IDs / return codes / indicators / SQL statuses, skipped work, persistence impact, and recovery/manual outcome listed for material exception paths
+- **Exception Propagation Chain:** message IDs / return codes / indicators / SQL statuses, routine-local exception triggers, skipped work, persistence impact, and recovery/manual outcome listed for material exception paths
 - **Business Capability Seeds:** SEED-* IDs (not BR-*) for candidate rules like "all transactions for a run date must be reconciled before GL consolidation"
 - **TBDs & Review Checklist:** All blocking TBDs resolved; SME review checklist complete; status = draft or approved (not blocked)
 - No files are created or edited
@@ -1272,17 +1275,17 @@ Return the flow analysis output showing the correct stop/blocking behavior.
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and Error Code Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 For the negative scenario, substitute the missing-program-analysis prompt above into

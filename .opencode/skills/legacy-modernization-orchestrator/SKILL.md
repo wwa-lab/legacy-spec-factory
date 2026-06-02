@@ -331,15 +331,15 @@ for the full table. Common routes:
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
 | Inventory Blocked | Any downstream | **STOP — Inventory Completeness Gate** | N/A (doc) |
-| Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.2.1** |
+| Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.2.4** |
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
-| Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.1** |
-| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.1** |
+| Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** |
+| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.2** |
 | Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
 | Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME discovery review | `legacy-brd-writer` | **Implemented v0.1.7** |
 | Approved BRD Package, post-BRD No-gap / Gap1 / follow-new-system decision | Discovery complete for that item; new system is source of truth | Stop / record disposition outside BRD | Human gate |
 | Approved BRD Package, post-BRD risk assessment or gap analysis open | Resolve disposition before spec-writing | Risk / gap-analysis process, then route back | Human / external gate |
-| Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.4** |
+| Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.6** |
 | Spec Drafted | Validate spec | `legacy-spec-reviewer` | Future (deferred from MVP) |
 | Spec Reviewed (no blocking findings) | Promote to approved | SME approval — not a skill | Human gate |
 | Spec Approved | Equivalence tests | `legacy-equivalence-test-generator` | Future (deferred from MVP) |
@@ -1036,9 +1036,9 @@ This skill coordinates the rest of the reverse chain:
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
-| `legacy-ibmi-program-analyzer` | **Implemented v0.2.1** | Per-program: Program Call Map Call Evidence, source identifier + meaning fields, File I/O Purpose, object deps, dynamic-call resolution, Error Code Inventory, exception closure |
-| `legacy-ibmi-flow-analyzer` | **Implemented v0.2.1** | Per call chain: 7 trigger models; replay path; edge Evidence Source / Resolution; field lineage; persistence matrix with purpose; exception chain; commit boundaries |
-| `legacy-ibmi-module-analyzer` | **Implemented v0.2.1** | 4-view module synthesis plus module replay readiness, edge-resolution coverage, critical field lineage, persistence purpose, and exception recovery summaries per `docs/module-analysis-model.md` |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.2.4** | Per-program: Program Call Map Call Evidence, Routine Logic Details with routine-local lineage / carriers and exception closure, source identifier + meaning fields, File I/O Purpose, object deps, dynamic-call resolution, Error Code Inventory, exception closure |
+| `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** | Per call chain: 7 trigger models; replay path; edge Evidence Source / Resolution; field lineage consuming routine-local carriers, persistence matrix with purpose; exception chain consuming routine-local exception closure; commit boundaries |
+| `legacy-ibmi-module-analyzer` | **Implemented v0.2.2** | 4-view module synthesis plus module replay readiness, edge-resolution coverage, critical field lineage, persistence purpose, and exception recovery summaries per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
 
 ### Layer 1 — Future platforms
@@ -1054,7 +1054,7 @@ contract Layer 2 expects.
 | `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
 | `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
 | `legacy-brd-writer` | **Implemented v0.1.7** | Produce the legacy BRD Package as the legacy-system discovery baseline without old-vs-new comparison or disposition notes |
-| `legacy-spec-writer` | **Implemented v0.1.5** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision and analyzer v0.2.1 evidence consumption |
+| `legacy-spec-writer` | **Implemented v0.1.6** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision and analyzer v0.2.4 routine-local evidence consumption |
 | `legacy-spec-reviewer` | Future (deferred from MVP) | Validate draft spec against gate; until implemented, use spec-writer's review templates with SME |
 | `legacy-equivalence-test-generator` | Planned | Old-vs-new golden master tests |
 | `legacy-html-exporter` | **Implemented v0.1.0** | Optional companion export for stable human-facing Markdown; creates `.html` / `index.html` without changing the source of truth |
@@ -1090,6 +1090,12 @@ From the repository root, use `scripts/sync-skills.sh` to create or check
 runtime copies.
 
 ## Version History
+
+- v0.2.10 (2026-06-02): Aligned routing tables, gates, and stage cards with
+  program-analyzer v0.2.4, flow-analyzer v0.2.2, module-analyzer v0.2.2, and
+  spec-writer v0.1.6 so orchestration checks Routine Logic Details,
+  routine-local lineage/carrier rows, routine-local exception closure, and
+  their downstream flow/module/spec consumption before BRD / spec handoff.
 
 - v0.2.9 (2026-06-02): Aligned routing tables, gates, and stage cards with
   program/flow/module analyzer v0.2.1 contracts so orchestration checks for

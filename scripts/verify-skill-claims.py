@@ -57,7 +57,8 @@ def parse_scorecard_frontmatter(path: Path) -> Claim | None:
             fm[k.strip()] = v.strip()
 
     skill = fm.get("skill", "")
-    if fm.get("status") == "superseded":
+    status = fm.get("status", "")
+    if status == "superseded" or status.startswith("superseded_by"):
         return None  # ignore superseded scorecards
 
     claim = Claim(source=f"scorecard:{path.name}", skill=skill)

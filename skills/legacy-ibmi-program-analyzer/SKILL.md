@@ -220,6 +220,25 @@ to the orchestrator.
 
 4. **Trace Main Control Flow & Logic Ledger**
    - Document procedure call sequence (what calls what, in what order)
+   - For every load-bearing mainline segment, subroutine, procedure, or
+     paragraph, add **Routine Logic Details**. Load-bearing means the routine
+     performs field calculation, validation, downstream-affecting branching,
+     file mutation, external handoff, error/status assignment, display/report
+     output, or queue/message interaction.
+   - In Routine Logic Details, explain each routine's execution trigger,
+     step-by-step logic, field calculations/assignments, branch outcomes,
+     exits, and evidence. Do not summarize a routine as "validation logic" or
+     "amount calculation" without target fields, operands, expressions,
+     branch guards, precision/conversion notes, and business effect.
+   - Within each Routine Logic Details subsection, connect calculated or
+     assigned fields back to data carriers: source file/parameter/queue/screen
+     field, intermediate work variables, output or persisted carrier, and the
+     related Field Lineage / Field Mutation Matrix row when one exists.
+   - Within each Routine Logic Details subsection, close routine-local
+     exceptions: trigger, error/status/message fields, handling action,
+     downstream skip/rollback/output, Error Code Inventory row, and evidence.
+     If no exception path is observed for a routine, state `none observed`
+     rather than leaving the closure implicit.
    - Identify conditional branching:
      - RPGLE: IF, SELECT, indicator-driven branching
      - CLLE: IF, ELSE, GOTO
@@ -396,12 +415,22 @@ to the orchestrator.
      including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
      `UCC*` / `LCC*`, and literal business error codes. Do not limit the
      inventory to shop-local message prefixes.
-   - Build an explicit **Error Code Inventory** with Error Code, Meaning,
-     Error Type, Set By / Source Lines, Trigger Condition, Output Carrier,
-     Downstream Effect, and Evidence Status. Include status codes,
-     response codes, indicator-driven error branches, exception/log output
-     codes, data queue response status values, and message/status fields
-     assigned during validation or file I/O failures.
+   - Build an explicit **Error Code Inventory** with Message / Status Code,
+     Message Description, Error Type, Set By / Source Lines, Trigger
+     Condition, Output Carrier, Downstream Effect, and Evidence Status.
+     Include status codes, response codes, indicator-driven error branches,
+     exception/log output codes, data queue response status values, and
+     message/status fields assigned during validation or file I/O failures.
+   - Create one inventory row per explicit message ID, status code, return
+     code, response value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined
+     code, or generic catch-all token. Do not group multiple message IDs into
+     one row and do not replace individual descriptions with summary labels
+     such as "validation messages" or "call-specific message IDs".
+   - Populate Message Description from message files, source literals,
+     comments, runtime evidence, vendor references, or SME notes. If the
+     description is not available, write
+     `unresolved - message description not available`, mark the row
+     unresolved, and create a TBD / Open Item.
    - If literal code assignments cannot be fully traced, state
      `Error codes unresolved:` with the concrete tracing gap.
    - When a catch-all handler is present (`MONMSG MSGID(*ANY)`, bare
@@ -507,6 +536,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Routine Logic Details explain every load-bearing routine/subroutine/procedure, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
@@ -514,7 +544,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Error handling includes a one-row-per-message/status Error Code Inventory with message descriptions, and closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
@@ -549,3 +579,15 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Renamed the Program Call Map tree-style subsection to auditable `Call Evidence`
   - Required source identifier + business meaning for key fields and variables
   - Added File I/O Purpose, external/dynamic call resolution status, Error Code Inventory, Routine / Window Data Flow, and centralized Open Items / Limitations
+- v0.2.2 (2026-06-02): Error Code Inventory precision tightening
+  - Required one Error Code Inventory row per explicit message ID, status code, return code, response value, SQLSTATE, or generic catch-all token
+  - Renamed the inventory description column to `Message Description` and required description evidence or an unresolved TBD
+  - Explicitly forbids grouped message-family summaries such as "validation messages" in place of per-message rows
+- v0.2.3 (2026-06-02): Per-routine logic detail tightening
+  - Added required Routine Logic Details for each load-bearing routine, subroutine, procedure, paragraph, or mainline segment
+  - Required field calculation / assignment rows with target fields, expressions, operands, branch guards, precision/conversion notes, business effect, and evidence
+  - Forbids compressing subroutine logic into generic summaries such as "validation logic" or "amount calculation"
+- v0.2.4 (2026-06-02): Routine-local lineage and exception closure tightening
+  - Added routine-local field lineage / carrier rows so calculations connect source carrier, intermediate variables, output/persisted carrier, and lineage/mutation references
+  - Added routine-local exception closure rows for trigger, error/status/message fields, handling action, downstream skip/rollback/output, and Error Code Inventory link
+  - Tightened subroutine output to match the program-single to program-chain principles for data-source preservation and exception closure

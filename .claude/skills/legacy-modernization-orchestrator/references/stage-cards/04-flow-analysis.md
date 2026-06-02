@@ -14,7 +14,11 @@ scheduler, API/remote.
 ## Need before starting
 
 - `02_programs/<MODULE>/<OBJ>/program-analysis.md` for every program the
-  flow touches (all at `approved` or `approved_with_non_blocking_tbd`)
+  flow touches (all at `approved` or `approved_with_non_blocking_tbd`;
+  prefer program-analyzer v0.2.4 outputs with Routine Logic Details,
+  routine-local carrier/lineage rows, routine-local exception closure,
+  File I/O Purpose, source identifier + business meaning fields, and Error
+  Code Inventory)
 - `01_inventory/inventory.yaml` (approved)
 - The trigger artifact for this flow: the menu, scheduler entry, DB trigger
   binding, API surface, or batch JOBSCDE entry
@@ -22,7 +26,7 @@ scheduler, API/remote.
 
 ## Run
 
-- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.2.1)
+- **Skill:** `legacy-ibmi-flow-analyzer` (Implemented v0.2.2)
 - **Manual fallback:** Use the flow skeleton in
   `skills/legacy-ibmi-flow-analyzer/references/` and synthesize across the
   per-program analyses
@@ -44,6 +48,10 @@ Lineage, Branch Points, Flow Persistence Matrix, UI Surfaces, Error Propagation
 Edges must carry Evidence Source + Resolution when derived from upstream
 program Call Evidence, and data/lineage/persistence rows must preserve source
 identifier + business meaning pairs where program-analysis resolved them.
+When program-analysis v0.2.4 evidence is present, Cross-Program Field Lineage
+must consume routine-local carrier/lineage rows where available, and Exception
+Propagation Chain must consume routine-local exception closure alongside Error
+Code Inventory / Exception Closure Ledger evidence.
 
 ## Gate before advancing
 
@@ -53,11 +61,15 @@ identifier + business meaning pairs where program-analysis resolved them.
 - **Check:** `flow-*.md` files cover every named transaction the SME lists
   for this module, and each approved flow exposes Flow Replay Path,
   edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow
-  Persistence Matrix with Purpose, and Exception Propagation Chain
+  Persistence Matrix with Purpose, and Exception Propagation Chain. Where
+  upstream program-analysis v0.2.4 rows exist, the flow must preserve
+  routine-local carrier/lineage and exception-closure evidence or name the
+  missing detail as a `TBD-*`.
 - **Blocks if:** a known business transaction has no flow, OR any flow is
   at `status: draft` with money / inventory / compliance impact, OR a
   code-backed flow lacks replay / edge-resolution / lineage / persistence /
-  exception-chain coverage without a named waiver
+  exception-chain / routine-local evidence carry-forward coverage without a
+  named waiver
 
 ## SME action
 

@@ -486,6 +486,33 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.7 (2026-06-02): Tightened downstream validation for program-analyzer
+  v0.2.4 consumption. Flow validation now checks that Cross-Program Field
+  Lineage consumes routine-local carrier rows where available and Exception
+  Propagation Chain consumes routine-local exception closure alongside Error
+  Code Inventory and Exception Closure Ledger.
+
+- v0.1.6 (2026-06-02): Tightened program-analysis validation for
+  routine-local lineage and exception closure. The validator now checks that
+  Routine Logic Details connect field calculations to source/output carriers,
+  lineage or mutation rows, and close routine-level exception paths with
+  triggers, error/status/message fields, handling action, downstream
+  skip/rollback/output, Error Code Inventory links, evidence, and TBDs for
+  unresolved carrier or exception gaps.
+
+- v0.1.5 (2026-06-02): Tightened program-analysis validation for per-routine
+  logic detail. The validator now checks that every load-bearing routine,
+  subroutine, procedure, paragraph, or mainline segment has Routine Logic
+  Details with step-by-step logic, field calculation / assignment rows, branch
+  outcomes, exits, evidence, and TBDs for unresolved operands, precision, or
+  branch priority.
+
+- v0.1.4 (2026-06-02): Tightened program-analysis validation for Error Code
+  Inventory precision. The validator now treats grouped message-ID rows and
+  family-level descriptions as blocking when the program contract requires one
+  row per explicit message/status code with a code-specific Message
+  Description or unresolved TBD.
+
 - v0.1.3 (2026-06-02): Aligned validation checklists with
   program-analyzer v0.2.1 and flow-analyzer v0.2.1 contracts. Program
   validation now checks Call Evidence, source identifier + business meaning

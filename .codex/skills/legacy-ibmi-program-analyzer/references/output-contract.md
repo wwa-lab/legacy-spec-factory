@@ -365,6 +365,97 @@ field.
 
 ---
 
+## Routine Logic Details Section
+
+Routine Logic Details are required for every load-bearing routine, procedure,
+paragraph, or mainline segment with observed business logic, field
+calculation, state mutation, external handoff, error/status assignment, display
+message, report output, or branch that changes downstream behavior. Routine
+Cards summarize coverage; Routine Logic Details explain what the routine
+actually does.
+
+```markdown
+## Routine Logic Details
+
+### SR120 ValidateExposure
+
+**Execution trigger:** Called from MAIN after customer record is found and
+transaction amount is loaded.
+
+**Step-by-step logic:**
+1. Read `TRAN_AMT` (transaction amount) and `CUST_BAL` (customer balance).
+2. Calculate `TMP_CUST_AMT = CUST_BAL - TRAN_AMT`.
+3. If `TMP_CUST_AMT < 0`, set denial fields and return before the update path.
+4. Otherwise leave `TMP_CUST_AMT` available for the later CUST_MAST update.
+
+**Field calculations and assignments:**
+
+| Target Field / Variable | Calculation / Assignment | Source Operands | Branch / Guard | Precision / Conversion | Business Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `TMP_CUST_AMT` (post-transaction balance) | `CUST_BAL - TRAN_AMT` | `CUST_BAL` (customer balance), `TRAN_AMT` (transaction amount) | always before denial check | packed decimal 9P2 to 9P2; no rounding observed | feeds insufficient-balance branch and later persisted balance | EV-CREDIT-CHECK-014 |
+| `ERR_CD` (error code) | literal `D003` | constant `D003` | `TMP_CUST_AMT < 0` | N/A | returned denial message code | EV-CREDIT-CHECK-015 |
+| `APPROVED_AMT` (approved amount) | `TRAN_AMT` | `TRAN_AMT` (transaction amount) | `TMP_CUST_AMT >= 0` | same scale as input | authorizes requested amount | EV-CREDIT-CHECK-016 |
+
+**Routine field lineage / carriers:**
+
+| Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| `TMP_CUST_AMT` (post-transaction balance) | `CUST_MAST.CUST_BAL` (customer balance), `TRAN_AMT` parameter | `TMP_CUST_AMT` | `CUST_MAST.CUST_BAL` update in SR210 | LIN-CREDIT-CHECK-004 / CUST_MAST mutation row | EV-CREDIT-CHECK-014 |
+| `ERR_CD` (error code) | literal `D003` | `ERR_CD` | return parameter / message field | Error Code Inventory row `D003` | EV-CREDIT-CHECK-015 |
+| `APPROVED_AMT` (approved amount) | `TRAN_AMT` parameter | `APPROVED_AMT` | return parameter | LIN-CREDIT-CHECK-005 | EV-CREDIT-CHECK-016 |
+
+**Branch outcomes:**
+
+| Branch / Condition | Fields Set / Actions | Exit / Next Step | Evidence |
+| --- | --- | --- | --- |
+| `TMP_CUST_AMT < 0` | `ERR_FLAG='Y'`, `ERR_CD='D003'` | RETURN; skips CUST_MAST update | EV-CREDIT-CHECK-015 |
+| `TMP_CUST_AMT >= 0` | no error fields set | continue to SR210 update path | EV-CREDIT-CHECK-016 |
+
+**Routine exception closure:**
+
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| insufficient balance business guard | `TMP_CUST_AMT < 0` | `ERR_FLAG='Y'`, `ERR_CD='D003'`, `ERR_MSG='balance insufficient'` | RETURN | skips CUST_MAST update and downstream posting | `D003` | EV-CREDIT-CHECK-015 |
+| no exception observed on approved branch | `TMP_CUST_AMT >= 0` | none | continue | update path remains eligible | N/A | EV-CREDIT-CHECK-016 |
+
+**Unresolved routine logic:** None.
+```
+
+**Requirements:**
+- Include one `### <routine>` subsection for each load-bearing routine,
+  procedure, paragraph, or mainline segment. Load-bearing means it performs
+  field calculation, validation, branching that changes downstream behavior,
+  file mutation, external handoff, error/status assignment, display/report
+  output, or queue/message interaction.
+- Technical utility routines may be omitted only when Routine Cards mark them
+  `indexed_only` and Open Items / Limitations explain why no business/state
+  claims depend on them.
+- Step-by-step logic must preserve branch order, nested conditions, loop
+  scope, early exits, fallback paths, and calls that change behavior.
+- Field calculations and assignments must list each critical target field or
+  variable, its exact expression or literal assignment, source operands,
+  branch/guard, precision/conversion behavior when visible, business effect,
+  and evidence.
+- Routine field lineage / carriers must connect calculated or assigned fields
+  to source carriers, intermediate variables, output/persisted carriers, and
+  the matching Field Lineage / Field Mutation Matrix row where one exists. If a
+  field is local-only or not persisted, state `N/A-no persistence`; do not omit
+  the carrier relationship.
+- Routine exception closure must capture each business, parameter, I/O,
+  external-call, return-code, indicator, or generic handler path visible inside
+  the routine. Include trigger, error/status/message fields, handling action,
+  skipped downstream write/call/output or rollback behavior, Error Code
+  Inventory link, and evidence. If a routine has no observed exception path,
+  write one `none observed` row with evidence or mark the gap as TBD.
+- Do not use generic descriptions such as "calculates amount", "validates
+  fields", or "sets status" without target fields, operands, conditions, and
+  evidence.
+- If the expression, operand meaning, constant meaning, precision behavior, or
+  branch priority is unclear, keep the row and mark the unresolved part with a
+  TBD instead of omitting the calculation.
+
+---
+
 ## Deep Read Windows Section
 
 Deep-read windows document the exact source windows used for semantic
@@ -894,12 +985,12 @@ Use one or more of these role labels:
 
 ### Error Code Inventory
 
-| Error Code | Meaning | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
+| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| D003 | balance insufficient; transaction blocked | validation_error | `ERR_CD` assignment, SR120 lines 520-525 | TMP_CUST_AMT < 0 | return parameter / message field | blocks account update and downstream posting | confirmed |
-| E501 | account update failed | file_io_error | `TRANS_ERR_CD` assignment after UPDATE, lines 610-640 | %ERROR after UPDATE CUST_MAST | status field | caller receives transaction error; no further writes observed | confirmed |
-| CPF4101 | file not found/open failure | file_io_error | ON-ERROR CPF4101, SR900 lines 900-930 | OPEN CREDFILE failure | display/message API | stops processing before reads | confirmed |
-| *ANY / generic | catch-all only; no specific message inferred | unresolved | MONMSG MSGID(*ANY) or bare ON-ERROR | unexpected system exception | exception-log path or return parameter | generic coverage only; exact message ID unresolved | unresolved |
+| D003 | Balance would become negative; transaction is blocked | validation_error | `ERR_CD` assignment, SR120 lines 520-525 | TMP_CUST_AMT < 0 | return parameter / message field | blocks account update and downstream posting | confirmed |
+| E501 | Customer master update failed | file_io_error | `TRANS_ERR_CD` assignment after UPDATE, lines 610-640 | %ERROR after UPDATE CUST_MAST | status field | caller receives transaction error; no further writes observed | confirmed |
+| CPF4101 | File not found or file open failed | file_io_error | ON-ERROR CPF4101, SR900 lines 900-930 | OPEN CREDFILE failure | display/message API | stops processing before reads | confirmed |
+| *ANY / generic | Generic catch-all handler; exact message ID unresolved | unresolved | MONMSG MSGID(*ANY) or bare ON-ERROR | unexpected system exception | exception-log path or return parameter | generic coverage only; exact message ID unresolved | unresolved |
 
 **Error codes unresolved:** status/message fields were detected, but literal code assignments were not fully traced.
 
@@ -926,11 +1017,20 @@ Use one or more of these role labels:
 - Columns: exception/error condition, trigger/source, message ID/error
   code/return code, detection mechanism, fields set/messages sent,
   handling action, downstream impact, evidence.
-- One Error Code Inventory row per observed explicit error code, status
-  code, message ID, response code, indicator-driven error branch,
-  exception/log output code, data queue response status value, or
-  generic catch-all token.
-- Columns: Error Code, Meaning, Error Type, Set By / Source Lines,
+- One Error Code Inventory row per observed explicit message ID, error code,
+  status code, response code, return code, SQLSTATE, CPF/MCH/RNX/CPD message,
+  indicator-driven error branch, exception/log output code, data queue response
+  status value, or generic catch-all token.
+- Do not group multiple message IDs into one inventory row. A row containing
+  `UCC0120, UCC5127, UCC5135` with a family-level description such as
+  "validation messages" is invalid; create separate rows and duplicate the
+  branch/source context as needed.
+- Each row must include a `Message Description` for that specific code. The
+  description must come from a message file, source literal, source comment,
+  runtime evidence, vendor reference, or SME note. If no description is
+  available, write `unresolved - message description not available`, mark
+  Evidence Status `unresolved`, and create an Open Item / TBD.
+- Columns: Message / Status Code, Message Description, Error Type, Set By / Source Lines,
   Trigger Condition, Output Carrier, Downstream Effect, Evidence Status.
 - Include all observed message families: `CPF*`, `CPD*`, `MCH*`,
   `RNX*`, `SQL*`, shop-local `UCC*` / `LCC*`, literal business error

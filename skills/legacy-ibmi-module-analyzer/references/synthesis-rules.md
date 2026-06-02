@@ -170,8 +170,10 @@ For each pair of flows (A, B):
 - Every program's Data Touch Map and Object Dependencies sections (from
   each `program-analysis-<OBJ-ID>.md`)
 - Every program's Key File & Field Logic, File I/O Purpose, Field Mutation
-  Matrix, and Error Code Inventory where supplied by program-analyzer v0.2.1;
-  preserve source identifiers plus business meanings for critical fields
+  Matrix, Error Code Inventory, and Routine Logic Details routine-local
+  carrier/lineage and exception closure rows where supplied by
+  program-analyzer v0.2.4; preserve source identifiers plus business meanings
+  for critical fields
 - inventory.yaml (for cross-reference)
 
 ### Aggregation Rules

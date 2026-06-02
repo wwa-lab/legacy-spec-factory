@@ -3,7 +3,8 @@ skill: legacy-ibmi-module-analyzer
 scorecard_version: v0.2.1
 static_score: 9.58
 decision: repo-ready
-status: current
+status: superseded_by_v0.2.2
+superseded_by: docs/reviews/legacy-ibmi-module-analyzer-v0.2.2-scorecard.md
 last_verified: 2026-06-02
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-02 }
@@ -77,4 +78,3 @@ Decision: **repo-ready, not field-pilot ready**
 | MOD-REV-031 | Module readiness could ignore unresolved dynamic call edges. | Added edge-resolution coverage to module readiness. |
 | MOD-REV-032 | Module data summaries could lose source identifier + meaning pairs. | Updated critical field summaries and examples to preserve field identity. |
 | MOD-REV-033 | Module exception summaries could flatten error inventory details. | Added error type and output carrier carry-forward. |
-
