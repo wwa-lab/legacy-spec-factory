@@ -70,17 +70,19 @@ Accept:
     `legacy-ibmi-flow-analyzer` v0.2.2 or later, or otherwise expose the
     equivalent `Flow Replay Path`, `Cross-Program Field Lineage`,
     `Flow Persistence Matrix` with File I/O Purpose, edge Evidence Source /
-    Resolution, and `Exception Propagation Chain` with Error Code Inventory /
+    Resolution, and `Exception Propagation Chain` with Validation Logic /
     routine-local exception closure carry-forward sections.
     Older flow artifacts require refresh or a named SME waiver before they
     can support module-level replay, lineage, persistence, or exception
     claims.
 - **Approved program analyses** for every program referenced by those flows
-  - For code-backed runs, prefer program-analyzer v0.2.4 or later where
-    Routine Logic Details include routine-local field lineage / carriers and
-    routine-local exception closure. Use these rows to preserve field
-    calculations, handoffs, skipped work, rollback, and visible error outcomes
-    when flow evidence references the underlying program-level detail.
+  - For code-backed runs, prefer program-analyzer v0.2.5 or later where
+    Routine Logic Details include conditioned calculation blocks,
+    routine-local field lineage / carriers, and routine-local exception
+    closure, with front-loaded Validation Logic. Use these rows to preserve
+    field calculations, handoffs, skipped
+    work, rollback, and visible error outcomes when flow evidence references
+    the underlying program-level detail.
 - **Approved inventory** with module scope confirmed
 - **BAU notes from SME** — operational rhythm, manual processes,
   exception handling, business context not in code
@@ -403,7 +405,7 @@ to the orchestrator.
      Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
      Propagation Chain sections, backed by every program's Data Touch Map,
      Object Dependencies, File I/O Purpose, Field Mutation Matrix, Key File &
-     Field Logic, and Error Code Inventory.**
+     Field Logic, and Validation Logic.**
    - Compute data lifecycle per object (created / updated / read /
      archived / purged) by walking flows
    - Compute coupling score (number of flows touching each object)
@@ -593,15 +595,16 @@ Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 ## Version History
 
 - v0.2.2 (2026-06-02): Aligned module synthesis inputs with
-  program-analyzer v0.2.4 routine-local evidence. View 4 and readiness checks
-  now preserve Routine Logic Details' carrier/lineage and exception closure
-  evidence when it explains critical field calculations, persistence,
-  rollback/skipped work, or module-level exception-aware data risks.
+  program-analyzer v0.2.5 routine-local evidence. View 4 and readiness checks
+  now preserve Routine Logic Details' conditioned calculation blocks,
+  carrier/lineage, and exception closure evidence when it explains critical
+  field calculations, persistence, rollback/skipped work, or module-level
+  exception-aware data risks.
 
 - v0.2.1 (2026-06-02): Aligned module synthesis with flow/program v0.2.1.
   Code-backed module analysis now preserves flow edge Evidence Source /
   Resolution, source identifier + business meaning field pairs, File I/O
-  Purpose, Error Code Inventory carry-forward, and upstream Open Items /
+  Purpose, Validation Logic carry-forward, and upstream Open Items /
   Limitations when aggregating readiness, data, exception, and BRD crosswalk
   outputs.
 

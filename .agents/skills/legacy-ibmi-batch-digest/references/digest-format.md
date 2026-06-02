@@ -139,7 +139,7 @@ Limitations`. Pick **top 3** by significance:
    `customer status`, `inventory`, `price`, `discount`, `payment`)
 2. Rows in "External Calls" / Program Call Map Call Evidence with `TBD-*`,
    `unresolved`, or `needs_sme_review` dynamic-call resolution
-3. Rows in "Error Code Inventory" with `needs_sme_review` or unresolved
+3. Rows in "Validation Logic" with `needs_sme_review` or unresolved
    output carrier / downstream effect
 4. Any other `needs_sme_review` row
 

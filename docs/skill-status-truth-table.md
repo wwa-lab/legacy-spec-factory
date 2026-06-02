@@ -37,7 +37,7 @@ Last regenerated: 2026-06-02
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
-| `legacy-ibmi-program-analyzer` | v0.2.4 | 9.64 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-program-analyzer-v0.2.4-scorecard.md) |
+| `legacy-ibmi-program-analyzer` | v0.2.5 | 9.66 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-program-analyzer-v0.2.5-scorecard.md) |
 | `legacy-ibmi-data-model-analyzer` | v0.1.0 | 9.32 | repo-ready | passed | synced | passed | 2026-05-16 | [link](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.2.2 | 9.62 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md) |
@@ -51,7 +51,7 @@ Last regenerated: 2026-06-02
 | `legacy-runtime-matrix-tester` | v0.1.0 | 9.56 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-runtime-matrix-tester-v0.1.0-scorecard.md) |
 | `legacy-golden-master-test-planner` | v0.1.0 | 9.59 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-golden-master-test-planner-v0.1.0-scorecard.md) |
 | `legacy-step-contract` | v0.1.2 | 9.52 | field-pilot ready | passed | passed | passed | 2026-05-29 | [link](reviews/legacy-step-contract-v0.1.2-scorecard.md) |
-| `legacy-step-validator` | v0.1.7 | 9.59 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-step-validator-v0.1.7-scorecard.md) |
+| `legacy-step-validator` | v0.1.8 | 9.60 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-step-validator-v0.1.8-scorecard.md) |
 | `legacy-html-exporter` | v0.1.0 | 9.31 | repo-ready | passed | failed | passed | 2026-05-19 | [link](reviews/legacy-html-exporter-v0.1.0-scorecard.md) |
 
 ## Summary

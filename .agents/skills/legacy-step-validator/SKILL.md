@@ -486,6 +486,16 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.8 (2026-06-02): Tightened program-analysis validation for
+  conditioned calculation, outcome reverse-trace coverage, and front-loaded
+  Validation Logic. The validator now checks that Routine Logic Details include
+  source-backed conditioned calculation block rows and outcome reverse trace
+  rows for material RPG conditioning indicators / condition groups, IF-ELSE,
+  CASE, loop-guarded, or equivalent guarded calculation chains. It also checks
+  that Validation Logic rows appear before Deep Read Windows and link material
+  message/status/error outcomes back to the Routine Logic Details, conditioned
+  calculation block, reverse trigger chain, or a named source-backed TBD.
+
 - v0.1.7 (2026-06-02): Tightened downstream validation for program-analyzer
   v0.2.4 consumption. Flow validation now checks that Cross-Program Field
   Lineage consumes routine-local carrier rows where available and Exception

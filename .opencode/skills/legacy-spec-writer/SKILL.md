@@ -67,12 +67,13 @@ Accept:
     Persistence Matrix with File I/O Purpose, and Exception Propagation Chain
     consuming routine-local exception closure where available.
 - **All approved program analyses** referenced by those flows
-  - Prefer program-analyzer v0.2.4 or later outputs that include Call Evidence,
-    Routine Logic Details with routine-local field lineage / carriers and
-    routine-local exception closure, Logic Decomposition Ledger, Key File &
-    Field Logic with source identifiers plus business meanings, File I/O
-    Purpose, Field Mutation Matrix, dynamic-call resolution status, Error Code
-    Inventory, and Exception Closure Ledger.
+  - Prefer program-analyzer v0.2.5 or later outputs that include Call Evidence,
+    Routine Logic Details with conditioned calculation blocks, routine-local
+    field lineage / carriers and routine-local exception closure, Logic
+    Decomposition Ledger, Key File & Field Logic with source identifiers plus
+    business meanings, File I/O Purpose, Field Mutation Matrix, dynamic-call
+    resolution status, front-loaded Validation Logic, and Exception Closure
+    Ledger.
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
@@ -308,7 +309,7 @@ to the orchestrator. The Forward Handoff Gate
    - Cross-check with program analyses' Logic Decomposition Ledger,
      Routine Logic Details, routine-local field lineage / carriers,
      routine-local exception closure, Key File & Field Logic, File I/O
-     Purpose, Field Mutation Matrix, Error Code Inventory, and Exception
+     Purpose, Field Mutation Matrix, Validation Logic, and Exception
      Closure Ledger where the behavior depends on program-level detail
    - Each BEH must trace to ≥1 EV-*
    - These are *factual* — what the system does, not why
@@ -341,9 +342,10 @@ to the orchestrator. The Forward Handoff Gate
    - Preserve critical legacy field lineage and persistence constraints as
      evidence-backed notes or `TBD-*`; do not reduce field-level behavior to a
      file-level dependency
-   - When program-analyzer v0.2.4 evidence is available, preserve routine-local
-     carrier/lineage rows that explain how a field was calculated, moved
-     through work variables, handed off, or persisted.
+   - When program-analyzer v0.2.5 evidence is available, preserve conditioned
+     calculation blocks and routine-local carrier/lineage rows that explain
+     how a field was calculated, moved through work variables, handed off, or
+     persisted.
 
 7. **Define Process Flow, Inputs, Outputs, Exceptions**
    - `process_flow.steps[]` from the relevant flow's business-visible phases
@@ -360,7 +362,7 @@ to the orchestrator. The Forward Handoff Gate
      SME-reviewed
    - `exceptions[]` from BRD section 8, module Exception & Recovery Summary /
      Exception-Aware Data Risks, flow Exception Propagation Chain, and program
-     Error Code Inventory / Exception Closure Ledger / routine-local exception
+     Validation Logic / Exception Closure Ledger / routine-local exception
      closure
    - `open_questions[]` carries any BRD section 1-9 coverage gaps or
      accepted-with-TBD review decisions that remain unresolved
@@ -508,16 +510,17 @@ Synced to all four runtime adapters.
 - v0.1.5 (2026-06-02): Aligned spec synthesis inputs with analyzer v0.2.1.
   Observed behaviors, outputs, data model fields, and exceptions now preserve
   edge Evidence Source / Resolution, source identifier + business meaning
-  fields, File I/O Purpose, Error Code Inventory, and exception-chain evidence
+  fields, File I/O Purpose, Validation Logic, and exception-chain evidence
   from module / flow / program analysis before producing downstream spec
   content.
 
 - v0.1.6 (2026-06-02): Aligned spec synthesis inputs with
-  program-analyzer v0.2.4 routine-local evidence. Observed behaviors, data
+  program-analyzer v0.2.5 routine-local evidence. Observed behaviors, data
   model fields, outputs, and exceptions now preserve Routine Logic Details,
-  routine-local carrier/lineage rows, and routine-local exception closure when
-  those details explain field calculations, handoffs, persistence, skipped
-  work, rollback, or visible error outcomes.
+  conditioned calculation blocks, routine-local carrier/lineage rows, and
+  routine-local exception closure when those details explain field
+  calculations, handoffs, persistence, skipped work, rollback, or visible error
+  outcomes.
 
 - v0.1.4 (2026-06-01): Aligned spec synthesis inputs with analyzer v0.2.0.
   Observed behaviors, outputs, data model fields, and exceptions now prefer

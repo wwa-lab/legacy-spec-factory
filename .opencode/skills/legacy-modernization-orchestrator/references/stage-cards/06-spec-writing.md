@@ -27,10 +27,10 @@ You produce **one spec per `CAP-*`** capability seed listed in
   - flow-analyzer v0.2.2 rows (`REPLAY-*`, `LINEAGE-*`, `PERSIST-*`,
     `EXCHAIN-*`, edge Evidence Source / Resolution, Cross-Program Field
     Lineage, Flow Persistence Matrix, and Exception Propagation Chain)
-  - program-analyzer v0.2.4 rows (Routine Logic Details, routine-local
-    carrier/lineage rows, routine-local exception closure, File I/O Purpose,
-    source identifier + business meaning fields, Error Code Inventory, and
-    Exception Closure Ledger)
+  - program-analyzer v0.2.5 rows (Routine Logic Details, conditioned
+    calculation blocks, routine-local carrier/lineage rows, routine-local
+    exception closure, File I/O Purpose, source identifier + business meaning
+    fields, Validation Logic, and Exception Closure Ledger)
 - SME availability for `inferred_business_rule` confirmation and the
   `draft → in_review → approved` transitions
 

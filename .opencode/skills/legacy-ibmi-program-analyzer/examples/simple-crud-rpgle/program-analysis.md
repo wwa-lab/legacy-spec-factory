@@ -134,12 +134,27 @@ caller not provided in this single-program analysis.
 | `ApprovedAmount` (approved amount) | `CREDLIMIT` | `CREDLIMIT` (credit limit; inferred) | `RequestAmount > CREDLIMIT` | DDS pending for `CREDLIMIT`; output scale visible as 7P2 | caller receives capped approved amount | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
 | return code (approval decision) | literal `'D'` | constant `'D'` | `RequestAmount > CREDLIMIT` | char 1 | caller receives denial outcome | EV-CREDIT-VALIDATION-001 |
 
+**Conditioned calculation blocks:**
+
+| Block / Guard | Guard Type | Source Range | Guarded Statement Order | Calculation Chain | Final Output / Error Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `%found(CREDFILE)` false | RPG `%FOUND` guard | lines 32-34 | 1. test record-not-found; 2. set `ApprovedAmount=0`; 3. return `'D'` | `CustID -> CREDFILE CHAIN not found -> ApprovedAmount=0 -> return 'D'` | caller receives denial with zero approved amount; no mutation | EV-CREDIT-VALIDATION-001 |
+| `RequestAmount <= CREDLIMIT` | RPG IF branch | lines 35-37 | 1. compare request against limit; 2. set `ApprovedAmount=RequestAmount`; 3. return `'A'` | `RequestAmount + CREDLIMIT -> comparison -> ApprovedAmount=RequestAmount -> return 'A'` | caller receives full approved request and approval code | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| `RequestAmount > CREDLIMIT` | RPG ELSE branch | lines 38-40 | 1. fall through after failed approval comparison; 2. set `ApprovedAmount=CREDLIMIT`; 3. return `'D'` | `CREDFILE.CREDLIMIT -> ApprovedAmount -> return 'D'` | caller receives capped amount and denial code | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+
+**Outcome reverse traces:**
+
+| Outcome Code / Field | Reverse Trigger Chain | Guard / Conditioned Block | Source Operands / Carriers | Downstream Effect | Cross-References | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| return code `'A'` | `RequestAmount <= CREDLIMIT -> ApprovedAmount=RequestAmount -> return 'A'` | conditioned block `RequestAmount <= CREDLIMIT` | `RequestAmount` parameter, `CREDFILE.CREDLIMIT` | caller receives approval outcome | Validation Logic `'A'`; branch outcome approval | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+| return code `'D'` | `%found(CREDFILE)` false -> `ApprovedAmount=0` -> return `'D'`; or `RequestAmount > CREDLIMIT -> ApprovedAmount=CREDLIMIT -> return 'D'` | conditioned blocks `%found(CREDFILE)` false and `RequestAmount > CREDLIMIT` | `CustID`, `CREDFILE`, `RequestAmount`, `CREDFILE.CREDLIMIT` | caller receives denial outcome | Validation Logic `'D'`; routine exception closure denial rows | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
+
 **Routine field lineage / carriers:**
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `ApprovedAmount` (approved amount) | `RequestAmount` parameter / `CREDFILE.CREDLIMIT` (credit limit; inferred) / literal 0 | none | CreditChk output parameter | LIN-CREDIT-VALIDATION-001, LIN-CREDIT-VALIDATION-002 | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
-| return code (approval decision) | literals `'A'` and `'D'` | none | CreditChk return value | Error Code Inventory rows `'A'`, `'D'`; N/A-no persistence | EV-CREDIT-VALIDATION-001 |
+| return code (approval decision) | literals `'A'` and `'D'` | none | CreditChk return value | Validation Logic rows `'A'`, `'D'`; N/A-no persistence | EV-CREDIT-VALIDATION-001 |
 | `CREDLIMIT` (credit limit; inferred) | `CREDFILE` record field; DDS pending | none | read-only comparison operand | LIN-CREDIT-VALIDATION-002 | EV-CREDIT-VALIDATION-002 |
 
 **Branch outcomes:**
@@ -152,7 +167,7 @@ caller not provided in this single-program analysis.
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | customer credit record not found | `%found(CREDFILE)` false | `ApprovedAmount=0`; return code `'D'`; no message text observed | return to caller | no file mutation observed; caller receives denial | `'D'` | EV-CREDIT-VALIDATION-001 |
 | requested amount exceeds credit limit | `RequestAmount > CREDLIMIT` | `ApprovedAmount=CREDLIMIT`; return code `'D'`; no message text observed | return to caller | no file mutation observed; caller receives capped denial | `'D'` | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
@@ -160,6 +175,18 @@ caller not provided in this single-program analysis.
 
 **Unresolved routine logic:** TBD-CREDIT-VALIDATION-001: Confirm CREDFILE DDS
 field list and `CREDLIMIT` type.
+
+---
+
+## Validation Logic
+
+| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 'A' | approval decision | response_status | return literal, lines 35-36 | RequestAmount <= CREDLIMIT | Routine Logic Details `CreditChk` -> outcome reverse trace `'A'`; `RequestAmount <= CREDLIMIT -> ApprovedAmount=RequestAmount -> 'A'` | return parameter | caller receives approval outcome | confirmed |
+| 'D' | denial decision | response_status | return literal, lines 31-32 and 38-39 | record not found or RequestAmount > CREDLIMIT | Routine Logic Details `CreditChk` -> outcome reverse trace `'D'`; `%found=false -> ApprovedAmount=0 -> 'D'` or `RequestAmount > CREDLIMIT -> ApprovedAmount=CREDLIMIT -> 'D'` | return parameter | caller receives denial outcome | confirmed |
+
+**Validation logic unresolved:** None for visible return literals; CREDFILE I/O
+exception behavior remains pending SME review.
 
 ---
 
@@ -357,14 +384,10 @@ From `01_inventory/inventory.yaml` `relationships` section.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Record not found (CustID not in CREDFILE) | CHAIN CREDFILE returns not found | return code 'D' | `%found(CREDFILE)` check | ApprovedAmount = 0; no message sent | return 'D' | caller receives denial; no file mutation observed | EV-CREDIT-VALIDATION-001, EV-CREDIT-VALIDATION-002 |
 
-### Error Code Inventory
+### Validation Logic Cross-Reference
 
-| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 'A' | approval decision | response_status | return literal, lines 35-36 | RequestAmount <= CREDLIMIT | return parameter | caller receives approval outcome | confirmed |
-| 'D' | denial decision | response_status | return literal, lines 31-32 and 38-39 | record not found or RequestAmount > CREDLIMIT | return parameter | caller receives denial outcome | confirmed |
-
-**Error codes unresolved:** None for visible return literals; CREDFILE I/O exception behavior remains pending SME review.
+Validation/status/return-code rows are front-loaded in `## Validation Logic`.
+The record-not-found exception row links to Validation Logic row `'D'`.
 
 **Unhandled exceptions:**
 - CHAIN I/O error: No MONITOR block observed. If CREDFILE becomes unavailable (file locked, I/O error), program will abnormally terminate. [medium_confidence, needs_sme_review per TBD]
@@ -436,7 +459,7 @@ Before approval, SME must validate:
 - [X] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior — CREDFILE purpose and key field captured
 - [X] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped — no persisted file mutation observed
 - [X] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence — none present
-- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact — return codes captured; **See TBD-CREDIT-VALIDATION-002** for unhandled I/O error intent
+- [ ] Validation Logic is front-loaded after Routine Logic Details and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact — return codes captured; **See TBD-CREDIT-VALIDATION-002** for unhandled I/O error intent
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked — `CREDLIMIT` meaning inferred; I/O exception handling pending
 - [X] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules — CUSTFILE declaration marked unknown, not removed

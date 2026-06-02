@@ -123,7 +123,7 @@ them.
 every `flow-<FLOW-SLUG>.md`, backed by flow `Cross-Program Field Lineage`,
 `Flow Persistence Matrix`, and `Exception Propagation Chain` sections; every
 program's `Data Touch Map`, `Object Dependencies`, `Key File & Field Logic`,
-`File I/O Purpose`, `Field Mutation Matrix`, and `Error Code Inventory`; DDS
+`File I/O Purpose`, `Field Mutation Matrix`, and `Validation Logic`; DDS
 definitions from inventory; SME notes on data ownership and retention.
 
 ## View Independence vs Cross-View Linking

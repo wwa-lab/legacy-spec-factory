@@ -165,7 +165,7 @@ Evidence basis: derived call analysis only
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | none observed in mainline | no local MONITOR / return-code check in mainline | none | call `ProcessOrders`; then terminate | exception handling delegated to `ProcessOrders` | N/A | EV-ORDER-BATCH-002 |
 
@@ -197,14 +197,32 @@ Evidence basis: derived call analysis only
 | `ErrorCount` (error count) | `ErrorCount + 1` | current `ErrorCount`, constant 1 | `RC <> 0` after UPDTRISK | numeric counter; no conversion observed | counts external update failure | EV-ORDER-BATCH-009 |
 | `ReturnCode` (batch return code) | literal `-99` | constant `-99` | MONITOR / ON-ERROR | numeric return code | reports generic unexpected batch failure | EV-ORDER-BATCH-007 |
 
+**Conditioned calculation blocks:**
+
+| Block / Guard | Guard Type | Source Range | Guarded Statement Order | Calculation Chain | Final Output / Error Effect | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `CreditStatus = 'D'` | RPG IF branch | lines 48-53 | 1. receive `CreditStatus`; 2. increment `ErrorCount`; 3. set `RC=-1`; 4. skip shipping/risk update for this order | `ValidateCredit return -> CreditStatus='D' -> ErrorCount+1 -> RC=-1` | denied order is counted as error and leaves the loop without `UPDTRISK` | EV-ORDER-BATCH-008 |
+| `RC = 0` after UPDTRISK | RPG IF branch | lines 64-66 | 1. call `UPDTRISK`; 2. test `RC`; 3. increment `OrderCount` | `UPDTRISK RC -> RC=0 -> OrderCount+1` | successful external update counted as processed order | EV-ORDER-BATCH-009 |
+| `RC <> 0` after UPDTRISK | RPG ELSE branch | lines 67-69 | 1. fall through after failed `RC=0`; 2. increment `ErrorCount` | `UPDTRISK RC -> non-zero -> ErrorCount+1` | external update failure counted as error; no success count | EV-ORDER-BATCH-009 |
+| MONITOR / ON-ERROR | RPG exception block | lines 72-79 | 1. trap generic exception; 2. set `ReturnCode=-99`; 3. send operator message; 4. terminate batch path | `unexpected exception -> ReturnCode=-99 -> SNDPGMMSG` | reports generic batch failure and stops current path | EV-ORDER-BATCH-007 |
+
+**Outcome reverse traces:**
+
+| Outcome Code / Field | Reverse Trigger Chain | Guard / Conditioned Block | Source Operands / Carriers | Downstream Effect | Cross-References | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `RC=-1` | `ValidateCredit -> CreditStatus='D' -> ErrorCount+1 -> RC=-1` | conditioned block `CreditStatus = 'D'` | `CreditStatus` returned by `ValidateCredit`, `ErrorCount`, literal `-1` | order counted as error; shipping and risk update skipped | Validation Logic `-1`; Exception Closure denied credit decision | EV-ORDER-BATCH-008 |
+| `OrderCount` increment / RC success | `UPDTRISK RC -> RC=0 -> OrderCount+1` | conditioned block `RC = 0 after UPDTRISK` | UPDTRISK output `RC`, `OrderCount` | successful external risk update counted | Validation Logic `0`; Branch outcome success | EV-ORDER-BATCH-009 |
+| `ErrorCount` increment / non-zero RC | `UPDTRISK RC -> RC<>0 -> ErrorCount+1` | conditioned block `RC <> 0 after UPDTRISK` | UPDTRISK output `RC`, `ErrorCount` | external update failure counted as error | Validation Logic `non-zero RC`; TBD-ORDER-BATCH-003 for RC meanings | EV-ORDER-BATCH-009 |
+| `ReturnCode=-99` | `MONITOR exception -> ReturnCode=-99 -> operator message` | conditioned block MONITOR / ON-ERROR | generic exception, literal `-99` | current batch path terminates | Validation Logic `-99`; Exception Closure generic unexpected batch failure | EV-ORDER-BATCH-007 |
+
 **Routine field lineage / carriers:**
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `ErrorCount` (error count) | `CreditStatus` from `ValidateCredit`; `RC` from UPDTRISK | `ErrorCount` | local batch counter / eventual batch status context | N/A-no persistence; counter affects batch outcome | EV-ORDER-BATCH-008, EV-ORDER-BATCH-009 |
-| `RC` (return code) | literal `-1` or UPDTRISK output parameter | `RC` | work/status field tested by caller logic | Error Code Inventory rows `-1`, `0`, non-zero RC | EV-ORDER-BATCH-006, EV-ORDER-BATCH-008, EV-ORDER-BATCH-009 |
+| `RC` (return code) | literal `-1` or UPDTRISK output parameter | `RC` | work/status field tested by caller logic | Validation Logic rows `-1`, `0`, non-zero RC | EV-ORDER-BATCH-006, EV-ORDER-BATCH-008, EV-ORDER-BATCH-009 |
 | `OrderCount` (successful order count) | `RC` from UPDTRISK | `OrderCount` | local batch counter / eventual batch status context | N/A-no persistence; counter affects batch outcome | EV-ORDER-BATCH-009 |
-| `ReturnCode` (batch return code) | literal `-99` | `ReturnCode` | procedure/system return context | Error Code Inventory row `-99` | EV-ORDER-BATCH-007 |
+| `ReturnCode` (batch return code) | literal `-99` | `ReturnCode` | procedure/system return context | Validation Logic row `-99` | EV-ORDER-BATCH-007 |
 
 **Branch outcomes:**
 
@@ -219,7 +237,7 @@ Evidence basis: derived call analysis only
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | denied credit decision | `CreditStatus = 'D'` | `ErrorCount += 1`; `RC=-1` | continue next order | skips `GetShipCost` and UPDTRISK for the order | `-1`, `'D'` | EV-ORDER-BATCH-008 |
 | external risk update failure | `RC <> 0` after UPDTRISK | `ErrorCount += 1` | continue loop | order is not counted successful; no rollback observed in caller | non-zero RC | EV-ORDER-BATCH-009 |
@@ -250,7 +268,7 @@ return-code domain.
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| return code (credit decision) | literals `'A'` / `'D'`; `CUSTMSTR.CREDLIMIT` comparison | none | `ValidateCredit` return value consumed as `CreditStatus` | Field Lineage via `CreditStatus`; Error Code Inventory rows `'A'`, `'D'` | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
+| return code (credit decision) | literals `'A'` / `'D'`; `CUSTMSTR.CREDLIMIT` comparison | none | `ValidateCredit` return value consumed as `CreditStatus` | Field Lineage via `CreditStatus`; Validation Logic rows `'A'`, `'D'` | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
 | `CREDLIMIT` (credit limit; inferred) | CUSTMSTR / CREDFILE DS; physical mapping pending | none | read-only comparison operand | LIN-ORDER-BATCH-003 | EV-ORDER-BATCH-005, EV-ORDER-BATCH-008 |
 
 **Branch outcomes:**
@@ -263,7 +281,7 @@ return-code domain.
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | customer record not found | `%FOUND(CUSTMSTR)` false | return code `'D'`; no message text observed | return to `ProcessOrders` | caller skips shipping/risk update | `'D'` | EV-ORDER-BATCH-005 |
 | credit limit exceeded | `RequestAmt > CREDLIMIT` | return code `'D'`; no message text observed | return to `ProcessOrders` | caller skips shipping/risk update | `'D'` | EV-ORDER-BATCH-008 |
@@ -304,7 +322,7 @@ inventory and confirm `CREDLIMIT` physical field metadata.
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | shipping lookup not found | `%FOUND(SHIPFILE)` false | `ShipCost = OrderAmount * 0.0100` | fallback calculation; return | no skip; caller still proceeds to UPDTRISK | N/A business fallback | EV-ORDER-BATCH-004 |
 | SHIPFILE I/O exception unresolved | CHAIN I/O failure; local MONITOR not observed in routine | none locally | outer `ProcessOrders` MONITOR likely catches; exact message ID unresolved | batch generic exception path may terminate current batch | generic / bare ON-ERROR | EV-ORDER-BATCH-004, EV-ORDER-BATCH-007 |
@@ -331,7 +349,7 @@ approval and shipping-cost resolution.
 
 | Target Field / Variable | Source Carrier / Field | Intermediate Variables | Output / Persisted Carrier | Related Lineage / Mutation | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| `RC` (return code) | UPDTRISK output parameter | `RC` | `ProcessOrders` status branch | Error Code Inventory rows `0`, non-zero RC | EV-ORDER-BATCH-006, EV-ORDER-BATCH-009 |
+| `RC` (return code) | UPDTRISK output parameter | `RC` | `ProcessOrders` status branch | Validation Logic rows `0`, non-zero RC | EV-ORDER-BATCH-006, EV-ORDER-BATCH-009 |
 | `CustID` / `OrderAmount` UPDTRISK inputs | ORDFILE fields via `ProcessOrders` work variables | `CustID`, `OrderAmt` | UPDTRISK input parameters | LIN-ORDER-BATCH-001, LIN-ORDER-BATCH-002 | EV-ORDER-BATCH-002, EV-ORDER-BATCH-006 |
 
 **Branch outcomes:**
@@ -343,13 +361,29 @@ approval and shipping-cost resolution.
 
 **Routine exception closure:**
 
-| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Error Inventory Link | Evidence |
+| Exception / Guard | Trigger | Fields / Messages Set | Handling Action | Downstream Skip / Rollback / Output | Validation Logic Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | external risk update error | `RC <> 0` returned by UPDTRISK | caller increments `ErrorCount`; exact RC message unresolved | caller continues loop | no caller rollback observed; order not counted successful | non-zero RC | EV-ORDER-BATCH-006, EV-ORDER-BATCH-009 |
 | external implementation unavailable | UPDTRISK source not included | `RC` domain unresolved | create TBD | side effects of called program unresolved | N/A | TBD-ORDER-BATCH-003 |
 
 **Unresolved routine logic:** TBD-ORDER-BATCH-003: Confirm UPDTRISK return-code
 domain and side effects from called program source.
+
+---
+
+## Validation Logic
+
+| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| -99 | generic unexpected batch failure | exception_log | `ReturnCode` assignment in ON-ERROR handler | MONITOR catches exception | Routine Logic Details `ProcessOrders` -> outcome reverse trace `ReturnCode=-99`; generic exception -> `ReturnCode=-99` -> SNDPGMMSG | return parameter / operator message | terminates current batch | confirmed |
+| 'D' | denied credit decision | response_status | ValidateCredit return | credit not found or request exceeds limit | Routine Logic Details `ValidateCredit`; credit record/limit branch -> return `'D'` | return parameter | skips shipping and risk update | confirmed |
+| -1 | denied order / skipped processing | business_rule_error | `RC` assignment | CreditStatus='D' branch | Routine Logic Details `ProcessOrders` -> outcome reverse trace `RC=-1`; `ValidateCredit -> CreditStatus='D' -> ErrorCount+1 -> RC=-1` | work/status field | order counted as error; loop continues | confirmed |
+| 0 | external risk update success | external_call_error | `RC` check after UPDTRISK | RC = 0 branch | Routine Logic Details `ProcessOrders`; `UPDTRISK RC -> RC=0 -> OrderCount+1` | return parameter from external call | increments OrderCount | confirmed |
+| non-zero RC | external risk update error | external_call_error | `RC` check after UPDTRISK | RC <> 0 branch | Routine Logic Details `ProcessOrders`; `UPDTRISK RC -> non-zero -> ErrorCount+1`; exact RC domain unresolved | return parameter from external call | increments ErrorCount; exact meaning unresolved | unresolved |
+| generic / bare ON-ERROR | catch-all system exception coverage only | unresolved | MONITOR block | unexpected exception | Exception Closure Ledger generic handler; exact message ID unresolved | operator message / return parameter | generic coverage only | unresolved |
+
+**Validation logic unresolved:** UPDTRISK non-zero RC domain is visible but
+literal meanings are not fully traced.
 
 ---
 
@@ -594,18 +628,11 @@ Source: derived-from-code (no F5-OBJREF TREE export provided for this analysis)
 | Invalid credit / denied decision | CreditStatus = 'D' | CreditStatus 'D'; RC = -1 | IF CreditStatus = 'D' | ErrorCount incremented; RC = -1 | skip GetShipCost and UPDTRISK for this order | continue to next ORDFILE record | EV-ORDER-BATCH-008 |
 | UPDTRISK returns error | RC <> 0 after CALL | non-zero RC; exact values TBD | IF RC = 0 / ELSE | ErrorCount incremented | continue loop | order is not counted as successful; no rollback observed in caller | EV-ORDER-BATCH-009 |
 
-### Error Code Inventory
+### Validation Logic Cross-Reference
 
-| Message / Status Code | Message Description | Error Type | Set By / Source Lines | Trigger Condition | Output Carrier | Downstream Effect | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| -99 | generic unexpected batch failure | exception_log | `ReturnCode` assignment in ON-ERROR handler | MONITOR catches exception | return parameter / operator message | terminates current batch | confirmed |
-| 'D' | denied credit decision | response_status | ValidateCredit return | credit not found or request exceeds limit | return parameter | skips shipping and risk update | confirmed |
-| -1 | denied order / skipped processing | business_rule_error | `RC` assignment | CreditStatus='D' branch | work/status field | order counted as error; loop continues | confirmed |
-| 0 | external risk update success | external_call_error | `RC` check after UPDTRISK | RC = 0 branch | return parameter from external call | increments OrderCount | confirmed |
-| non-zero RC | external risk update error | external_call_error | `RC` check after UPDTRISK | RC <> 0 branch | return parameter from external call | increments ErrorCount; exact meaning unresolved | unresolved |
-| generic / bare ON-ERROR | catch-all system exception coverage only | unresolved | MONITOR block | unexpected exception | operator message / return parameter | generic coverage only | unresolved |
-
-**Error codes unresolved:** UPDTRISK non-zero RC domain is visible but literal meanings are not fully traced.
+Validation/status/return-code rows are front-loaded in `## Validation Logic`.
+The exception rows link to Validation Logic rows `-99`, `'D'`, `-1`,
+`non-zero RC`, and `generic / bare ON-ERROR`.
 
 **Unhandled exceptions:**
 - If any file is already open: OPEN statement will fail, caught by MONITOR, job terminates.
@@ -703,7 +730,7 @@ Before approval, SME must validate:
 - [X] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior — ORDFILE, SHIPFILE, and CUSTMSTR purposes captured
 - [X] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped — no persisted file mutation observed in the representative excerpt
 - [X] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence — UPDTRISK called with visible parameters
-- [ ] Error handling includes an Error Code Inventory and closes each exception path through return, rollback, skip, log, or downstream impact — generic handler and observed return codes captured; **See TBD-ORDER-BATCH-004**
+- [ ] Validation Logic is front-loaded after Routine Logic Details and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact — generic handler and observed return codes captured; **See TBD-ORDER-BATCH-004**
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked — UPDTRISK non-zero RC meanings unresolved
 - [X] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules — CUSTFILE is unknown; CUSTMSTR `UF` preserved

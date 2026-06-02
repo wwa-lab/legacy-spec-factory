@@ -145,8 +145,9 @@ field-level rules. The summary below is normative for this skill.
 
 - **Canonical artifact**: `program-analysis-<OBJ-ID>.md` (one per program).
 - **Required sections**: `Metadata`, `Analysis Coverage & Scope`,
-  `Program Call Map`, `Routine Cards`, `Deep Read Windows`,
-  `Entry Points & Parameters`, `Object Dependencies`,
+  `Program Call Map`, `Routine Cards`, `Routine Logic Details`,
+  `Validation Logic`, `Deep Read Windows`, `Entry Points & Parameters`,
+  `Object Dependencies`,
   `Logic Decomposition Ledger`, `Data Touch Map`,
   `Key File & Field Logic`, `Control Flow`, `File I/O`,
   `External Calls`, `Error Handling`, `Redundancy Candidate Notes`,
@@ -230,13 +231,36 @@ to the orchestrator.
      exits, and evidence. Do not summarize a routine as "validation logic" or
      "amount calculation" without target fields, operands, expressions,
      branch guards, precision/conversion notes, and business effect.
+   - Within each Routine Logic Details subsection, add **Conditioned
+     calculation blocks** for every guard-scoped calculation chain that affects
+     money, percentage, quantity, status, return value, message/error code,
+     persisted field, display/report field, queue payload, or downstream
+     branch. In fixed-format RPG this includes conditioning indicators,
+     named/numbered condition groups, result indicators, `IFxx` / `ELSE` /
+     `ENDIF`, `CASxx`, `DO` scopes, and operation-level indicators. A block
+     such as "Condition 5" must be analyzed as its own source-backed unit: list
+     the guard, all guarded statements in order, each target assignment,
+     intermediate variables, final output/error effect, and source line range.
+     Do not hide these chains in a generic branch outcome or only in the
+     Logic Decomposition Ledger.
+   - Within each Routine Logic Details subsection, add **Outcome reverse
+     traces** for every material message ID, status code, return code,
+     response value, indicator-driven outcome, or error field produced by the
+     routine. Start from the visible outcome (for example `UCC1852` or
+     `W0BUR`), walk backwards to the exact branch/guard that sets or emits it,
+     then continue backwards through the conditioned calculation block,
+     comparison threshold, intermediate variables, and source operands/carriers
+     that make the outcome true. A result such as `UCC1852` must not be left as
+     "warning/reject condition" if the source shows a trigger chain such as
+     `CAACOS/CAACCM/CATTHD/CATCAM/CAACLT -> WOOVAM -> WOACLT -> WOOVPE ->
+     BBLSOP -> UCC1852`.
    - Within each Routine Logic Details subsection, connect calculated or
      assigned fields back to data carriers: source file/parameter/queue/screen
      field, intermediate work variables, output or persisted carrier, and the
      related Field Lineage / Field Mutation Matrix row when one exists.
    - Within each Routine Logic Details subsection, close routine-local
      exceptions: trigger, error/status/message fields, handling action,
-     downstream skip/rollback/output, Error Code Inventory row, and evidence.
+     downstream skip/rollback/output, Validation Logic row, and evidence.
      If no exception path is observed for a routine, state `none observed`
      rather than leaving the closure implicit.
    - Identify conditional branching:
@@ -411,17 +435,22 @@ to the orchestrator.
      detection mechanism, fields set, handling action (`RETURN`, `GOTO`,
      rollback, skip write, log, send message, continue), and downstream
      impact.
-   - List every message ID observed in source or message-file references,
-     including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
+   - Build a front-loaded **Validation Logic** section immediately after
+     Routine Logic Details and before Deep Read Windows. It must list every
+     validation, status, response, return-code, message, indicator-driven
+     outcome, and generic handler outcome observed in source or message-file
+     references, including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
      `UCC*` / `LCC*`, and literal business error codes. Do not limit the
-     inventory to shop-local message prefixes.
-   - Build an explicit **Error Code Inventory** with Message / Status Code,
-     Message Description, Error Type, Set By / Source Lines, Trigger
-     Condition, Output Carrier, Downstream Effect, and Evidence Status.
+     inventory to shop-local message prefixes or bury it inside Error
+     Handling.
+   - Populate Validation Logic with Message / Status Code, Message
+     Description, Validation / Error Type, Set By / Source Lines, Trigger
+     Condition, Reverse Trigger Chain / Routine Logic Link, Output Carrier,
+     Downstream Effect, and Evidence Status.
      Include status codes, response codes, indicator-driven error branches,
      exception/log output codes, data queue response status values, and
      message/status fields assigned during validation or file I/O failures.
-   - Create one inventory row per explicit message ID, status code, return
+   - Create one Validation Logic row per explicit message ID, status code, return
      code, response value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined
      code, or generic catch-all token. Do not group multiple message IDs into
      one row and do not replace individual descriptions with summary labels
@@ -432,7 +461,14 @@ to the orchestrator.
      `unresolved - message description not available`, mark the row
      unresolved, and create a TBD / Open Item.
    - If literal code assignments cannot be fully traced, state
-     `Error codes unresolved:` with the concrete tracing gap.
+     `Validation logic unresolved:` with the concrete tracing gap.
+   - For every material Validation Logic row, populate Reverse Trigger
+     Chain / Routine Logic Link. This must point to the Routine Logic Details
+     subsection, conditioned calculation block, outcome reverse trace, or
+     source-backed TBD that explains why the code is set. Generic triggers such
+     as "validation failed", "warning/reject condition", or "product/group
+     control check" are not sufficient when source operands, comparisons, or
+     intermediate calculations are visible.
    - When a catch-all handler is present (`MONMSG MSGID(*ANY)`, bare
      `ON-ERROR`, generic exception paragraph), mark it as generic
      coverage and still list the specific observed messages handled
@@ -537,6 +573,8 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Routine Logic Details explain every load-bearing routine/subroutine/procedure, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence
+- [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
+- [ ] Routine Logic Details include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
@@ -544,7 +582,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Error handling includes a one-row-per-message/status Error Code Inventory with message descriptions, and closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Validation Logic is front-loaded after Routine Logic Details, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
@@ -591,3 +629,9 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Added routine-local field lineage / carrier rows so calculations connect source carrier, intermediate variables, output/persisted carrier, and lineage/mutation references
   - Added routine-local exception closure rows for trigger, error/status/message fields, handling action, downstream skip/rollback/output, and Error Code Inventory link
   - Tightened subroutine output to match the program-single to program-chain principles for data-source preservation and exception closure
+- v0.2.5 (2026-06-02): Conditioned calculation and outcome reverse-trace tightening
+  - Required Routine Logic Details to break out material guard-scoped calculation chains, including fixed-format RPG conditioning indicators / named condition groups such as `Condition 5`
+  - Requires guarded statement order, target assignments, intermediate variables, final output/error effect, source line range, and evidence for each material conditioned calculation block
+  - Requires outcome reverse traces from material message/status/error outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
+  - Renamed the current output section from `Error Code Inventory` to front-loaded `Validation Logic`, placed immediately after Routine Logic Details
+  - Forbids hiding condition-scoped calculation chains only in generic branch outcomes, Validation Logic summaries, or the Logic Decomposition Ledger
