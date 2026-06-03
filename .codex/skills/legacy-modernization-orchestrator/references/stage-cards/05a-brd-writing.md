@@ -1,6 +1,7 @@
 # Stage 05a: BRD Discovery Writing And Review
 
-**You are here if:** module analysis is approved for a selected `CAP-*`, and
+**You are here if:** module analysis is approved for a selected `CAP-*`, or the
+requester explicitly wants an internal POC BRD draft from partial context, and
 you need the legacy-system BRD Package for SME / stakeholder migration
 discovery review.
 
@@ -23,9 +24,15 @@ If these code-backed artifacts are missing, route back to the earliest missing
 stage first. A context-only BRD draft is allowed only with named owner risk
 acceptance and cannot be approved.
 
+For internal POC validation, these strict inputs are approval prerequisites, not
+draft prerequisites. If authorization/sensitivity is clear and the requester
+accepts non-approved status, run `legacy-brd-writer` with `status: poc_draft`
+and list missing code-backed artifacts, SME owner, OCR/Markdown, and source
+eligibility as approval/spec blockers.
+
 ## Run
 
-- **Skill:** `legacy-brd-writer` (Implemented v0.1.7)
+- **Skill:** `legacy-brd-writer` (Implemented v0.1.9)
 - **Manual fallback:** Use the templates in
   `skills/legacy-brd-writer/templates/` and keep sections 1-9 populated with
   evidence-backed content or named `TBD-*` gaps.
@@ -53,11 +60,12 @@ acceptance and cannot be approved.
   - BRD Package contains no old-vs-new comparison, No-gap / Gap1 / Gap2
     classification, target-system disposition, or handoff content
   - `brd-review.md` or `review-decision.yaml` records SME / business approval
-- **Blocks if:** BRD is missing, draft without review, blocked by SME, or any
-  required section 1-9 is absent without a named `TBD-*`. It also blocks if a
-  standard BRD lacks object-map, program-analysis, or flow-analysis support.
-  Spec-writing also blocks until a separate post-BRD comparison / promotion
-  decision exists.
+- **Blocks if:** BRD is missing, `poc_draft`/draft without review, blocked by
+  SME, or any required section 1-9 is absent without a named `TBD-*`. It also
+  blocks if a standard BRD lacks object-map, program-analysis, or flow-analysis
+  support. A `poc_draft` may be used for internal review only. Spec-writing
+  blocks until an approved BRD and a separate post-BRD comparison / promotion
+  decision exist.
 
 ## SME action
 

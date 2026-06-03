@@ -42,6 +42,7 @@ steps:
 - program analysis (`program-analysis-<OBJ-ID>.md`)
 - flow analysis (`flow-<FLOW-SLUG>.md`)
 - module analysis (`04_modules/<MODULE-SLUG>/`)
+- BRD writing (`05_brds/<CAPABILITY-SLUG>/`)
 - spec writing (`05_specs/<CAPABILITY-SLUG>/`)
 - forward SDLC handoff (`docs/forward-sdlc-contract.md`)
 
@@ -116,7 +117,7 @@ Accept:
   `05_specs/CREDIT-LIMIT/`, a single `flow-ONUS-AUTH.md`, a single
   `program-analysis-OBJ-CREDIT-CHECK-003.md`.
 - **Step type hint** (optional) — when the path is ambiguous, the user
-  can declare `inventory | program | flow | module | spec | handoff`.
+  can declare `inventory | program | flow | module | brd | spec | handoff`.
 - **Capability slug / module slug** (optional) — used in IDs minted by
   the report (`STEP-<SLUG>-<NNN>`).
 - **SME context** (optional) — if the SME has already reviewed and
@@ -135,6 +136,11 @@ Input readiness scoring:
   known risk areas are also supplied.
 - Missing slug or SME context does not block validation; it may reduce ID
   quality or SME-readiness precision in the report.
+- For artifacts explicitly marked `status: poc_draft` / `evidence_mode:
+  internal_poc`, missing completeness evidence or SME sign-off is a warning for
+  draft-only review when authorization is clean and the artifact lists
+  approval/spec blockers. It remains blocking for approval, spec, handoff, and
+  delivery use.
 
 Stop and refuse to validate if:
 
@@ -220,6 +226,12 @@ Examples:
    - If any mechanical row fails as blocking, status will be `blocked`
      unless the user explicitly waives with SME authority; record the
      waiver if applicable.
+   - For `poc_draft` artifacts, a row that is blocking only because evidence is
+     incomplete, tooling is unavailable, or SME approval is pending may be
+     reported as `pass_with_warnings` for draft-only review if the artifact
+     labels the gap as an approval/spec blocker. Do not soften authorization,
+     sensitivity, redaction, hallucination, or unsupported-confirmed-claim
+     findings.
    - A waiver is valid only when the reviewed artifact or its review file
      records the waived finding ID, SME role/name, date, reason, and the
      specific IDs affected. The validator copies that waiver into
@@ -231,6 +243,10 @@ Examples:
      for the detected step.
    - Categorize each finding as blocking or non-blocking. Default to
      blocking when uncertain.
+   - In internal POC mode, uncertainty that is explicitly labeled as a
+     low-confidence hypothesis or `TBD-*` is non-blocking for draft review and
+     blocking for approval/spec/handoff. Uncertainty hidden in prose remains
+     blocking.
    - Cite the specific IDs (`EV-*`, `BEH-*`, `BR-*`, `OBJ-*`, `TBD-*`)
      each finding points to. Avoid prose-only findings.
 
@@ -286,7 +302,7 @@ Examples:
       ```
       status: pass | pass_with_warnings | blocked
       step_id: STEP-<SLUG>-<NNN>
-      step_type: inventory | program | flow | module | spec | handoff
+      step_type: inventory | program | flow | module | brd | spec | handoff
       blocking_items: [TBD-..., TBD-...]
       warnings: [TBD-...]
       sme_decision: approved | approved_with_non_blocking_tbd | pending | blocked | not_required
@@ -329,8 +345,13 @@ The validator emits exactly one status:
 | Status | Meaning | When to emit |
 | --- | --- | --- |
 | `pass` | Mechanical, semantic, and SME-readiness checks are clean. SME approval is recorded where required. | All ten dimensions clear; no blocking finding. |
-| `pass_with_warnings` | Mechanical is clean. Semantic findings exist but are non-blocking. Open TBDs are SME-marked non-blocking. | Use sparingly. If you are tempted to call something a warning but it is critical, the status is `blocked`. |
+| `pass_with_warnings` | Mechanical is clean or clean for the declared draft-only mode. Semantic findings exist but are non-blocking, or POC-only blockers are explicitly labeled as approval/spec blockers. | Use sparingly. If you are tempted to call something a warning but it is critical for the declared use, the status is `blocked`. |
 | `blocked` | Any mechanical failure, any blocking semantic finding, any missing-but-required SME approval, or any evidence authorization issue. | Default on uncertainty. The downstream cost of a false `pass` is higher than a false `blocked`. |
+
+For `status: poc_draft`, the declared use is internal draft review only.
+Missing SME approval or missing code-backed completeness is `pass_with_warnings`
+when visible as an approval/spec blocker; it is `blocked` if the artifact is
+being treated as approved, spec-ready, handoff-ready, or delivery-ready.
 
 The validator never self-promotes a `blocked` package to `pass`. Only
 the step's owning skill plus its SME can revise the artifact and

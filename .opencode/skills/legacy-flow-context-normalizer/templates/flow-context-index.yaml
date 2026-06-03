@@ -11,12 +11,12 @@ module:
 
 normalization:
   skill: "legacy-flow-context-normalizer"
-  version: "v0.1.11"
+  version: "v0.1.13"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
-  status: "draft_needs_sme_review" # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_scope | blocked_pending_readable_source | blocked_pending_contradiction_review
-  quality_level: "L2 partial" # L3 strong | L2 partial | L1 sparse | L0 blocked
+  status: "draft_needs_sme_review" # draft_needs_sme_review | triage_needs_source_enrichment | ready_for_context_intake | ready_with_warnings | blocked_pending_evidence | blocked_pending_contradiction_review | legacy: blocked_pending_scope | blocked_pending_readable_source
+  quality_level: "L2 partial" # L3 strong | L2 partial | L1 sparse | L0 safety_stop
   decision_reason: "<Why this status was selected>"
-  downstream_next_step: "legacy-sme-review-facilitator" # legacy-module-context-intake when ready
+  downstream_next_step: "legacy-sme-review-facilitator" # legacy-module-context-intake when ready or degraded triage
 
 run_validation:
   structural_status: "not_run" # pass | pass_with_warnings | blocked | not_run | tool_unavailable | tool_unavailable_hosted_agent

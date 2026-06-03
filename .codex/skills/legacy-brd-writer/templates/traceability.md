@@ -3,7 +3,7 @@
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`  
 **Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
 **Generated:** `<YYYY-MM-DD>`
-**Evidence Mode:** `code_backed` | `context_only`
+**Evidence Mode:** `code_backed` | `context_only` | `internal_poc`
 
 ---
 
@@ -18,6 +18,11 @@ program analyses, and flow analyses that support the BRD. For `context_only`
 mode, missing code-backed artifacts must appear as blocking `TBD-*` items and
 the BRD must remain non-approved.
 
+For `internal_poc` mode, missing code-backed artifacts, OCR/Markdown, SME owner,
+or source eligibility should appear as approval/spec blockers, not draft
+blockers. The BRD may be reviewed for direction, but no low-confidence item may
+be counted as an approved BRD conclusion.
+
 **Coverage:**
 - **Business Scenarios:** X documented
 - **Channels / Touchpoints / Interfaces:** X channels, Y touchpoints, Z interfaces
@@ -28,6 +33,8 @@ the BRD must remain non-approved.
 - **Evidence Items:** N collected
 - **Code-Backed Artifacts:** object map present? yes/no; program analyses X/Y;
   flow analyses A/B
+- **POC Blockers:** approval/spec blockers listed? yes/no; low-confidence
+  statements labeled? yes/no
 
 ---
 

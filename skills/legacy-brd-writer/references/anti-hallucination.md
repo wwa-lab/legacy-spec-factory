@@ -28,6 +28,9 @@ The BRD source-of-truth firewall is stricter than the module coverage map:
 - `candidate_only`, `generated_draft`, `questions_only`, and `missing` inputs
   must become `TBD-*` items or SME questions.
 - A generated four-view diagram is never evidence by itself.
+- Internal POC drafts may include weak or candidate material only as labeled
+  hypotheses for review. A `poc_draft` BRD can be useful early, but it must not
+  make unsupported prose look like approved legacy behavior.
 
 ---
 
@@ -58,8 +61,9 @@ confirmed process flow and dependencies.
 2. Use only `brd_conclusion_allowed` rows for conclusions.
 3. Convert `questions_only`, `candidate_only`, `generated_draft`, and missing
    rows into `TBD-*` items or SME review questions.
-4. Keep the BRD status `draft` / `in_review` when code-backed or SME-confirmed
-   evidence is missing.
+4. Keep the BRD status `poc_draft`, `draft`, or `in_review` when code-backed or
+   SME-confirmed evidence is missing. Use `poc_draft` when the explicit goal is
+   internal POC validation before strict gates are complete.
 Flow analysis lists programs A -> B -> C.
 BRD author copies that sequence into "As-Is Summary" and adds file names,
 commit/rollback behavior, and interface-library movement.
@@ -383,7 +387,9 @@ BRD author: "No feedback means approval; I'll mark it approved"
    - SME name / role
    - Date of review
    - Decision (approved / approved_with_non_blocking_tbd / needs_revision / rejected)
-3. If SME is unavailable, the BRD is blocked until they engage
+3. If SME is unavailable, approval is blocked until they engage. Internal POC
+   drafting may continue only with `status: poc_draft` and explicit SME-review
+   `TBD-*` blockers.
 
 ---
 

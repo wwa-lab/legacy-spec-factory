@@ -32,6 +32,7 @@ only — split if you find yourself wanting two.
 | Single `program-analysis-<OBJ-ID>.md` (with Program Call Map, Data Touch Map, control flow, file I/O sections) | program analysis |
 | Single `flow-<FLOW-SLUG>.md` (with trigger model, nodes, edges, data flow sections) | flow analysis |
 | `04_modules/<MODULE-SLUG>/module-overview.md` + four `0N-*.md` view files | module analysis |
+| `05_brds/<CAPABILITY-SLUG>/brd.md` + `brd-review.md` + `validation-scenarios.md` + `traceability.md` | BRD writing |
 | `05_specs/<CAPABILITY-SLUG>/spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` | spec writing |
 | Handoff bundle citing approved `spec.yaml`, `traceability-matrix.md`, golden master samples | forward SDLC handoff |
 
@@ -260,6 +261,53 @@ Module is ready for BRD writing when **all four views** are at least
 BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries named
 `TBD-*` gaps. Spec writing remains downstream of an approved BRD Package plus
 an explicit post-BRD promotion / disposition decision.
+
+## BRD writing step
+
+Detected when `05_brds/<CAPABILITY-SLUG>/` contains `brd.md`,
+`brd-review.md`, `validation-scenarios.md`, and `traceability.md`.
+
+### Mechanical
+
+| Check | Maps to dimension | Severity |
+| --- | --- | --- |
+| All four BRD package files exist: `brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | 3 | blocking |
+| BRD status is one of `poc_draft`, `draft`, `in_review`, `approved` | 3 | blocking |
+| Evidence mode is one of `code_backed`, `context_only`, `internal_poc` | 3 | blocking |
+| Required BRD sections 1-9 are present, using explicit `TBD-*` placeholders where evidence is missing | 3 | non_blocking for `poc_draft`; blocking for approval |
+| `validation-scenarios.md` mints only `VAL-*` scenario seeds and no `AC-*`, `TC-*`, `DEC-*`, or target implementation IDs | 3 | blocking |
+| `traceability.md` lists every `BEH-*`, `BR-*`, `VAL-*`, and `TBD-*` used in `brd.md` | 4 | non_blocking for `poc_draft`; blocking for approval |
+| `poc_draft` packages declare `evidence_mode: internal_poc`, include an internal POC limitation note, and list approval/spec blockers | 7 | blocking |
+| `approved` packages cite SME sign-off and cannot use `evidence_mode: internal_poc` | 6 | blocking |
+
+### Semantic
+
+| Check | Maps to dimension | Severity |
+| --- | --- | --- |
+| The BRD describes a business capability, not a program call chain or object inventory | 5 | blocking |
+| Observed behavior claims are supported by code/runtime/SME evidence; weak or source-document-only statements are not labeled as confirmed | 4 | blocking |
+| In `poc_draft`, low-confidence statements are visibly labeled as hypotheses, review prompts, or `TBD-*` items | 5 | non_blocking when labeled; blocking when hidden in prose |
+| No old-vs-new No-gap / Gap1 / Gap2 classification, target-system requirement, platform decision, SDD handoff content, formal acceptance criteria, or formal test case appears in the BRD package | 7 | blocking |
+| Open questions distinguish approval blockers from later spec/handoff blockers | 8 | non_blocking for `poc_draft`; blocking for approval |
+
+### SME readiness
+
+| Check | Maps to dimension | Severity |
+| --- | --- | --- |
+| `brd-review.md` names a capability owner SME or records SME owner as `TBD` for `poc_draft` | 6 | non_blocking for `poc_draft`; blocking for approval |
+| Review checklist lets an SME accept, reject, or correct scope, behavior, inferred rules, TBDs, and validation scenario seeds | 6 | non_blocking |
+| SME decision is recorded with role/name and date when BRD status is `approved` | 6 | blocking |
+
+### Next-step gate
+
+`poc_draft` is ready only for internal POC review and SME/BA discussion. It is
+not ready for spec writing, SDD handoff, delivery decisions, or approved legacy
+baseline use.
+
+BRD is ready for post-BRD comparison / disposition only when status is
+`approved` or `approved_with_non_blocking_tbd` (if that status is used in the
+review file), SME sign-off is recorded, authorization is clean, and all BRD
+approval blockers are resolved or explicitly accepted as non-blocking.
 
 ## Spec writing step
 

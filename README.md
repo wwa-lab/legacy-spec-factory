@@ -25,9 +25,10 @@ Flow, and Data Flow) are useful when available, but most SMEs cannot provide
 them up front. In practice, knowledge is scattered across Visio, Word, Excel,
 PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File Specs,
 interface specs, data dictionaries, or SME-note artifacts.
-`legacy-flow-context-normalizer` now organizes those materials into
-evidence-bounded four-view coverage, gaps, and SME questions; it does not
-generate BRD-ready flow facts. Program and flow analysis remain valid starting
+`legacy-module-context-intake` now accepts those materials directly, with
+document-intake manifests when available. Missing Markdown, OCR, or flow views
+become low-confidence `TBD-*` items; they do not require a separate
+`flow-normalization/` package. Program and flow analysis remain valid starting
 points for validating or enriching that module model; they are not the only
 entry path when the module context is already known.
 
@@ -68,6 +69,14 @@ discussion. Formal `AC-*` acceptance criteria are produced later by
 `legacy-spec-writer`; formal `TC-*` golden-master cases are produced later by
 `legacy-golden-master-test-planner`.
 
+For internal POC validation, the factory may generate the BRD earlier as
+`status: poc_draft` / `evidence_mode: internal_poc`. This is intentionally
+looser: missing OCR, Markdown, object maps, program analysis, flow analysis,
+SME owner, or source eligibility become visible approval/spec blockers instead
+of blocking the draft. A POC BRD is for stakeholder direction only; it cannot
+feed spec writing, SDD handoff, or delivery decisions until the standard gates
+pass.
+
 Old-vs-new disposition is a **post-BRD** step. It happens only after the
 legacy BRD is approved and new-system context is available:
 
@@ -80,16 +89,16 @@ legacy BRD is approved and new-system context is available:
 ## Operating Paths
 
 Legacy Spec Factory now has two explicit operating paths, plus one optional
-pre-step for teams whose module knowledge is not yet in a reviewable four-view
-shape:
+document-format intake step for teams whose module knowledge is trapped in
+raw Office/PDF/image artifacts:
 
 ```text
-Optional pre-step — scattered documents/specs to coverage, questions, or triage
+Optional pre-step — raw documents to evidence coordinates when tooling allows
   Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design
   Program Spec / File Spec / interface spec / data dictionary / SME notes
-        -> flow-context-normalizer
-        -> SME review
-        -> evidence-bounded context package / TBD ledger
+        -> document-evidence-intake
+        -> module-context-intake
+        -> source-eligible context package / TBD ledger
 
 Default path — RAG-assisted module-first
   RAG evidence bundle + SME fragments / confirmed context
@@ -100,6 +109,13 @@ Default path — RAG-assisted module-first
         -> post-BRD old-vs-new disposition when new-system context is available
         -> spec / handoff only for promoted items
 
+Internal POC path — early BRD draft
+  authorized docs / source metadata / context package / RAG
+        -> module-context-intake when packaging is useful
+        -> brd-writer
+        -> BRD Package with status: poc_draft + approval/spec blockers
+        -> stakeholder direction review only
+
 Verification path — source-first discovery and evidence repair
   evidence intake / inventory / program / flow / data / screen analysis
         -> used only when module context is missing, conflicting, or high risk
@@ -108,12 +124,11 @@ Verification path — source-first discovery and evidence repair
 The default path is the enterprise field workflow. Teams bring a module-level
 context package, SME fragments, historical specs, and RAG-retrieved evidence
 when they have them. If the team has only non-standard historical documents or
-specs, normalize them into a `flow-normalization/` coverage package and get SME
-review before module context intake. The normalizer is a user-experience
-accelerator, not a flow generator: missing flow views become coverage
-placeholders and `TBD-*` questions, while available evidence still moves
-forward as review context. Source-first skills remain available as selective
-verification tools:
+specs, run `legacy-document-evidence-intake` only when format conversion is
+useful and tooling is available, then hand the manifest/source metadata
+directly to module context intake. Missing flow views become `TBD-*` questions,
+while available evidence still moves forward as review context. Source-first
+skills remain available as selective verification tools:
 use them when RAG output conflicts with human flow, when a high-risk rule needs
 source evidence, or when the module boundary is not yet understood.
 
@@ -173,16 +188,12 @@ The main skill sequence is:
 legacy-document-evidence-intake (optional, runs first)
   -> format-normalize raw Office / Visio / PDF / image documents into
      Markdown / CSV / PDF / PNG / SVG with manifests and evidence coordinates
-     before flow context normalization
-
-legacy-flow-context-normalizer (optional)
-  -> normalize scattered docs/specs into evidence-bounded Operation / Business,
-     System, Program, and Data coverage for SME review, or source-quality
-     triage when no safe flow can be evidenced
+     before module context intake
 
 legacy-module-context-intake
-  -> normalize reviewed module context, SME fragments, RAG, dictionary,
-     runtime hints, and source eligibility
+  -> normalize document-intake outputs, source metadata, reviewed module
+     context, SME fragments, RAG, dictionary, runtime hints, and source
+     eligibility. Missing Markdown/OCR/flows become carry-forward TBDs.
 
 selective verification as needed:
   -> legacy-ibmi-program-analyzer
@@ -249,11 +260,11 @@ and [`module-first-brd-factory-ieov.png`](docs/assets/module-first-brd-factory-i
 Diagram B maps the A1-A4 stages in Diagram A to the skills, artifacts, and
 gates that execute and verify each stage. It distinguishes the main path from
 selective evidence repair, now including `legacy-document-evidence-intake` for
-format-normalizing raw Office / Visio / PDF / image sources,
-`legacy-flow-context-normalizer` for scattered document/spec normalization,
-sparse triage, and owner risk acceptance before
-`legacy-module-context-intake`. It also shows the governance rail that applies
-across every skill.
+format-normalizing raw Office / Visio / PDF / image sources before direct
+`legacy-module-context-intake`. Existing diagrams may still show the legacy
+flow-normalization branch as an optional artifact, but it is no longer part of
+the default chain. It also shows the governance rail that applies across every
+skill.
 
 Editable source and review-friendly variants are kept together:
 [`module-first-brd-factory-skills.drawio`](docs/assets/module-first-brd-factory-skills.drawio),
@@ -266,8 +277,8 @@ and [`module-first-brd-factory-skills.png`](docs/assets/module-first-brd-factory
 
 The earlier process view is kept for teams that want a single end-to-end
 sequence. It now shows raw / historical documents entering through
-`legacy-document-evidence-intake` before flow normalization and module context
-intake.
+`legacy-document-evidence-intake` before module context intake. Any remaining
+flow-normalization box should be treated as a legacy optional branch.
 
 ### Delivery Hub Overview
 
@@ -834,7 +845,7 @@ full status matrix and scorecard links.
 | 20 | `legacy-golden-master-test-planner` | Verification | Existing | Field-pilot ready (v0.1.0, 9.59); plans old-vs-new equivalence and golden-master tests |
 | 21 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 22 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
-| 23 | `legacy-document-evidence-intake` | Module-first context | New | Repo-ready (v0.1.0); pre-normalization format intake before `legacy-flow-context-normalizer`. Run three-runtime smoke tests for multi-sheet Excel, macro-enabled workbook, legacy binary conversion, unauthorized production data, and ready-manifest handoff |
+| 23 | `legacy-document-evidence-intake` | Module-first context | New | Repo-ready (v0.1.3); optional format intake before `legacy-module-context-intake`. Run three-runtime smoke tests for multi-sheet Excel, macro-enabled workbook, legacy binary conversion, unauthorized production data, and ready-manifest handoff |
 
 Downstream Atlas skills such as requirements-to-stories, design, task, code,
 and review gates are referenced by the handoff package but are not implemented
@@ -857,9 +868,9 @@ Governance/Infrastructure skills (already implemented):
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-document-evidence-intake` | Intake and format-normalize raw legacy documents (Excel `.xlsx`/`.xlsm`/`.xls`, Word `.docx`/`.doc`, PowerPoint `.pptx`/`.ppt`, Visio `.vsdx`/`.vsd`, PDF, images, screenshots, scanned docs) into Markdown / CSV / PDF / PNG / SVG with manifests, `DOC-*`/`FRAG-*` evidence coordinates, and `ready`/`ready_with_warnings`/`blocked` quality gates before `legacy-flow-context-normalizer`. Static-only macro policy (never executes VBA); honest-conversion policy via LibreOffice; optional Docling as a non-canonical enhancer; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake`. Does not infer business rules, generate BRD/spec content, approve evidence, or classify flow views | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Repo-ready (v0.1.0; runtime smoke pending) |
-| `legacy-flow-context-normalizer` | Normalize scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation into evidence-bounded Operation / Business, System, Program, and Data coverage, gaps, and SME questions before context intake, with deterministic multi-sheet Excel extraction support, non-blocking placeholders for missing views, AS400 technical-anchor gates for Program/Data anchors, sparse-input triage, and owner risk acceptance when no additional document, spec, or flow input can be provided. Does not generate BRD-ready flow facts | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Repo-ready (v0.1.12 provisional, 9.0 capped; runtime smoke pending) |
-| `legacy-module-context-intake` | Normalize external RAG / code-knowledge-graph output, SME fragments, human-confirmed four-view module context, or owner-risk-approved sparse flow-normalization output into a traceable package before module analysis, with candidates framed as business signals and every carried claim classified for BRD source eligibility | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.7 provisional, 9.0 capped; runtime smoke pending) |
+| `legacy-document-evidence-intake` | Intake and format-normalize raw legacy documents (Excel `.xlsx`/`.xlsm`/`.xls`, Word `.docx`/`.doc`, PowerPoint `.pptx`/`.ppt`, Visio `.vsdx`/`.vsd`, PDF, images, screenshots, scanned docs) into Markdown / CSV / PDF / PNG / SVG with manifests, `DOC-*`/`FRAG-*` evidence coordinates, and `ready`/`ready_with_warnings`/`blocked` quality gates before `legacy-module-context-intake`. Static-only macro policy (never executes VBA); honest-conversion policy via LibreOffice; optional Docling as a non-canonical enhancer; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake`. Does not infer business rules, generate BRD/spec content, approve evidence, or classify flow views | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Repo-ready (v0.1.3; runtime smoke pending) |
+| `legacy-flow-context-normalizer` | Legacy/manual optional tool for teams that explicitly ask for a separate `flow-normalization/` package. Not used in the default chain; new document-first runs should route from document intake/source metadata directly to `legacy-module-context-intake`. Does not generate BRD-ready flow facts | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Optional legacy artifact |
+| `legacy-module-context-intake` | Normalize document-intake outputs, source metadata, external RAG / code-knowledge-graph output, SME fragments, human-confirmed four-view module context, or legacy flow-normalization output into a traceable package before module analysis, with candidates framed as business signals and every carried claim classified for BRD source eligibility | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.9 provisional, runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
@@ -891,7 +902,7 @@ contracts remain platform-agnostic from day one.
 
 | Skill | Purpose | Primary Output | Status |
 | --- | --- | --- | --- |
-| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates, including evidence-bounded scattered document/spec normalization, sparse-input triage, owner-accepted sparse context intake, BRD source-eligibility gates, BRD discovery, and post-BRD disposition before spec-writing | routing decision | v0.2.11 repo-ready provisional (9.0 capped; expanded-route smoke pending) |
+| `legacy-modernization-orchestrator` | Route users through the reverse chain; identify current stage, next safest skill, and required gates, including direct document-intake/source-metadata handoff to module context intake, sparse-input TBD carry-forward, BRD source-eligibility gates, BRD discovery, and post-BRD disposition before spec-writing | routing decision | v0.2.6 repo-ready provisional (expanded-route smoke pending) |
 | `legacy-business-rule-miner` | Convert code paths and runtime evidence into business rules | `business-rules.md` | Folded into module analyzer + spec writer for MVP |
 | `legacy-capability-mapper` | Group program-level behavior into business capabilities | `capability-map.md` | Folded into module analyzer for MVP |
 | `legacy-brd-writer` | Produce an evidence-backed, business-readable legacy BRD Package from approved module coverage as the migration-discovery baseline, preserving SME-required functional-analysis sections 1-9, keeping optional sections evidence-backed, applying the source-of-truth firewall so generated/candidate context becomes TBDs/questions, and adding BRD-stage `VAL-*` seeds without old-vs-new comparison or target disposition | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | Repo-ready (v0.1.8 provisional, 9.0 capped; smoke pending) |
@@ -1031,12 +1042,15 @@ knowledge-hub.manifest.yaml
 
 00_context_packages/
   <MODULE-SLUG>/
-    flow-normalization/                 # optional pre-SME package
-      flow-context-index.yaml
-      source-document-index.yaml
-      01-operation-business-flow.md
-      02-system-flow.md
-      03-program-flow.md
+    document-intake/<DOCSET-SLUG>/      # optional raw document normalization
+      intake.manifest.yaml
+      evidence-coordinates.md
+      extraction-warnings.md
+
+    context-index.yaml                  # module context intake package
+    01-operation-business-flow.md
+    02-system-flow.md
+    03-program-flow.md
       04-data-flow.md
       evidence-map.md
       contradiction-log.md
@@ -1371,17 +1385,10 @@ Primary module-first chain:
 ```text
 00_context_packages/
   <MODULE-SLUG>/
-    flow-normalization/                 # optional pre-SME package
-      flow-context-index.yaml
-      source-document-index.yaml
-      01-operation-business-flow.md
-      02-system-flow.md
-      03-program-flow.md
-      04-data-flow.md
-      evidence-map.md
-      contradiction-log.md
-      open-questions.md
-      sme-review-pack.md
+    document-intake/<DOCSET-SLUG>/      # optional raw document package
+      intake.manifest.yaml
+      evidence-coordinates.md
+      extraction-warnings.md
     context-index.yaml
     01-operation-business-flow.md
     02-system-flow.md
@@ -1576,14 +1583,11 @@ Default enterprise flow:
    Provide the RAG evidence bundle plus reviewed context when available. If the
    source material is scattered across Visio, Word, Excel, PDF, PowerPoint,
    Function Specs, Technical Designs, Program Specs, File Specs, interface
-   specs, data dictionaries, or SME notes and the four-view coverage is not yet
-   reviewed, run `legacy-flow-context-normalizer` first. If the material is
-   too sparse to evidence even one safe flow, use its
-   `triage_needs_source_enrichment` output to collect the minimum supplements
-   before context intake. If the owner confirms no additional document, spec,
-   or flow input can be provided, record risk acceptance and carry the package
-   forward only as `ready_with_warnings` with low-confidence TBDs and
-   questions-only source eligibility.
+   specs, data dictionaries, or SME notes, run `legacy-document-evidence-intake`
+   only when format conversion is useful and tooling is available. Otherwise
+   carry source metadata directly into `legacy-module-context-intake`. Missing
+   Markdown/OCR/flow evidence becomes low-confidence `TBD-*`; it does not
+   require a separate `flow-normalization/` package.
 
 3. **Normalize module context**
    Run `legacy-module-context-intake` on SME-reviewed or owner-risk-accepted
@@ -1630,8 +1634,8 @@ Current module-first MVP:
 - one bounded business module or capability
 - one RAG evidence bundle with `rag-run-index.yaml`
 - four human-confirmed context views when available: Operation / Business,
-  System, Program, and Data (or a `legacy-flow-context-normalizer` coverage
-  package from historical documents/specs awaiting SME review)
+  System, Program, and Data, with document-intake/source metadata carried as
+  low-confidence `TBD-*` items when views are missing
 - one `00_context_packages/<MODULE-SLUG>/` package produced by
   `legacy-module-context-intake`
 - one approved module analysis and BRD Package with `validation-scenarios.md`
@@ -1647,8 +1651,8 @@ The broader roadmap becomes:
 | Phase | Duration | Goal | Output |
 | --- | --- | --- | --- |
 | Phase 0 | 1 week | Select module and collect document / spec / RAG / context inputs | RAG bundle, historical documents/specs or reviewed context, SME roster |
-| Phase 0.5 | 2-3 days when needed | Normalize scattered documents/specs into evidence-bounded coverage, questions, or sparse-input supplement requests | `00_context_packages/<MODULE-SLUG>/flow-normalization/` |
-| Phase 1 | 1 week | Normalize SME-reviewed module context | `00_context_packages/<MODULE-SLUG>/` |
+| Phase 0.5 | Optional | Normalize raw document formats when useful and tooling is available | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` |
+| Phase 1 | 1 week | Normalize module context, source metadata, RAG, SME notes, and carry-forward TBDs | `00_context_packages/<MODULE-SLUG>/` |
 | Phase 2 | 1 week | Synthesize module and BRD | `04_modules/`, `05_brds/` |
 | Phase 3 | 1 week | Run selective source verification | targeted program / flow / data / screen evidence |
 | Phase 4 | 1 week | SME review, post-BRD No-gap / Gap1 / Gap2 disposition when new-system context is available, and promoted spec / handoff only when needed | approved BRD, separate disposition record, optional `spec.yaml`, optional handoff package |

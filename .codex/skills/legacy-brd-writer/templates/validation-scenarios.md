@@ -2,7 +2,7 @@
 
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`
 **Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
-**Status:** `draft` | `in_review` | `approved`
+**Status:** `poc_draft` | `draft` | `in_review` | `approved`
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
@@ -21,6 +21,10 @@ Do not mint `AC-*` or `TC-*` here. Formal `AC-*` entries are produced by
 `legacy-spec-writer`; formal `TC-*` entries are produced by
 `legacy-golden-master-test-planner` after spec approval and runtime evidence
 review.
+
+When the BRD status is `poc_draft`, scenario seeds are discussion prompts only.
+Use `Readiness: poc_discussion_only` unless the scenario is already backed by
+code/runtime/SME evidence.
 
 ---
 
@@ -48,7 +52,7 @@ review.
 **SME Question:** `<What should the SME confirm or correct?>`
 **Expected Business Outcome:** `<Business-level outcome only; do not invent exact outputs>`
 **Data Needed Later:** `<Sample transaction, field set, spool sample, or runtime evidence needed for TC-* planning>`
-**Readiness:** `ready_for_spec` | `needs_sme_review` | `needs_runtime_evidence` |
+**Readiness:** `poc_discussion_only` | `ready_for_spec` | `needs_sme_review` | `needs_runtime_evidence`
 
 **Notes:**
 
@@ -68,7 +72,7 @@ review.
 **SME Question:** `<What policy or interpretation is unclear?>`
 **Expected Business Outcome:** `<Business-level outcome only>`
 **Data Needed Later:** `<Runtime sample / expected output evidence needed>`
-**Readiness:** `needs_sme_review`
+**Readiness:** `poc_discussion_only` | `needs_sme_review`
 
 **Notes:**
 

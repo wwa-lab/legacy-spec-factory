@@ -132,8 +132,14 @@ def validate(package_dir: Path, allow_blocked: bool) -> list[str]:
     open_questions = read_text(package_dir / "open-questions.md")
     if "## Recommended Next Prompt" not in open_questions:
         findings.append("open-questions.md must include Recommended Next Prompt")
-    if "legacy-ibmi-module-analyzer" not in open_questions and status in READY_STATUSES:
-        findings.append("ready packages must name legacy-ibmi-module-analyzer as the next prompt")
+    if status in READY_STATUSES:
+        has_module_handoff = "legacy-ibmi-module-analyzer" in open_questions
+        has_poc_brd_handoff = "legacy-brd-writer" in open_questions and "poc_draft" in open_questions
+        if not (has_module_handoff or has_poc_brd_handoff):
+            findings.append(
+                "ready packages must name legacy-ibmi-module-analyzer as the next prompt, "
+                "or legacy-brd-writer with poc_draft for internal POC handoff"
+            )
 
     return findings
 

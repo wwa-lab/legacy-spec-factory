@@ -162,8 +162,11 @@ def validate(package_dir: Path, allow_blocked: bool, allow_draft: bool) -> list[
         findings.append("source-document-index.yaml must list at least one document")
     if _UNKNOWN_AUTH_RE.search(source_index) and status in READY_STATUSES:
         findings.append("ready packages cannot include documents with unknown authorization")
-    if _UNREADABLE_RE.search(source_index) and status in READY_STATUSES:
-        findings.append("ready packages cannot include required unreadable documents")
+    if _UNREADABLE_RE.search(source_index) and status == "ready_for_context_intake":
+        findings.append(
+            "ready_for_context_intake packages cannot include required unreadable documents; "
+            "use triage_needs_source_enrichment or ready_with_warnings with carry-forward TBDs"
+        )
 
     for name in VIEW_FILES:
         text = read_text(package_dir / name)

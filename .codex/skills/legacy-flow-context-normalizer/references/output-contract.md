@@ -153,13 +153,13 @@ Rules:
   - `ready_for_context_intake`
   - `ready_with_warnings`
   - `blocked_pending_evidence`
-  - `blocked_pending_scope`
-  - `blocked_pending_readable_source`
   - `blocked_pending_contradiction_review`
+  - `blocked_pending_scope` (legacy compatibility only; prefer `triage_needs_source_enrichment`)
+  - `blocked_pending_readable_source` (legacy compatibility only; prefer `triage_needs_source_enrichment`)
 - `downstream_next_step` is `legacy-sme-review-facilitator` for drafts,
-  `source_owner_supplement_request` or SME clarification for sparse triage,
-  `legacy-module-context-intake` for ready packages, and the remediation route
-  for blocked packages.
+  `source_owner_supplement_request` and/or `legacy-module-context-intake` in
+  degraded mode for sparse triage, `legacy-module-context-intake` for ready
+  packages, and the remediation route for safety-blocked packages.
 - `run_validation.structural_status` records the deterministic structural
   check outcome: `pass`, `pass_with_warnings`, `blocked`, `not_run`,
   `tool_unavailable`, or `tool_unavailable_hosted_agent`.
@@ -175,24 +175,28 @@ Rules:
   recorded. Do not keep re-reading changed files or reopening previews unless a
   validator finding names a concrete file to fix.
 - `quality_level` must be one of `L3 strong`, `L2 partial`, `L1 sparse`, or
-  `L0 blocked`. Use `L1 sparse` when input is authorized and readable, or only
-  source/scope clues remain after optional binaries are skipped, but no flow
-  sequence can be safely generated.
-- `blocking_items[]` is empty only when all gates pass or all remaining items
-  are explicitly non-blocking.
+  `L0 safety_stop`. Use `L1 sparse` when input is authorized but unreadable in
+  the current runtime, non-Markdown, OCR/tool-constrained, limited to
+  source/scope clues, or otherwise unable to support a safe flow sequence.
+- `blocking_items[]` is reserved for safety/truthfulness stops. Ordinary
+  context-quality gaps belong in `supplement_requests[]`, `open-questions.md`,
+  and carry-forward `TBD-*` rows.
 - Gate/status compatibility: `warning` gates are compatible with
-  `ready_for_context_intake` or `ready_with_warnings` **only when** (a) the
-  warning item is recorded as a non-blocking question in `open-questions.md`
-  and (b) SME sign-off in `sme-review-pack.md` explicitly accepts the gap.
-  A `blocked` gate always forces a `blocked_*` status regardless of other
-  gates. Typical valid combination: `four_view_gate: warning` when one view
-  is `partial` coverage but SME confirms the gap does not block context
-  intake.
+  `triage_needs_source_enrichment`, `ready_with_warnings`, or
+  `ready_for_context_intake` when the warning item is recorded in
+  `open-questions.md` / `supplement_requests[]` and downstream restrictions are
+  visible. A `blocked` gate should be used only for authorization/redaction
+  safety or truthfulness violations. Missing Markdown, unreadable/OCR-limited
+  files, rough scope, or missing views must not force a `blocked_*` status.
+  Typical valid combination: `four_view_gate: warning` when one view is
+  `partial` coverage, or `readable_source_gate: warning` when a PNG/PDF exists
+  but OCR/text extraction is unavailable.
 - Missing view coverage is not a hard block by itself. Use `coverage.<view>:
   absent` or `partial`, keep `four_view_gate: warning`, and create an explicit
-  `TBD-*` in the missing view and `open-questions.md`. Escalate to
-  `blocked_*` only when the downstream step would have to invent sequence,
-  ownership, system boundary, or data meaning.
+  `TBD-*` in the missing view and `open-questions.md`. Do not escalate to
+  `blocked_*` for context quality gaps; downstream steps must carry the
+  `TBD-*` rather than invent sequence, ownership, system boundary, or data
+  meaning.
 - `coverage.brd_functional_analysis_hints` is advisory. It records which
   extracted fragments can later feed the SME-required BRD sections 1-9 and
   optional sections 10-12. A value of `absent` or `partial` does not block
@@ -214,19 +218,22 @@ Rules:
   and `supplement_requests[]` / `open-questions.md` must request the missing
   source. Do not draw API/menu/business labels as if they were AS400 program
   or file nodes.
-- When all four views are absent but the source set is authorized, readable,
-  and module-relevant, use `normalization.status:
+- When all four views are absent but the source set is authorized and
+  module-relevant, even if it is unreadable, non-Markdown, OCR/tool-constrained,
+  or limited to metadata/scope clues, use `normalization.status:
   triage_needs_source_enrichment` with `quality_level: L1 sparse`. The package
   still includes all ten files, but it is a source-quality triage output, not a
-  canonical module-flow package.
+  canonical module-flow package. It may continue to
+  `legacy-module-context-intake` in degraded mode.
 - If the source owner or SME confirms that no additional document, spec, or
   flow input can be provided, the package may move from
-  `triage_needs_source_enrichment` to `ready_with_warnings` only when
+  `triage_needs_source_enrichment` to `ready_with_warnings` when
   `risk_acceptance.status: accepted` includes a named accountable owner,
-  timestamp, rationale, and downstream restrictions. Additional Function
-  Specs, Technical Designs, Program Specs, File Specs, interface specs, data
-  dictionaries, RAG summaries, or SME notes may all be valid supplements. Do
-  not change
+  timestamp, rationale, and downstream restrictions. This conversion is not a
+  prerequisite for continuing the workflow; it is a stronger sign-off marker.
+  Additional Function Specs, Technical Designs, Program Specs, File Specs,
+  interface specs, data dictionaries, RAG summaries, or SME notes may all be
+  valid supplements. Do not change
   `quality_level: L1 sparse`, do not mark absent views as usable, and do not
   remove the `TBD-*` questions.
 
@@ -491,8 +498,8 @@ Required sections:
 ```markdown
 # Open Questions - <MODULE-SLUG>
 
-## Blocking Questions
-| TBD ID | View | Question | Evidence | Owner | Needed Before |
+## Carry-Forward Questions
+| TBD ID | View | Question | Evidence | Owner | Needed Before Approval |
 
 ## Non-Blocking Questions
 | TBD ID | View | Question | Evidence | Owner | Carry Forward |
@@ -507,8 +514,10 @@ Required sections:
 Rules:
 
 - Mint `TBD-*` for questions that affect downstream traceability.
-- Use `Blocking Questions` when downstream context intake would otherwise
-  invent sequence, ownership, system boundary, or data meaning.
+- Use `Carry-Forward Questions` when downstream context intake would otherwise
+  invent sequence, ownership, system boundary, or data meaning. These questions
+  do not block context intake; they block approval/promotion of the affected
+  fact until resolved or explicitly accepted as low-confidence.
 - Use `source_supplement_required` questions when View 3 lacks IBM i program
   anchors or View 4 lacks IBM i file/table/data-object anchors. Recommended
   supplements include API/menu-to-program mapping, inventory, ARCAD export,
@@ -585,7 +594,9 @@ already-available Python interpreter; do not create a virtual environment,
 install dependencies, or wait on interactive environment configuration. If
 interpreter startup remains configuring/evaluating, record validation as
 `tool_unavailable`, keep the package out of `ready_for_context_intake`, and
-report the manual command above.
+report the manual command above. The package may continue as
+`triage_needs_source_enrichment` or `ready_with_warnings` when the warning and
+carry-forward TBDs are recorded.
 
 It checks required files, status vocabulary, output-file references,
 view-to-evidence-map linkage, contradiction-log completeness, forbidden

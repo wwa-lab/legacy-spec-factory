@@ -57,6 +57,12 @@ A BRD section is `covered` only when at least one supporting row is
 `brd_conclusion_allowed`. Weak or generated four-view context can help ask
 better questions; it cannot make the BRD look complete.
 
+Internal POC exception: weak/source-documented/candidate material may appear in
+`status: poc_draft` BRD prose only as a visibly labeled review hypothesis or
+directional placeholder. It must not be counted as `covered`, must not become a
+`BEH-*` observed behavior or approved `BR-*`, and must link to source metadata
+or a `TBD-*` approval blocker.
+
 ### Program Chain Anti-Pattern
 
 Do not use the direct runtime chain as the as-is summary.
@@ -334,7 +340,9 @@ later comparison, gap analysis, spec-writing, or SDD handoff.
    ```
 
 3. **Mark blocking vs. non-blocking**:
-   - **Blocking for this step**: SME must resolve before BRD can be approved
+   - **Blocking for this step**: SME must resolve before BRD can be approved.
+     In internal POC mode, this blocks approval/spec/handoff, not creation of
+     the POC draft.
    - **Non-blocking for this step, blocking for a later gate**: risk
      comparison, gap analysis, spec-writing, or SDD handoff must resolve or
      explicitly carry it before proceeding
