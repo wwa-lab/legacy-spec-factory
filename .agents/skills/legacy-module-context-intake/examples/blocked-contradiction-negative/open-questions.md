@@ -1,8 +1,8 @@
 # Open Questions - PAYMENT-MATCH
 
-## Blocking Questions
+## Safety Stop Questions
 
-| TBD ID | Source ID | Question | Owner | Route To | Needed Before |
+| TBD ID | Source ID | Question | Owner | Route To | Needed Before Reading/Promoting Content |
 | --- | --- | --- | --- | --- | --- |
 | TBD-PAYMENT-MATCH-001 | RAG-CONFLICT-PAYMENT-MATCH-001 | Is payment matching triggered daily EOD or on a weekly batch schedule? The SME note and runtime job log contradict each other. | AR Operations SME | SME review session | approving any downstream module analysis, BRD, or modernization decision |
 

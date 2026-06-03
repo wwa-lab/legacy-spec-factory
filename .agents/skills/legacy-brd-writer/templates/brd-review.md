@@ -3,8 +3,8 @@
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`  
 **Capability Owner (SME):** `<Name / Role>`  
 **Review Date:** `<YYYY-MM-DD>`
-**Status:** `in_review` | `approved` | `needs_revision` | `rejected`
-**Evidence Mode:** `code_backed` | `context_only`
+**Status:** `poc_draft` | `in_review` | `approved` | `needs_revision` | `rejected`
+**Evidence Mode:** `code_backed` | `context_only` | `internal_poc`
 
 ---
 
@@ -60,6 +60,11 @@ similar document-quality section.
 - [ ] For `context_only` mode, the named risk acceptance is recorded, missing
       object-map / program / flow artifacts are `TBD-*` blockers, and this BRD
       is not marked `approved`.
+- [ ] For `internal_poc` mode, the requester/project POC owner is recorded,
+      missing object-map / program / flow / SME / OCR / source-eligibility items
+      are visible as approval/spec blockers, weak statements are marked as
+      low-confidence hypotheses, and this BRD is not used for spec, SDD handoff,
+      or delivery decisions.
 - [ ] Business owners and SMEs can use the BRD to confirm initial scope and
       inferred rule direction.
 - [ ] `brd.md` contains no generic document-success criteria, formal `AC-*`
@@ -293,6 +298,9 @@ similar document-quality section.
 - [ ] `approved` — Use as the legacy-system discovery baseline
 - [ ] `approved_with_non_blocking_tbd` — Use as discovery baseline; carry
       non-blocking TBDs listed below
+- [ ] `poc_draft` — Use only for internal POC discussion; standard BRD approval,
+      spec writing, SDD handoff, and delivery decisions remain blocked until
+      listed approval/spec blockers are resolved
 - [ ] `needs_revision` — Return to author with specific feedback
 - [ ] `rejected` — Do not use as migration-discovery baseline
 

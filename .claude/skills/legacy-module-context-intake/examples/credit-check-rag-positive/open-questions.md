@@ -1,8 +1,8 @@
 # Open Questions - CREDIT-CHECK
 
-## Blocking Questions
+## Carry-Forward Questions
 
-| TBD ID | Source ID | Question | Owner | Route To | Needed Before |
+| TBD ID | Source ID | Question | Owner | Route To | Needed Before Approval |
 | --- | --- | --- | --- | --- | --- |
 | TBD-CREDIT-CHECK-002 | RAG-GAP-CREDIT-CHECK-005 | Does the wrapper use or discard the returned credit decision? | IBM i developer | legacy-ibmi-program-analyzer | approving system/program flow |
 | TBD-CREDIT-CHECK-004 | RAG-GAP-CREDIT-CHECK-001 | How is available credit derived from physical customer credit fields? | Data owner | legacy-ibmi-data-model-analyzer | approving data flow |

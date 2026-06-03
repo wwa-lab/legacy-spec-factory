@@ -1,7 +1,7 @@
 # Open Questions - PAYMENT-RECON
 
-## Blocking Questions
-| TBD ID | View | Question | Evidence | Owner | Needed Before |
+## Safety Stop Questions
+| TBD ID | View | Question | Evidence | Owner | Needed Before Reading Content |
 | --- | --- | --- | --- | --- | --- |
 | TBD-PAYMENT-RECON-001 | Cross-view | Is this deck approved and redacted for agent review? | DOC-PAYMENT-RECON-001 | legacy-ibmi-evidence-intake | flow normalization |
 

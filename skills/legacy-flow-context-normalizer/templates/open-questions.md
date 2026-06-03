@@ -1,9 +1,9 @@
 # Open Questions - <MODULE-SLUG>
 
-## Blocking Questions
-| TBD ID | View | Question | Evidence | Owner | Needed Before |
+## Carry-Forward Questions
+| TBD ID | View | Question | Evidence | Owner | Needed Before Approval |
 | --- | --- | --- | --- | --- | --- |
-| TBD-<MODULE-SLUG>-001 | <View> | <Question> | DOC-<MODULE-SLUG>-001 | <Owner> | context intake |
+| TBD-<MODULE-SLUG>-001 | <View> | <Question> | DOC-<MODULE-SLUG>-001 | <Owner> | approved BRD/spec fact |
 
 ## Non-Blocking Questions
 | TBD ID | View | Question | Evidence | Owner | Carry Forward |
@@ -16,5 +16,5 @@
 ## Recommended Next Prompt
 Use `legacy-sme-review-facilitator` to review the draft four-view context
 package under `00_context_packages/<MODULE-SLUG>/flow-normalization/`. Confirm the four views,
-resolve blocking TBDs, and record which items may be carried forward before
-running `legacy-module-context-intake`.
+resolve or carry forward TBDs, and record which items remain low-confidence
+when running `legacy-module-context-intake`.

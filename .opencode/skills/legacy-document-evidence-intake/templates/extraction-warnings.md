@@ -3,7 +3,7 @@
 Module: `<MODULE-SLUG>` · Document set: `<DOCSET-SLUG>`
 
 Narrative list of every warning that must travel forward to
-`legacy-flow-context-normalizer`. An empty section means "evaluated, none found"
+`legacy-module-context-intake`. An empty section means "evaluated, none found"
 — state that explicitly rather than deleting the section.
 
 ## Security Review Flags (macros / encrypted content)

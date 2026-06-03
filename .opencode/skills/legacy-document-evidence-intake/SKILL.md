@@ -1,6 +1,6 @@
 ---
 name: legacy-document-evidence-intake
-description: "Intake and format-normalize legacy enterprise documents (Excel .xlsx/.xlsm/.xls, Word .docx/.doc, PowerPoint .pptx/.ppt, Visio .vsdx/.vsd, PDF, images, screenshots, scanned docs) into Markdown, CSV, PDF, PNG/SVG, and manifests with evidence coordinates and quality gates before legacy-flow-context-normalizer. Use when business/technical documents are in formats that GitHub Copilot or downstream LLM skills cannot reliably consume, when legacy binary Office or Visio files need conversion, or when macros, scanned pages, or unauthorized production data require security/redaction review. Does not infer business rules, generate BRD/spec content, approve evidence, or hide contradictions. Routes to legacy-ibmi-evidence-intake when sensitivity or authorization is unresolved; otherwise hands off to legacy-flow-context-normalizer."
+description: "Intake and format-normalize legacy enterprise documents (Excel .xlsx/.xlsm/.xls, Word .docx/.doc, PowerPoint .pptx/.ppt, Visio .vsdx/.vsd, PDF, images, screenshots, scanned docs) into Markdown, CSV, PDF, PNG/SVG, and manifests with evidence coordinates and quality gates before legacy-module-context-intake. Use when business/technical documents are in formats that GitHub Copilot or downstream LLM skills cannot reliably consume, when legacy binary Office or Visio files need conversion, or when macros, scanned pages, or unauthorized production data require security/redaction review. Does not infer business rules, generate BRD/spec content, approve evidence, or hide contradictions. Routes to legacy-ibmi-evidence-intake when sensitivity or authorization is unresolved; otherwise hands off to legacy-module-context-intake."
 ---
 
 <!--
@@ -25,7 +25,7 @@ Retain this notice in substantial copies or derived versions.
 | Output | Normalized Markdown / CSV / PDF / PNG / SVG files, manifests, quality gates, and redaction or blocked notes. |
 | Core prompt strategy | Normalize formats first, preserve page/sheet/shape coordinates, flag unreadable or sensitive content, and avoid business-rule inference. |
 | Upstream skill | `legacy-modernization-orchestrator` or direct user-provided raw document intake. |
-| Downstream consumer | `legacy-flow-context-normalizer`, `legacy-module-context-intake`, or `legacy-ibmi-evidence-intake` when sensitivity is unresolved. |
+| Downstream consumer | `legacy-module-context-intake` or `legacy-ibmi-evidence-intake` when sensitivity is unresolved. |
 | Validation standard | Every output file maps back to source coordinates, conversion warnings are explicit, and unauthorized production data is blocked. |
 | Known risk | Losing evidence provenance during conversion or accidentally passing hidden PII/macros into downstream analysis. |
 | Practical example | Convert a Visio process map and workbook tabs into Markdown/CSV plus a manifest before drafting module context. |
@@ -64,12 +64,13 @@ It does **not**:
 - smooth over contradictions or pretend a failed conversion succeeded.
 
 The next normal skill after a successful document intake is
-`legacy-flow-context-normalizer`, which organizes evidence-bounded four-view
-coverage, gaps, and SME questions from the normalized fragments produced here.
+`legacy-module-context-intake`, which packages the normalized fragments,
+warnings, source metadata, and carry-forward TBDs as low-confidence module
+context without requiring a separate `flow-normalization/` package.
 
 ## Boundary
 
-Use this skill **before** `legacy-flow-context-normalizer` when the source
+Use this skill **before** `legacy-module-context-intake` when the source
 material is still in raw Office / Visio / PDF / image form and has not been
 converted to Markdown / CSV / PDF / PNG / SVG with manifests.
 
@@ -78,12 +79,10 @@ Do not use it as a replacement for:
 - `legacy-ibmi-evidence-intake` — when sensitivity is unknown, source
   authorization is missing, production data is unapproved, or redaction is
   required. Route there first; this skill must not inspect unauthorized content.
-- `legacy-flow-context-normalizer` — which owns four-view coverage
-  organization, sparse-input triage, SME review questions, and
-  `FRAG-*`/view classification. This skill only produces normalized format
-  outputs and coordinates, not flow views or BRD facts.
-- `legacy-module-context-intake` — which normalizes already-reviewed context
-  or external RAG output.
+- `legacy-module-context-intake` — which owns source eligibility,
+  carry-forward TBDs, low-confidence context packaging, and downstream module
+  context handoff. This skill only produces normalized format outputs and
+  coordinates, not flow views or BRD facts.
 
 This skill performs **format normalization and structural extraction only**.
 If you find yourself classifying fragments into Operation / System / Program /
@@ -131,7 +130,7 @@ Stop and produce only blocking findings (gate `blocked`) if any apply:
 | Production data sample is present and unapproved | `legacy-ibmi-evidence-intake` |
 | Redaction is required and no approval is recorded | `legacy-ibmi-evidence-intake` |
 | Module slug or document-set slug is missing | document owner clarification |
-| No authorized readable content remains after optional binary/OCR/converter-dependent inputs are skipped | request a readable export / better tooling |
+| No authorized source metadata remains after skipped inputs are registered | document owner clarification |
 
 Missing conversion/OCR tooling is **not** a hard stop for the whole intake when
 other authorized readable material exists. Register the affected document,
@@ -140,7 +139,10 @@ warning such as `skipped_optional_binary_unreadable`, and continue with the
 readable documents. The package may still be `ready_with_warnings` if at least
 one authorized document produced usable `FRAG-*` evidence. Only make the whole
 package `blocked` when authorization/sensitivity blocks exist or every supplied
-source is skipped/unreadable.
+source is skipped/unreadable. A package blocked only for tooling/readability is
+not a workflow stop: preserve source metadata, hashes, paths, and warnings, then
+allow `legacy-module-context-intake` to ingest it as degraded source metadata
+with no strong extracted `FRAG-*` evidence.
 
 ## Macro Security Policy (`.xlsm` and macro-enabled Office)
 
@@ -169,6 +171,12 @@ source is skipped/unreadable.
   in `conversion-log.md`. If a probe or interpreter startup remains in a
   configuring/evaluating state, stop using that tool for this run and record it
   as unavailable.
+- A visible "configuring Python environment", "evaluating Python environment",
+  package selection prompt, interpreter discovery prompt, or IDE-managed Python
+  setup state is a terminal tooling signal for the current run. Do not wait for
+  it, retry it, or switch to Python-based library probing. Record
+  `tool_unavailable_python_environment_configuring` and continue with manifests,
+  warnings, readable exports, or manual remediation instructions.
 - **GitHub Copilot hosted-agent mode**: do not run Python commands, shell
   probes, package installs, virtual-environment setup, LibreOffice, OCR, or
   converter commands from this skill unless the user explicitly confirms the
@@ -178,8 +186,10 @@ source is skipped/unreadable.
   environment setup.
 - The bundled validator is a standard-library Python script. Run it only with
   an already-available interpreter and never install dependencies for it. If no
-  Python interpreter is available, record validation as `tool_unavailable`, keep
-  the package gate `blocked`, and report the exact remediation.
+  Python interpreter is available, record validation as `tool_unavailable`; do
+  not change the package gate solely because the validator could not run. Route
+  safety/authorization blockers to evidence intake, and route tooling-only gaps
+  forward as degraded module context.
 - Optional converters/enhancers such as LibreOffice, OCR engines, PDF renderers,
   or Docling are never installed automatically. Missing optional tooling is
   evidence for the package gate, not a reason to stall.
@@ -251,7 +261,7 @@ The package-level **quality gate** in `intake.manifest.yaml` must be one of:
 
 Allowed handoff:
 
-- `ready` / `ready_with_warnings` → `legacy-flow-context-normalizer`
+- `ready` / `ready_with_warnings` → `legacy-module-context-intake`
 - `blocked` (authorization/sensitivity) → `legacy-ibmi-evidence-intake`
 - `blocked` (tooling/readability) → request better export or tooling; record
   remediation in `extraction-warnings.md` and `intake.manifest.yaml`
@@ -324,8 +334,11 @@ This skill conforms to the Legacy Spec Factory Step Contract. See
 - **Required gates**: authorization/sensitivity, conversion-honesty (no faked
   conversions), macro security, extraction quality, and no downstream
   inference.
-- **Handoff status**: only `ready` and `ready_with_warnings` may feed
-  `legacy-flow-context-normalizer`; warnings travel forward.
+- **Handoff status**: `ready` and `ready_with_warnings` feed
+  `legacy-module-context-intake` as document evidence. Packages blocked only by
+  tooling/readability may also be referenced by `legacy-module-context-intake`
+  as degraded source metadata; warnings travel forward and no extracted claim is
+  promoted as strong evidence.
 
 ### Validation
 
@@ -358,6 +371,10 @@ Emit a Step Validation Report (see
    - In GitHub Copilot hosted-agent mode, do not run shell probes. If prior
      runtime facts are not already visible, record converters/OCR/Python as
      `tool_unavailable` and continue with honest warnings or a blocked gate.
+   - If an IDE or hosted runtime starts configuring/evaluating Python while
+     probing OCR, stop the probe immediately. Record
+     `tool_unavailable_python_environment_configuring`; do not block the agent
+     loop waiting for environment setup.
    - In an already-prepared local shell only, bounded PATH checks may be used.
 
 2. **Register source files** (`intake.manifest.yaml`)
@@ -407,15 +424,18 @@ Emit a Step Validation Report (see
 9. **Validate**
    - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
      Record `run_validation.structural_status:
-     tool_unavailable_hosted_agent` in `intake.manifest.yaml`, keep the package
-     out of downstream handoff, and report the manual validator path:
+     tool_unavailable_hosted_agent` in `intake.manifest.yaml`; do not treat the
+     package as validated extraction evidence, but do allow downstream degraded
+     module-context intake when authorization/sensitivity is clear. Report the
+     manual validator path:
      `skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py`.
    - In an already-prepared local shell only, run the bundled validator with an
      existing Python interpreter and fix every finding before handoff. Record
      the result in `intake.manifest.yaml.run_validation`.
    - If no interpreter is available, do not create a virtual environment or
-     install Python packages; record the validation tooling gap and keep the
-     package `blocked` until validation can run.
+     install Python packages; record the validation tooling gap and continue
+     according to the evidence gate. Tooling-only validation gaps must not route
+     to flow normalization or stop module-context intake.
    - Artifact preview status is informational only; it is not the validation
      gate. The gate is the manifest, normalized output file list, evidence
      coordinates, quality/warning files, and validator/manual structural
@@ -435,16 +455,23 @@ Emit a Step Validation Report (see
 ## Handoff
 
 After a `ready` / `ready_with_warnings` package is validated, run
-`legacy-flow-context-normalizer` with:
+`legacy-module-context-intake` with:
 
 - the normalized Markdown / CSV / PDF / PNG / SVG outputs,
 - `intake.manifest.yaml` and `evidence-coordinates.md` (so `DOC-*` / `FRAG-*`
   IDs carry forward),
 - `extraction-warnings.md` (so macro/OCR/visual-review warnings stay visible).
 
-Tell the normalizer that any macro-derived content marked `promotion: blocked`
+Tell module context intake that any macro-derived content marked `promotion: blocked`
 must not become strong evidence without security review, and that
 low-confidence OCR fragments remain low-confidence until SME/source confirms.
+
+If the package is blocked only because OCR, Python, converter, preview, or
+readable-export tooling is unavailable, do not run flow normalization and do not
+stall. Route `intake.manifest.yaml`, source metadata, `conversion-log.md`, and
+`extraction-warnings.md` directly to `legacy-module-context-intake` as degraded
+input; downstream must create low-confidence `TBD-*` items instead of extracted
+facts.
 
 ## Adversarial Cases
 
@@ -459,7 +486,7 @@ low-confidence OCR fragments remain low-confidence until SME/source confirms.
 - **Unknown sensitivity / unauthorized**: route to
   `legacy-ibmi-evidence-intake`; do not open the content.
 - **Contradictory documents**: record both; do not silently pick one. Carry the
-  conflict forward as a `TBD-*` for the normalizer/SME.
+  conflict forward as a `TBD-*` for module context intake / SME review.
 
 ## Success Criteria
 
@@ -471,8 +498,9 @@ low-confidence OCR fragments remain low-confidence until SME/source confirms.
 - ✅ Macro-enabled files carry static-only findings and a security flag.
 - ✅ Quality gate is one of `ready`, `ready_with_warnings`, `blocked`.
 - ✅ No business rules, flows, BRD/spec content, or approvals were produced.
-- ✅ The validator passes before handoff to
-  `legacy-flow-context-normalizer`.
+- ✅ The validator passes before validated-evidence handoff to
+  `legacy-module-context-intake`; if the validator is unavailable, the gap is
+  recorded and only degraded metadata handoff is allowed.
 
 ## Runtime Portability
 
@@ -500,11 +528,14 @@ copies directly. No runtime-specific assumptions are baked into this source.
   stop-after-writeback completion boundary so large document-intake packages do
   not remain in processing after normalized outputs and validation status are
   written.
+- v0.1.3 (2026-06-03): Made IDE-managed Python environment configuration an
+  explicit terminal tooling signal; OCR/library probing must stop and record
+  `tool_unavailable_python_environment_configuring` instead of waiting.
 - v0.1.0 (2026-05-29): Initial legacy document evidence intake and format
   normalization skill. Converts Excel / Word / PowerPoint / Visio / PDF / image
   / scanned documents into Markdown / CSV / PDF / PNG / SVG with manifests,
   evidence coordinates, and `ready` / `ready_with_warnings` / `blocked` quality
   gates. Static-only macro policy, honest-conversion policy, optional Docling
   as a non-canonical enhancer. Pre-normalization entry layer before
-  `legacy-flow-context-normalizer`; routes unauthorized/unknown-sensitivity
+  `legacy-module-context-intake`; routes unauthorized/unknown-sensitivity
   material to `legacy-ibmi-evidence-intake`.

@@ -50,17 +50,15 @@ also records which skill pairs were intentionally **not** merged and why.
 Module-First Entry (scattered docs / external RAG / four-view context)
    ↓ legacy-document-evidence-intake (only when source is raw Office/Visio/PDF/image and not yet normalized)
       - normalize Excel/Word/PPT/Visio/PDF/image → Markdown/CSV/PDF/PNG/SVG + manifests + evidence coordinates
-00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/ (ready / ready_with_warnings before normalization)
-   ↓ legacy-flow-context-normalizer
-      - L3/L2: evidence-bounded context coverage views for SME review
-      - L1: source-quality triage when no safe sequence can be evidenced
-00_context_packages/<MODULE-SLUG>/flow-normalization/ (coverage, questions, or triage; SME/source review first)
+00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/ (ready / ready_with_warnings / blocked-by-tooling metadata)
    ↓ legacy-module-context-intake
 00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
    ↓ CODE-BACKED ENRICHMENT CHECKPOINT for standard BRD/spec work
       - if source/object evidence exists or the target is a code-backed BRD,
         run inventory → program analysis → flow analysis before approving
         module/BRD outputs
+      - if the target is internal POC validation, allow `legacy-brd-writer` to
+        produce `status: poc_draft` with approval/spec blockers instead
    ↓ legacy-ibmi-module-analyzer
 
 Raw Legacy Evidence (IBM i source, DDS, DB2, job log, spool, screen, SME notes)
@@ -274,9 +272,9 @@ the full table. Common cases:
 
 | Current Input | Stage |
 | --- | --- |
-| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed four-view context | Flow Context Normalization |
-| `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Flow Context Normalization — source enrichment needed |
-| `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Flow Context Normalization — SME review needed |
+| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed four-view context | Module Context Intake — degraded context allowed |
+| `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Legacy Flow Normalization artifact — skip new flow-normalization and ingest through Module Context Intake |
+| `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Legacy Flow Normalization artifact — skip new flow-normalization and ingest through Module Context Intake |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
 | Redacted evidence bundle with sensitivity recorded | Evidence Ready |
 | `inventory.yaml` with `sme_review.decision: blocked` | Inventory Blocked |
@@ -326,7 +324,8 @@ for the full table. Common routes:
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
 | Raw Office/Visio/PDF/image docs, no `document-intake` manifest yet (authorized, sensitivity known) | Normalize formats + evidence coordinates | `legacy-document-evidence-intake` | Implemented v0.1.0 |
-| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize evidence slots, questions, and coverage | `legacy-flow-context-normalizer` | Implemented v0.1.12 |
+| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Package as low-confidence module context with TBDs | `legacy-module-context-intake` | Implemented v0.1.8 |
+| Scattered docs/source metadata/context package, user explicitly wants early internal POC BRD | Produce a non-approved BRD review artifact with low-confidence hypotheses and approval/spec blockers | `legacy-brd-writer` | Implemented v0.1.9 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -335,7 +334,8 @@ for the full table. Common routes:
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
 | Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** |
 | Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.2** |
-| Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
+| Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested standard/code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
+| Module context ready but no code evidence backbone, and requester wants internal POC BRD now | Produce `poc_draft` only; do not approve or route to spec/handoff | `legacy-brd-writer` | **Implemented v0.1.9** |
 | Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME discovery review | `legacy-brd-writer` | **Implemented v0.1.7** |
 | Approved BRD Package, post-BRD No-gap / Gap1 / follow-new-system decision | Discovery complete for that item; new system is source of truth | Stop / record disposition outside BRD | Human gate |
 | Approved BRD Package, post-BRD risk assessment or gap analysis open | Resolve disposition before spec-writing | Risk / gap-analysis process, then route back | Human / external gate |
@@ -373,11 +373,12 @@ substance the skipped layer would have contributed.
 - Module context / document-normalization output → approved BRD while
   `01_inventory/object-map.md`, required `program-analysis-<OBJ-ID>.md`, or
   required `flow-<FLOW-SLUG>.md` are missing, unless the requester records an
-  explicit context-only BRD draft risk acceptance and the BRD remains
-  non-approved
+  explicit context-only or internal POC BRD draft acceptance and the BRD remains
+  non-approved (`status: poc_draft`, `draft`, or `in_review`, never
+  `approved`)
 - Generated-draft, candidate-only, or questions-only context → BRD conclusion;
-  these may only produce `TBD-*`, SME questions, or source-owner supplement
-  requests
+  these may only produce `TBD-*`, SME questions, source-owner supplement
+  requests, or clearly labeled POC hypotheses in a `poc_draft`
 - Module Analysis Done → Spec Writer without an approved BRD Package, unless
   the requester explicitly records a technical-spec-only bypass and accepts the
   review risk
@@ -388,70 +389,84 @@ If a skip is unsafe, say so and route to the missing prerequisite.
 
 ### Module-First Document Routing
 
-**Pre-route rule (format normalization first).** Before routing to
-`legacy-flow-context-normalizer`, check the form of the source material:
+**Default rule: skip flow normalization.** `legacy-flow-context-normalizer` is
+not part of the default orchestrated chain. Do not create
+`flow-normalization/` packages unless the user explicitly asks for that
+specific optional artifact. Route scattered documents, source metadata,
+document-intake manifests, RAG output, and SME notes directly to
+`legacy-module-context-intake` after the safety evidence checks below.
 
 - If the inputs are raw Office / Visio / PDF / image files (`.xlsx`, `.xlsm`,
   `.xls`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.vsdx`, `.vsd`, `.pdf`, `.png`,
   `.jpg`, `.tif`, scanned pages) **and** there is no
   `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/intake.manifest.yaml`
-  yet, route to `legacy-document-evidence-intake` first.
+  yet, route to `legacy-document-evidence-intake` first when conversion/OCR or
+  extraction tooling is available. If the runtime is hosted, constrained, or
+  tooling is unavailable, do not stall on format normalization; route to
+  `legacy-module-context-intake` with source metadata and explicit
+  unreadable/tooling warnings.
 - **Exception:** if any source has `sensitivity: unknown` or missing/`unauthorized`
   authorization (or unapproved production data, or required redaction), route to
   `legacy-ibmi-evidence-intake` first instead — neither this orchestrator nor the
   document-intake skill may open unauthorized content.
 - If an `intake.manifest.yaml` exists with gate `ready` or `ready_with_warnings`,
-  proceed to `legacy-flow-context-normalizer` using its normalized outputs,
+  proceed to `legacy-module-context-intake` using its normalized outputs,
   `evidence-coordinates.md`, and `extraction-warnings.md`.
+- If an `intake.manifest.yaml` exists but is blocked only because converters,
+  OCR, Python, visual preview, or readable export tooling is unavailable,
+  proceed to `legacy-module-context-intake` in degraded mode using the
+  manifest, source metadata, and warnings. Do not require Markdown before the
+  workflow can continue.
 - If the material is already normalized text/Markdown/CSV (or external RAG), skip
-  document intake and route straight to `legacy-flow-context-normalizer`.
+  document intake and route straight to `legacy-module-context-intake`.
 
 When the user has historical documents/specs but no SME-reviewed module
-context, route to `legacy-flow-context-normalizer` even when the material
-looks weak. The router must not require perfect four-view input before
-starting. Function Specs, Technical Designs, Program Specs, File Specs,
-interface specs, data dictionaries, RAG summaries, and SME notes are all valid
-optional starting material.
-This route is for evidence-bounded elicitation and coverage only. It must not
-promise that the agent will generate BRD-ready flows.
+context, route to `legacy-module-context-intake` even when the material looks
+weak. The router must not require perfect four-view input, Markdown, OCR, or a
+flow-normalization package before starting. Function Specs, Technical Designs,
+Program Specs, File Specs, interface specs, data dictionaries, RAG summaries,
+SME notes, raw PDF/PNG metadata, and source-owner scope clues are all valid
+starting material. This route packages low-confidence context and TBDs; it
+must not promise BRD-ready flows.
 
 Use this quality-aware routing:
 
 | Input Quality | Route | Expected Status |
 | --- | --- | --- |
-| Documents/specs appear able to support all four views | `legacy-flow-context-normalizer` | evidence-bounded coverage views with `draft_needs_sme_review` or later `ready_for_context_intake` |
-| Documents/specs support only some views | `legacy-flow-context-normalizer` | coverage views with placeholders/TBDs, or SME-accepted `ready_with_warnings` |
-| Documents/specs are authorized/readable but too sparse to evidence a safe sequence | `legacy-flow-context-normalizer` | `triage_needs_source_enrichment` |
-| Sparse package already has named owner risk acceptance and no additional inputs can be provided | `legacy-module-context-intake` | `ready_with_warnings` only; preserve `quality_level: L1 sparse` and carry-forward TBDs |
-| Documents are unauthorized, unreadable, out of scope, or lack any module boundary | Evidence intake, readable export, or SME boundary clarification | `blocked_*` remediation |
+| Documents/specs appear able to support all four views | `legacy-module-context-intake` | `ready_with_warnings` or `ready_for_module_analysis` after provenance/source eligibility checks |
+| Documents/specs support only some views | `legacy-module-context-intake` | `ready_with_warnings`; missing views become carry-forward `TBD-*` |
+| Documents/specs are authorized but unreadable, non-Markdown, OCR/tool-constrained, or too sparse to evidence a safe sequence | `legacy-module-context-intake` | `ready_with_warnings`; preserve source metadata, warnings, and low-confidence TBDs |
+| Legacy `flow-normalization/` package already exists | `legacy-module-context-intake` | Treat as optional legacy input; do not create or rerun flow-normalization |
+| Documents are unauthorized, have unknown sensitivity, need unapproved redaction, or user requests hidden contradictions / approved facts without evidence | Evidence intake, redaction, or SME review | safety `blocked_*` remediation |
 
-Do not route a `triage_needs_source_enrichment` package to
-`legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, or
-`legacy-brd-writer`. Route it to source-owner supplement collection or SME
-clarification first. If the owner explicitly accepts that no more flow input
-can be provided, route the resulting `ready_with_warnings` package to
-`legacy-module-context-intake`, not to module analysis or BRD generation.
-State that all sparse facts remain low-confidence and cannot become approved
-rules without later corroboration.
+Do not route scattered documents to `legacy-flow-context-normalizer` by
+default. If a legacy `triage_needs_source_enrichment` package already exists,
+`legacy-module-context-intake` may ingest it as low-confidence context. State
+that all sparse facts remain low-confidence, every missing item remains a
+`TBD-*`, and nothing can become an approved rule without later SME, code,
+runtime, or readable-document corroboration.
 
 Before routing to `legacy-brd-writer`, check the module overview's BRD Source
 Eligibility Crosswalk. If required BRD sections are `questions_only`,
 `candidate_only`, `generated_draft`, `missing`, or unreviewed
 `source_documented`, route to SME review / source enrichment or allow only BRD
-TBDs and review questions. Do not route those rows as BRD conclusions.
+TBDs and review questions. For an explicit internal POC request, route to
+`legacy-brd-writer` with `status: poc_draft`; those rows may become labeled POC
+hypotheses, but not BRD conclusions.
 
 ### Code-Backed BRD Enrichment Gate
 
 The standard Legacy Spec Factory BRD is **code-backed**. A document-first or
-RAG-first run may create useful context packages, but those packages do not
-replace the Layer 1 evidence backbone when the user expects a BRD that describes
-the legacy system with code confidence.
+RAG-first run may create useful context packages, and it may support an internal
+POC BRD draft, but those packages do not replace the Layer 1 evidence backbone
+when the user expects a BRD that describes the legacy system with code
+confidence or can feed spec/handoff work.
 
 Before routing a module-first package to an approvable module analysis or BRD,
 check whether any of the following are true:
 
-- the user's target is a production / internal-use BRD, migration discovery
-  baseline, spec, or SDD handoff input
+- the user's target is a production / standard internal-use BRD, migration
+  discovery baseline, spec, or SDD handoff input
 - the input package references IBM i / AS400 programs, jobs, files, PF/LF,
   DSPF, PRTF, DDS/DDL, ARCAD inventory, DSPPGMREF output, source members, or
   code/RAG snippets
@@ -470,14 +485,16 @@ artifact:
 4. `legacy-ibmi-module-analyzer` to assemble canonical four-view module coverage
 5. `legacy-brd-writer`
 
-Only allow a direct context-only module / BRD draft when the user explicitly
-records a named owner risk acceptance that source/object evidence is not
-available for this cycle. In that case:
+Allow a direct context-only module / BRD draft when the user explicitly records
+a named owner risk acceptance that source/object evidence is not available for
+this cycle. Allow an internal POC BRD draft when the user explicitly asks for
+POC/early BRD output and accepts non-approved status. In those cases:
 
-- the module and BRD must label the evidence mode as `context_only`
+- the module and BRD must label the evidence mode as `context_only` or
+  `internal_poc`
 - missing object map, program analysis, and flow analysis are explicit
-  `TBD-*` blockers for code-backed approval
-- `brd.md` may be `draft` or `in_review`, but not `approved`
+  `TBD-*` blockers for code-backed approval and spec/handoff
+- `brd.md` may be `poc_draft`, `draft`, or `in_review`, but not `approved`
 - traceability must not use `confirmed_from_code` unless linked code-derived
   evidence exists
 
@@ -515,9 +532,11 @@ Do not route No-gap, Gap1, follow-new-system, or pending-decision outcomes to
 spec-writing. When risk assessment or gap analysis is open, route to the named
 business/risk/gap-analysis owner first.
 
-If BRD review is still draft, blocked, or missing sections 1-9 without named
-`TBD-*` carry-forward, route back to `legacy-brd-writer` or
-`legacy-sme-review-facilitator`.
+If BRD review is still `poc_draft`, draft, blocked, or missing sections 1-9
+without named `TBD-*` carry-forward, route back to `legacy-brd-writer` or
+`legacy-sme-review-facilitator`; do not route to spec. A `poc_draft` BRD may be
+shown to internal stakeholders for POC validation, but it is not a passed BRD
+Discovery Gate.
 
 ### Step 4B — Apply Hard Gates
 
@@ -529,7 +548,7 @@ Before any handoff, check the gate that applies to that transition. See
 | **Evidence Authorization Gate** | Before any Layer 1 skill or any agent reads evidence | Any evidence has `sensitivity: unknown`, lacks source-path authorization, or requires redaction without an approval record |
 | **Inventory Completeness Gate** | Before any Layer 1 analyzer downstream of inventory, and before any Layer 2 skill | `inventory.yaml.sme_review.decision: blocked`, or any `coverage_gaps` entry with `blocking: yes` is unresolved |
 | **Code-Backed Analysis Gate** | Before approving module analysis or BRD for standard BRD/spec work | Missing `01_inventory/object-map.md`, incomplete in-scope program analyses, incomplete in-scope flow analyses, or no explicit context-only risk acceptance |
-| **BRD Discovery Gate** | After module analysis and before any spec-writing decision | No approved BRD Package exists for the selected `CAP-*`, BRD sections 1-9 are incomplete without named `TBD-*`, or BRD review is blocked |
+| **BRD Discovery Gate** | After module analysis and before any spec-writing decision | No approved BRD Package exists for the selected `CAP-*`, BRD is `poc_draft`/draft/in_review, BRD sections 1-9 are incomplete without named `TBD-*`, or BRD review is blocked |
 | **Post-BRD Disposition Gate** | Before `legacy-spec-writer` in the standard workflow | Approved BRD has no separate promotion decision, item is No-gap / Gap1 / follow-new-system, or risk/gap-analysis owner has not cleared promotion |
 | **Evidence Approval Gate** | Before `legacy-spec-writer` produces an approvable spec | Any business rule has `review_status: needs_sme_review` or no linked evidence, and `knowledge_type` is not `modernization_decision` |
 | **Forward Handoff Gate** | Before crossing to `wwa-lab/build-agent-skill` | `spec.yaml.status` is not `approved`, any critical rule unapproved, any blocking TBD remains, or `acceptance_criteria` missing for any approved rule |
@@ -1310,6 +1329,16 @@ runtime copies.
   normalization reports `00_context_packages/` files as context views, while
   canonical `04_modules/` four-view module artifacts remain owned by
   `legacy-ibmi-module-analyzer`.
+- v0.2.5 (2026-06-03): Made context-normalization quality gaps non-blocking
+  for routing. Missing Markdown, unreadable/OCR-limited documents,
+  converter/Python/tooling limits, sparse source sets, and rough scope now route
+  as L1 degraded triage that may continue to `legacy-module-context-intake`;
+  only authorization/redaction and truthfulness violations hard-stop the chain.
+- v0.2.6 (2026-06-03): Removed `legacy-flow-context-normalizer` from the
+  default orchestrated path. Scattered docs, document-intake manifests,
+  source metadata, and RAG/SME notes now route directly to
+  `legacy-module-context-intake`; existing `flow-normalization/` packages are
+  optional legacy inputs only.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

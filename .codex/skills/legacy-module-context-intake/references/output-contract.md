@@ -68,7 +68,15 @@ rag_runs:
     arcad_ref_snapshot: "arcad-ref-2026-05-21"
     sensitivity: synthetic_non_production
 
-flow_normalization_input:
+document_evidence_inputs:
+  - docset_id: DOCSET-CREDIT-CHECK-001
+    manifest_path: "00_context_packages/CREDIT-CHECK/document-intake/CREDIT-CHECK-DOCS/intake.manifest.yaml"
+    gate: ready_with_warnings
+    evidence_coordinates: "00_context_packages/CREDIT-CHECK/document-intake/CREDIT-CHECK-DOCS/evidence-coordinates.md"
+    extraction_warnings: "00_context_packages/CREDIT-CHECK/document-intake/CREDIT-CHECK-DOCS/extraction-warnings.md"
+    source_quality: partial
+
+legacy_flow_normalization_input:
   path: "00_context_packages/CREDIT-CHECK/flow-normalization/flow-context-index.yaml"
   status: ready_with_warnings
   quality_level: L1 sparse
@@ -134,9 +142,12 @@ Rules:
   - `ready_for_module_analysis`
   - `ready_with_warnings`
   - `blocked_pending_evidence`
-  - `blocked_pending_scope`
   - `blocked_pending_contradiction_review`
-- `downstream_next_step` is `legacy-ibmi-module-analyzer` unless blocked.
+  - `blocked_pending_scope` (legacy compatibility only; prefer `ready_with_warnings` with scope TBDs)
+- `downstream_next_step` is normally `legacy-ibmi-module-analyzer` unless
+  blocked. It may be `legacy-brd-writer` only for an explicit internal POC BRD
+  route where `status: ready_with_warnings` and downstream BRD status will be
+  `poc_draft`.
 - `run_validation.structural_status` records `pass`, `pass_with_warnings`,
   `blocked`, `not_run`, `tool_unavailable`, or
   `tool_unavailable_hosted_agent`.
@@ -148,15 +159,21 @@ Rules:
   write-back are recorded.
 - `blocking_items[]` is empty only when all gates pass or all remaining items
   are explicitly non-blocking.
-- Owner-accepted sparse flow-normalization input is allowed only when
-  `flow_normalization_input.status: ready_with_warnings`,
-  `quality_level: L1 sparse`, and `risk_acceptance_status: accepted`. Preserve
-  all missing views as low-confidence `TBD-*`; do not convert sparse context to
-  approved facts.
+- `document_evidence_inputs[]` is the preferred upstream record for
+  document-first work. Missing OCR, missing Markdown, blocked optional
+  converters, and partial extraction become low-confidence `TBD-*` items, not
+  reasons to create `flow-normalization/`.
+- `legacy_flow_normalization_input` is optional and exists only for older
+  packages that already contain `flow-normalization/`. Do not require or create
+  it for new runs. If present with `triage_needs_source_enrichment` or
+  `ready_with_warnings`, preserve all missing views as low-confidence `TBD-*`;
+  do not convert sparse context to approved facts.
 - `coverage.brd_functional_analysis_hints` is advisory. It tells downstream
   module analysis and BRD preparation which normalized context can feed the
   SME-required BRD sections 1-9 and optional sections 10-12. Missing or partial
   hints must stay visible as gaps; this skill must not fill them by inference.
+  For internal POC BRDs, hints may become low-confidence review hypotheses only,
+  never approved BRD conclusions.
 - `coverage.technical_anchor_coverage` is also advisory. It tells the
   orchestrator whether the package contains IBM i program/data anchors and
   whether the code evidence backbone already exists. Program/file names in
@@ -292,8 +309,8 @@ Required sections:
 ```markdown
 # Open Questions - <MODULE-SLUG>
 
-## Blocking Questions
-| TBD ID | Source ID | Question | Owner | Route To | Needed Before |
+## Carry-Forward Questions
+| TBD ID | Source ID | Question | Owner | Route To | Needed Before Approval |
 
 ## Non-Blocking Questions
 | TBD ID | Source ID | Question | Owner | Carry Forward To |
@@ -329,6 +346,7 @@ Forbidden:
 - One runtime sample -> normal operating frequency
 - No contradiction found -> approval
 - `ready_with_warnings` -> downstream approval
+- `ready_with_warnings` -> approved BRD/spec/handoff readiness
 - Owner-accepted sparse context -> approved facts, approved `BR-*`, or BRD
   claims without later corroboration
 
@@ -349,7 +367,8 @@ already-available Python interpreter; do not create a virtual environment,
 install dependencies, or wait on interactive environment configuration. If
 interpreter startup remains configuring/evaluating, record validation as
 `tool_unavailable`, keep the package out of `ready_for_module_analysis`, and
-report the manual command above.
+report the manual command above. The package may continue as
+`ready_with_warnings` when the warning and carry-forward TBDs are recorded.
 
 It checks required files, status vocabulary, output-file references, view-to
 evidence-map linkage, contradiction-log completeness, and RAG candidate

@@ -54,5 +54,5 @@ outputs:
   - "evidence-coordinates.md"
 
 handoff:
-  next_skill: "legacy-flow-context-normalizer"   # or legacy-ibmi-evidence-intake when blocked on auth/sensitivity
-  notes: "<What downstream must respect: macro promotion blocks, low-confidence OCR, conflicts>"
+  next_skill: "legacy-module-context-intake"   # or legacy-ibmi-evidence-intake when blocked on auth/sensitivity
+  notes: "<What downstream must respect: macro promotion blocks, low-confidence OCR, conflicts, or tooling-only degraded metadata>"

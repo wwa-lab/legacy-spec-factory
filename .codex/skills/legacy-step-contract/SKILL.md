@@ -252,6 +252,25 @@ explicitly waiving the blocker.
 `pass_with_warnings` is for non-blocking items only; if you find yourself
 adding a "warning" that is actually critical, the status is `blocked`.
 
+### Internal POC Draft Mode
+
+For internal POC validation, distinguish **draft production** from
+**approval/downstream consumption**:
+
+- Evidence authorization, known sensitivity, and redaction safety remain
+  non-bypassable hard gates.
+- Missing completeness evidence (OCR, Markdown, object maps, program analyses,
+  flow analyses, SME owner, source eligibility, or validation runtime) should
+  become `pass_with_warnings` for draft-only artifacts when the user explicitly
+  requests POC output and every weak claim is labeled low-confidence or `TBD-*`.
+- The same missing evidence remains `blocked` for approval, spec writing, SDD
+  handoff, production use, or any claim that pretends to be confirmed.
+- A POC draft must carry an explicit status such as `poc_draft`, a limitation
+  note, and approval/spec blockers in the review or traceability artifact.
+
+This mode is a controlled acceleration path, not a waiver of evidence safety or
+traceability.
+
 ## Surfacing Unresolved Items
 
 Every Step Validation Report must categorize unresolved items into:

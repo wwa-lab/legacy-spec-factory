@@ -1,8 +1,8 @@
 # Open Questions - [MODULE-SLUG]
 
-## Blocking Questions
+## Carry-Forward Questions
 
-| TBD ID | Source ID | Question | Owner | Route To | Needed Before |
+| TBD ID | Source ID | Question | Owner | Route To | Needed Before Approval |
 | --- | --- | --- | --- | --- | --- |
 
 ## Non-Blocking Questions

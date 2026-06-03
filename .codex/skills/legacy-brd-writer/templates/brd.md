@@ -4,8 +4,8 @@
 **Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
 **Module ID:** `MODULE-<MODULE-SLUG>-001`
 **Module Analysis Source:** `04_modules/<MODULE-SLUG>/`
-**Status:** `draft` | `in_review` | `approved`
-**Evidence Mode:** `code_backed` | `context_only`
+**Status:** `poc_draft` | `draft` | `in_review` | `approved`
+**Evidence Mode:** `code_backed` | `context_only` | `internal_poc`
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
@@ -23,6 +23,12 @@ handoff-package content in this file.
 If **Evidence Mode** is `context_only`, this document cannot be marked
 `approved`; carry missing object-map, program-analysis, and flow-analysis work
 as `TBD-*` blockers until the code-backed evidence gate passes.
+
+If **Evidence Mode** is `internal_poc`, this document is for internal POC review
+only. It may include low-confidence hypotheses and source-document signals to
+accelerate stakeholder feedback, but it cannot feed spec writing, SDD handoff,
+or delivery decisions until standard code-backed and SME approval gates pass.
+Every weak statement must link to source metadata or a `TBD-*`.
 
 ## 1. Function Purpose
 

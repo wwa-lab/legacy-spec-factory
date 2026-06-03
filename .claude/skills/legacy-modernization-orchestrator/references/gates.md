@@ -81,13 +81,15 @@ analysis or standard BRD
   carries named `TBD-*` gaps
 - any missing source/object evidence is represented by named `TBD-*` blockers
 
-**Context-only exception:** a named accountable owner may explicitly accept a
+**Draft exceptions:** a named accountable owner may explicitly accept a
 context-only draft for this cycle when source/object evidence is unavailable.
-This exception does not pass the code-backed gate; it only allows draft
-review material. The module / BRD must record `evidence_mode: context_only`,
-remain non-approved, carry missing object-map / program / flow work as
-`TBD-*`, and avoid `confirmed_from_code` evidence strength unless a linked
-code-derived artifact exists.
+For internal POC validation, the requester/project POC owner may explicitly
+accept a `poc_draft` BRD so stakeholders can review direction early. These
+exceptions do not pass the code-backed gate; they only allow draft review
+material. The module / BRD must record `evidence_mode: context_only` or
+`internal_poc`, remain non-approved, carry missing object-map / program / flow
+work as `TBD-*`, and avoid `confirmed_from_code` evidence strength unless a
+linked code-derived artifact exists.
 
 **Block actions:**
 
@@ -100,8 +102,9 @@ code-derived artifact exists.
 3. Route to `legacy-ibmi-flow-analyzer` for missing in-scope
    `flow-<FLOW-SLUG>.md` files or older flow analyses that lack replay,
    edge resolution, lineage, persistence, or exception-chain coverage.
-4. Refuse BRD approval and spec-writing until the gate passes or a
-   context-only draft exception is recorded.
+4. Refuse BRD approval and spec-writing until the gate passes. A context-only
+   or internal POC draft exception may proceed only as non-approved review
+   material.
 
 ## Gate 3 — BRD Discovery Gate
 
@@ -116,13 +119,16 @@ recorded):**
 - BRD review evidence records SME / business approval, such as
   `brd-review.md` sign-off or `review-decision.yaml`
 - blocked BRD findings are resolved or explicitly accepted as non-blocking
+- BRD status is not `poc_draft`, `draft`, or `in_review` when routing to spec
 
 **Block actions:**
 
 1. Route to `legacy-brd-writer` if the BRD Package is missing or incomplete.
 2. Route to `legacy-sme-review-facilitator` if BRD content exists but review /
    approval is missing.
-3. Refuse standard spec-writing until this gate and the Post-BRD Disposition
+3. Treat `poc_draft` as valid internal POC review material but not a passed BRD
+   Discovery Gate.
+4. Refuse standard spec-writing until this gate and the Post-BRD Disposition
    Gate pass, or until the requester records a technical-spec-only bypass with
    approver and risk acceptance.
 

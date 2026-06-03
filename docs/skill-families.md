@@ -61,22 +61,18 @@ authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
-| [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Pre-normalization entry layer, before `legacy-flow-context-normalizer`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
-| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation that is not yet reviewable, including sparse authorized notes that need source-quality triage or owner risk acceptance | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when context is incomplete; organizes evidence slots, coverage, and questions but does not generate BRD-ready flows |
-| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, four-view module notes, or owner-risk-approved sparse flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; accepted sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
+| [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Optional raw-document entry layer before `legacy-module-context-intake`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates when tooling allows. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
+| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | legacy/manual optional flow-normalization package, only when explicitly requested or maintaining older packages | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Not part of the default chain. Do not create this package for normal document-first runs; route document-intake output, source metadata, RAG, and SME notes directly to `legacy-module-context-intake` |
+| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | document-intake output, source metadata, RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, four-view module notes, or legacy flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; may also feed `legacy-brd-writer` for explicit internal POC `poc_draft` output. Sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
 
 **Sequence**:
 
 ```text
 raw Office / Visio / PDF / image documents (not yet normalized)
   └─ document-evidence-intake (format normalization + evidence coordinates)
-       ├─ ready / ready_with_warnings -> flow-context-normalizer
+       ├─ ready / ready_with_warnings -> module-context-intake
        └─ blocked auth/sensitivity -> ibmi-evidence-intake
-scattered docs/specs / draft context evidence / sparse module notes
-  └─ flow-context-normalizer
-       ├─ SME review for evidence-bounded coverage views
-       └─ source-owner supplement request or risk acceptance for sparse triage
-            └─ module-context-intake
+scattered docs/specs / draft context evidence / sparse module notes /
 external RAG bundle + human-confirmed module context
   └─ module-context-intake
        └─ module-analyzer (validates / synthesizes approved 4-view module)
@@ -148,7 +144,7 @@ while BRD/spec/handoff synthesis stays reusable.
 
 | Skill | Reads | Writes | When |
 | --- | --- | --- | --- |
-| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available; SME / BA legacy-system context | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved; this is the primary legacy-system discovery output |
+| [`legacy-brd-writer`](../skills/legacy-brd-writer/SKILL.md) | approved module-analysis with BRD Functional Analysis Input Crosswalk when available; SME / BA legacy-system context; explicit internal POC context/source metadata | `05_brds/<CAPABILITY-SLUG>/brd.md`, `brd-review.md`, `validation-scenarios.md`, `traceability.md` | After module-analyzer is approved for standard BRDs; earlier for internal POC as `status: poc_draft` with approval/spec blockers. This is the primary legacy-system discovery output |
 | [`legacy-spec-writer`](../skills/legacy-spec-writer/SKILL.md) | approved module-analysis + approved BRD Package + explicit post-BRD promotion / disposition decision | `spec.yaml`, `spec.md` | After BRD is SME-approved and stakeholders decide the capability should move beyond discovery |
 | [`legacy-modernization-decision-writer`](../skills/legacy-modernization-decision-writer/SKILL.md) | spec.yaml entries needing expansion | `05_decisions/<CAPABILITY-SLUG>/` | Optional — when a `DEC-*` becomes large or architecture-governed |
 
@@ -163,6 +159,11 @@ module-analyzer (approved)
                  ├─ risk assessment / gap analysis -> resolve disposition
                  └─ promoted -> spec-writer
                  └─ decision-writer (optional, per cross-cutting DEC)
+
+internal POC source/context
+  └─ module-context-intake (optional packaging)
+       └─ brd-writer -> status: poc_draft
+            └─ stakeholder direction review only; no spec/handoff until gates pass
 ```
 
 **Shared vocabulary**: `BR-*`, `BEH-*`, `DEC-*`, `AC-*`; `needs_sme_review`
