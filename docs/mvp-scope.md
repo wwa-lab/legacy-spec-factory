@@ -72,9 +72,8 @@ back to the inventory skill.
 - Pre-inventory evidence governance is implemented as
   `legacy-ibmi-evidence-intake` v0.1.0.
 - `legacy-modernization-orchestrator` v0.2.11 routes the full chain
-  (document/spec triage/flow normalization → risk acceptance when needed →
-  context intake with source eligibility, or inventory → program → flow →
-  module → BRD → spec).
+  (document/spec triage → risk acceptance when needed → context intake with
+  source eligibility, or inventory → program → flow → module → BRD → spec).
 - Runtime smoke status is mixed:
   - `legacy-step-contract` and `legacy-step-validator` passed Codex CLI,
     Claude Code, and OpenCode smoke tests for their earlier contracts;

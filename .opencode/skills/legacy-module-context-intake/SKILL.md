@@ -1,6 +1,6 @@
 ---
 name: legacy-module-context-intake
-description: Normalize external RAG or code-knowledge-graph output, document-intake manifests, source metadata, human-confirmed four-view module context, SME fragments, or legacy flow-normalization output into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team has module-first context, document evidence intake output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, reviewed four-view context, or sparse source metadata and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, hidden contradictions, or attempts to promote RAG candidates, generated-draft context, or sparse-context TBDs into approved business rules, BRD facts, or canonical module flows; treats rough scope and degraded context as warnings/TBDs.
+description: Package external RAG or code-knowledge-graph output, document-intake manifests, source metadata, SME fragments, and human-confirmed module context into a traceable `00_context_packages/<MODULE-SLUG>/` package. Use when a team has module-first context, document evidence intake output, source snippets, field dictionary mappings, impact scope, contradictions, retrieval gaps, reviewed module notes, or sparse source metadata and needs a safe handoff to `legacy-ibmi-module-analyzer` or BRD preparation. Blocks on unauthorized or unredacted evidence, hidden contradictions, or attempts to promote RAG candidates, generated-draft context, or sparse-context TBDs into approved business rules, BRD facts, or canonical module flows; treats rough scope and degraded context as warnings/TBDs.
 ---
 
 <!--
@@ -20,11 +20,11 @@ Retain this notice in substantial copies or derived versions.
 
 | Field | Notes |
 | --- | --- |
-| Problem solved | Turns reviewed external/RAG/four-view module context into a traceable context package for safe downstream module analysis. |
-| Input | Document-intake output, source metadata, RAG/context snippets, SME fragments, owner-reviewed four-view context, retrieval gaps, contradictions, and scope notes. |
-| Output | `00_context_packages/<MODULE-SLUG>/` package with source map, context views, readiness status, and blocked/TBD items. |
+| Problem solved | Turns reviewed external/RAG/module context into a traceable context package for safe downstream module analysis. |
+| Input | Document-intake output, source metadata, RAG/context snippets, SME fragments, owner-reviewed module context, retrieval gaps, contradictions, and scope notes. |
+| Output | `00_context_packages/<MODULE-SLUG>/` package with context index, source map, readiness status, contradictions, and blocked/TBD items. |
 | Core prompt strategy | Normalize context without approving it as business truth, classify source eligibility, preserve contradictions, and keep sparse/generated context from becoming hidden rules or BRD facts. |
-| Upstream skill | `legacy-document-evidence-intake`, external RAG, human-confirmed module context, or legacy `flow-normalization/` packages. |
+| Upstream skill | `legacy-document-evidence-intake`, external RAG, source metadata, SME fragments, or human-confirmed module context. |
 | Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and module review workflows. |
 | Validation standard | Module scope, evidence authorization, context provenance, source eligibility, contradiction handling, and readiness status are explicit. |
 | Known risk | Promoting RAG candidates, generated-draft context, or owner guesses into approved business rules or BRD conclusions. |
@@ -39,10 +39,6 @@ evidence-tagged context package:
 ```text
 00_context_packages/<MODULE-SLUG>/
 |-- context-index.yaml
-|-- 01-operation-business-flow.md
-|-- 02-system-flow.md
-|-- 03-program-flow.md
-|-- 04-data-flow.md
 |-- rag-evidence-map.md
 |-- contradiction-log.md
 `-- open-questions.md
@@ -52,11 +48,11 @@ This skill is a **module-first intake bridge**. It makes RAG output usable by
 Legacy Spec Factory, but it does not approve business rules, replace source
 analysis, or bypass SME review.
 
-The four Markdown files in this package are normalized context views. They
-may seed module analysis, but they are not the final four-view module artifacts
-under `04_modules/`. When reporting this step to a user, say that context
-views were normalized for module analysis; do not say that the canonical
-module coverage artifacts were created.
+Do not create intake flow Markdown files in this package. If upstream material
+is organized as Operation / Business Flow, System Flow, Program Flow, and Data
+Flow, carry that structure as coverage metadata, evidence-map rows, candidate
+facts, and open questions. The canonical four module views are created only
+under `04_modules/<MODULE-SLUG>/` by `legacy-ibmi-module-analyzer`.
 
 This package also acts as a **BRD source-of-truth firewall**. Each carried
 claim must be classified as one of:
@@ -94,9 +90,6 @@ spec-writing input, or SDD handoff input.
   evidence coordinates, extraction warnings, or source metadata. Missing OCR,
   missing Markdown, or unavailable converters are allowed to continue as
   low-confidence `TBD-*` items.
-- A legacy `flow-normalization/` package already exists and should be ingested
-  as optional historical context. Do not create or require a new
-  `flow-normalization/` package.
 - The user asks to ingest, normalize, package, or prepare a RAG output bundle
   under `00_context_packages/<MODULE-SLUG>/`.
 - A BRD or module analysis should start from human-confirmed context or an
@@ -121,10 +114,10 @@ spec-writing input, or SDD handoff input.
 
 - Module slug, business name, and scope statement.
 - Human-confirmed or explicitly draft module context, document-intake output,
-  source metadata, or SME fragments. Complete four-view context is preferred,
-  but incomplete context is acceptable when all missing Operation / Business
-  Flow, System Flow, Program Flow, and Data Flow coverage is carried as
-  `TBD-*` and source eligibility is classified.
+  source metadata, or SME fragments. Complete business process, system
+  interface, program-anchor, and data-anchor coverage is preferred, but
+  incomplete context is acceptable when missing coverage is carried as `TBD-*`
+  and source eligibility is classified.
 - RAG output bundle when available, preferably with:
   - `rag-run-index.yaml`
   - `flow-hydration-summary.md`
@@ -147,7 +140,7 @@ Stop and produce only blocking findings / requested remediation if any apply:
 | Source/runtime evidence sensitivity is unknown | `legacy-ibmi-evidence-intake` |
 | Confidential evidence is present without approved redaction | `legacy-ibmi-evidence-intake` |
 | Module slug, business name, or scope is missing and no provisional focus can be derived | module owner / SME clarification |
-| Four-view context and SME fragments are absent, and there is no document-intake output, source metadata, RAG bundle, legacy flow-normalization package, or SME clue to carry forward | requester must provide module context or route to normal inventory/program/flow chain |
+| Module context and SME fragments are absent, and there is no document-intake output, source metadata, RAG bundle, or SME clue to carry forward | requester must provide module context or route to normal inventory/program/flow chain |
 | RAG contradictions are missing, blank without evaluated checks, or hidden in prose | rerun / repair RAG bundle before intake |
 | RAG candidate rules are requested as approved `BR-*` | block; candidates stay `needs_sme_review` seeds only |
 | Source paths, snippet IDs, or dictionary IDs cannot be traced | record `TBD-*` in `open-questions.md`; do not smooth over |
@@ -210,9 +203,8 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 ### Input
 
 - **Required**: module slug or provisional focus, module business name/scope or
-  scope TBD, human context fragments or four-view context, document-intake
-  manifest/source metadata, a RAG hydration summary, SME note, or legacy
-  `flow-normalization/` package; evidence authorization for every
+  scope TBD, human context fragments, document-intake manifest/source metadata,
+  a RAG hydration summary, or SME note; evidence authorization for every
   source/runtime artifact referenced; source eligibility classification for
   every carried claim.
 - **Optional**: approved evidence manifest, inventory, program analyses, flow
@@ -222,7 +214,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   - `0-5 blocked`: evidence authorization unresolved, contradictions hidden, no
     usable module context fragments, and no document-intake/source metadata,
     sparse/degraded package, RAG bundle, or SME clue exists to carry forward.
-  - `6 minimum_pass`: module identity, context fragments or four views, RAG
+  - `6 minimum_pass`: module identity, context fragments, coverage notes, RAG
     provenance when applicable, source eligibility, and explicit open questions
     are present; or document-intake/source metadata has all missing views
     carried as TBDs.
@@ -248,22 +240,21 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 ### Output
 
 - **Canonical directory**: `00_context_packages/<MODULE-SLUG>/`.
-- **Required files**: the eight files listed in Purpose.
+- **Required files**: the four files listed in Purpose.
 - **Required gates**: evidence authorization, provenance completeness,
-  contradiction visibility, source eligibility, four-view coverage, and
+  contradiction visibility, source eligibility, context coverage, and
   open-question carry-forward.
 - **Handoff status**: only `ready_for_module_analysis` and
   `ready_with_warnings` may feed `legacy-ibmi-module-analyzer`. For sparse
-  document-intake/source-metadata or legacy flow-normalization input,
-  `ready_with_warnings` means low-confidence context only, not approval of any
-  missing flow. `ready_with_warnings` may feed `legacy-brd-writer` only as
-  internal POC input that produces a non-approved `poc_draft`.
+  document-intake/source-metadata input, `ready_with_warnings` means
+  low-confidence context only, not approval of any missing coverage.
+  `ready_with_warnings` may feed `legacy-brd-writer` only as internal POC input
+  that produces a non-approved `poc_draft`.
 
 ### Validation
 
 - **Mechanical**: all required files exist; `context-index.yaml` names every
-  input bundle and output file; every RAG evidence ID referenced in a view is
-  listed in `rag-evidence-map.md`; every contradiction/gap has an owner or
+  input bundle and output file; every contradiction/gap has an owner or
   routing destination.
 - **Semantic**: no RAG candidate, generated-draft item, or context-only claim is
   promoted to an approved business rule or BRD fact; all claims preserve source
@@ -277,7 +268,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   `confirmed_from_code` and must be routed to inventory/program/flow analysis
   before standard BRD approval.
 - **Sparse-input restriction**: if the upstream package or source metadata is
-  sparse/degraded, preserve every missing view as a `TBD-*`, mark evidence
+  sparse/degraded, preserve every missing coverage area as a `TBD-*`, mark evidence
   strength low, classify generated or candidate material as
   `candidate_only` / `generated_draft`, and do not create approved facts,
   `BR-*`, or BRD-ready claims from the sparse context alone.
@@ -305,31 +296,29 @@ This skill conforms to the Legacy Spec Factory Step Contract.
      `evidence-coordinates.md`, `extraction-warnings.md`, and any normalized
      outputs or source metadata. Missing OCR/Markdown/converter output becomes
      a low-confidence `TBD-*`, not a blocker.
-   - If input comes from a legacy `flow-normalization/` package, record
-     `flow-normalization/flow-context-index.yaml`, `normalization.status`,
-     `quality_level`, and `risk_acceptance` status as optional legacy context.
-     Do not create or rerun flow normalization.
-
-4. **Normalize four views and source eligibility**
-   - Create one Markdown file per view using the supplied module context.
+4. **Package context coverage and source eligibility**
+   - Do not create Operation / Business Flow, System Flow, Program Flow, or
+     Data Flow intake Markdown files.
+   - Capture supplied context as coverage metadata in `context-index.yaml`,
+     evidence rows and candidate facts in `rag-evidence-map.md`, and routed
+     gaps in `open-questions.md`.
    - Every factual claim must include a source row, evidence ID, or SME note.
    - Every claim must carry one source eligibility label:
      `confirmed_by_sme`, `code_backed`, `source_documented`,
      `candidate_only`, `generated_draft`, or `missing`.
    - Keep candidate rules as candidates or seeds, never approved rules.
-   - Phrase candidate seeds with business meaning first. In View 1 this means a
-     business rule / capability / exception candidate; in Views 2-4 this may be
-     a system, program, or data analysis focus, but it must still say what
-     business behavior or decision depends on the technical check.
+   - Phrase candidate seeds with business meaning first. Business-process
+     candidates should speak in rule / capability / exception language;
+     system, program, or data candidates must still say what business behavior
+     or decision depends on the technical check.
    - Keep program names, file names, field names, node IDs, source paths, and
      raw RAG IDs in `Evidence Basis`, not as the main candidate statement.
-   - For sparse/degraded document-intake, source-metadata, or legacy
-     flow-normalization input, create low-confidence placeholder context and
-     preserve missing sequence, actor, system, program, and data questions as
-     carry-forward `TBD-*`.
+   - For sparse/degraded document-intake or source-metadata input, create
+     low-confidence coverage notes and preserve missing sequence, actor,
+     system, program, and data questions as carry-forward `TBD-*`.
    - Do not upgrade a generated-draft or candidate-only item merely because it
-     appears in all four views; corroboration requires SME confirmation or
-     code-backed evidence.
+     appears in multiple coverage areas; corroboration requires SME
+     confirmation or code-backed evidence.
 
 5. **Build evidence map**
    - Convert source snippets, runtime observations, dictionary mappings, and
@@ -375,7 +364,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
      validation gate.
 
 10. **Finalize and stop**
-    - After all eight package files, `context-index.yaml.run_validation`, and
+    - After all four package files, `context-index.yaml.run_validation`, and
       any applicable workflow-state write-back are recorded, stop the run and
       report the package path plus any manual validator or preview follow-up.
     - Do not keep re-reading the context package, repeatedly checking workflow
@@ -418,7 +407,7 @@ handoff input until standard code-backed and SME approval gates pass.
 ## References
 
 - `references/output-contract.md` - required file shape and field-level rules.
-- `templates/` - scaffolding for the eight required output files.
+- `templates/` - scaffolding for the required output files.
 - `examples/credit-check-rag-positive/` - frozen positive context package.
 - `examples/unauthorized-evidence-negative/` - expected blocked response.
 - `scripts/validate_context_package.py` - local structural validator.
@@ -433,9 +422,8 @@ handoff input until standard code-backed and SME approval gates pass.
 - v0.1.3 (2026-05-28): Added advisory BRD functional-analysis coverage hints
   to `context-index.yaml` so downstream module analysis can preserve channel,
   UI, interface, validation, error, and dependency gaps without inventing them.
-- v0.1.4 (2026-05-29): Clarified that intake view files are context-only
-  inputs and that canonical four-view module artifacts are produced only by
-  `legacy-ibmi-module-analyzer`.
+- v0.1.4 (2026-05-29): Clarified that intake context is not the canonical
+  four-view module artifact produced by `legacy-ibmi-module-analyzer`.
 - v0.1.5 (2026-05-30): Added code-backed handoff guidance so context packages
   preserve technical anchors but route to inventory/object-map, program
   analysis, and flow analysis before standard BRD/spec approval.
@@ -446,23 +434,23 @@ handoff input until standard code-backed and SME approval gates pass.
   source-of-truth firewall language. Context intake now accepts incomplete SME
   fragments but prevents candidate-only/generated context from becoming BRD
   conclusions without SME confirmation or code-backed evidence.
-- v0.1.8 (2026-06-03): Accepted degraded
-  `triage_needs_source_enrichment` flow-normalization packages without
+- v0.1.8 (2026-06-03): Accepted degraded sparse-context packages without
   requiring prior owner risk acceptance. Such packages proceed only as
   `ready_with_warnings` low-confidence context with all sparse gaps preserved
   as `TBD-*`.
-- v0.1.9 (2026-06-03): Removed flow-normalization as a required upstream step.
-  Module context intake now accepts document-intake manifests, extraction
-  warnings, source metadata, RAG/SME notes, and legacy flow-normalization
-  packages directly, preserving sparse gaps as low-confidence `TBD-*`.
+- v0.1.9 (2026-06-03): Removed the previous separate context-preparation step
+  as a required upstream path. Module context intake now accepts
+  document-intake manifests, extraction warnings, source metadata, and RAG/SME
+  notes directly, preserving sparse gaps as low-confidence `TBD-*`.
 - v0.1.10 (2026-06-03): Added internal POC BRD handoff. `ready_with_warnings`
   context may feed `legacy-brd-writer` only as non-approved `poc_draft` input;
   approval/spec/handoff gates remain blocked until standard evidence and SME
   review pass.
+- v0.1.11 (2026-06-03): Removed intake flow file generation. Context packages
+  now contain only index, evidence map, contradiction log, and open questions;
+  canonical four-view files are produced only by module analysis.
+- v0.1.12 (2026-06-03): Retired the separate flow-context normalizer path from
+  active module-context intake guidance.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so
   RAG/program/file evidence does not become the business-facing statement.
-- v0.1.2 (2026-05-27): Accepted owner-risk-approved sparse
-  `legacy-flow-context-normalizer` packages as low-confidence
-  `ready_with_warnings` input while preserving TBDs and forbidding approved
-  facts from sparse context alone.
 - v0.1.0 (2026-05-21): Initial module context intake skill.

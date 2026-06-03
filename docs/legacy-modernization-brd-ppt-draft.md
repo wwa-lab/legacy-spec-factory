@@ -67,8 +67,7 @@ The repo already contains a skill-based pipeline for legacy understanding:
 
 - `legacy-ibmi-evidence-intake`: registers source, DDS, logs, spool, reports, sample transactions
 - `legacy-document-evidence-intake`: converts Office, Visio, PDF, and image evidence into source-coordinate packages
-- `legacy-flow-context-normalizer`: organizes scattered docs/RAG/SME notes into four-view coverage, gaps, and SME questions; it is not a flow generator
-- `legacy-module-context-intake`: packages reviewed context and classifies every carried claim for BRD source eligibility
+- `legacy-module-context-intake`: packages scattered docs/RAG/SME notes and classifies every carried claim for BRD source eligibility
 - `legacy-ibmi-inventory`: identifies programs, files, screens, reports, and object relationships
 - `legacy-ibmi-program-analyzer`: extracts program behavior, calls, I/O, errors, and coverage
 - `legacy-ibmi-flow-analyzer`: connects programs into business transaction flows
@@ -218,7 +217,7 @@ This method does not:
 - decide whether every legacy behavior should be preserved
 - perform old-vs-new gap classification inside the BRD
 - generate target Java/cloud implementation directly from raw code
-- require SMEs to provide four complete flows before discovery can start
+- require SMEs to provide complete flow diagrams or module four-view coverage before discovery can start
 - turn AI-organized coverage or RAG candidates into BRD facts
 
 The approved BRD is a human-reviewed legacy baseline. Later spec generation, gap analysis, golden-master tests, and SDD handoff require separate gates.

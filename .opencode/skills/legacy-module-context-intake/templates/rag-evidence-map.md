@@ -7,22 +7,22 @@
 
 ## Source Snippets
 
-| Evidence ID | Artifact | Lines | Summary | Strength | Used In |
+| Evidence ID | Artifact | Lines | Summary | Strength | Coverage / Consumer |
 | --- | --- | --- | --- | --- | --- |
 
 ## Runtime Observations
 
-| Evidence ID | Source | Lines | Observed Detail | Used In |
+| Evidence ID | Source | Lines | Observed Detail | Coverage / Consumer |
 | --- | --- | --- | --- | --- |
 
 ## Dictionary Mappings
 
-| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Used In |
+| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Coverage / Consumer |
 | --- | --- | --- | --- | --- | --- |
 
 ## Impact Scope
 
-| Target | Impact Type | Evidence | Confidence | Used In |
+| Target | Impact Type | Evidence | Confidence | Coverage / Consumer |
 | --- | --- | --- | --- | --- |
 
 ## Candidate Facts

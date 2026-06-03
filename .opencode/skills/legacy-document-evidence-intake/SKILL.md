@@ -66,7 +66,7 @@ It does **not**:
 The next normal skill after a successful document intake is
 `legacy-module-context-intake`, which packages the normalized fragments,
 warnings, source metadata, and carry-forward TBDs as low-confidence module
-context without requiring a separate `flow-normalization/` package.
+context.
 
 ## Boundary
 
@@ -434,7 +434,7 @@ Emit a Step Validation Report (see
      Record the result in `intake.manifest.yaml.run_validation`.
    - If no interpreter becomes available, do not install Python packages; record
      the validation tooling gap and continue according to the evidence gate.
-     Tooling-only validation gaps must not route to flow normalization or stop
+     Tooling-only validation gaps must not stop
      module-context intake.
    - Artifact preview status is informational only; it is not the validation
      gate. The gate is the manifest, normalized output file list, evidence
@@ -468,7 +468,7 @@ low-confidence OCR fragments remain low-confidence until SME/source confirms.
 
 If the package is blocked only because OCR, Python, converter, preview, or
 readable-export tooling is unavailable and no model-visible content was
-extractable, do not run flow normalization and do not stall. Route
+extractable, do not stall. Route
 `intake.manifest.yaml`, source metadata, `conversion-log.md`, and
 `extraction-warnings.md` directly to `legacy-module-context-intake` as degraded
 input; downstream must create low-confidence `TBD-*` items instead of extracted

@@ -11,10 +11,10 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.1"
+  version: "v0.1.12"
   generated_at: "2026-05-21T10:00:00+08:00"
   status: "blocked_pending_contradiction_review"
-  decision_reason: "RAG-CONFLICT-PAYMENT-MATCH-001 is blocking: SME states daily EOD matching, runtime job log shows weekly batch. Cannot approve system flow or program flow until contradiction is resolved."
+  decision_reason: "RAG-CONFLICT-PAYMENT-MATCH-001 is blocking: SME states daily EOD matching, runtime job log shows weekly batch. Cannot approve context coverage until contradiction is resolved."
   downstream_next_step: "legacy-ibmi-evidence-intake"
 
 evidence_authorization:
@@ -41,25 +41,26 @@ input_files:
     status: "present"
 
 output_files:
-  operation_business_flow: "01-operation-business-flow.md"
-  system_flow: "02-system-flow.md"
-  program_flow: "03-program-flow.md"
-  data_flow: "04-data-flow.md"
   rag_evidence_map: "rag-evidence-map.md"
   contradiction_log: "contradiction-log.md"
   open_questions: "open-questions.md"
 
 coverage:
-  four_views_present: true
+  context_coverage_ready: false
   source_snippets_mapped: true
   dictionary_context_mapped: true
   contradictions_carried_forward: true
   open_questions_carried_forward: true
+  coverage_dimensions:
+    business_process: "partial"
+    system_interfaces: "partial"
+    program_anchors: "partial"
+    data_anchors: "partial"
 
 gates:
   evidence_authorization_gate: "pass"
   module_scope_gate: "pass"
-  four_view_gate: "warning"
+  context_coverage_gate: "warning"
   contradiction_visibility_gate: "blocked"
   rule_promotion_gate: "pass"
 

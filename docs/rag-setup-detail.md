@@ -388,19 +388,23 @@ known_code_usage:
     - CUEINQ
 ```
 
-### 5.4 `hydrate_flows(flow_list)`
+### 5.4 `hydrate_context(context_bundle)`
 
-目标：输入人工确认的四条 flow，输出 BRD 可用的 evidence bundle。
+目标：输入人工确认的模块上下文、SME 片段或候选 flow notes，输出
+Legacy Spec Factory 可摄取的 evidence/context bundle。RAG 侧不要生成
+`00_context_packages` 下的四个 intake flow Markdown 文件；这些材料应作为
+coverage metadata、evidence rows、candidate facts 和 open questions 进入
+`legacy-module-context-intake`。
 
 输入：
 
 ```yaml
 module_slug: CREDIT-LIMIT
-flows:
-  operation_business_flow: <markdown or text>
-  system_flow: <markdown or text>
-  program_flow: <markdown or text>
-  data_flow: <markdown or text>
+context:
+  business_process_notes: <markdown or text>
+  system_interface_notes: <markdown or text>
+  program_anchor_notes: <markdown or text>
+  data_anchor_notes: <markdown or text>
 include:
   source_snippets: true
   dictionary_mappings: true
@@ -482,10 +486,6 @@ Legacy Spec Factory 整理后的目标结构：
 ```text
 00_context_packages/<MODULE-SLUG>/
 ├── context-index.yaml
-├── 01-operation-business-flow.md
-├── 02-system-flow.md
-├── 03-program-flow.md
-├── 04-data-flow.md
 ├── rag-evidence-map.md
 ├── contradiction-log.md
 └── open-questions.md

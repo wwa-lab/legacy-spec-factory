@@ -10,8 +10,8 @@
 
 | TBD ID | Source ID | Question | Owner | Carry Forward To |
 | --- | --- | --- | --- | --- |
-| TBD-PAYMENT-MATCH-002 | RAG-GAP-PAYMENT-MATCH-001 | Are there other programs that post to the AR balance table outside the identified matching path? | IT SME | 03-program-flow.md |
-| TBD-PAYMENT-MATCH-003 | RAG-GAP-PAYMENT-MATCH-002 | Which physical file or table is the AR balance write target? | Data owner | 04-data-flow.md |
+| TBD-PAYMENT-MATCH-002 | RAG-GAP-PAYMENT-MATCH-001 | Are there other programs that post to the AR balance table outside the identified matching path? | IT SME | program-anchor coverage |
+| TBD-PAYMENT-MATCH-003 | RAG-GAP-PAYMENT-MATCH-002 | Which physical file or table is the AR balance write target? | Data owner | data-anchor coverage |
 
 ## Non-Blocking Assumptions
 

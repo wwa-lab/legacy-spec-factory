@@ -273,8 +273,6 @@ the full table. Common cases:
 | Current Input | Stage |
 | --- | --- |
 | Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed four-view context | Module Context Intake — degraded context allowed |
-| `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Legacy Flow Normalization artifact — skip new flow-normalization and ingest through Module Context Intake |
-| `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Legacy Flow Normalization artifact — skip new flow-normalization and ingest through Module Context Intake |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
 | Redacted evidence bundle with sensitivity recorded | Evidence Ready |
 | `inventory.yaml` with `sme_review.decision: blocked` | Inventory Blocked |
@@ -389,12 +387,11 @@ If a skip is unsafe, say so and route to the missing prerequisite.
 
 ### Module-First Document Routing
 
-**Default rule: skip flow normalization.** `legacy-flow-context-normalizer` is
-not part of the default orchestrated chain. Do not create
-`flow-normalization/` packages unless the user explicitly asks for that
-specific optional artifact. Route scattered documents, source metadata,
-document-intake manifests, RAG output, and SME notes directly to
-`legacy-module-context-intake` after the safety evidence checks below.
+**Default rule: no intermediate flow package.** Route scattered documents,
+source metadata, document-intake manifests, RAG output, and SME notes directly
+to `legacy-module-context-intake` after the safety evidence checks below. Do
+not create Operation / Business Flow, System Flow, Program Flow, or Data Flow
+intake files in `00_context_packages/<MODULE-SLUG>/`.
 
 - If the inputs are raw Office / Visio / PDF / image files (`.xlsx`, `.xlsm`,
   `.xls`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.vsdx`, `.vsd`, `.pdf`, `.png`,
@@ -423,11 +420,11 @@ document-intake manifests, RAG output, and SME notes directly to
 When the user has historical documents/specs but no SME-reviewed module
 context, route to `legacy-module-context-intake` even when the material looks
 weak. The router must not require perfect four-view input, Markdown, OCR, or a
-flow-normalization package before starting. Function Specs, Technical Designs,
-Program Specs, File Specs, interface specs, data dictionaries, RAG summaries,
-SME notes, raw PDF/PNG metadata, and source-owner scope clues are all valid
-starting material. This route packages low-confidence context and TBDs; it
-must not promise BRD-ready flows.
+separate context-preparation package before starting. Function Specs,
+Technical Designs, Program Specs, File Specs, interface specs, data
+dictionaries, RAG summaries, SME notes, raw PDF/PNG metadata, and source-owner
+scope clues are all valid starting material. This route packages
+low-confidence context and TBDs; it must not promise BRD-ready flows.
 
 Use this quality-aware routing:
 
@@ -436,15 +433,12 @@ Use this quality-aware routing:
 | Documents/specs appear able to support all four views | `legacy-module-context-intake` | `ready_with_warnings` or `ready_for_module_analysis` after provenance/source eligibility checks |
 | Documents/specs support only some views | `legacy-module-context-intake` | `ready_with_warnings`; missing views become carry-forward `TBD-*` |
 | Documents/specs are authorized but unreadable, non-Markdown, OCR/tool-constrained, or too sparse to evidence a safe sequence | `legacy-module-context-intake` | `ready_with_warnings`; preserve source metadata, warnings, and low-confidence TBDs |
-| Legacy `flow-normalization/` package already exists | `legacy-module-context-intake` | Treat as optional legacy input; do not create or rerun flow-normalization |
 | Documents are unauthorized, have unknown sensitivity, need unapproved redaction, or user requests hidden contradictions / approved facts without evidence | Evidence intake, redaction, or SME review | safety `blocked_*` remediation |
 
-Do not route scattered documents to `legacy-flow-context-normalizer` by
-default. If a legacy `triage_needs_source_enrichment` package already exists,
-`legacy-module-context-intake` may ingest it as low-confidence context. State
-that all sparse facts remain low-confidence, every missing item remains a
-`TBD-*`, and nothing can become an approved rule without later SME, code,
-runtime, or readable-document corroboration.
+If a historical context package already exists, treat it only as source
+metadata. Do not maintain, rerun, or expand that package shape; repackage
+usable claims through `legacy-module-context-intake` with source eligibility
+and carry-forward `TBD-*` items.
 
 Before routing to `legacy-brd-writer`, check the module overview's BRD Source
 Eligibility Crosswalk. If required BRD sections are `questions_only`,
@@ -470,7 +464,7 @@ check whether any of the following are true:
 - the input package references IBM i / AS400 programs, jobs, files, PF/LF,
   DSPF, PRTF, DDS/DDL, ARCAD inventory, DSPPGMREF output, source members, or
   code/RAG snippets
-- `flow-context-index.yaml.coverage.technical_anchor_coverage.program_anchors`
+- `context-index.yaml.coverage.technical_anchor_coverage.program_anchors`
   or `data_anchors` is `partial`, `usable`, or `strong`
 - the generated module or BRD would otherwise state behavior as
   `confirmed_from_code`
@@ -1310,8 +1304,7 @@ runtime copies.
   Stage Card) with a stage → card mapping table. Tightened the Mechanical
   Validation and Quality Checklist to enforce the new footer and card
   pointer.
-- v0.2.1 (2026-05-27): Aligned module-first routing with
-  `legacy-flow-context-normalizer` v0.1.4. Added quality-aware routing for
+- v0.2.1 (2026-05-27): Added quality-aware routing for
   strong, partial, sparse, and blocked document inputs, including
   `triage_needs_source_enrichment` handling so sparse authorized documents
   route to source-quality triage instead of being rounded up or blocked
@@ -1323,8 +1316,7 @@ runtime copies.
   direct module-analysis or BRD routing.
 - v0.2.3 (2026-05-28): Expanded module-first routing triggers beyond flow
   documents to Function Specs, Technical Designs, Program Specs, File Specs,
-  interface specs, and data dictionaries as optional starting material for
-  `legacy-flow-context-normalizer` v0.1.6.
+  interface specs, and data dictionaries as optional starting material.
 - v0.2.4 (2026-05-29): Clarified four-view timing so module-first context
   normalization reports `00_context_packages/` files as context views, while
   canonical `04_modules/` four-view module artifacts remain owned by
@@ -1334,11 +1326,13 @@ runtime copies.
   converter/Python/tooling limits, sparse source sets, and rough scope now route
   as L1 degraded triage that may continue to `legacy-module-context-intake`;
   only authorization/redaction and truthfulness violations hard-stop the chain.
-- v0.2.6 (2026-06-03): Removed `legacy-flow-context-normalizer` from the
+- v0.2.6 (2026-06-03): Removed the separate context-preparation skill from the
   default orchestrated path. Scattered docs, document-intake manifests,
   source metadata, and RAG/SME notes now route directly to
-  `legacy-module-context-intake`; existing `flow-normalization/` packages are
-  optional legacy inputs only.
+  `legacy-module-context-intake`.
+- v0.2.12 (2026-06-03): Retired the separate context-preparation skill from the
+  active skill surface; no route should create or maintain its former package
+  shape.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new
   skills: `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, and

@@ -4,15 +4,15 @@
 
 | TBD ID | Source ID | Question | Owner | Route To | Needed Before Approval |
 | --- | --- | --- | --- | --- | --- |
-| TBD-CREDIT-CHECK-002 | RAG-GAP-CREDIT-CHECK-005 | Does the wrapper use or discard the returned credit decision? | IBM i developer | legacy-ibmi-program-analyzer | approving system/program flow |
-| TBD-CREDIT-CHECK-004 | RAG-GAP-CREDIT-CHECK-001 | How is available credit derived from physical customer credit fields? | Data owner | legacy-ibmi-data-model-analyzer | approving data flow |
+| TBD-CREDIT-CHECK-002 | RAG-GAP-CREDIT-CHECK-005 | Does the wrapper use or discard the returned credit decision? | IBM i developer | legacy-ibmi-program-analyzer | approving system and program-anchor coverage |
+| TBD-CREDIT-CHECK-004 | RAG-GAP-CREDIT-CHECK-001 | How is available credit derived from physical customer credit fields? | Data owner | legacy-ibmi-data-model-analyzer | approving data-anchor coverage |
 
 ## Non-Blocking Questions
 
 | TBD ID | Source ID | Question | Owner | Carry Forward To |
 | --- | --- | --- | --- | --- |
-| TBD-CREDIT-CHECK-001 | RAG-GAP-CREDIT-CHECK-004 | Are over-limit denials audited, queued, or simply rejected inline? | Credit Operations SME | 01-operation-flow.md |
-| TBD-CREDIT-CHECK-003 | RAG-GAP-CREDIT-CHECK-003 | Are there other callers of the credit decision routine outside the synthetic fixture? | IT SME | 03-program-flow.md |
+| TBD-CREDIT-CHECK-001 | RAG-GAP-CREDIT-CHECK-004 | Are over-limit denials audited, queued, or simply rejected inline? | Credit Operations SME | business_process coverage |
+| TBD-CREDIT-CHECK-003 | RAG-GAP-CREDIT-CHECK-003 | Are there other callers of the credit decision routine outside the synthetic fixture? | IT SME | program-anchor coverage |
 
 ## Non-Blocking Assumptions
 

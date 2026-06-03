@@ -29,13 +29,13 @@
         <mxCell id="44" value="legacy-document-evidence-intake&#xa;Office / Visio / PDF / image -&gt; normalized docs&#xa;DOC-* / FRAG-* coordinates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#12382f;strokeColor=#4bd39c;fontColor=#dff8ee;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
           <mxGeometry x="28" y="72" width="252" height="82" as="geometry"/>
         </mxCell>
-        <mxCell id="40" value="legacy-flow-context-normalizer&#xa;normalized docs/specs -&gt; Mermaid flows&#xa;sparse triage + risk accept" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2b3e;strokeColor=#20c8ff;fontColor=#f2f8ff;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
+        <mxCell id="40" value="legacy-module-context-intake&#xa;docs/specs/RAG -&gt; context package&#xa;coverage + TBDs + source eligibility" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2b3e;strokeColor=#20c8ff;fontColor=#f2f8ff;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
           <mxGeometry x="28" y="174" width="252" height="86" as="geometry"/>
         </mxCell>
         <mxCell id="41" value="legacy-module-context-intake&#xa;RAG / accepted sparse context&#xa;preserves gaps and conflicts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2b3e;strokeColor=#20c8ff;fontColor=#f2f8ff;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
           <mxGeometry x="28" y="278" width="252" height="82" as="geometry"/>
         </mxCell>
-        <mxCell id="42" value="Primary Artifacts&#xa;document-intake/&#xa;flow-normalization/&#xa;00_context_packages/&lt;MODULE&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#081927;strokeColor=#315b72;fontColor=#b8c7d5;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
+        <mxCell id="42" value="Primary Artifacts&#xa;document-intake/&#xa;00_context_packages/&lt;MODULE&gt;&#xa;context-index + evidence map" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#081927;strokeColor=#315b72;fontColor=#b8c7d5;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">
           <mxGeometry x="28" y="382" width="252" height="84" as="geometry"/>
         </mxCell>
         <mxCell id="43" value="Review / Risk Gate&#xa;SME review or owner acceptance&#xa;no BRD from sparse context alone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#12382f;strokeColor=#4bd39c;fontColor=#dff8ee;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="4">

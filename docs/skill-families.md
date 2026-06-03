@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory's scored reverse-modernization family currently tracks 23
+Legacy Spec Factory's scored reverse-modernization family currently tracks 22
 skills. They are not equally connected — some are called every run, some only
 at boundaries, some only when reviewing. This document groups the scored Legacy
 skills into **families** so callers (humans and orchestrators) know which
@@ -21,13 +21,13 @@ including supplemental skills outside this scored family map.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 3 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or four-view module context enters the repo |
+| Module-first context intake | 2 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total tracked here** | **23** | |
+| **Total tracked here** | **22** | |
 
 ---
 
@@ -55,15 +55,14 @@ code-knowledge-graph output into evidence-bounded coverage, source eligibility,
 and traceable packages before module analysis.
 This is the default enterprise entry path when a team already has Visio, Word,
 Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File
-Specs, interface specs, data dictionaries, RAG output, four reviewed context
-views, or a module-level context package. It does not replace evidence
+Specs, interface specs, data dictionaries, RAG output, reviewed module notes,
+or a module-level context package. It does not replace evidence
 authorization or SME approval.
 
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
 | [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Optional raw-document entry layer before `legacy-module-context-intake`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates when tooling allows. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
-| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | legacy/manual optional flow-normalization package, only when explicitly requested or maintaining older packages | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Not part of the default chain. Do not create this package for normal document-first runs; route document-intake output, source metadata, RAG, and SME notes directly to `legacy-module-context-intake` |
-| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | document-intake output, source metadata, RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, four-view module notes, or legacy flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; may also feed `legacy-brd-writer` for explicit internal POC `poc_draft` output. Sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
+| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | document-intake output, source metadata, RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, or reviewed module notes | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; may also feed `legacy-brd-writer` for explicit internal POC `poc_draft` output. Sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
 
 **Sequence**:
 
@@ -80,10 +79,10 @@ external RAG bundle + human-confirmed module context
 
 **Anti-pattern**: treating draft document-derived context steps, generated
 diagrams, or RAG candidates as approved `BR-*` rules or BRD conclusions, or
-reporting upstream context-view files as the final four module flows. Flow
-normalization and context intake preserve candidates, source eligibility, and
-gaps; `legacy-ibmi-module-analyzer` produces the canonical `04_modules/`
-four-view module coverage and BRD eligibility map.
+reporting upstream context packages as the final four module flows. Context
+intake preserves candidates, source eligibility, and gaps;
+`legacy-ibmi-module-analyzer` produces the canonical `04_modules/` four-view
+module coverage and BRD eligibility map.
 
 ---
 
