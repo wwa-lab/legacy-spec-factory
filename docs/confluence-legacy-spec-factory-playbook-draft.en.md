@@ -18,7 +18,7 @@ The core deliverable is an SME-reviewed business capability specification packag
 
 ## Operating Model
 
-Legacy Spec Factory supports two operating paths.
+Legacy Spec Factory supports three operating paths.
 
 ### Default Path: RAG-Assisted Module-First
 
@@ -33,6 +33,23 @@ RAG / Code Knowledge Graph / ARCAD / Data Dictionary
 ```
 
 The default enterprise adoption path is **module-first**. When the team already has module boundaries, reviewed module context, RAG retrieval output, or a code knowledge graph, it does not need to excavate the full source code base from scratch.
+
+### Daily Delivery Path: Exception-Only BRD Iteration
+
+```text
+Authorized context / source metadata / program-flow seed
+  -> Context + Inventory + Program + Flow + Module + Data evidence
+  -> BRD Package with status: delivery_draft
+  -> Daily-delivery review pack
+  -> accepted_for_daily_delivery
+```
+
+Daily delivery is the lightweight day-to-day BRD path. It keeps evidence
+authorization, redaction, and high-risk contradiction checks as hard stops, but
+does not require separate human approval after every intermediate skill. The
+output can be accepted for the current delivery iteration. It is not an
+approved baseline and cannot feed spec writing, SDD handoff, audit baseline, or
+trusted knowledge publication until the formal approval gates pass.
 
 ### Verification Path: Source-First Evidence Repair
 

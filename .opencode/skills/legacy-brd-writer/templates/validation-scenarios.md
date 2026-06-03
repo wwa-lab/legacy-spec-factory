@@ -2,7 +2,9 @@
 
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`
 **Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
-**Status:** `poc_draft` | `draft` | `in_review` | `approved`
+**Mode:** `standard` | `daily_delivery` | `internal_poc` | `approved_baseline`
+**Status:** `poc_draft` | `delivery_draft` | `draft` | `in_review` | `approved`
+**Review Policy:** `standard_gate` | `exception_only` | `poc_only`
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
@@ -25,6 +27,11 @@ review.
 When the BRD status is `poc_draft`, scenario seeds are discussion prompts only.
 Use `Readiness: poc_discussion_only` unless the scenario is already backed by
 code/runtime/SME evidence.
+
+When the BRD status is `delivery_draft`, scenario seeds are daily review prompts
+or delivery-planning aids. They are not formal `AC-*` or `TC-*`, and they do not
+become spec/handoff evidence until the BRD is promoted through approved-baseline
+gates.
 
 ---
 

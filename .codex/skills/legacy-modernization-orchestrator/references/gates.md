@@ -84,12 +84,15 @@ analysis or standard BRD
 **Draft exceptions:** a named accountable owner may explicitly accept a
 context-only draft for this cycle when source/object evidence is unavailable.
 For internal POC validation, the requester/project POC owner may explicitly
-accept a `poc_draft` BRD so stakeholders can review direction early. These
-exceptions do not pass the code-backed gate; they only allow draft review
-material. The module / BRD must record `evidence_mode: context_only` or
-`internal_poc`, remain non-approved, carry missing object-map / program / flow
-work as `TBD-*`, and avoid `confirmed_from_code` evidence strength unless a
-linked code-derived artifact exists.
+accept a `poc_draft` BRD so stakeholders can review direction early. For
+day-to-day delivery, the owner may select `mode: daily_delivery` so the chain
+continues through inventory, program, flow, module, data-model, and BRD steps
+with exception-only review. These exceptions do not pass the code-backed gate;
+they only allow draft or delivery review material. The module / BRD must record
+`evidence_mode: context_only`, `internal_poc`, or `daily_delivery`, remain
+non-approved, carry missing object-map / program / flow work as `TBD-*`, and
+avoid `confirmed_from_code` evidence strength unless a linked code-derived
+artifact exists.
 
 **Block actions:**
 
@@ -102,9 +105,9 @@ linked code-derived artifact exists.
 3. Route to `legacy-ibmi-flow-analyzer` for missing in-scope
    `flow-<FLOW-SLUG>.md` files or older flow analyses that lack replay,
    edge resolution, lineage, persistence, or exception-chain coverage.
-4. Refuse BRD approval and spec-writing until the gate passes. A context-only
-   or internal POC draft exception may proceed only as non-approved review
-   material.
+4. Refuse BRD approval and spec-writing until the gate passes. A context-only,
+   internal POC, or daily-delivery draft exception may proceed only as
+   non-approved review material.
 
 ## Gate 3 — BRD Discovery Gate
 
@@ -119,15 +122,17 @@ recorded):**
 - BRD review evidence records SME / business approval, such as
   `brd-review.md` sign-off or `review-decision.yaml`
 - blocked BRD findings are resolved or explicitly accepted as non-blocking
-- BRD status is not `poc_draft`, `draft`, or `in_review` when routing to spec
+- BRD status is not `poc_draft`, `delivery_draft`, `draft`, or `in_review`
+  when routing to spec
 
 **Block actions:**
 
 1. Route to `legacy-brd-writer` if the BRD Package is missing or incomplete.
 2. Route to `legacy-sme-review-facilitator` if BRD content exists but review /
    approval is missing.
-3. Treat `poc_draft` as valid internal POC review material but not a passed BRD
-   Discovery Gate.
+3. Treat `poc_draft` as valid internal POC review material and
+   `delivery_draft` / `accepted_for_daily_delivery` as valid daily delivery
+   review material, but not as a passed BRD Discovery Gate.
 4. Refuse standard spec-writing until this gate and the Post-BRD Disposition
    Gate pass, or until the requester records a technical-spec-only bypass with
    approver and risk acceptance.

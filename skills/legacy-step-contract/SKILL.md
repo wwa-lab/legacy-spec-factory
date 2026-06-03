@@ -180,8 +180,9 @@ Required fields:
 - `cross_references` — what the output must link back to (every claim links
   to one or more `EV-*`; every `BR-*` links to `BEH-*` and `EV-*`)
 - `status_field` — the lifecycle field the artifact carries (`draft`,
-  `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked`,
-  `rejected`, `retired`)
+  `delivery_draft`, `in_review`, `approved`,
+  `approved_with_non_blocking_tbd`, `blocked`, `rejected`, `retired`;
+  `poc_draft` is allowed only for internal POC artifacts)
 - `non_outputs` — what the step is **not** allowed to produce (e.g. a flow
   analyzer does not produce capability specs)
 
@@ -270,6 +271,37 @@ For internal POC validation, distinguish **draft production** from
 
 This mode is a controlled acceleration path, not a waiver of evidence safety or
 traceability.
+
+### Daily Delivery Mode
+
+For day-to-day BRD delivery, distinguish **delivery iteration acceptance** from
+**formal baseline approval**:
+
+- Evidence authorization, known sensitivity, and redaction safety remain
+  non-bypassable hard gates.
+- The runner should continue through context, inventory, program, flow, module,
+  data-model, and BRD drafting without stopping for separate human approval at
+  each intermediate artifact when mechanical and semantic validation have no
+  blocking findings.
+- A program-flow seed such as `Program A -> Program B -> Program C` may start
+  the chain as scope input. It is not proof of parameter semantics, data
+  mutation, trigger model, commit boundaries, or business meaning; those must be
+  derived from source/evidence or carried as `TBD-*`.
+- Missing supplemental evidence, SME availability windows, or non-critical
+  analyzer gaps should become warnings, `TBD-*`, or daily review questions when
+  they do not alter high-risk business meaning.
+- Critical contradictions, unresolved source authorization, scope ambiguity,
+  and high-risk business-rule uncertainty remain `blocked` until resolved or
+  explicitly waived by the accountable owner.
+- A daily BRD must carry `mode: daily_delivery`,
+  `status: delivery_draft`, `evidence_mode: daily_delivery`, and
+  `review_policy: exception_only`.
+- Final review may record `accepted_for_daily_delivery`; this is not equivalent
+  to `approved` and does not pass spec-writing, SDD handoff, audit-baseline, or
+  knowledge-publication gates.
+
+This mode reduces approval frequency; it does not weaken traceability or allow a
+draft artifact to masquerade as an approved baseline.
 
 ## Surfacing Unresolved Items
 

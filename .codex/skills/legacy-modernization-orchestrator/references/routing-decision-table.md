@@ -20,8 +20,10 @@ Skill statuses:
 | 0m — Risk-Accepted Sparse Context | Continue after source owner/SME confirms no additional document, spec, or flow input can be provided | `legacy-module-context-intake` | Implemented v0.1.7 | Context intake must preserve all gaps as low-confidence TBDs/source eligibility labels and must not route directly to module analysis or BRD generation without its own gates. |
 | 0m — Module Context Intake | Normalize RAG/context package | `legacy-module-context-intake` | Implemented v0.1.7 | Use when the user has external RAG output, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, or human-confirmed four-view module context. Blocks on unapproved evidence and does not promote RAG/generated candidates to approved rules or BRD conclusions. |
 | 0n — Module Context Ready | Produce a standard code-backed BRD / migration discovery baseline / spec input | `legacy-ibmi-inventory` | Implemented | Use when `00_context_packages/<MODULE-SLUG>/context-index.yaml` is ready but `01_inventory/object-map.md`, program analyses, or flow analyses are missing. Build the code evidence backbone first; context views remain upstream hints. |
+| 0n — Module Context Ready | Produce a daily delivery BRD with exception-only approvals | earliest missing code-backed step, usually `legacy-ibmi-inventory` | Implemented | Use `mode: daily_delivery`, `review_policy: exception_only`. Automatically continue through inventory, program, flow, module, data-model, and BRD steps unless a hard gate or blocking exception appears. Final output is `status: delivery_draft` plus a consolidated daily-delivery review pack; it is not approved for spec or handoff. |
 | 0n — Module Context Ready | Produce an internal POC BRD now | `legacy-brd-writer` | Implemented v0.1.9 | Use when the requester explicitly wants an early POC BRD and accepts non-approved status. Generate `status: poc_draft`, `evidence_mode: internal_poc`, low-confidence hypotheses, and approval/spec blockers. Do not route to spec/handoff from this artifact. |
 | 0n — Module Context Ready | Assemble context-only module draft | `legacy-ibmi-module-analyzer` | Implemented v0.2.3 | Use only when the user explicitly accepts a context-only path for this cycle or no source/object evidence is available. Preserve open questions as TBDs, classify BRD source eligibility, and do not claim code-backed approval. |
+| Program-flow seed (`Program A -> Program B -> Program C`) | Produce daily delivery BRD | `legacy-ibmi-inventory` first, then per-node `legacy-ibmi-program-analyzer`, then `legacy-ibmi-flow-analyzer` | Implemented | Treat the chain as a scope seed, not a proven transaction. Inventory all nodes and dependencies, analyze each named program, then stitch the flow from evidence. Missing trigger model, parameter semantics, dynamic calls, commit boundaries, or data mutation become `TBD-*` or exception stops. |
 | 1 — Evidence Ready (IBM i) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented | First call after redaction |
 | 1 — Evidence Ready (COBOL) | Start reverse engineering | `legacy-cobol-inventory` | Future | Use manual fallback; produce `inventory.yaml` following the same schema as the IBM i family |
 | 2a — Inventory In Progress | Continue inventory | `legacy-ibmi-inventory` | Implemented | Keep iterating; do not exit until SME decision is recorded |
@@ -34,7 +36,7 @@ Skill statuses:
 | 3c — Flow Analysis In Progress | Continue | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** | Complete all in-scope flows before module synthesis, including replay / edge resolution / lineage consuming routine-local carriers / persistence / exception-chain coverage consuming routine-local exception closure |
 | 3d — Flow Analysis Done | Assemble the module | `legacy-ibmi-module-analyzer` | **Implemented v0.2.3** | Produces the canonical 4-view module coverage map plus readiness, BRD source eligibility, edge-resolution, critical field, persistence purpose, routine-local evidence carry-forward, and exception summaries under `04_modules/` per `docs/module-analysis-model.md` |
 | 3e — Module Analysis In Progress | Continue | `legacy-ibmi-module-analyzer` | **Implemented v0.2.3** | All four views must reach `approved` or `approved_with_non_blocking_tbd`; module readiness and BRD crosswalk must carry source eligibility, edge-resolution, data, routine-local evidence, exception, and gap coverage |
-| 3f — Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME / business discovery review | `legacy-brd-writer` | **Implemented v0.1.9** | One legacy-system-only BRD Package per selected `CAP-*`; sections 1-9 are required for review, 10-12 optional/evidence-backed. For standard BRDs, module analysis must be backed by `01_inventory/object-map.md`, required program analyses, and required flow analyses. For internal POC, generate `poc_draft` and keep weak/candidate rows as hypotheses, TBDs, or review questions, not BRD conclusions. |
+| 3f — Module Analysis Done, no approved BRD Package | Produce legacy BRD for SME / business discovery review | `legacy-brd-writer` | **Implemented v0.1.9** | One legacy-system-only BRD Package per selected `CAP-*`; sections 1-9 are required for review, 10-12 optional/evidence-backed. For standard BRDs, module analysis must be backed by `01_inventory/object-map.md`, required program analyses, and required flow analyses. For daily delivery, generate `delivery_draft` and consolidate exceptions into one review pack. For internal POC, generate `poc_draft` and keep weak/candidate rows as hypotheses, TBDs, or review questions, not BRD conclusions. |
 | 3f — Approved BRD Package, post-BRD No-gap / Gap1 / follow-new-system decision | Complete discovery for that item | Stop / record disposition | Doc-only | New system remains source of truth; do not route to spec-writing or handoff |
 | 3f — Approved BRD Package, post-BRD risk assessment / gap analysis open | Resolve promotion decision | Risk assessment / gap-analysis process | Doc-only | Route to named product, SME, risk, or gap-analysis owner before spec-writing |
 | 3f — Approved BRD Package plus explicit post-BRD promotion / disposition decision | Produce capability spec | `legacy-spec-writer` | **Implemented v0.1.6** | One spec per promoted `CAP-*`; consumes approved BRD Package plus analyzer v0.2.5 replay / conditioned calculation blocks / routine-local lineage / persistence / error-inventory / exception evidence |
@@ -137,6 +139,31 @@ When the slice contains multiple programs:
 - Program-analyzer can run per-program in parallel
 - Rule-miner aggregates across programs — do not invoke until at least the
   business-critical programs are analyzed
+
+If the slice is supplied as a program-flow seed (`Program A -> Program B ->
+Program C`) and the user asks for daily delivery, keep moving after each
+mechanical pass. Do not require separate human approval for each node before the
+next node starts. Stop only for hard evidence gates, missing source that changes
+the requested flow, unresolved trigger model, or high-risk contradiction.
+
+### "Daily delivery" requests
+
+When the user asks for BRD delivery and does not explicitly ask for an approved
+baseline, audit-ready package, customer acceptance, spec writing, SDD handoff,
+or trusted knowledge publication, default to daily delivery. Also use this path
+when the user asks for daily delivery, day-to-day BRD, fewer approvals, or
+exception-only review:
+
+1. Set `delivery_mode: daily_delivery`.
+2. Keep Evidence Authorization Gate non-bypassable.
+3. Route to the earliest missing evidence step, then continue automatically
+   through inventory, program, flow, module, data-model, and BRD generation.
+4. Convert non-critical review gaps into `TBD-*`, warnings, or
+   `delivery-risk-summary.md` rows.
+5. Produce `status: delivery_draft` and a consolidated
+   `07_sme_reviews/<CAPABILITY>/daily-delivery-review-v1/` pack.
+6. Refuse spec writing, SDD handoff, audit baseline, or knowledge publication
+   until the BRD is promoted through the approved-baseline path.
 
 ### "Already approved spec, want to regenerate" requests
 

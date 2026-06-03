@@ -3,6 +3,8 @@
 
 review_id: "REVIEW-<CAPABILITY-SLUG>-<NNN>"
 review_mode: "conversation"
+delivery_mode: "standard"
+# One of: standard, daily_delivery, internal_poc, approved_baseline
 review_date: "YYYY-MM-DD"
 capability_slug: "<CAPABILITY-SLUG>"
 brd_package_path: "05_brds/<CAPABILITY-SLUG>/"
@@ -26,7 +28,21 @@ summary:
     accepted: 0
     accepted_with_tbd: 0
     blocked: 0
+  daily_delivery_decision: "not_applicable"
+  # One of: not_applicable, accepted_for_daily_delivery, blocked, needs_revision
   ready_for_spec_writer: false
+
+daily_delivery:
+  decision: "not_applicable"
+  # One of: not_applicable, accepted_for_daily_delivery, blocked, needs_revision
+  review_policy: "standard_gate"
+  # One of: standard_gate, exception_only, poc_only
+  delivery_risk_summary: null
+  not_allowed_for:
+    - spec_approval
+    - sdd_handoff
+    - audit_baseline
+    - knowledge_publication
 
 functional_analysis_coverage:
   - target_id: "BRD-<CAPABILITY-SLUG>-001#section-01"

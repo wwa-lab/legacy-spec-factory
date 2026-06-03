@@ -3,8 +3,10 @@
 **BRD ID:** `BRD-<CAPABILITY-SLUG>-001`  
 **Capability Owner (SME):** `<Name / Role>`  
 **Review Date:** `<YYYY-MM-DD>`
-**Status:** `poc_draft` | `in_review` | `approved` | `needs_revision` | `rejected`
-**Evidence Mode:** `code_backed` | `context_only` | `internal_poc`
+**Mode:** `standard` | `daily_delivery` | `internal_poc` | `approved_baseline`
+**Status:** `poc_draft` | `delivery_draft` | `in_review` | `approved` | `needs_revision` | `rejected`
+**Evidence Mode:** `code_backed` | `daily_delivery` | `context_only` | `internal_poc`
+**Review Policy:** `standard_gate` | `exception_only` | `poc_only`
 
 ---
 
@@ -12,7 +14,9 @@
 
 This checklist is completed by the **capability owner SME**. The reviewer must
 validate that the BRD is accurate, complete, and safe to use as the
-legacy-system discovery baseline. It is not an SDD handoff approval.
+requested review target. For standard review, that target may be the
+legacy-system discovery baseline. For daily delivery, it is only current
+iteration acceptance. It is not an SDD handoff approval.
 
 **What to check:**
 
@@ -60,6 +64,9 @@ similar document-quality section.
 - [ ] For `context_only` mode, the named risk acceptance is recorded, missing
       object-map / program / flow artifacts are `TBD-*` blockers, and this BRD
       is not marked `approved`.
+- [ ] For `daily_delivery` mode, exception-only review is recorded, blocking
+      exceptions are listed, non-critical findings are carried to
+      `delivery-risk-summary.md`, and this BRD is not marked `approved`.
 - [ ] For `internal_poc` mode, the requester/project POC owner is recorded,
       missing object-map / program / flow / SME / OCR / source-eligibility items
       are visible as approval/spec blockers, weak statements are marked as
@@ -298,6 +305,9 @@ similar document-quality section.
 - [ ] `approved` — Use as the legacy-system discovery baseline
 - [ ] `approved_with_non_blocking_tbd` — Use as discovery baseline; carry
       non-blocking TBDs listed below
+- [ ] `accepted_for_daily_delivery` — Use for the current daily delivery
+      iteration only; standard BRD approval, spec writing, SDD handoff, audit
+      baseline, and knowledge publication remain blocked
 - [ ] `poc_draft` — Use only for internal POC discussion; standard BRD approval,
       spec writing, SDD handoff, and delivery decisions remain blocked until
       listed approval/spec blockers are resolved
@@ -309,6 +319,13 @@ similar document-quality section.
 ```
 <List any non-blocking TBDs that later comparison, gap analysis, or
 spec-writing should carry forward>
+```
+
+**Daily Delivery Risk Summary (if accepted_for_daily_delivery):**
+
+```
+<Reference 07_sme_reviews/<CAPABILITY-SLUG>/daily-delivery-review-v1/delivery-risk-summary.md
+and list any accepted delivery risks, owner, and follow-up date.>
 ```
 
 ---

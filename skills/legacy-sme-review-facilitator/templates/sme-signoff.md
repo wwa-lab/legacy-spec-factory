@@ -78,6 +78,14 @@ approve the artifact for the next phase of the pipeline as specified below.**
   <List follow-up items and owners>
   ```
 
+- [ ] **Daily Delivery Acceptance**: The artifact is accepted for the current
+      daily delivery iteration only. It is not approved for spec writing, SDD
+      handoff, audit baseline, or trusted knowledge publication.
+
+  ```
+  <List accepted delivery risks, owners, and follow-up dates>
+  ```
+
 - [ ] **Conditional Hold**: The artifact cannot advance until the following
       blocking issues are resolved:
 
@@ -125,4 +133,3 @@ Facilitator Signature: ______________________
 Name: `<name>`  
 Date: `YYYY-MM-DD`  
 Notes: `<any routing notes>`
-

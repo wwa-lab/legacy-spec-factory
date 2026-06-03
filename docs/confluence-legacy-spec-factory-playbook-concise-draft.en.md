@@ -77,6 +77,12 @@ RAG / Source Evidence / SME Knowledge
   -> SDLC Handoff
 ```
 
+For day-to-day BRD delivery, use `daily_delivery`: the chain still runs context,
+inventory, program, flow, module, data, and BRD steps, but human approval is
+exception-only until one consolidated daily-delivery review pack. The BRD uses
+`status: delivery_draft` and may be `accepted_for_daily_delivery`; it is not an
+approved baseline for spec writing or SDD handoff.
+
 ### Key Artifacts
 
 | Artifact | Purpose |
@@ -99,6 +105,8 @@ A page or artifact should not move to the next delivery step unless:
 - confidence level is visible
 - modernization decisions are separated from legacy behavior
 - approval status is clear: Draft, In Review, Approved, Blocked, or Retired
+- daily delivery status is kept separate from approval: `delivery_draft` /
+  `accepted_for_daily_delivery` does not equal `approved`
 
 ### Output of This Page
 

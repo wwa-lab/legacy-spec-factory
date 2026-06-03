@@ -1,6 +1,6 @@
 ---
 name: legacy-brd-writer
-description: Use when migration discovery needs an evidence-backed legacy-system BRD for one capability, or an internal POC BRD draft from sparse/partial context so stakeholders can review scope early. Produces SME-reviewable observed behaviors, inferred rule seeds, open gaps, traceability, and BRD-stage validation scenario seeds. This is the primary near-term old-system discovery artifact; it does not compare against the new system, create an SDD handoff, or mandate target-system changes.
+description: Use when migration discovery needs an evidence-backed legacy-system BRD for one capability, a daily-delivery BRD draft with exception-only review, or an internal POC BRD draft from sparse/partial context so stakeholders can review scope early. Produces SME-reviewable observed behaviors, inferred rule seeds, open gaps, traceability, and BRD-stage validation scenario seeds. This is the primary near-term old-system discovery artifact; it does not compare against the new system, create an SDD handoff, or mandate target-system changes.
 ---
 
 <!--
@@ -82,6 +82,17 @@ promotion, SDD handoff, and strong evidence claims. The package status must be
 label or `TBD-*`, and the review artifacts must say the BRD is for internal POC
 discussion only.
 
+For **daily delivery**, generate the BRD after the automated context /
+inventory / program / flow / module / data-model chain has run as far as the
+available authorized evidence allows. Daily delivery uses
+`mode: daily_delivery`, `status: delivery_draft`,
+`evidence_mode: daily_delivery`, and `review_policy: exception_only`. Missing
+or weak non-critical evidence becomes `TBD-*`, review questions, or
+delivery-risk-summary rows instead of forcing per-skill approvals. Blocking
+exceptions still stop delivery: unresolved authorization/redaction, unknown
+sensitivity, scope ambiguity, high-risk contradictions, or a request to use the
+draft as spec / SDD / audit-baseline input.
+
 BRD writing follows a **source-of-truth firewall**:
 
 - `confirmed_by_sme` and approved `code_backed` evidence may become BRD
@@ -115,6 +126,9 @@ Trigger on any of these signals:
   from sparse source documents, document-intake metadata, context packages, RAG,
   screenshots, diagrams, or partial module notes so they can validate direction
   before strict discovery gates are complete
+- Daily delivery stakeholders need a BRD iteration from the best available
+  code-backed evidence with one consolidated review pack instead of separate
+  approval stops for inventory, program, flow, module, and data-model artifacts
 - SME owner wants to **validate business scope and rules** before forwarding to
   `legacy-spec-writer`
 - SME / BA / vendor stakeholders need **test-aware scenario seeds** to discuss
@@ -144,16 +158,17 @@ Do not trigger when:
   accepts the missing BRD review as a documented risk (route to
   `legacy-spec-writer` with that bypass recorded)
 - No **SME is available** to review and approve the BRD, unless the requester
-  explicitly asks for an internal POC draft. POC drafting may continue, but
-  approval remains blocked.
+  explicitly asks for an internal POC draft or daily delivery draft. POC and
+  daily drafting may continue, but formal approval remains blocked.
 - The module analysis is **below `approved_with_non_blocking_tbd`** status and
   the requester expects an approved/code-backed BRD. For internal POC requests,
   continue with `status: poc_draft` and carry missing module evidence as
   `TBD-*` approval blockers.
 - The selected module / capability is context-only and lacks
   `01_inventory/object-map.md`, required program analyses, or required flow
-  analyses, unless the requester explicitly asks for an internal POC or
-  context-only draft and accepts that it cannot be approved as code-backed
+  analyses, unless the requester explicitly asks for daily delivery, an internal
+  POC, or context-only draft and accepts that it cannot be approved as
+  code-backed
 
 This skill is a **migration discovery and business synthesis layer**. If you
 find yourself writing formal acceptance criteria, minting formal `TC-*` test
@@ -187,6 +202,9 @@ You must:
 - in internal POC mode, draft sections 1-9 from the best available authorized
   context, but mark weak or document-only claims as low-confidence candidate
   statements or `TBD-*` instead of blocking the BRD artifact
+- in daily delivery mode, draft sections 1-9 from available code-backed and
+  source-linked evidence, carry non-critical gaps to the daily review pack, and
+  stop only for blocking exceptions
 - enforce the BRD source-of-truth firewall: only confirmed SME facts and
   code-backed evidence can become BRD conclusions
 - include optional sections 10-12 only when security/auth details, workflow or
@@ -213,6 +231,9 @@ You must:
 - require SME sign-off before the BRD leaves `in_review` status
 - keep internal POC BRDs at `poc_draft` until the project explicitly reruns the
   standard code-backed / SME-reviewed approval path
+- keep daily delivery BRDs at `delivery_draft` until a consolidated review
+  records `accepted_for_daily_delivery`; do not convert that decision into
+  `approved`
 
 You must not:
 
@@ -260,6 +281,11 @@ Accept:
   `01_inventory/inventory.yaml`, `01_inventory/object-map.md`, in-scope
   `02_programs/<MODULE>/<OBJ>/program-analysis.md`, and in-scope
   `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`
+- **Daily delivery inputs:** authorized module context, RAG/source metadata, a
+  program-flow seed, or partial code-backed artifacts that have already run as
+  far as the orchestrator can safely take them. The BRD must carry
+  non-critical gaps into the daily review pack and must not claim formal BRD
+  approval.
 - **One or more capability seeds** — selected from the module overview's
   Capability Seeds; the SME has confirmed each is a distinct, in-scope business
   capability
@@ -275,7 +301,9 @@ Stop and require clarification if:
 
 - Module status is below `approved_with_non_blocking_tbd` and the requested
   output is an approved/code-backed BRD → route back to
-  `legacy-ibmi-module-analyzer`. For internal POC, continue as `poc_draft`.
+  `legacy-ibmi-module-analyzer`. For daily delivery, continue as
+  `delivery_draft` only when blocking exceptions are absent. For internal POC,
+  continue as `poc_draft`.
 - Standard BRD requested but the code evidence backbone is missing
   `object-map.md`, required program analyses, or required flow analyses → create
   an internal POC/context-only draft only if the user accepts non-approved
@@ -289,13 +317,15 @@ Stop and require clarification if:
   `generated_draft`, `questions_only`, or unreviewed `source_documented` module
   rows → create `TBD-*` / SME questions; do not draft it as a conclusion
 - The selected capability seed has **blocking TBDs** in the module analysis →
-  escalate to SME before approval; in internal POC mode, include the TBDs and
-  continue drafting
-- No **SME owner is assigned** → keep owner as `TBD` and draft only in internal
-  POC mode; approval remains blocked
+  escalate to SME before approval; in daily delivery or internal POC mode,
+  include the TBDs and continue drafting only if they do not block the current
+  delivery iteration
+- No **SME owner is assigned** → keep owner as `TBD` and draft only in daily
+  delivery or internal POC mode; approval remains blocked
 - The capability **boundary is ambiguous** (does flow X belong here or to another
-  capability?) → in internal POC mode, draft the most likely boundary as a
-  review hypothesis and add explicit boundary `TBD-*`; otherwise SME must decide
+  capability?) → in daily delivery or internal POC mode, draft the most likely
+  boundary as a review hypothesis only when the ambiguity is not high-risk, and
+  add explicit boundary `TBD-*`; otherwise SME must decide
 - The user asks the BRD writer to classify old-vs-new No-gap / Gap1 / Gap2 or
   decide target-system scope → explain that the BRD must first capture the
   legacy baseline; comparison/disposition is a post-BRD process
@@ -372,6 +402,12 @@ The summary below is normative for this skill.
   inventory, object-map, program-analysis, and flow-analysis artifacts carried
   as `TBD-*`; source eligibility labels preserved; BRD status limited to
   `draft` or `in_review`.
+- **Required for daily delivery BRD drafts**: explicit `delivery_mode:
+  daily_delivery`; authorized, known-sensitivity inputs; a capability/module
+  scope or program-flow seed accepted by the orchestrator; all blocking
+  exceptions either absent or recorded with owner decision; non-critical gaps
+  carried as `TBD-*`, review questions, or daily review pack rows; BRD status
+  limited to `delivery_draft` until formal baseline promotion.
 - **Required for internal POC BRD drafts**: an explicit user or project-owner
   request for internal POC output; at least one authorized, known-sensitivity
   source record or context artifact; a capability/module slug or provisional
@@ -388,9 +424,10 @@ The summary below is normative for this skill.
     source/context artifact exists.
   - `6 minimum_pass`: approved code-backed module, selected SME-confirmed
     capability seed, named capability-owner SME, approved upstream analyses,
-    and approved object map are present. Context-only and internal POC drafts
-    can reach `minimum_pass` for draft review only when authorization is clear
-    and missing evidence is visible as `TBD-*`; they cannot reach BRD approval.
+    and approved object map are present. Daily delivery, context-only, and
+    internal POC drafts can reach `minimum_pass` for draft review only when
+    authorization is clear and missing evidence is visible as `TBD-*`; they
+    cannot reach BRD approval.
   - `7-8 usable`: BAU notes, supplemental SME context, and related open-TBD
     history are supplied.
   - `9-10 strong`: examples of real scenarios, exception cases, runtime
@@ -399,15 +436,17 @@ The summary below is normative for this skill.
     clearer SME questions instead of invented rules.
 - **Readiness checks**: module and all upstream analyses at required status for
   standard approval; object map exists for standard BRDs; no `sensitivity:
-  unknown` evidence in scope; SME owner available to approve BRD. For internal
-  POC, these become approval-readiness checks, not drafting prerequisites.
+  unknown` evidence in scope; SME owner available to approve BRD. For daily
+  delivery and internal POC, these become approval-readiness checks, not
+  drafting prerequisites.
 - **Stop conditions**: unresolved evidence authorization/sensitivity; no
   recognizable capability/module scope; request asks BRD writer to classify
   No-gap / Gap1 / Gap2 or decide target-system scope; or the requester demands
   approved/code-backed BRD use while standard gates are missing. Missing module
   approval, object map, program analyses, flow analyses, risk acceptance, SME
-  owner, or clear boundary does not stop an internal POC draft; it creates
-  explicit `TBD-*` approval blockers.
+  owner, or clear boundary does not stop a daily delivery or internal POC draft
+  unless it is a blocking exception; otherwise it creates explicit `TBD-*`
+  approval/spec blockers.
 
 ### Execution
 
@@ -433,10 +472,12 @@ The summary below is normative for this skill.
   `category: sme_questions` or `category: evidence_gaps`; legacy behavior that
   needs later comparison or promotion review may be referenced by a `TBD-*`
   with `category: downstream_handoff_blockers` and `blocking: no` for BRD
-  approval unless the SME marks it business-critical. In internal POC mode,
-  missing evidence, missing SME owner, missing code-backed artifacts, and
-  ambiguous boundaries should usually be `blocking: yes (approval/spec only)`,
-  not blockers for producing the POC draft.
+  approval unless the SME marks it business-critical. In daily delivery mode,
+  non-critical missing evidence should become daily review questions or
+  delivery-risk-summary rows; high-risk contradictions remain blockers. In
+  internal POC mode, missing evidence, missing SME owner, missing code-backed
+  artifacts, and ambiguous boundaries should usually be `blocking: yes
+  (approval/spec only)`, not blockers for producing the POC draft.
 
 ### Output
 
@@ -455,8 +496,9 @@ The summary below is normative for this skill.
   BRD review and has no upstream `BR-*`, record it as a `TBD-*` requiring
   module/spec review instead of minting a new `BR-*` here. Does NOT mint
   `DEC-*`, `AC-*`, `IN-*`, `OUT-*`, `STEP-*`, `TC-*`, or new `BR-*`.
-- **Review status**: `status: poc_draft` → `draft` → `in_review` → `approved`
-  (SME sign-off).
+- **Review status**: `status: poc_draft` for internal POC,
+  `status: delivery_draft` for daily delivery, otherwise `draft` →
+  `in_review` → `approved` (SME sign-off).
   The approved BRD is ready as the legacy-system discovery baseline.
   `legacy-spec-writer` consumes it only after a separate post-BRD comparison /
   promotion decision says the capability or selected legacy behavior should
@@ -466,6 +508,10 @@ The summary below is normative for this skill.
   A context-only BRD draft cannot become `approved` until the Code-Backed
   Analysis Gate passes; keep missing object map, program analysis, and flow
   analysis as blocking `TBD-*` items in `brd-review.md` and `traceability.md`.
+  A daily delivery BRD may be accepted for the current iteration through
+  `review-decision.yaml.decision: accepted_for_daily_delivery`, but it cannot
+  become `approved` or feed spec / SDD handoff until the approved-baseline path
+  reruns the standard gates.
   An internal POC BRD cannot become `draft`/`in_review` for formal SME review or
   `approved` until its POC blockers are either resolved or explicitly converted
   into a context-only / standard BRD path.
@@ -487,8 +533,8 @@ What can be checked by a script, schema, or deterministic linter:
 - traceability table is complete and consistent (all claims appear in
   `traceability.md`)
 - standard BRDs cite `01_inventory/object-map.md`, in-scope program analyses,
-  and in-scope flow analyses; context-only and internal POC drafts visibly block
-  approval but may remain useful as review material
+  and in-scope flow analyses; daily delivery, context-only, and internal POC
+  drafts visibly block formal approval but may remain useful as review material
 - no BRD section marked as a factual conclusion is sourced only from
   `candidate_only`, `generated_draft`, `questions_only`, or unreviewed
   `source_documented` rows
@@ -498,6 +544,9 @@ What can be checked by a script, schema, or deterministic linter:
 - internal POC BRDs declare `status: poc_draft`, `evidence_mode:
   internal_poc`, a POC-only limitation note, and approval blockers in
   `brd-review.md` / `traceability.md`
+- daily delivery BRDs declare `status: delivery_draft`, `evidence_mode:
+  daily_delivery`, `review_policy: exception_only`, and consolidated delivery
+  review requirements in `brd-review.md` / `traceability.md`
 
 Mechanical validation **must** be reproducible. If it depends on judgment, move
 it to AI semantic review.
@@ -522,6 +571,9 @@ upstream evidence:
   behavior
 - internal POC candidate statements remain visibly low-confidence and are not
   presented as approved BRD conclusions
+- daily delivery candidate statements are not presented as approved BRD
+  conclusions; items needed for this delivery iteration are visible in the
+  daily review pack
 - module crosswalk rows marked `questions_only` or `needs_sme_review` become
   TBDs/review questions, not BRD conclusions
 - no invented IBM i facts (object names, fields, programs, jobs)
@@ -559,11 +611,15 @@ decision.
    - Validate with SME: is each a distinct capability worth its own BRD?
    - Assign `brd_id` and confirm `capability.{id, name, slug, owner}`
    - Define `scope.in_scope` and `scope.out_of_scope` from SME
-   - Record `evidence_mode`: `code_backed` for standard BRDs, `context_only`
+   - Record `evidence_mode`: `code_backed` for standard BRDs, `daily_delivery`
+     when the orchestrator selected exception-only day-to-day delivery,
+     `context_only`
      when named risk acceptance exists and the BRD will remain non-approved, or
      `internal_poc` when the requester explicitly wants early POC output from
-     partial context. For `internal_poc`, set `status: poc_draft` and record
-     the requester/project POC owner as draft-only risk acceptance.
+     partial context. For `daily_delivery`, set `status: delivery_draft` and
+     `review_policy: exception_only`. For `internal_poc`, set
+     `status: poc_draft` and record the requester/project POC owner as
+     draft-only risk acceptance.
 
 2. **Collect Evidence Bundle**
    - Gather every `EV-*` referenced by flows / programs / module that touch this
@@ -574,6 +630,9 @@ decision.
    - Populate evidence index with source, type, sensitivity, and confidence
    - Confirm `sensitive` flag is set on all evidence; if any `sensitive:
      unknown`, stop and request redaction review
+   - If daily delivery, carry non-critical evidence gaps into `TBD-*` rows,
+     review questions, and the daily-delivery review pack; stop only for
+     blocking exceptions.
    - If context-only, create `TBD-*` blockers for each missing code-backed
      artifact and prevent approval in `brd-review.md`
    - If internal POC, register source metadata even when extraction is partial
@@ -673,8 +732,13 @@ decision.
    - Verify complete coverage (no claim is missing from the table)
 
 9. **Prepare for SME Approval**
-   - Mark `status: poc_draft` for internal POC output; otherwise mark
+   - Mark `status: poc_draft` for internal POC output; mark
+     `status: delivery_draft` for daily delivery output; otherwise mark
      `status: in_review`
+   - For daily delivery, generate or reference the consolidated
+     `07_sme_reviews/<CAPABILITY-SLUG>/daily-delivery-review-v1/` pack and
+     record that final acceptance is `accepted_for_daily_delivery`, not
+     `approved`
    - Generate `brd-review.md` checklist
    - Generate `validation-scenarios.md` for SME scenario coverage review
    - Capability owner SME approves the BRD; BRD is then `status: approved`
@@ -700,7 +764,7 @@ history:
     capability_id: <CAP-* from current_focus>
     stage_after: <UNCHANGED stage_id>
     artifact: <path to brd.md, e.g. 05_brds/<CAPABILITY-SLUG>/brd.md>
-    note: "BRD authored for <CAP-*> — status: poc_draft | draft | in_review | approved"
+    note: "BRD authored for <CAP-*> — status: poc_draft | delivery_draft | draft | in_review | approved"
 ```
 
 Also overwrite `project.last_updated_at` / `project.last_updated_by`.
@@ -800,6 +864,22 @@ Before marking the BRD `approved`, confirm:
 - [ ] SME has reviewed and approved the BRD
 - [ ] Capability scope and boundaries are validated by SME
 
+For a daily delivery BRD, the approval checklist above is not required before
+daily delivery drafting. Instead, confirm:
+
+- [ ] `mode: daily_delivery`, `status: delivery_draft`,
+      `evidence_mode: daily_delivery`, and `review_policy: exception_only` are
+      visible in the BRD package.
+- [ ] Blocking exceptions are either absent or listed with owner / resolver in
+      `brd-review.md`, `traceability.md`, or the daily review pack.
+- [ ] Non-critical gaps are visible as `TBD-*`, review questions, or
+      `delivery-risk-summary.md` rows.
+- [ ] `review-decision.yaml` uses `accepted_for_daily_delivery` for final daily
+      acceptance, not `approved`.
+- [ ] The package explicitly says it cannot feed spec writing, SDD handoff,
+      audit baseline, or trusted knowledge publication until the
+      approved-baseline gates pass.
+
 For an internal POC BRD, the approval checklist above is not required before
 drafting. Instead, confirm:
 
@@ -861,6 +941,12 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.10 (2026-06-04): Added daily delivery BRD mode. Daily runs use
+  `status: delivery_draft`, `evidence_mode: daily_delivery`, and
+  `review_policy: exception_only`, consolidate findings into one review pack,
+  and remain barred from spec / SDD handoff until promoted through approved
+  baseline gates.
 
 - v0.1.9 (2026-06-03): Added internal POC BRD mode. Sparse, context-only, or
   tooling-constrained inputs may now produce `status: poc_draft` BRDs with

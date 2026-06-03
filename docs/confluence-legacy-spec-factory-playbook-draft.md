@@ -18,7 +18,7 @@ Legacy Spec Factory 是一套面向 IBM i / AS400 现代化的证据驱动方法
 
 ## Operating Model
 
-Legacy Spec Factory 支持两条路径。
+Legacy Spec Factory 支持三条路径。
 
 ### Default Path: RAG-Assisted Module-First
 
@@ -33,6 +33,18 @@ RAG / Code Knowledge Graph / ARCAD / Data Dictionary
 ```
 
 默认企业落地路径是 **module-first**。当团队已经有模块边界、四类流程图、RAG 检索结果或代码知识图谱时，不需要从全量源码重新挖一遍。
+
+### Daily Delivery Path: Exception-Only BRD Iteration
+
+```text
+Authorized context / source metadata / program-flow seed
+  -> Context + Inventory + Program + Flow + Module + Data evidence
+  -> BRD Package with status: delivery_draft
+  -> Daily-delivery review pack
+  -> accepted_for_daily_delivery
+```
+
+Daily delivery 是轻量的日常 BRD 交付路径。它保留证据授权、脱敏和高风险矛盾作为硬停止点，但不要求每个中间 skill 都单独人工 approve。输出可以被本轮交付接受，但不是 approved baseline；在正式审批 gate 通过前，不能进入 spec writing、SDD handoff、审计 baseline 或可信知识发布。
 
 ### Verification Path: Source-First Evidence Repair
 
