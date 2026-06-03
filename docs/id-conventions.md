@@ -44,7 +44,7 @@ AC-CREDIT-CHECK-002
 | `DATA` | Cross-program or cross-step data exchange | `DATA-CREDIT-CHECK-001` |
 | `SEED` | Candidate rule or capability question awaiting SME review | `SEED-CREDIT-CHECK-001` |
 | `CAND` | Draft candidate extracted from non-standard source context | `CAND-CREDIT-CHECK-001` |
-| `MODULE` | Business module synthesized from related flows | `MODULE-CREDIT-CHECK-001` |
+| `MODULE` | Business module assembled from reviewed context and/or approved flow evidence | `MODULE-CREDIT-CHECK-001` |
 | `VIEW` | Module analysis view | `VIEW-CREDIT-CHECK-001` |
 | `ACTOR` | Human or organizational actor in a module view | `ACTOR-CREDIT-CHECK-001` |
 | `SYS` | External system, integration partner, or subsystem in a module view | `SYS-CREDIT-CHECK-001` |

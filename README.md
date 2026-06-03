@@ -733,8 +733,9 @@ intentionally kept separate.**
 The active skill family is organized around two operating paths:
 
 - **Default path — Module-first context.** External RAG / code-knowledge-graph
-  output, data dictionary mappings, ARCAD REF, source snippets, and four
-  human-confirmed flows enter as a reviewed module context package.
+  output, data dictionary mappings, ARCAD REF, source snippets,
+  human-confirmed four-view context, and SME fragments enter as a reviewed
+  module context package.
 - **Verification path — Platform-specific extraction.** IBM i source,
   runtime, data, screen, and report analyzers are used selectively when the
   module context has gaps, contradictions, high-risk rules, or missing source
