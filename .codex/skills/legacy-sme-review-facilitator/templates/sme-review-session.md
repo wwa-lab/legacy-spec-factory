@@ -3,7 +3,7 @@
 **Session ID:** REVIEW-`<CAPABILITY-SLUG>`-`<NNN>`
 
 **Artifact Under Review:** `<path/to/artifact.md or .yaml>`  
-**Artifact Status:** `draft` / `in_review` / `approved_with_non_blocking_tbd` / `approved`
+**Artifact Status:** `draft` / `delivery_draft` / `in_review` / `approved_with_non_blocking_tbd` / `approved`
 **Review Mode:** `conversation` / `meeting` / `email` / `checklist`
 
 ## Participants
@@ -72,6 +72,7 @@
 - [ ] Related artifacts (BRD, spec, module analysis, etc.)
 - [ ] Scope boundaries (what is / is not being reviewed)
 - [ ] BRD Package write-back target (`review-decision.yaml`) if applicable
+- [ ] Daily delivery risk summary target (`delivery-risk-summary.md`) if applicable
 
 ## Session Status
 

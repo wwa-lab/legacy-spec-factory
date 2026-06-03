@@ -2009,6 +2009,43 @@ Recorded in `docs/runtime-matrix.md`. Scorecard moved from v0.1.0 (9.0 cap)
 to v0.1.1 (9.5, field-pilot ready) at
 [docs/reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md](reviews/legacy-modernization-orchestrator-v0.1.1-scorecard.md).
 
+### Contract-Only Scenario — Daily Delivery Program-Flow Seed
+
+```text
+Use /legacy-modernization-orchestrator.
+
+User input:
+For project CARD-REPLACEMENT, run daily delivery with fewer approvals.
+Starting scope seed: CARDRQA -> CARDVAL -> CARDRPL. Evidence is authorized,
+sensitivity known, and source paths are available, but no inventory, program
+analysis, flow analysis, module analysis, data-model analysis, or BRD exists
+yet. Do not create or edit files.
+
+Return only:
+- workflow mode
+- current stage
+- next skill
+- approval policy
+- program-flow seed handling
+- gate check
+- expected final BRD status
+- spec/handoff eligibility
+```
+
+Pass criteria:
+
+- reports `workflow mode: daily_delivery`
+- routes to `legacy-ibmi-inventory` as the earliest missing evidence step
+- treats `CARDRQA -> CARDVAL -> CARDRPL` as a scope seed, not a proven flow
+- states `review_policy: exception_only`
+- says inventory/program/flow/module/data/BRD may continue automatically unless
+  hard gates or blocking exceptions appear
+- keeps Evidence Authorization Gate non-bypassable
+- expects final BRD status `delivery_draft`
+- forbids spec writing, SDD handoff, audit baseline, or knowledge publication
+  until approved-baseline gates pass
+- creates or edits no files
+
 ## Pass Example — `legacy-ibmi-screen-report-analyzer` v0.1.0
 
 ### Positive DSPF Scenario

@@ -45,6 +45,10 @@ This skill is a **facilitator and recorder**, not a decision maker. It:
 - **Checks BRD functional-analysis coverage** when the artifact is a BRD
   Package, so SME-required sections 1-9 are explicitly reviewed instead of
   being implied by rule / behavior questions alone
+- **Consolidates daily delivery review** when the artifact is a
+  `delivery_draft`, so SMEs review blocking exceptions and delivery risks once
+  instead of approving every intermediate inventory, program, flow, module, or
+  data-model artifact
 - **Facilitates** SME sessions by collecting structured answers
 - **Records** decisions so they trace back to stable IDs and evidence
 - **Writes back** recorded decisions to the BRD Package when reviewing BRD
@@ -81,6 +85,9 @@ Trigger on any of these signals:
 - The user wants to stay in one chat while reviewing a BRD Package, answering
   confirm / reject / needs evidence / non-blocking choices with optional
   comments
+- A BRD Package is in `mode: daily_delivery` / `status: delivery_draft` and
+  needs one consolidated delivery review pack with
+  `accepted_for_daily_delivery` or blocked outcome
 
 ## When NOT to Use
 
@@ -152,6 +159,7 @@ Accept:
   analysis) at status `in_review`, `approved`, or
   `approved_with_non_blocking_tbd`, provided stable IDs and evidence links are
   present. `in_review` is the normal status for chat-driven BRD review.
+  `delivery_draft` is accepted only for `daily_delivery` consolidated review.
 - **A named SME owner** (name, role, organization) with confirmed availability
   for review
 - **Scope statement** (e.g., "review all inferred rules for the Accounts
@@ -174,9 +182,9 @@ Input readiness scoring:
 - `0-5 blocked`: no named SME owner, artifact lacks stable review IDs,
   evidence authorization unresolved, review scope too broad, or materials lack
   the IDs the SME is being asked to approve.
-- `6 minimum_pass`: one in-review or approved artifact with stable IDs,
-  named SME owner, bounded scope statement, and review materials with IDs are
-  present.
+- `6 minimum_pass`: one in-review / approved artifact, or a `delivery_draft`
+  daily-delivery BRD, with stable IDs, named SME owner, bounded scope
+  statement, and review materials with IDs present.
 - `7-8 usable`: contradictions, TBD ledgers, BR seeds, behavior claims, and
   decision candidates are grouped by review topic.
 - `9-10 strong`: SME availability window, decision authority boundaries,
@@ -189,7 +197,8 @@ Stop and require clarification if:
 
 - **No SME owner is named or available** → stop; cannot proceed
 - The artifact **is in `draft` status** or lacks stable IDs/evidence links →
-  route back to the generating skill to stabilize first
+  route back to the generating skill to stabilize first. `delivery_draft` is
+  allowed only for daily delivery review.
 - Any linked evidence **has `sensitivity: unknown` or is unredacted** → block;
   route to `legacy-ibmi-evidence-intake`
 - The **scope is too broad or ambiguous** (e.g., "review the entire system") →
@@ -200,7 +209,7 @@ Stop and require clarification if:
 
 Produce a directory `07_sme_reviews/<CAPABILITY-SLUG>/<REVIEW-SLUG>/` where
 `<REVIEW-SLUG>` is a stable identifier for the review session (e.g.,
-`review-v1`, `handoff-gate-v2`).
+`review-v1`, `daily-delivery-review-v1`, `handoff-gate-v2`).
 
 Preserve `<CAPABILITY-SLUG>` exactly as supplied by the upstream artifact or
 review scope. Do not lowercase, title-case, normalize, translate, or otherwise
@@ -217,12 +226,23 @@ Emit exactly these artifacts for a **completed review**:
 └── follow-up-findings.yaml     ← unresolved items for next steps
 ```
 
+For a completed `daily_delivery` review, also emit:
+
+```
+07_sme_reviews/<CAPABILITY-SLUG>/daily-delivery-review-v1/
+└── delivery-risk-summary.md    ← accepted risks, blockers, owner, follow-up
+```
+
 When reviewing a BRD Package in Conversation Review Mode, also write or update:
 
 ```
 05_brds/<CAPABILITY-SLUG>/
 └── review-decision.yaml        ← BRD-package write-back from chat decisions
 ```
+
+For `daily_delivery`, `review-decision.yaml` may record
+`decision: accepted_for_daily_delivery`. This is not BRD `approved` status and
+must keep `ready_for_spec_writer: false`.
 
 If review is **blocked** (missing SME, sensitivity issue, etc.), emit only:
 
@@ -236,8 +256,8 @@ Use:
 
 - `templates/sme-review-session.md`, `templates/sme-question-pack.md`,
   `templates/sme-decision-log.yaml`, `templates/sme-signoff.md`,
-  `templates/follow-up-findings.yaml`, and `templates/blocked-findings.yaml`
-  as starting structures
+  `templates/follow-up-findings.yaml`, `templates/delivery-risk-summary.md`,
+  and `templates/blocked-findings.yaml` as starting structures
 - `templates/brd-review-decision.yaml` as the BRD-package write-back structure
   for Conversation Review Mode
 - `references/review-workflow.md` for session flow
@@ -284,7 +304,8 @@ VALIDATION`):
 ### INPUT
 
 - One artifact in `in_review`, `approved`, or `approved_with_non_blocking_tbd`
-  status, with stable IDs and evidence links
+  status, or a `delivery_draft` daily-delivery BRD, with stable IDs and
+  evidence links
 - Named SME owner with confirmed availability
 - Scoped list of review items (TBDs, inferred rules, contradictions, etc.)
 - Capability slug exactly as supplied by the upstream artifact or user input
@@ -298,6 +319,7 @@ Stop conditions:
 
 - No SME owner named → **BLOCK**
 - Artifact in `draft` status or without stable IDs/evidence links → **ROUTE BACK**
+  (`delivery_draft` is allowed only for daily delivery review)
 - Any evidence with `sensitivity: unknown` → **BLOCK**
 - Any evidence missing explicit `redaction_status` → **BLOCK**; do not assume it
   from context or from a positive review prompt
@@ -418,7 +440,8 @@ Fail validation if:
 
 - No SME owner → **BLOCK**, emit `blocked-findings.yaml`
 - Artifact in `draft` status or without stable IDs/evidence links → **ROUTE
-  BACK** to generating skill
+  BACK** to generating skill (`delivery_draft` is allowed only for daily
+  delivery review)
 - Any `EV-*` with `sensitivity: unknown` → **BLOCK**, route to
   `legacy-ibmi-evidence-intake`
 
@@ -765,7 +788,8 @@ Before releasing review artifacts:
 
 1. No named SME owner is available
 2. Any linked evidence has `sensitivity: unknown` or `redaction_status: unknown`
-3. Artifact is `draft` or lacks stable IDs / evidence links
+3. Artifact is `draft` or lacks stable IDs / evidence links (`delivery_draft`
+   is allowed only for daily delivery review)
 4. Scope is unbounded or cannot be narrowed with SME
 5. SME refuses to sign off without additional evidence or stakeholder input
 
@@ -881,6 +905,11 @@ This skill is **portable** across Codex, Claude Code, and OpenCode:
   validate quality gates
 
 ## Version History
+
+- v0.1.4 (2026-06-04): Added daily delivery review support. `delivery_draft`
+  BRDs can use `daily-delivery-review-v1`, emit `delivery-risk-summary.md`, and
+  write `accepted_for_daily_delivery` without promoting the BRD to `approved`
+  or enabling spec / SDD handoff.
 
 - v0.1.3 (2026-05-28): BRD functional-analysis coverage review
   - Adds explicit SME review handling for BRD sections 1-9

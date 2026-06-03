@@ -104,7 +104,7 @@ repository IDs.
 - `EV-<CAPABILITY>-NNN`: (evidence strength: `confirmed_from_code` / `observed_in_runtime` / `weakly_inferred`)
 - `EV-<CAPABILITY>-NNN`: (evidence strength)
 
-**Current Status:** `draft` / `needs_sme_review`
+**Current Status:** `draft` / `delivery_draft` / `needs_sme_review`
 
 **Question for SME:**
 > Does this rule accurately reflect the business intent? Should we confirm it,

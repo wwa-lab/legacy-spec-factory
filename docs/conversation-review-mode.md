@@ -1,7 +1,7 @@
 # Conversation Review Mode
 
 Conversation Review Mode is the default SME interaction model for module-first
-BRD work.
+BRD work and the consolidated review surface for `daily_delivery` runs.
 
 The user should be able to stay in one chat, provide RAG output, reviewed
 context when available, historical specs/documents, or SME notes, answer guided
@@ -17,6 +17,17 @@ RAG / retrieval output + reviewed context or normalized docs/specs + SME notes
   -> draft BRD Package
   -> chat-driven SME review
   -> final BRD Package
+```
+
+For daily delivery, the same interaction pattern is used, but review is
+consolidated:
+
+```text
+authorized context / source metadata / program-flow seed
+  -> automated context + inventory + program + flow + module analysis
+  -> BRD Package with status: delivery_draft
+  -> daily-delivery review pack
+  -> accepted_for_daily_delivery or blocked
 ```
 
 ## Review Loop
@@ -81,6 +92,12 @@ After each review batch, the facilitator records decisions in:
   review-decision.yaml
 ```
 
+For `daily_delivery`, use a review slug such as
+`daily-delivery-review-v1` and include `delivery-risk-summary.md` in the
+review directory. The facilitator should ask only the consolidated questions
+that affect delivery acceptance: blocking TBDs, contradictions, low-confidence
+business rules, scope boundaries, and high-risk validation scenarios.
+
 For BRD Package review, the facilitator also updates review-facing sections in
 `brd-review.md`, `validation-scenarios.md`, and `traceability.md` when the SME
 decision changes item status.
@@ -95,5 +112,8 @@ decision changes item status.
 - Formal `AC-*` acceptance criteria are produced by `legacy-spec-writer`.
 - Formal `TC-*` golden master cases are produced by
   `legacy-golden-master-test-planner`.
+- `accepted_for_daily_delivery` is not the same as BRD `approved` status. It
+  allows the current iteration to use the BRD as delivery review material, but
+  it does not pass the BRD Discovery Gate for spec writing or SDD handoff.
 - Email, meetings, and offline checklists are optional export channels, not the
   default review workflow.

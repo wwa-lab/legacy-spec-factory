@@ -35,6 +35,8 @@ For RAG construction details, see
 [`docs/rag-setup-detail.md`](docs/rag-setup-detail.md). For a concrete
 file-based output example, see
 [`docs/rag-output-sample/`](docs/rag-output-sample/).
+For lightweight day-to-day BRD delivery, see
+[`docs/daily-delivery-mode.md`](docs/daily-delivery-mode.md).
 For the chat-driven SME review experience, see
 [`docs/conversation-review-mode.md`](docs/conversation-review-mode.md).
 
@@ -76,6 +78,19 @@ of blocking the draft. A POC BRD is for stakeholder direction only; it cannot
 feed spec writing, SDD handoff, or delivery decisions until the standard gates
 pass.
 
+For day-to-day delivery, the factory may run the full context / inventory /
+program / flow / module / data-model / BRD chain in `mode: daily_delivery` with
+`review_policy: exception_only`. A daily BRD uses `status: delivery_draft` and
+collects findings into one daily-delivery review pack instead of stopping for
+per-skill approvals. It may be accepted for the current delivery iteration, but
+it is not an approved discovery baseline and cannot feed spec writing or SDD
+handoff until the approved-baseline gates pass.
+
+Default rule: ordinary BRD delivery requests use `daily_delivery`. Switch to
+`approved_baseline` only when the requester explicitly asks for formal
+baseline, audit-ready output, customer acceptance, spec writing, SDD handoff, or
+trusted knowledge publication.
+
 Old-vs-new disposition is a **post-BRD** step. It happens only after the
 legacy BRD is approved and new-system context is available:
 
@@ -87,7 +102,7 @@ legacy BRD is approved and new-system context is available:
 
 ## Operating Paths
 
-Legacy Spec Factory now has two explicit operating paths, plus one optional
+Legacy Spec Factory now has three explicit operating paths, plus one optional
 document-format intake step for teams whose module knowledge is trapped in
 raw Office/PDF/image artifacts:
 
@@ -107,6 +122,14 @@ Default path — RAG-assisted module-first
         -> BRD Package + chat SME review
         -> post-BRD old-vs-new disposition when new-system context is available
         -> spec / handoff only for promoted items
+
+Daily delivery path — exception-only approvals
+  authorized context / RAG / source metadata / program-flow seed
+        -> auto-expand inventory + program + flow + module + data evidence
+        -> brd-writer
+        -> BRD Package with status: delivery_draft
+        -> one daily-delivery review pack
+        -> accepted_for_daily_delivery, not spec / handoff
 
 Internal POC path — early BRD draft
   authorized docs / source metadata / context package / RAG

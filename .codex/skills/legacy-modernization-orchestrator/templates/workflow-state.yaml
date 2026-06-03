@@ -39,6 +39,7 @@ project:
 current_focus:
   capability_id: null            # CAP-* once scoped to a capability
   module_slug: null              # MODULE-SLUG once scoped to a module
+  delivery_mode: daily_delivery  # daily_delivery | standard | internal_poc | approved_baseline
   stage_id: null                 # e.g. "3b Program Analysis Done"
   next_skill: null               # e.g. "legacy-ibmi-flow-analyzer"
   next_artifact: null            # full path including filename
@@ -51,6 +52,7 @@ capabilities: []
 # Example entry:
 # - id: CAP-ORDER-PRICING
 #   module_slug: CREDIT-CHECK
+#   delivery_mode: standard
 #   stage_id: "8c Spec Approved"
 #   last_artifact: 05_specs/CAP-ORDER-PRICING/spec.yaml
 #   last_skill: legacy-spec-writer

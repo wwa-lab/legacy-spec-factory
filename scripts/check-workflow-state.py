@@ -80,6 +80,13 @@ ALLOWED_STAGE_IDS = {
 
 ALLOWED_STAGE_AFTER_EXTRA = {None, "scan"}
 
+ALLOWED_DELIVERY_MODES = {
+    "standard",
+    "daily_delivery",
+    "internal_poc",
+    "approved_baseline",
+}
+
 ID_PATTERN = re.compile(r"^(CAP|MODULE)-[A-Z0-9-]+$")
 PROJECT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
 
@@ -175,6 +182,14 @@ def validate(state_path: Path, template_mode: bool = False) -> list[str]:
                 f"(see references/stage-identification.md)",
             )
 
+        delivery_mode = cap.get("delivery_mode")
+        if delivery_mode is not None and delivery_mode not in ALLOWED_DELIVERY_MODES:
+            fail(
+                findings,
+                f"capabilities[{cap_id}].delivery_mode {delivery_mode!r} "
+                f"not in {sorted(ALLOWED_DELIVERY_MODES)}",
+            )
+
         blocking = cap.get("blocking") or {}
         if not isinstance(blocking, dict):
             fail(findings, f"capabilities[{cap_id}].blocking must be a mapping")
@@ -201,6 +216,14 @@ def validate(state_path: Path, template_mode: bool = False) -> list[str]:
         focus_cap = focus.get("capability_id")
         focus_stage = focus.get("stage_id")
         focus_card = focus.get("stage_card")
+        focus_delivery_mode = focus.get("delivery_mode")
+
+        if focus_delivery_mode is not None and focus_delivery_mode not in ALLOWED_DELIVERY_MODES:
+            fail(
+                findings,
+                f"current_focus.delivery_mode {focus_delivery_mode!r} "
+                f"not in {sorted(ALLOWED_DELIVERY_MODES)}",
+            )
 
         if focus_cap is not None:
             if not isinstance(focus_cap, str) or not ID_PATTERN.match(focus_cap):

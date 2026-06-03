@@ -133,6 +133,7 @@ def render(state: dict) -> str:
         gates = focus.get("open_gates") or []
         gate_str = ", ".join(gates) if gates else "(none)"
         lines.append(f"- **Progress:** `{bar}` — {label}")
+        lines.append(f"- **Delivery Mode:** `{focus.get('delivery_mode', 'standard')}`")
         lines.append(f"- **Capability:** {focus.get('capability_id', '?')}")
         if focus.get("module_slug"):
             lines.append(f"- **Module:** {focus['module_slug']}")
@@ -154,18 +155,19 @@ def render(state: dict) -> str:
     if not active:
         lines.append("_No capabilities tracked yet._")
     else:
-        lines.append("| ID | Module | Progress | Stage | Last Updated | Blocking |")
-        lines.append("| --- | --- | --- | --- | --- | --- |")
+        lines.append("| ID | Module | Mode | Progress | Stage | Last Updated | Blocking |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
         for cap in active:
             cap_id = cap.get("id", "?")
             module = cap.get("module_slug") or "—"
+            mode = cap.get("delivery_mode") or "standard"
             stage = cap.get("stage_id") or "?"
             step, total, _label = stage_to_progress(stage)
             bar = progress_bar(step, total)
             updated = cap.get("last_updated") or "?"
             blocking = fmt_blocking(cap.get("blocking") or {})
             lines.append(
-                f"| {cap_id} | {module} | `{bar}` | {stage} | {updated} | {blocking} |"
+                f"| {cap_id} | {module} | {mode} | `{bar}` | {stage} | {updated} | {blocking} |"
             )
     lines.append("")
 

@@ -92,6 +92,12 @@ Every project's artifacts live under a single root directory:
 - Overwritten on every orchestrator turn.
 - Reflects the most recent **routing decision**, not the most recent skill
   completion.
+- `delivery_mode` records the approval posture for the current routing
+  decision: `standard`, `daily_delivery`, `internal_poc`, or
+  `approved_baseline`. New BRD delivery routing defaults to `daily_delivery`
+  unless the user explicitly asks for an approved baseline, spec writing, SDD
+  handoff, audit-ready output, customer acceptance, or trusted knowledge
+  publication. Omit only in pre-v1.3 historical state files.
 - Downstream skills MUST NOT touch this block.
 
 ### `capabilities[]`
@@ -103,6 +109,9 @@ Every project's artifacts live under a single root directory:
 - A writer MUST NOT touch other capabilities' entries.
 - `stage_id` must come verbatim from
   `skills/legacy-modernization-orchestrator/references/stage-identification.md`.
+- `delivery_mode` should be preserved by downstream writers when present. It
+  describes how review gates are interpreted for this capability; it does not
+  change `stage_id` maturity.
 - `last_artifact` must be a full path including filename.
 - `blocking.tbds`, `blocking.sme_pending`, `blocking.gates` are flat lists
   of IDs / names. Empty list means "nothing blocking from my perspective"
@@ -220,6 +229,9 @@ Rules:
 
 ## Version History
 
+- v1.3 (2026-06-04): Added `delivery_mode` to `current_focus` and
+  `capabilities[]` so daily delivery, internal POC, standard, and
+  approved-baseline routes can be resumed without re-deriving approval posture.
 - v1.2 (2026-05-16): Added `project.root` field and PPCR-style project
   naming convention. All artifact paths in state are now relative to
   `project.root` (default `docs/<name>/`), enabling many projects per

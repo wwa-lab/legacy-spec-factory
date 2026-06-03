@@ -77,6 +77,8 @@ RAG / Source Evidence / SME Knowledge
   -> SDLC Handoff
 ```
 
+日常 BRD 交付可以使用 `daily_delivery`：链路仍然运行 context、inventory、program、flow、module、data 和 BRD 步骤，但人工审批采用 exception-only，最后集中到一个 daily-delivery review pack。BRD 使用 `status: delivery_draft`，可以记录 `accepted_for_daily_delivery`；它不是 spec writing 或 SDD handoff 的 approved baseline。
+
 ### Key Artifacts
 
 | Artifact | Purpose |
@@ -99,6 +101,8 @@ RAG / Source Evidence / SME Knowledge
 - confidence level 可见。
 - modernization decisions 与 legacy behavior 分开记录。
 - approval status 清晰：Draft、In Review、Approved、Blocked 或 Retired。
+- daily delivery 状态单独记录：`delivery_draft` / `accepted_for_daily_delivery`
+  不等于 `approved`。
 
 ### Output of This Page
 

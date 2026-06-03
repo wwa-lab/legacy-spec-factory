@@ -4,8 +4,10 @@
 **Capability ID:** `CAP-<CAPABILITY-SLUG>-001`
 **Module ID:** `MODULE-<MODULE-SLUG>-001`
 **Module Analysis Source:** `04_modules/<MODULE-SLUG>/`
-**Status:** `poc_draft` | `draft` | `in_review` | `approved`
-**Evidence Mode:** `code_backed` | `context_only` | `internal_poc`
+**Mode:** `standard` | `daily_delivery` | `internal_poc` | `approved_baseline`
+**Status:** `poc_draft` | `delivery_draft` | `draft` | `in_review` | `approved`
+**Evidence Mode:** `code_backed` | `daily_delivery` | `context_only` | `internal_poc`
+**Review Policy:** `standard_gate` | `exception_only` | `poc_only`
 **Owner:** `<SME Name / Role>`
 **Created:** `<YYYY-MM-DD>`
 **Last Updated:** `<YYYY-MM-DD>`
@@ -23,6 +25,12 @@ handoff-package content in this file.
 If **Evidence Mode** is `context_only`, this document cannot be marked
 `approved`; carry missing object-map, program-analysis, and flow-analysis work
 as `TBD-*` blockers until the code-backed evidence gate passes.
+
+If **Evidence Mode** is `daily_delivery`, this document is a day-to-day delivery
+draft. It may be accepted for the current iteration through the consolidated
+daily-delivery review pack, but it is not an approved discovery baseline and
+cannot feed spec writing, SDD handoff, audit baseline, or trusted knowledge
+publication until the approved-baseline gates pass.
 
 If **Evidence Mode** is `internal_poc`, this document is for internal POC review
 only. It may include low-confidence hypotheses and source-document signals to
