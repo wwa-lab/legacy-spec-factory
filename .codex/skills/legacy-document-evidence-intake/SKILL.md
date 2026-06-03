@@ -96,8 +96,8 @@ Data views or drawing flows, you are in the wrong skill.
 | Word | `.docx`, `.doc` | Markdown + extracted images |
 | PowerPoint | `.pptx`, `.ppt` | Markdown (titles, text, notes) + slide PNG + optional PDF |
 | Visio | `.vsdx`, `.vsd` | PDF / SVG / PNG export + shape-text Markdown + OCR/visual-review warnings |
-| PDF | `.pdf` | Markdown text + tables (CSV) + page PNG |
-| Images / screenshots / scanned docs | `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp` | OCR Markdown + page PNG + low-confidence warnings |
+| PDF | `.pdf` | Markdown text + tables (CSV) + page PNG when renderable/available |
+| Images / screenshots / scanned docs | `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp` | OCR or visual-review Markdown + source/page image + low-confidence warnings |
 
 See `references/format-strategy.md` for the per-format extraction and
 conversion procedure, and `references/quality-gates.md` for the gate rubric.
@@ -164,32 +164,35 @@ with no strong extracted `FRAG-*` evidence.
   optional enhancements. They must never be required for the hosted-agent path
   to continue when readable exports, Markdown, CSV, text, or normalized document
   packages are already available.
-- **Enterprise/Copilot runtime rule**: do **not** create a Python virtual
-  environment, install packages, or wait on interactive environment setup for
-  this skill. Probe only tools that already exist in the runtime when the
-  runtime is known to be prepared; otherwise record unavailable tools honestly
-  in `conversion-log.md`. If a probe or interpreter startup remains in a
-  configuring/evaluating state, stop using that tool for this run and record it
-  as unavailable.
-- A visible "configuring Python environment", "evaluating Python environment",
-  package selection prompt, interpreter discovery prompt, or IDE-managed Python
-  setup state is a terminal tooling signal for the current run. Do not wait for
-  it, retry it, or switch to Python-based library probing. Record
-  `tool_unavailable_python_environment_configuring` and continue with manifests,
-  warnings, readable exports, or manual remediation instructions.
-- **GitHub Copilot hosted-agent mode**: do not run Python commands, shell
-  probes, package installs, virtual-environment setup, LibreOffice, OCR, or
-  converter commands from this skill unless the user explicitly confirms the
-  runtime is already prepared. Treat tooling as `tool_unavailable`, produce the
-  manifests/warnings from readable supplied content, and report the manual
-  validation/remediation command as text. Do not enter or wait on Python
-  environment setup.
+- **Model-visible PDF/image rule**: when an authorized PDF page, image,
+  screenshot, or rendered page is already visible to the current model, or the
+  user explicitly asks for visual inspection of that artifact, treat that
+  visible content as readable source material. Do not mark it
+  `tool_unavailable` merely because Python, OCR, Docling, or a PDF renderer is
+  unavailable. Extract only visible/verbatim-scoped text, labels, tables, and
+  layout into normalized Markdown, use `extraction_method: visual_review`, set
+  confidence by legibility, and record cropped/blurred/unreadable regions as
+  warnings. Still record external tooling as unavailable if no external tool
+  ran.
+- **Managed Python environment rule**: IDE-managed Python setup, interpreter
+  discovery, or an explicit Continue prompt is a recoverable setup state, not
+  evidence that tools are unavailable. If the user continues setup, or setup is
+  already progressing, allow it to finish within a bounded wait and then use the
+  resulting interpreter/tooling. Record a tool as unavailable only after setup
+  fails, times out, or the user declines it.
+- **Hosted-agent/runtime setup rule**: external tooling may be probed or used
+  when it is part of the requested document-intake task and the runtime can
+  complete setup without unapproved package installation. Do not silently
+  install new packages, change credentials, or claim tooling succeeded when it
+  did not run. If external tooling remains unavailable, still extract
+  authorized model-visible content with `extraction_method: visual_review`.
 - The bundled validator is a standard-library Python script. Run it only with
-  an already-available interpreter and never install dependencies for it. If no
-  Python interpreter is available, record validation as `tool_unavailable`; do
-  not change the package gate solely because the validator could not run. Route
-  safety/authorization blockers to evidence intake, and route tooling-only gaps
-  forward as degraded module context.
+  an available interpreter; if the IDE needs to finish Python setup first, let
+  that recoverable setup complete. Never install dependencies for the validator.
+  If no interpreter becomes available, record validation as `tool_unavailable`;
+  do not change the package gate solely because the validator could not run.
+  Route safety/authorization blockers to evidence intake, and route
+  tooling-only gaps forward as degraded module context.
 - Optional converters/enhancers such as LibreOffice, OCR engines, PDF renderers,
   or Docling are never installed automatically. Missing optional tooling is
   evidence for the package gate, not a reason to stall.
@@ -368,14 +371,16 @@ Emit a Step Validation Report (see
 1. **Resolve identity and tooling**
    - Confirm `MODULE-SLUG`, `DOCSET-SLUG`, and which converters/OCR/Docling are
      available. Record availability in `conversion-log.md`.
-   - In GitHub Copilot hosted-agent mode, do not run shell probes. If prior
-     runtime facts are not already visible, record converters/OCR/Python as
-     `tool_unavailable` and continue with honest warnings or a blocked gate.
+   - Separately record whether any authorized PDF/image content is directly
+     visible to the model. That visibility is not a shell probe and does not
+     require Python, OCR, Docling, or a PDF renderer.
    - If an IDE or hosted runtime starts configuring/evaluating Python while
-     probing OCR, stop the probe immediately. Record
-     `tool_unavailable_python_environment_configuring`; do not block the agent
-     loop waiting for environment setup.
-   - In an already-prepared local shell only, bounded PATH checks may be used.
+     probing OCR, validators, or document tooling, treat that as recoverable
+     setup. If the user chooses Continue or setup is already progressing, wait
+     for the bounded setup to finish before deciding whether Python-based
+     tooling is available.
+   - Bounded PATH checks may be used; record unavailable tools honestly when
+     setup fails, times out, or the user declines it.
 
 2. **Register source files** (`intake.manifest.yaml`)
    - For each document record path, file type, size, `sha256`, owner,
@@ -405,7 +410,8 @@ Emit a Step Validation Report (see
    - Visio: pages, shape text, connectors where available, visual exports,
      OCR/visual-review warnings.
    - PDF / image / scanned: page text, OCR (with confidence), tables, page
-     images.
+     images. If the page/image is model-visible, extract the visible content by
+     `visual_review` even when OCR/PDF tooling is unavailable.
 
 6. **Assign evidence coordinates**
    - Mint `FRAG-*` for each extracted fragment and record its format-specific
@@ -422,20 +428,14 @@ Emit a Step Validation Report (see
      `references/quality-gates.md`.
 
 9. **Validate**
-   - In GitHub Copilot hosted-agent mode, do not run the bundled validator.
-     Record `run_validation.structural_status:
-     tool_unavailable_hosted_agent` in `intake.manifest.yaml`; do not treat the
-     package as validated extraction evidence, but do allow downstream degraded
-     module-context intake when authorization/sensitivity is clear. Report the
-     manual validator path:
-     `skills/legacy-document-evidence-intake/scripts/validate_document_intake_package.py`.
-   - In an already-prepared local shell only, run the bundled validator with an
-     existing Python interpreter and fix every finding before handoff. Record
-     the result in `intake.manifest.yaml.run_validation`.
-   - If no interpreter is available, do not create a virtual environment or
-     install Python packages; record the validation tooling gap and continue
-     according to the evidence gate. Tooling-only validation gaps must not route
-     to flow normalization or stop module-context intake.
+   - Run the bundled validator with an available Python interpreter and fix
+     every finding before handoff. If Python setup is in progress and the user
+     continues it, wait for the bounded setup to finish, then run the validator.
+     Record the result in `intake.manifest.yaml.run_validation`.
+   - If no interpreter becomes available, do not install Python packages; record
+     the validation tooling gap and continue according to the evidence gate.
+     Tooling-only validation gaps must not route to flow normalization or stop
+     module-context intake.
    - Artifact preview status is informational only; it is not the validation
      gate. The gate is the manifest, normalized output file list, evidence
      coordinates, quality/warning files, and validator/manual structural
@@ -467,8 +467,9 @@ must not become strong evidence without security review, and that
 low-confidence OCR fragments remain low-confidence until SME/source confirms.
 
 If the package is blocked only because OCR, Python, converter, preview, or
-readable-export tooling is unavailable, do not run flow normalization and do not
-stall. Route `intake.manifest.yaml`, source metadata, `conversion-log.md`, and
+readable-export tooling is unavailable and no model-visible content was
+extractable, do not run flow normalization and do not stall. Route
+`intake.manifest.yaml`, source metadata, `conversion-log.md`, and
 `extraction-warnings.md` directly to `legacy-module-context-intake` as degraded
 input; downstream must create low-confidence `TBD-*` items instead of extracted
 facts.
@@ -483,6 +484,10 @@ facts.
   content from strong-evidence promotion.
 - **Scanned/illegible page**: record OCR with low confidence and a
   visual-review warning; do not invent text for unreadable regions.
+- **Visible PDF/image but no OCR/Python tooling**: use `visual_review` for
+  visible text, labels, tables, and layout; record external tooling as
+  unavailable; gate the document `ready_with_warnings` when usable `FRAG-*`
+  evidence exists.
 - **Unknown sensitivity / unauthorized**: route to
   `legacy-ibmi-evidence-intake`; do not open the content.
 - **Contradictory documents**: record both; do not silently pick one. Carry the
@@ -520,17 +525,22 @@ copies directly. No runtime-specific assumptions are baked into this source.
 
 ## Version History
 
-- v0.1.1 (2026-05-30): Added enterprise/Copilot runtime guardrails to prevent
-  automatic Python environment creation or optional tool installation during
-  document intake; missing tools must be recorded as package evidence instead
-  of stalling.
+- v0.1.5 (2026-06-03): Replaced the terminal Python setup block with a
+  recoverable managed-environment rule: Continue/setup flows may finish before
+  deciding Python/OCR/PDF tooling is unavailable.
+- v0.1.4 (2026-06-03): Added the model-visible PDF/image rule so direct visual
+  review of authorized visible artifacts is not incorrectly blocked by missing
+  Python, OCR, Docling, or PDF renderer tooling.
+- v0.1.3 (2026-06-03): Added a temporary IDE-managed Python environment
+  guardrail to prevent indefinite setup waits. Superseded by v0.1.5.
 - v0.1.2 (2026-05-31): Added an artifact preview guardrail and
   stop-after-writeback completion boundary so large document-intake packages do
   not remain in processing after normalized outputs and validation status are
   written.
-- v0.1.3 (2026-06-03): Made IDE-managed Python environment configuration an
-  explicit terminal tooling signal; OCR/library probing must stop and record
-  `tool_unavailable_python_environment_configuring` instead of waiting.
+- v0.1.1 (2026-05-30): Added enterprise/Copilot runtime guardrails to prevent
+  automatic Python environment creation or optional tool installation during
+  document intake; missing tools must be recorded as package evidence instead
+  of stalling.
 - v0.1.0 (2026-05-29): Initial legacy document evidence intake and format
   normalization skill. Converts Excel / Word / PowerPoint / Visio / PDF / image
   / scanned documents into Markdown / CSV / PDF / PNG / SVG with manifests,

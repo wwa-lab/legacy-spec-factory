@@ -16,17 +16,24 @@ handoff; per-document gates roll up into it.
 
 - Any document with `document_gate: blocked` for an authorization or sensitivity
   reason ⇒ package `gate: blocked`, route to `legacy-ibmi-evidence-intake`.
+- Model-visible extracted content prevents tooling-only blocked gates. If an
+  authorized PDF page, image, screenshot, or rendered page is directly readable
+  by the model and produces usable `FRAG-*` evidence through
+  `extraction_method: visual_review`, missing Python, OCR, Docling, or PDF
+  renderer tooling is a warning, not a reason to mark that document or package
+  as tooling-only `blocked`.
 - A document with `document_gate: blocked` only because optional binary,
   converter, OCR, or hosted-agent tooling is unavailable does not by itself
   block the package when at least one other authorized document produced usable
   `FRAG-*` evidence. Roll up to `ready_with_warnings` and carry the skipped
   document in `extraction-warnings.md`.
 - If every authorized source is unreadable/skipped only because optional
-  tooling, OCR, Python, preview, or readable-export support is unavailable,
-  the package may remain `blocked` as an extraction package, but it is not a
-  workflow blocker. Carry `DOC-*` metadata, hashes/paths, conversion attempts,
-  and warnings forward to `legacy-module-context-intake` as degraded source
-  metadata with no strong extracted `FRAG-*` evidence.
+  tooling, OCR, Python, preview, or readable-export support is unavailable and
+  no model-visible content can be extracted, the package may remain `blocked`
+  as an extraction package, but it is not a workflow blocker. Carry `DOC-*`
+  metadata, hashes/paths, conversion attempts, and warnings forward to
+  `legacy-module-context-intake` as degraded source metadata with no strong
+  extracted `FRAG-*` evidence.
 - Any document with `security_review_required: true` ⇒ package `gate` capped at
   `ready_with_warnings` until a named reviewer signs off.
 - Any warning (OCR, visual-review, partial conversion) on an otherwise usable
