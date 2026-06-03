@@ -30,10 +30,6 @@ module-first run and normalize it into:
 ```text
 00_context_packages/CREDIT-CHECK/
   context-index.yaml
-  01-operation-business-flow.md
-  02-system-flow.md
-  03-program-flow.md
-  04-data-flow.md
   rag-evidence-map.md
   contradiction-log.md
   open-questions.md

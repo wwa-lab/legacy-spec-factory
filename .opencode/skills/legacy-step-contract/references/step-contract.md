@@ -319,38 +319,18 @@ authoritative procedure.
     program analyses say
   - SME: recommended; required if a cross-program rule emerges
 
-### Flow Context Normalization (`legacy-flow-context-normalizer`)
-
-- INPUT: authorized scattered Visio / Word / Excel / PDF / PowerPoint / RAG /
-  SME-note documents, module identity, draft scope, and source-document
-  authorization metadata
-- EXECUTION: normalize scattered documents into the draft four-view context package
-  shape defined by
-  `skills/legacy-flow-context-normalizer/references/output-contract.md`
-- OUTPUT: `00_context_packages/<MODULE-SLUG>/flow-normalization/` with source
-  document index, four draft view files, evidence map, contradiction log, open
-  questions, and SME review pack
-- VALIDATION:
-  - mechanical: all ten files present; every view evidence ID appears in the
-    evidence map; source-document authorization and readable status are visible
-  - semantic: draft document-derived flow steps remain candidates and are not
-    promoted to approved `BR-*`; contradictions and obsolete-document signals
-    are not hidden
-  - SME: SME or accountable owner confirms context-view correctness before the
-    package can route to `legacy-module-context-intake`
-
 ### Module Context Intake (`legacy-module-context-intake`)
 
 - INPUT: external RAG / code-knowledge-graph output, human-confirmed or draft
-  four-view module context, source snippets, dictionary mappings,
+  module context, source snippets, dictionary mappings,
   contradictions, retrieval gaps, and evidence authorization metadata
 - EXECUTION: normalize module-first context into the package shape defined by
   `skills/legacy-module-context-intake/references/output-contract.md`
-- OUTPUT: `00_context_packages/<MODULE-SLUG>/` with context index, four view
-  context files, evidence map, contradiction log, and open questions
+- OUTPUT: `00_context_packages/<MODULE-SLUG>/` with context index,
+  `rag-evidence-map.md`, contradiction log, and open questions
 - VALIDATION:
-  - mechanical: all eight files present; every view evidence ID appears in the
-    evidence map; contradictions and gaps are carried forward
+  - mechanical: all four files present; contradictions and gaps are carried
+    forward
   - semantic: RAG candidates remain candidates and are not promoted to
     approved `BR-*`; no hidden contradiction or source-authorization gap
   - SME: module owner confirms business name and scope before downstream

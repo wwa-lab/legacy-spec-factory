@@ -8,37 +8,37 @@
 
 ## Source Snippets
 
-| Evidence ID | Artifact | Lines | Summary | Strength | Used In |
+| Evidence ID | Artifact | Lines | Summary | Strength | Coverage / Consumer |
 | --- | --- | ---: | --- | --- | --- |
-| SNP-CREDIT-CHECK-001 | SRC-CREDIT-CHECK-CRDTCMD-001 | 7 | `CRDTCMD` calls `CREDITCHK`. | confirmed_from_code | 02-system-flow.md, 03-program-flow.md |
-| SNP-CREDIT-CHECK-003 | SRC-CREDIT-CHECK-CREDITCHK-001 | 29-36 | `CREDITCHK` reads `STATUS` and `AVAIL_CREDIT` from `CREDITVW`. | confirmed_from_code | 02-system-flow.md, 03-program-flow.md |
-| SNP-CREDIT-CHECK-004 | SRC-CREDIT-CHECK-CREDITCHK-001 | 38-67 | Denial, approval, over-limit cap, and return-value behavior. | confirmed_from_code | 01-operation-business-flow.md, 03-program-flow.md |
-| SNP-CREDIT-CHECK-005 | SRC-CREDIT-CHECK-CREDITCHK-001 | 69-74 | Denial/error message text is written to `QSYSPRT`. | confirmed_from_code | 03-program-flow.md |
-| DDS-CREDIT-CHECK-CUSTMAST-001 | DDS-CREDIT-CHECK-CUSTMAST-001 | 1-6 | Physical customer credit fields. | confirmed_from_code | 04-data-flow.md |
-| DDS-CREDIT-CHECK-CREDITVW-001 | DDS-CREDIT-CHECK-CREDITVW-001 | 1-5 | Logical view fields used by `CREDITCHK`. | confirmed_from_code | 04-data-flow.md |
+| SNP-CREDIT-CHECK-001 | SRC-CREDIT-CHECK-CRDTCMD-001 | 7 | `CRDTCMD` calls `CREDITCHK`. | confirmed_from_code | system_interfaces, program_anchors |
+| SNP-CREDIT-CHECK-003 | SRC-CREDIT-CHECK-CREDITCHK-001 | 29-36 | `CREDITCHK` reads `STATUS` and `AVAIL_CREDIT` from `CREDITVW`. | confirmed_from_code | system_interfaces, program_anchors |
+| SNP-CREDIT-CHECK-004 | SRC-CREDIT-CHECK-CREDITCHK-001 | 38-67 | Denial, approval, over-limit cap, and return-value behavior. | confirmed_from_code | business_process, program_anchors |
+| SNP-CREDIT-CHECK-005 | SRC-CREDIT-CHECK-CREDITCHK-001 | 69-74 | Denial/error message text is written to `QSYSPRT`. | confirmed_from_code | program_anchors |
+| DDS-CREDIT-CHECK-CUSTMAST-001 | DDS-CREDIT-CHECK-CUSTMAST-001 | 1-6 | Physical customer credit fields. | confirmed_from_code | data_anchors |
+| DDS-CREDIT-CHECK-CREDITVW-001 | DDS-CREDIT-CHECK-CREDITVW-001 | 1-5 | Logical view fields used by `CREDITCHK`. | confirmed_from_code | data_anchors |
 
 ## Runtime Observations
 
-| Evidence ID | Source | Lines | Observed Detail | Used In |
+| Evidence ID | Source | Lines | Observed Detail | Coverage / Consumer |
 | --- | --- | ---: | --- | --- |
-| RUN-CREDIT-CHECK-JOBLOG-001 | runtime/sample-joblog.txt | 1-9 | Wrapper completion and over-limit diagnostic message. | 02-system-flow.md |
-| RUN-CREDIT-CHECK-SPOOL-001 | runtime/sample-spool.txt | 1-9 | Denied over-limit scenario with approved amount capped to available credit. | 01-operation-business-flow.md |
+| RUN-CREDIT-CHECK-JOBLOG-001 | runtime/sample-joblog.txt | 1-9 | Wrapper completion and over-limit diagnostic message. | system_interfaces |
+| RUN-CREDIT-CHECK-SPOOL-001 | runtime/sample-spool.txt | 1-9 | Denied over-limit scenario with approved amount capped to available credit. | business_process |
 
 ## Dictionary Mappings
 
-| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Used In |
+| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Coverage / Consumer |
 | --- | --- | --- | --- | --- | --- |
-| DD-CUSTOMER-NUMBER | CUSTMAST.CUSTNO, CREDITVW.CUSTNO, CREDITCHK.CustNo | Stable customer identifier used for credit lookup. | Credit Operations | approved_dictionary | 04-data-flow.md |
-| DD-CREDIT-AVAILABLE-AMOUNT | CREDITVW.AVAIL_CREDIT, CREDITCHK.AvailCredit | Amount currently available for order approval. | Credit Operations | approved_dictionary | 04-data-flow.md |
-| DD-CREDIT-DECISION-CODE | CREDITCHK.Decision | Legacy approve/deny indicator returned by credit checking. | Credit Operations | approved_dictionary | 01-operation-business-flow.md |
+| DD-CUSTOMER-NUMBER | CUSTMAST.CUSTNO, CREDITVW.CUSTNO, CREDITCHK.CustNo | Stable customer identifier used for credit lookup. | Credit Operations | approved_dictionary | data_anchors |
+| DD-CREDIT-AVAILABLE-AMOUNT | CREDITVW.AVAIL_CREDIT, CREDITCHK.AvailCredit | Amount currently available for order approval. | Credit Operations | approved_dictionary | data_anchors |
+| DD-CREDIT-DECISION-CODE | CREDITCHK.Decision | Legacy approve/deny indicator returned by credit checking. | Credit Operations | approved_dictionary | business_process |
 
 ## Impact Scope
 
-| Target | Impact Type | Evidence | Confidence | Used In |
+| Target | Impact Type | Evidence | Confidence | Coverage / Consumer |
 | --- | --- | --- | --- | --- |
-| PROGRAM-CREDITCHK | Reads `CREDITVW.STATUS` and `CREDITVW.AVAIL_CREDIT`. | SNP-CREDIT-CHECK-003 | high | 02-system-flow.md, 03-program-flow.md |
-| PROGRAM-CREDITCHK | Compares requested amount to available credit. | SNP-CREDIT-CHECK-004 | high | 01-operation-business-flow.md, 03-program-flow.md |
-| TABLE_OR_FILE-CUSTMAST | Physical base file for `CREDITVW`. | DDS-CREDIT-CHECK-CUSTMAST-001 | medium | 04-data-flow.md |
+| PROGRAM-CREDITCHK | Reads `CREDITVW.STATUS` and `CREDITVW.AVAIL_CREDIT`. | SNP-CREDIT-CHECK-003 | high | system_interfaces, program_anchors |
+| PROGRAM-CREDITCHK | Compares requested amount to available credit. | SNP-CREDIT-CHECK-004 | high | business_process, program_anchors |
+| TABLE_OR_FILE-CUSTMAST | Physical base file for `CREDITVW`. | DDS-CREDIT-CHECK-CUSTMAST-001 | medium | data_anchors |
 
 ## Candidate Facts
 

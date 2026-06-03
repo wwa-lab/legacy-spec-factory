@@ -11,7 +11,7 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.8"
+  version: "v0.1.12"
   generated_at: "<YYYY-MM-DDTHH:MM:SSZ>"
   status: "blocked_pending_evidence" # ready_for_module_analysis | ready_with_warnings | blocked_pending_evidence | blocked_pending_contradiction_review | legacy: blocked_pending_scope
   decision_reason: "<Why this status was selected>"
@@ -34,30 +34,24 @@ rag_runs: []
 
 document_evidence_inputs: []
 
-legacy_flow_normalization_input:
-  path: null
-  status: null # triage_needs_source_enrichment | ready_with_warnings
-  quality_level: null # L1 sparse when legacy sparse/degraded input is accepted
-  risk_acceptance_status: null # accepted optional for degraded intake
-  accepted_by: null
-
 input_files: []
 
 output_files:
-  operation_business_flow: "01-operation-business-flow.md"
-  system_flow: "02-system-flow.md"
-  program_flow: "03-program-flow.md"
-  data_flow: "04-data-flow.md"
   rag_evidence_map: "rag-evidence-map.md"
   contradiction_log: "contradiction-log.md"
   open_questions: "open-questions.md"
 
 coverage:
-  four_views_present: false
+  context_coverage_ready: false
   source_snippets_mapped: false
   dictionary_context_mapped: false
   contradictions_carried_forward: false
   open_questions_carried_forward: false
+  coverage_dimensions:
+    business_process: "absent" # absent | partial | usable | strong
+    system_interfaces: "absent" # absent | partial | usable | strong
+    program_anchors: "absent" # absent | partial | usable | strong
+    data_anchors: "absent" # absent | partial | usable | strong
   technical_anchor_coverage:
     program_anchors: "absent" # absent | partial | usable | strong
     data_anchors: "absent" # absent | partial | usable | strong
@@ -80,7 +74,7 @@ coverage:
 gates:
   evidence_authorization_gate: "blocked" # pass | warning | blocked
   module_scope_gate: "blocked"
-  four_view_gate: "blocked"
+  context_coverage_gate: "blocked"
   contradiction_visibility_gate: "blocked"
   rule_promotion_gate: "blocked" # blocked when evidence_authorization is unknown; set to pass only after authorization resolves
 

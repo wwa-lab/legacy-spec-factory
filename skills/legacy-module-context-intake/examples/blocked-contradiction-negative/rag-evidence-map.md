@@ -8,28 +8,28 @@
 
 ## Source Snippets
 
-| Evidence ID | Artifact | Lines | Summary | Strength | Used In |
+| Evidence ID | Artifact | Lines | Summary | Strength | Coverage / Consumer |
 | --- | --- | ---: | --- | --- | --- |
-| SNP-PAYMENT-001 | SRC-PAYMENT-MATCH-PMTMATCH-001 | 1-30 | `PMTMATCH` reads `PMTINPUT`, performs invoice lookup, posts matches. | confirmed_from_code | 01-operation-business-flow.md, 02-system-flow.md, 03-program-flow.md, 04-data-flow.md |
-| SNP-PAYMENT-002 | SRC-PAYMENT-MATCH-PMTMATCH-001 | 31-50 | Unmatched records written to `PMTSUSP` with reason code. | confirmed_from_code | 01-operation-business-flow.md, 03-program-flow.md, 04-data-flow.md |
+| SNP-PAYMENT-001 | SRC-PAYMENT-MATCH-PMTMATCH-001 | 1-30 | `PMTMATCH` reads `PMTINPUT`, performs invoice lookup, posts matches. | confirmed_from_code | business_process, system_interfaces, program_anchors, data_anchors |
+| SNP-PAYMENT-002 | SRC-PAYMENT-MATCH-PMTMATCH-001 | 31-50 | Unmatched records written to `PMTSUSP` with reason code. | confirmed_from_code | business_process, program_anchors, data_anchors |
 
 ## Runtime Observations
 
-| Evidence ID | Source | Lines | Observed Detail | Used In |
+| Evidence ID | Source | Lines | Observed Detail | Coverage / Consumer |
 | --- | --- | ---: | --- | --- |
-| RUN-PAYMENT-JOBLOG-001 | runtime/sample-joblog.txt | 1-12 | Batch job `PMTMATCH` appears in weekly schedule; no daily scheduling found. | 01-operation-business-flow.md, 02-system-flow.md |
+| RUN-PAYMENT-JOBLOG-001 | runtime/sample-joblog.txt | 1-12 | Batch job `PMTMATCH` appears in weekly schedule; no daily scheduling found. | business_process, system_interfaces |
 
 ## Dictionary Mappings
 
-| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Used In |
+| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Coverage / Consumer |
 | --- | --- | --- | --- | --- | --- |
-| DD-PAYMENT-AMOUNT | PMTINPUT.PMTAMT | Total amount of incoming payment transaction. | AR Operations | approved_dictionary | 04-data-flow.md |
+| DD-PAYMENT-AMOUNT | PMTINPUT.PMTAMT | Total amount of incoming payment transaction. | AR Operations | approved_dictionary | data_anchors |
 
 ## Impact Scope
 
-| Target | Impact Type | Evidence | Confidence | Used In |
+| Target | Impact Type | Evidence | Confidence | Coverage / Consumer |
 | --- | --- | --- | --- | --- |
-| PROGRAM-PMTMATCH | Reads `PMTINPUT`, writes `PMTSUSP`. | SNP-PAYMENT-001, SNP-PAYMENT-002 | high | 02-system-flow.md, 03-program-flow.md |
+| PROGRAM-PMTMATCH | Reads `PMTINPUT`, writes `PMTSUSP`. | SNP-PAYMENT-001, SNP-PAYMENT-002 | high | system_interfaces, program_anchors |
 
 ## Candidate Facts
 

@@ -11,10 +11,6 @@ from pathlib import Path
 
 REQUIRED_FILES = (
     "context-index.yaml",
-    "01-operation-business-flow.md",
-    "02-system-flow.md",
-    "03-program-flow.md",
-    "04-data-flow.md",
     "rag-evidence-map.md",
     "contradiction-log.md",
     "open-questions.md",
@@ -32,12 +28,6 @@ BLOCKED_STATUSES = {
 }
 
 ALL_STATUSES = READY_STATUSES | BLOCKED_STATUSES
-
-EVIDENCE_ID_RE = re.compile(
-    r"\b(?:SNP|RUN|DD|EV)-[A-Z0-9-]+(?:-\d{3})?\b|"
-    r"\bRAG-(?:CAND|CONFLICT|GAP|ASM)-[A-Z0-9-]+-\d{3}\b"
-)
-
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -66,13 +56,6 @@ def markdown_cells(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def ids_in_view_files(package_dir: Path) -> set[str]:
-    ids: set[str] = set()
-    for name in REQUIRED_FILES[1:5]:
-        ids.update(EVIDENCE_ID_RE.findall(read_text(package_dir / name)))
-    return ids
-
-
 def validate(package_dir: Path, allow_blocked: bool) -> list[str]:
     findings: list[str] = []
 
@@ -99,13 +82,6 @@ def validate(package_dir: Path, allow_blocked: bool) -> list[str]:
             findings.append(f"context-index.yaml does not list output file: {name}")
 
     evidence_map = read_text(package_dir / "rag-evidence-map.md")
-    missing_ids = sorted(id_ for id_ in ids_in_view_files(package_dir) if id_ not in evidence_map)
-    if missing_ids:
-        findings.append(
-            "Evidence IDs referenced in view files are missing from rag-evidence-map.md: "
-            + ", ".join(missing_ids)
-        )
-
     candidate_section = section(evidence_map, "Candidate Facts")
     approved_candidate = False
     for line in candidate_section.splitlines():

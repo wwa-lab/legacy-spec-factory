@@ -11,10 +11,10 @@ module:
 
 intake:
   skill: "legacy-module-context-intake"
-  version: "v0.1.1"
+  version: "v0.1.12"
   generated_at: "2026-05-21T09:30:00+08:00"
   status: "ready_with_warnings"
-  decision_reason: "Synthetic RAG bundle has all four views and no open contradiction; retrieval gaps remain non-blocking for initial module analysis."
+  decision_reason: "Synthetic RAG bundle has traceable context coverage and no open contradiction; retrieval gaps remain non-blocking for initial module analysis."
   downstream_next_step: "legacy-ibmi-module-analyzer"
 
 evidence_authorization:
@@ -57,25 +57,26 @@ input_files:
     status: "present"
 
 output_files:
-  operation_business_flow: "01-operation-business-flow.md"
-  system_flow: "02-system-flow.md"
-  program_flow: "03-program-flow.md"
-  data_flow: "04-data-flow.md"
   rag_evidence_map: "rag-evidence-map.md"
   contradiction_log: "contradiction-log.md"
   open_questions: "open-questions.md"
 
 coverage:
-  four_views_present: true
+  context_coverage_ready: true
   source_snippets_mapped: true
   dictionary_context_mapped: true
   contradictions_carried_forward: true
   open_questions_carried_forward: true
+  coverage_dimensions:
+    business_process: "usable"
+    system_interfaces: "partial"
+    program_anchors: "usable"
+    data_anchors: "partial"
 
 gates:
   evidence_authorization_gate: "pass"
   module_scope_gate: "pass"
-  four_view_gate: "pass"
+  context_coverage_gate: "pass"
   contradiction_visibility_gate: "pass"
   rule_promotion_gate: "pass"
 

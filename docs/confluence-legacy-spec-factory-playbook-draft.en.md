@@ -32,7 +32,7 @@ RAG / Code Knowledge Graph / ARCAD / Data Dictionary
   -> Traceability + SDLC Handoff
 ```
 
-The default enterprise adoption path is **module-first**. When the team already has module boundaries, four-view flows, RAG retrieval output, or a code knowledge graph, it does not need to excavate the full source code base from scratch.
+The default enterprise adoption path is **module-first**. When the team already has module boundaries, reviewed module context, RAG retrieval output, or a code knowledge graph, it does not need to excavate the full source code base from scratch.
 
 ### Verification Path: Source-First Evidence Repair
 

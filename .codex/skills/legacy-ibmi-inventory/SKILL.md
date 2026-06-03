@@ -42,7 +42,7 @@ Java. It establishes the evidence baseline required before deeper analysis or
 Accept any combination of:
 
 - source member listings or exported source files
-- normalized document-intake / flow-normalization packages that contain IBM i
+- normalized document-intake / module-context packages that contain IBM i
   program, job, file, ARCAD, DSPPGMREF, Program Spec, File Spec, or data
   dictionary anchors
 - RPGLE, CLLE, COBOL, DDS source

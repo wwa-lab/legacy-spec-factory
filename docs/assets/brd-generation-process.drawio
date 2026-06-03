@@ -33,10 +33,10 @@
         <mxCell id="20" value="2&#xa;Coverage + Context Package&#xa;覆盖 / 上下文包" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#1f6f9f;fontColor=#0b3c5d;fontStyle=1;fontSize=17;spacing=10;" vertex="1" parent="3">
           <mxGeometry x="320" y="72" width="230" height="58" as="geometry" />
         </mxCell>
-        <mxCell id="21" value="00_context_packages/&lt;MODULE&gt;&#xa;document-intake/ when raw docs need conversion&#xa;flow-normalization/ when needed&#xa;context-index.yaml&#xa;evidence-map / gaps" style="shape=folder;tabWidth=44;tabHeight=14;tabPosition=left;html=1;whiteSpace=wrap;fillColor=#e1f5fe;strokeColor=#1f6f9f;fontColor=#0b3c5d;fontSize=12;spacing=8;" vertex="1" parent="3">
+        <mxCell id="21" value="00_context_packages/&lt;MODULE&gt;&#xa;document-intake/ when raw docs need conversion&#xa;context-index.yaml&#xa;rag-evidence-map / gaps" style="shape=folder;tabWidth=44;tabHeight=14;tabPosition=left;html=1;whiteSpace=wrap;fillColor=#e1f5fe;strokeColor=#1f6f9f;fontColor=#0b3c5d;fontSize=12;spacing=8;" vertex="1" parent="3">
           <mxGeometry x="320" y="165" width="230" height="134" as="geometry" />
         </mxCell>
-        <mxCell id="22" value="document-evidence-intake for binary/scanned docs&#xa;flow-context-normalizer for normalized docs/specs&#xa;module-context-intake for reviewed or risk-accepted context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f6f9f;fontColor=#0b3c5d;fontSize=12;spacing=8;" vertex="1" parent="3">
+        <mxCell id="22" value="document-evidence-intake for binary/scanned docs&#xa;module-context-intake for normalized docs/specs, reviewed context, or risk-accepted context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f6f9f;fontColor=#0b3c5d;fontSize=12;spacing=8;" vertex="1" parent="3">
           <mxGeometry x="320" y="322" width="230" height="64" as="geometry" />
         </mxCell>
 

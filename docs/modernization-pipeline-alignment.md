@@ -121,7 +121,7 @@ Program Flow 逐字段梳理计算取信逻辑错误
   - 询问当前阶段 (scope / intake / inventory / analysis / synthesis / approval / handoff)
   - 识别阻塞条件
   - 推荐下一步 skill
-  - 对散落文档 / Function Spec / Technical Design / Program Spec / File Spec 等输入做质量分层路由：资料强/部分时进入 flow normalization，资料稀疏但授权可读时进入 source-quality triage；如果 owner 确认无法补料并接受风险，则以 warning/TBD 方式进入 context intake
+  - 对散落文档 / Function Spec / Technical Design / Program Spec / File Spec 等输入做质量分层路由：资料强/部分时进入 module context intake，资料稀疏但授权可读时进入 source-quality triage；如果 owner 确认无法补料并接受风险，则以 warning/TBD 方式进入 context intake
   - 支持返回前一步重新分析
 
 - `legacy-step-validator` → 质量检查，识别blocking/warning/ok

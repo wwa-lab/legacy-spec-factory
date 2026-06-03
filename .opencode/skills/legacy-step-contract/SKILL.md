@@ -472,9 +472,9 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
-- v0.1.2 (2026-05-29): Renamed flow-context-normalizer Step Contract wording
+- v0.1.2 (2026-05-29): Renamed scattered-context Step Contract wording
   from "draft four-flow package" to "draft four-view context package" so
-  upstream context views are not confused with canonical module-analysis
+  upstream context notes are not confused with canonical module-analysis
   flow artifacts.
 - v0.1.3 (2026-05-31): Added the global artifact-preview and
   stop-after-writeback completion boundary so steps do not keep processing

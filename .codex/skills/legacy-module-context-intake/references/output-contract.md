@@ -6,19 +6,15 @@ This reference defines the required files under
 The context package is an intake artifact. It is not an approved module
 analysis, BRD, spec, or modernization decision.
 
-The four Markdown files in this package are context views. They are not the
-canonical module-analysis flow files in `04_modules/<MODULE-SLUG>/`; those are
-created only by `legacy-ibmi-module-analyzer`.
+This package does not create intake flow Markdown files. The canonical
+module-analysis flow files in `04_modules/<MODULE-SLUG>/` are created only by
+`legacy-ibmi-module-analyzer`.
 
 ## Package Layout
 
 ```text
 00_context_packages/<MODULE-SLUG>/
 |-- context-index.yaml
-|-- 01-operation-business-flow.md
-|-- 02-system-flow.md
-|-- 03-program-flow.md
-|-- 04-data-flow.md
 |-- rag-evidence-map.md
 |-- contradiction-log.md
 `-- open-questions.md
@@ -41,7 +37,7 @@ module:
 
 intake:
   skill: legacy-module-context-intake
-  version: v0.1.6
+  version: v0.1.12
   generated_at: "YYYY-MM-DDTHH:MM:SSZ"
   status: ready_for_module_analysis
   decision_reason: "Short reason."
@@ -76,13 +72,6 @@ document_evidence_inputs:
     extraction_warnings: "00_context_packages/CREDIT-CHECK/document-intake/CREDIT-CHECK-DOCS/extraction-warnings.md"
     source_quality: partial
 
-legacy_flow_normalization_input:
-  path: "00_context_packages/CREDIT-CHECK/flow-normalization/flow-context-index.yaml"
-  status: ready_with_warnings
-  quality_level: L1 sparse
-  risk_acceptance_status: accepted
-  accepted_by: "Credit Operations Owner"
-
 input_files:
   - role: flow_hydration_summary
     path: "rag_runs/.../flow-hydration-summary.md"
@@ -90,20 +79,21 @@ input_files:
     status: present
 
 output_files:
-  operation_business_flow: 01-operation-business-flow.md
-  system_flow: 02-system-flow.md
-  program_flow: 03-program-flow.md
-  data_flow: 04-data-flow.md
   rag_evidence_map: rag-evidence-map.md
   contradiction_log: contradiction-log.md
   open_questions: open-questions.md
 
 coverage:
-  four_views_present: true
+  context_coverage_ready: true
   source_snippets_mapped: true
   dictionary_context_mapped: true
   contradictions_carried_forward: true
   open_questions_carried_forward: true
+  coverage_dimensions:
+    business_process: absent | partial | usable | strong
+    system_interfaces: absent | partial | usable | strong
+    program_anchors: absent | partial | usable | strong
+    data_anchors: absent | partial | usable | strong
   technical_anchor_coverage:
     program_anchors: absent | partial | usable | strong
     data_anchors: absent | partial | usable | strong
@@ -126,7 +116,7 @@ coverage:
 gates:
   evidence_authorization_gate: pass | warning | blocked
   module_scope_gate: pass | warning | blocked
-  four_view_gate: pass | warning | blocked
+  context_coverage_gate: pass | warning | blocked
   contradiction_visibility_gate: pass | warning | blocked
   rule_promotion_gate: pass | warning | blocked
 
@@ -161,15 +151,9 @@ Rules:
   are explicitly non-blocking.
 - `document_evidence_inputs[]` is the preferred upstream record for
   document-first work. Missing OCR, missing Markdown, blocked optional
-  converters, and partial extraction become low-confidence `TBD-*` items, not
-  reasons to create `flow-normalization/`.
-- `legacy_flow_normalization_input` is optional and exists only for older
-  packages that already contain `flow-normalization/`. Do not require or create
-  it for new runs. If present with `triage_needs_source_enrichment` or
-  `ready_with_warnings`, preserve all missing views as low-confidence `TBD-*`;
-  do not convert sparse context to approved facts.
+  converters, and partial extraction become low-confidence `TBD-*` items.
 - `coverage.brd_functional_analysis_hints` is advisory. It tells downstream
-  module analysis and BRD preparation which normalized context can feed the
+  module analysis and BRD preparation which packaged context can feed the
   SME-required BRD sections 1-9 and optional sections 10-12. Missing or partial
   hints must stay visible as gaps; this skill must not fill them by inference.
   For internal POC BRDs, hints may become low-confidence review hypotheses only,
@@ -180,48 +164,21 @@ Rules:
   context are not a substitute for `01_inventory/object-map.md`, approved
   program analyses, or approved flow analyses.
 
-## View Files
+## Context Coverage
 
-The four view files normalize supplied context into the downstream
-`legacy-ibmi-module-analyzer` vocabulary. They must stay labeled as intake
-context, even when all four are present and SME-confirmed.
+Context coverage is recorded in `context-index.yaml.coverage` and in the
+evidence/candidate rows of `rag-evidence-map.md`. Do not create separate
+Operation / Business Flow, System Flow, Program Flow, or Data Flow intake files.
 
-Each view file must include:
+Coverage dimensions:
 
-```markdown
-# View N: [Name] - [Module Name]
-
-## Intake Status
-- status: draft | sme_confirmed | ready_for_module_analysis | blocked
-- source_state: human_confirmed | rag_hydrated | mixed | draft
-- primary_sources:
-  - [source ID or file path]
-
-## Summary
-[Concise supplied context. No invented facts.]
-
-## Evidence-Linked Details
-| Claim ID | Knowledge Type | Statement | Evidence | Strength | Review Status |
-| --- | --- | --- | --- | --- | --- |
-
-## Candidate Seeds
-| Candidate ID | Candidate Statement | Business Signal | Evidence Basis | Required Review |
-| --- | --- | --- | --- | --- |
-
-## Gaps For Module Analyzer
-| TBD ID | Category | Question | Evidence | Owner | Blocking |
-| --- | --- | --- | --- | --- | --- |
-```
-
-View-specific guidance:
-
-- **View 1, Operation / Business Flow**: actors, business events, BAU rhythm,
-  manual intervention, exception lifecycle, candidate business-rule seeds.
-- **View 2, System Flow**: upstream/downstream systems, interfaces, integration
+- **Business process**: actors, business events, BAU rhythm, manual
+  intervention, exception lifecycle, candidate business-rule seeds.
+- **System interfaces**: upstream/downstream systems, interfaces, integration
   patterns, synchronous/asynchronous boundaries, security/SLA notes.
-- **View 3, Program Flow**: entry programs, call paths, shared programs,
-  runtime trigger model, suggested program-analysis focus.
-- **View 4, Data Flow**: data objects, field dictionary mappings, lifecycle,
+- **Program anchors**: entry programs, call paths, shared programs, runtime
+  trigger model, suggested program-analysis focus.
+- **Data anchors**: data objects, field dictionary mappings, lifecycle,
   derivation gaps, data ownership, cross-module dependencies.
 
 Candidate seed rules:
@@ -247,16 +204,16 @@ Required sections:
 | Run ID | Source Snapshot | Dictionary Version | Sensitivity | Status |
 
 ## Source Snippets
-| Evidence ID | Artifact | Lines | Summary | Strength | Used In |
+| Evidence ID | Artifact | Lines | Summary | Strength | Coverage / Consumer |
 
 ## Runtime Observations
-| Evidence ID | Source | Lines | Observed Detail | Used In |
+| Evidence ID | Source | Lines | Observed Detail | Coverage / Consumer |
 
 ## Dictionary Mappings
-| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Used In |
+| Standard Field ID | Legacy Reference | Meaning | Owner | Status | Coverage / Consumer |
 
 ## Impact Scope
-| Target | Impact Type | Evidence | Confidence | Used In |
+| Target | Impact Type | Evidence | Confidence | Coverage / Consumer |
 
 ## Candidate Facts
 | Candidate ID | Statement | Business Signal | Evidence Basis | Promotion Status | Required Review |

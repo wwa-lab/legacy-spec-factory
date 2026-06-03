@@ -44,7 +44,7 @@ Program     = evidence granularity
 Capability  = BRD output unit
 ```
 
-A module can start from reviewed context, SME fragments, historical documents, or approved flow evidence. Flow analysis is still valuable evidence, but four complete flows are not a prerequisite for starting discovery.
+A module can start from reviewed context, SME fragments, historical documents, or approved flow evidence. Flow analysis is still valuable evidence, but complete flow diagrams or module four-view coverage are not prerequisites for starting discovery.
 
 The main evidence-to-BRD transformation is:
 
@@ -76,7 +76,7 @@ The current skill family supports the BRD discovery chain through specialized ro
 | Pipeline Area | Existing Repo Support | Role |
 | --- | --- | --- |
 | Evidence intake | `legacy-ibmi-evidence-intake`, `legacy-document-evidence-intake` | Register source, DDS, logs, spool, reports, screenshots, documents, and evidence coordinates |
-| Context normalization | `legacy-flow-context-normalizer`, `legacy-module-context-intake` | Organize scattered docs/RAG/SME fragments into four-view coverage, gaps, SME questions, and BRD source eligibility |
+| Context intake | `legacy-module-context-intake` | Organize scattered docs/RAG/SME fragments into coverage, gaps, SME questions, and BRD source eligibility |
 | Inventory | `legacy-ibmi-inventory` | Identify programs, files, reports, screens, jobs, and object relationships |
 | Program analysis | `legacy-ibmi-program-analyzer` | Extract call maps, data touch maps, routine logic, file I/O, validation logic, error handling, and coverage |
 | Flow analysis | `legacy-ibmi-flow-analyzer` | Connect multiple programs into transaction flows, replay paths, persistence, lineage, and exception chains |
@@ -275,7 +275,7 @@ The current method has clear boundaries:
 - It does not decide future-state scope or target architecture inside the BRD.
 - It does not perform No-gap / Gap1 / Gap2 classification before the BRD is approved and new-system context is available.
 - It does not allow context-only or RAG-only claims to be labeled as `confirmed_from_code`.
-- It does not require SMEs to provide four complete flows before discovery can start.
+- It does not require SMEs to provide complete flow diagrams or module four-view coverage before discovery can start.
 - It does not promote generated or candidate coverage into factual BRD prose.
 - It does not make a large program safe by summarizing fixed chunks.
 

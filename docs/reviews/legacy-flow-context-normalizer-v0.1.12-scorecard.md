@@ -2,14 +2,14 @@
 skill: legacy-flow-context-normalizer
 scorecard_version: v0.1.12
 static_score: 9.50
-decision: repo-ready (provisional)
-status: current
+decision: repo-ready (retired)
+status: superseded
 last_verified: 2026-06-03
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-03 }
   claude_code: { status: synced, model: haiku, date: 2026-06-03 }
   opencode: { status: synced, model: minimax-m2.5-free, date: 2026-06-03 }
-evidence_source: static review + adapter drift checks
+evidence_source: static review + adapter drift checks; retired from active skill surface on 2026-06-03
 ---
 
 # Skill Review Scorecard: legacy-flow-context-normalizer v0.1.12

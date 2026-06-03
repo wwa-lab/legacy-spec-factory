@@ -274,7 +274,7 @@ When writing `module-overview.md`, classify each BRD crosswalk row:
 | Approved flow/program/inventory evidence | `brd_conclusion_allowed` | May support observed behavior, process flow, dependencies, validation, or error handling |
 | Named SME confirmation | `brd_conclusion_allowed` | May support business context, BAU rhythm, manual process, or rule intent |
 | Source document or RAG snippet without SME/code corroboration | `needs_sme_review` | May support source mapping or review prompts; do not write as final BRD prose |
-| AI-organized context, sparse normalizer output, or generated-draft diagram | `questions_only` | Convert to `TBD-*` or SME question |
+| AI-organized context, sparse context package, or generated-draft diagram | `questions_only` | Convert to `TBD-*` or SME question |
 | Missing evidence | `questions_only` | Carry a `TBD-*` with resolver |
 
 Coverage rules:

@@ -30,9 +30,8 @@ orchestrator points to them when applicable.
 
 | Skill | When to add | Card |
 | --- | --- | --- |
-| `legacy-document-evidence-intake` | Documents are still in raw Office / Visio / PDF / image form (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, scanned/screenshot) and not yet normalized to Markdown/CSV/PDF/PNG/SVG; run before `legacy-flow-context-normalizer` (no dedicated card — pre-normalization format step) | See SKILL.md |
-| `legacy-flow-context-normalizer` | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface / data dictionary / SME-note docs exist, but standard context views are not yet normalized or SME-reviewed; sparse authorized inputs still need source-quality triage instead of invented flows | See SKILL.md |
-| `legacy-module-context-intake` | External RAG bundle or human-confirmed four-view module context is supplied before module analysis | See SKILL.md |
+| `legacy-document-evidence-intake` | Documents are still in raw Office / Visio / PDF / image form (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, scanned/screenshot) and not yet normalized to Markdown/CSV/PDF/PNG/SVG; run before module context intake when tooling is useful (no dedicated card — format step) | See SKILL.md |
+| `legacy-module-context-intake` | External RAG bundle, source metadata, document-intake output, SME fragments, or human-confirmed module context is supplied before module analysis | See SKILL.md |
 | `legacy-ibmi-runtime-evidence-miner` | Job logs / spool / reports available alongside source | See SKILL.md (no dedicated card yet) |
 | `legacy-ibmi-screen-report-analyzer` | DSPF / PRTF / subfile / menu samples available | See SKILL.md |
 | `legacy-ibmi-data-model-analyzer` | Domain data model needed before spec-writing | See SKILL.md |
