@@ -548,10 +548,10 @@ Rules:
 
 Allowed:
 
-- Source document fragments -> draft flow steps
-- Function / Technical / Program / File Spec fragments -> draft flow steps,
-  candidate system/program/data nodes, or SME questions
-- Flow steps -> SME review checklist items
+- Source document fragments -> source-linked coverage items or SME questions
+- Function / Technical / Program / File Spec fragments -> source-linked
+  coverage items, candidate system/program/data nodes, or SME questions
+- Sourced sequence fragments -> SME review checklist items
 - Conflicts -> contradiction log
 - Gaps -> `TBD-*` open questions
 - SME-confirmed or risk-accepted normalized flow context -> input to
@@ -559,7 +559,7 @@ Allowed:
 
 Forbidden:
 
-- Draft flow steps -> approved `BR-*`
+- Coverage items or candidate sequence fragments -> approved `BR-*`
 - Old document labels -> confirmed current process without SME review
 - Program names -> business capability boundaries
 - One diagram arrow -> guaranteed runtime sequence

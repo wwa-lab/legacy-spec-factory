@@ -34,14 +34,14 @@ The pilot must deliver:
 | 1 | `legacy-ibmi-inventory` | 1 (platform-specific) | ✅ v0.1.0 | Catalogue every legacy object touched by the module |
 | 2 | `legacy-ibmi-program-analyzer` | 1 (platform-specific) | ✅ v0.2.5 | Deep-dive one program: Program Call Map Call Evidence, Routine Logic Details with conditioned calculation blocks, outcome reverse traces, and routine-local lineage/exception closure, source identifier + meaning fields, File I/O Purpose, dynamic-call resolution, front-loaded Validation Logic, object deps, exception closure |
 | 3 | `legacy-ibmi-flow-analyzer` | 1.5 (platform-specific) | ✅ v0.2.2 | Analyze a call chain (job flow, menu option, subfile dispatch, F-key branch, trigger, scheduler, API) with replay path, edge resolution, field lineage consuming routine-local carrier evidence, persistence purpose, and exception chain consuming routine-local exception closure |
-| 4 | `legacy-ibmi-module-analyzer` | 1.5 (platform-specific) | ✅ v0.2.2 | Synthesize a business module from multiple flows + BAU, producing the **4-view model** plus module readiness, edge-resolution coverage, routine-local evidence carry-forward, persistence / critical field, and exception recovery summaries. See `docs/module-analysis-model.md`. |
+| 4 | `legacy-ibmi-module-analyzer` | 1.5 (platform-specific) | ✅ v0.2.3 | Assemble a business module coverage map from approved flows or reviewed module context, producing the **4-view model** plus BRD source eligibility, module readiness, edge-resolution coverage, routine-local evidence carry-forward, persistence / critical field, and exception recovery summaries. See `docs/module-analysis-model.md`. |
 | 5 | `legacy-spec-writer` | 2 (platform-agnostic) | ✅ v0.1.6 | Produce `spec.yaml` + `spec.md` from approved BRD plus module / flow / program evidence, preserving routine-local lineage and exception closure |
 
 Entry-point router:
 
 | Skill | Status | Role |
 |---|---|---|
-| `legacy-modernization-orchestrator` | ✅ v0.2.10 | Route the user through the full e2e chain, including quality-aware scattered document/spec routing, owner-accepted sparse context before intake, analyzer v0.2.5 / flow v0.2.2 / module v0.2.2 / spec v0.1.6 evidence gates, BRD discovery, and post-BRD disposition |
+| `legacy-modernization-orchestrator` | ✅ v0.2.11 | Route the user through the full e2e chain, including evidence-bounded scattered document/spec routing, owner-accepted sparse context before intake, BRD source-eligibility gates, BRD discovery, and post-BRD disposition |
 
 ## Dependency Order
 
@@ -67,13 +67,14 @@ back to the inventory skill.
   - `legacy-ibmi-inventory` v0.1.0
   - `legacy-ibmi-program-analyzer` v0.2.5
   - `legacy-ibmi-flow-analyzer` v0.2.2
-  - `legacy-ibmi-module-analyzer` v0.2.2
+  - `legacy-ibmi-module-analyzer` v0.2.3
   - `legacy-spec-writer` v0.1.6
 - Pre-inventory evidence governance is implemented as
   `legacy-ibmi-evidence-intake` v0.1.0.
-- `legacy-modernization-orchestrator` v0.2.10 routes the full chain
+- `legacy-modernization-orchestrator` v0.2.11 routes the full chain
   (document/spec triage/flow normalization → risk acceptance when needed →
-  context intake, or inventory → program → flow → module → BRD → spec).
+  context intake with source eligibility, or inventory → program → flow →
+  module → BRD → spec).
 - Runtime smoke status is mixed:
   - `legacy-step-contract` and `legacy-step-validator` passed Codex CLI,
     Claude Code, and OpenCode smoke tests for their earlier contracts;

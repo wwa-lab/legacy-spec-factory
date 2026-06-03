@@ -51,7 +51,8 @@ the user (or wrapping agent) which skill to invoke next.
 ## 1A. Module-First Context Intake
 
 **Purpose**: Normalize scattered historical documentation and external RAG /
-code-knowledge-graph output into a traceable package before module analysis.
+code-knowledge-graph output into evidence-bounded coverage, source eligibility,
+and traceable packages before module analysis.
 This is the default enterprise entry path when a team already has Visio, Word,
 Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File
 Specs, interface specs, data dictionaries, RAG output, four reviewed context
@@ -61,8 +62,8 @@ authorization or SME approval.
 | Skill | Reads | Writes | Position |
 | --- | --- | --- | --- |
 | [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Pre-normalization entry layer, before `legacy-flow-context-normalizer`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
-| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation that is not yet flow-reviewed, including sparse authorized notes that need source-quality triage or owner risk acceptance | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when four-view context is not yet confirmed; sparse triage must collect supplements or named owner risk acceptance before context intake |
-| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, four-view module notes, or owner-risk-approved sparse flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; accepted sparse input remains low-confidence with carry-forward TBDs |
+| [`legacy-flow-context-normalizer`](../skills/legacy-flow-context-normalizer/SKILL.md) | scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / RAG / SME-note documentation that is not yet reviewable, including sparse authorized notes that need source-quality triage or owner risk acceptance | `00_context_packages/<MODULE-SLUG>/flow-normalization/` | Before SME review and before `legacy-module-context-intake` when context is incomplete; organizes evidence slots, coverage, and questions but does not generate BRD-ready flows |
+| [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, four-view module notes, or owner-risk-approved sparse flow-normalization package | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; accepted sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
 
 **Sequence**:
 
@@ -73,7 +74,7 @@ raw Office / Visio / PDF / image documents (not yet normalized)
        └─ blocked auth/sensitivity -> ibmi-evidence-intake
 scattered docs/specs / draft context evidence / sparse module notes
   └─ flow-context-normalizer
-       ├─ SME review for draft context views
+       ├─ SME review for evidence-bounded coverage views
        └─ source-owner supplement request or risk acceptance for sparse triage
             └─ module-context-intake
 external RAG bundle + human-confirmed module context
@@ -81,11 +82,12 @@ external RAG bundle + human-confirmed module context
        └─ module-analyzer (validates / synthesizes approved 4-view module)
 ```
 
-**Anti-pattern**: treating draft document-derived context steps or RAG
-candidates as approved `BR-*` rules, or reporting upstream context-view files
-as the final four module flows. Flow normalization and context intake preserve
-candidates and gaps; `legacy-ibmi-module-analyzer` produces the canonical
-`04_modules/` four-view module analysis.
+**Anti-pattern**: treating draft document-derived context steps, generated
+diagrams, or RAG candidates as approved `BR-*` rules or BRD conclusions, or
+reporting upstream context-view files as the final four module flows. Flow
+normalization and context intake preserve candidates, source eligibility, and
+gaps; `legacy-ibmi-module-analyzer` produces the canonical `04_modules/`
+four-view module coverage and BRD eligibility map.
 
 ---
 
@@ -255,8 +257,9 @@ implementation. The test plan becomes the equivalence-test contract.
 
 ### Route A — Module-First Enterprise Path
 
-Use this path when the team has an external RAG bundle, reviewed flows,
-historical specs, or enough module context to start at the module level:
+Use this path when the team has an external RAG bundle, reviewed context,
+SME fragments, historical specs, or enough module context to start at the
+module level:
 
 ```
 1.  orchestrator                   → "stage: module context; next: module-context-intake"

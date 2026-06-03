@@ -1410,7 +1410,7 @@ AUTH-MODULE scope confirmed, and BAU notes from the Module Owner.
 Each flow analysis includes Flow Replay Path, Cross-Program Field Lineage,
 Flow Persistence Matrix, and Exception Propagation Chain sections.
 Module slug is AUTH-MODULE, business name is "Authorization Processing". Help me
-synthesize the four-view module analysis.
+assemble the four-view module coverage map.
 
 Return the module-overview.md and all four views (01-operation-flow.md through
 04-data-flow.md) following the output contract format. Each view must include
@@ -1434,46 +1434,56 @@ The response must include all of the following:
 - **Evidence tagged:** All major actors, systems, programs, data objects, and lifecycle phases link to EV-*, OBJ-*, FLOW-*, or SME confirmation
 - No files are created or edited
 
-#### Scenario (Negative — Missing Flow Analysis)
+#### Scenario (Negative — Missing Flow Analysis With Coverage Allowed)
 
 ```text
 Use /legacy-ibmi-module-analyzer.
 
 User input:
-I have approved flow analyses for FLOW-AUTH-001 and FLOW-MANUAL-001, but FLOW-BATCH-001
-has no approved flow analysis yet. Module scope includes all three flows.
-Inventory is approved. BAU notes are complete. What should the output look like?
+I have approved flow analyses for FLOW-AUTH-001 and FLOW-MANUAL-001, but
+FLOW-BATCH-001 has no approved flow analysis yet. Module scope includes all
+three flows. Inventory is approved. BAU notes are complete and describe the
+batch rhythm, but they do not provide code-backed batch process detail. What
+should the output look like?
 
 Return only:
 - the module-overview.md
-- the blocked status and reason
+- the BRD Source Eligibility Crosswalk
+- the status and restrictions
 ```
 
 #### Pass Criteria (Negative)
 
-- **Status:** blocked_pending_source (one required flow analysis is missing)
-- **Module-overview.md:** Identifies MODULE-AUTH-MODULE-001 and the three flows; shows FLOW-BATCH-001 marked as MISSING
-- **Does NOT produce** any of the four views
-- **Creates blocking TBD:** TBD-AUTH-MODULE-001: FLOW-BATCH-001 lacks approved flow-analysis; routes to legacy-ibmi-flow-analyzer
-- **View Index:** Shows all 4 views but marks View 1–4 as blocked or incomplete due to missing flow
-- **Refuses to synthesize** views without complete flow and program evidence
+- **Status:** draft_needs_source_enrichment or approved_with_blocking_tbd for
+  BRD/source eligibility; not approved for BRD conclusions.
+- **Module-overview.md:** Identifies MODULE-AUTH-MODULE-001 and the three
+  flows; shows FLOW-BATCH-001 as missing approved flow evidence.
+- **Coverage allowed:** May assemble four-view coverage from approved flows,
+  inventory, and BAU notes, but batch-specific behavior must be labeled
+  `needs_sme_review` or `questions_only`.
+- **Creates TBD:** TBD-AUTH-MODULE-001: FLOW-BATCH-001 lacks approved
+  flow-analysis; routes to `legacy-ibmi-flow-analyzer` or SME/source enrichment.
+- **BRD Source Eligibility Crosswalk:** Rows depending on FLOW-BATCH-001 are
+  `questions_only` or `needs_sme_review`; they cannot become BRD factual prose.
+- **View Index:** Shows all four views as present with partial/incomplete
+  coverage where batch evidence is missing.
 - No files are created or edited
 
 #### Reference Commands
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the four-view module analysis. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 For the negative scenario, substitute the missing-flow-analysis prompt above into

@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-module-analyzer
-description: Synthesize a complete IBM i business module from multiple flow analyses, BAU notes, or a ready module-first context package, producing the canonical Mermaid-backed 4-view module analysis (Operation Flow, System Flow, Program Flow, Data Flow). Use when multiple flows belong to the same business module, or when `legacy-module-context-intake` has normalized external RAG / human four-view context and you need module synthesis to feed BRD writing and review before spec-writing. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
+description: Assemble and validate an IBM i business module from approved flow analyses, BAU notes, or a ready module-first context package, producing the canonical Mermaid-backed 4-view module coverage map (Operation Flow, System Flow, Program Flow, Data Flow) plus BRD source-eligibility crosswalk. Use when multiple flows belong to the same business module, or when `legacy-module-context-intake` has normalized external RAG / human context and you need evidence-bounded module assembly before BRD writing and review. Layer 1.5 (platform-specific) skill. Implements the model defined in `docs/module-analysis-model.md`.
 ---
 
 <!--
@@ -20,25 +20,25 @@ Retain this notice in substantial copies or derived versions.
 
 | Field | Notes |
 | --- | --- |
-| Problem solved | Synthesizes multiple IBM i flows or module-first context into the canonical four-view module analysis. |
+| Problem solved | Assembles multiple IBM i flows or module-first context into the canonical four-view module coverage map and BRD eligibility crosswalk. |
 | Input | Flow analyses, program analyses, data/screen evidence, BAU notes, or an accepted `00_context_packages/<MODULE-SLUG>/` package. |
-| Output | Mermaid-backed Operation Flow, System Flow, Program Flow, and Data Flow module analysis with review status. |
-| Core prompt strategy | Preserve evidence boundaries across views, use diagrams as traceable summaries, and keep uncertain behavior as TBDs. |
+| Output | Mermaid-backed Operation Flow, System Flow, Program Flow, and Data Flow coverage views with review status and BRD source eligibility. |
+| Core prompt strategy | Preserve evidence boundaries across views, use diagrams as traceable summaries only where sourced, and keep uncertain/generated behavior as TBDs. |
 | Upstream skill | `legacy-ibmi-flow-analyzer` or `legacy-module-context-intake`. |
 | Downstream consumer | `legacy-brd-writer`, `legacy-spec-writer`, SMEs, and module review workflows. |
-| Validation standard | Four views align without contradictions, all key nodes trace to evidence, and module-analysis model rules are followed. |
-| Known risk | Producing polished diagrams that make unresolved flow gaps look approved. |
+| Validation standard | Four views align without contradictions, all key nodes trace to eligible evidence or TBDs, and module-analysis model rules are followed. |
+| Known risk | Producing polished diagrams or BRD crosswalk rows that make unresolved flow gaps look approved. |
 | Practical example | Combine order entry, release, and cancellation flows into one four-view Order Management module analysis. |
 
 ## Purpose
 
-Synthesize multiple flow analyses, BAU (Business As Usual) notes, and SME
-context into one **business module** analysis covering four standard
+Assemble multiple flow analyses, BAU (Business As Usual) notes, and SME
+context into one **business module** coverage map covering four standard
 views: Operation Flow, System Flow, Program Flow, Data Flow.
 
 This skill is the **last platform-specific layer** before `legacy-brd-writer`
 and the BRD Review Gate. It does not re-analyze flows or programs; it
-aggregates and synthesizes what flow-analyzer and program-analyzer produced.
+aggregates and validates what flow-analyzer and program-analyzer produced.
 For the standard BRD/spec path, those code-backed inputs are required: a
 module-first context package can seed the synthesis, but it cannot by itself
 make View 3 (Program Flow), View 4 (Data Flow), or the downstream BRD
@@ -47,8 +47,15 @@ make View 3 (Program Flow), View 4 (Data Flow), or the downstream BRD
 This is the only skill that produces the canonical four module-analysis view
 artifacts under `04_modules/<MODULE-SLUG>/`. If upstream
 `00_context_packages/` files already contain four context views, treat them as
-evidence/context input and synthesize fresh module-analysis outputs here. Do
-not copy or report upstream context views as the final module-analysis views.
+evidence/context input and assemble fresh module-analysis outputs here. Do not
+copy or report upstream context views as the final module-analysis views.
+
+The four views are **not** a BRD fact source by default. They are a coverage
+and review surface. Only rows backed by `confirmed_by_sme`, approved
+flow/program/inventory evidence, or other explicitly eligible evidence may be
+marked as BRD source material. Context-only, generated-draft, candidate-only,
+or source-documented-but-unreviewed rows must become `TBD-*`, SME questions, or
+coverage gaps in the BRD handoff.
 
 The canonical model is documented in `../../docs/module-analysis-model.md` —
 read that first if you have not already.
@@ -63,7 +70,7 @@ Accept:
   (`00_context_packages/<MODULE-SLUG>/context-index.yaml`) when this is a
   module-first RAG / human-context run. Treat it as context and evidence map,
   not as approved module analysis, object inventory, program analysis, or flow
-  analysis.
+  analysis. Preserve its source eligibility labels.
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
   - For code-backed runs, each approved flow should be
@@ -160,11 +167,12 @@ Follow:
 
 Each of the four view files must include a `## Mermaid Flow Diagram` section
 immediately after the view status / summary material and before evidence,
-inventory, or traceability tables. Mermaid diagrams are the primary visual flow
-surface for SME review. Tables remain required as evidence and traceability
-support, but a table-only view is not a valid module-analysis flow. When input
-is incomplete, include a Mermaid placeholder node with a named `TBD-*` rather
-than omitting the diagram.
+inventory, or traceability tables. Mermaid diagrams are a visual coverage
+surface for SME review, not independent evidence. Tables remain required as
+evidence and traceability support, and every node/edge must be backed by
+eligible evidence or a named `TBD-*`. When input is incomplete, include a
+Mermaid placeholder node with a named `TBD-*` rather than drawing a plausible
+but unsupported flow.
 
 Mermaid preview guardrail: Mermaid source blocks are required; rendered IDE,
 browser, or extension previews are optional. Do not open diagram previews unless
@@ -199,7 +207,8 @@ field-level rules. The summary below is normative for this skill.
   `00_context_packages/<MODULE-SLUG>/context-index.yaml` from
   `legacy-module-context-intake`; named owner risk acceptance that
   source/object evidence is unavailable for this cycle; all missing
-  inventory/program/flow coverage carried as `TBD-*`; BAU notes from SME.
+  inventory/program/flow coverage carried as `TBD-*`; BAU notes from SME;
+  source eligibility labels preserved for every carried context claim.
 - **Optional**: architecture diagrams (View 2), data lineage docs
   (View 4), regulatory references.
 - **Input readiness scoring**:
@@ -244,12 +253,13 @@ field-level rules. The summary below is normative for this skill.
   inventory artifacts; aggregating approved flow replay paths, field lineage,
   persistence outcomes, and exception propagation chains; cross-view
   consistency checking; computing data lifecycle and coupling score from
-  existing Object Dependency data.
+  existing Object Dependency data; deriving BRD source eligibility from
+  upstream evidence labels.
 - **Forbidden assumptions**: inventing business actors, upstream /
   downstream systems, BAU rhythm, regulatory requirements, manual
   intervention procedures, cross-module dependencies, module-level replay
   paths, field lineage, persistence lifecycles, exception recovery, or
-  business rules (these remain seeds). Tier-2 SME claims that contradict
+  business rules or BRD conclusions (these remain seeds/questions). Tier-2 SME claims that contradict
   tier-1 code become TBDs, not overrides.
 - **TBD handling**: missing flow analysis → `TBD: pending_source`
   routing to `legacy-ibmi-flow-analyzer`; business context absent from
@@ -266,8 +276,9 @@ field-level rules. The summary below is normative for this skill.
   `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md`.
 - **Required sections**: 4-view index with per-view status, top blocking
   TBDs, module-level capability seeds, BRD Functional Analysis Input
-  Crosswalk, Module Program-Chain Readiness, Module Persistence & Critical
-  Field Summary, Module Exception & Recovery Summary, per-view `## Mermaid
+  Crosswalk, BRD Source Eligibility Crosswalk, Module Program-Chain Readiness,
+  Module Persistence & Critical Field Summary, Module Exception & Recovery
+  Summary, per-view `## Mermaid
   Flow Diagram` sections, and per-view review checklists. View 3 must include
   Replay Coverage Summary. View 4 must include Module Persistence Matrix,
   Critical Field Lineage Across Module, and Exception-Aware Data Risks.
@@ -285,6 +296,10 @@ field-level rules. The summary below is normative for this skill.
   module may be reviewed as draft material, but it must remain `draft` or
   `needs_sme_review` for BRD approval until the missing code-backed artifacts
   are supplied.
+  Only BRD crosswalk rows with source eligibility `confirmed_by_sme`,
+  `code_backed`, or approved equivalent may be marked `brd_conclusion_allowed`.
+  `candidate_only`, `generated_draft`, `source_documented` without review, and
+  `missing` rows are `questions_only`.
   `blocked_pending_source` / `blocked_pending_sme` halt BRD writing and any
   later spec-writing.
 
@@ -303,7 +318,8 @@ field-level rules. The summary below is normative for this skill.
   are questions, not approved rules; replay, field-lineage, persistence, and
   exception-chain gaps are carried forward instead of being summarized away;
   tier-2 claims contradicting tier-1 are surfaced as TBDs; BRD sections 1-9
-  are either covered by named module evidence or carry explicit `TBD-*` gaps.
+  are either covered by BRD-eligible evidence or carry explicit `TBD-*` gaps.
+  AI-organized context cannot make a section `covered`.
 - **SME / human approval**: View 1 by business owner, View 2 by
   integration architect, View 3 by dev lead, View 4 by data analyst.
   All four sign-offs are required to promote the module past
@@ -331,7 +347,8 @@ to the orchestrator.
      `context_only` only when a named owner has accepted missing source
      coverage for this cycle
    - Treat any `00_context_packages/` view files as intake context only; the
-     canonical module views must be generated under `04_modules/<MODULE-SLUG>/`
+     canonical module views must be assembled under `04_modules/<MODULE-SLUG>/`
+     with source eligibility preserved
    - List in-scope flows; check every one has an approved analysis
    - For code-backed runs, confirm each in-scope flow exposes `Flow Replay
      Path`, `Cross-Program Field Lineage`, `Flow Persistence Matrix`, edge
@@ -434,7 +451,18 @@ to the orchestrator.
      in View 3
    - Mismatches → cross-view TBDs
 
-8. **Write module-overview.md**
+8. **Build BRD Source Eligibility Crosswalk**
+   - For each BRD section 1-9, list the module rows that could support the BRD.
+   - Mark each row `brd_conclusion_allowed` only when backed by
+     `confirmed_by_sme`, `code_backed`, or approved flow/program/inventory
+     evidence.
+   - Mark `source_documented` rows as `needs_sme_review` unless the document has
+     explicit SME approval for that claim.
+   - Mark `candidate_only`, `generated_draft`, and `missing` rows as
+     `questions_only`; they may become `TBD-*` or SME review prompts but not
+     BRD conclusions.
+
+9. **Write module-overview.md**
    - 4-view index with status per view
    - Top blocking TBDs surfaced from any view
    - Module Program-Chain Readiness summary across replay / lineage /
@@ -444,16 +472,16 @@ to the orchestrator.
    - Module Exception & Recovery Summary for BRD error-handling coverage
    - Module-level capability seeds (which capabilities live in this module,
      to be turned into BRD Packages by `legacy-brd-writer` before spec-writing)
-   - Module-level review checklist
+   - BRD Source Eligibility Crosswalk and module-level review checklist
 
-9. **Prepare for SME Review**
+10. **Prepare for SME Review**
    - Each view independently goes to its appropriate SME (business owner
      for View 1, integration architect for View 2, dev lead for View 3,
      data analyst for View 4)
    - Module is approved only when **all four views** are at least
      `approved_with_non_blocking_tbd`
 
-10. **Finalize and stop**
+11. **Finalize and stop**
     - After the four view files, `module-overview.md`,
       `module-review-checklist.md`, and workflow-state write-back are recorded,
       stop the run and report the module package path plus any manual preview
@@ -593,6 +621,11 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.2.3 (2026-06-03): Recast module analysis as evidence-bounded assembly and
+  coverage mapping. Added BRD source eligibility so context-only,
+  generated-draft, candidate-only, or unreviewed source-documented rows feed
+  BRD questions/TBDs only, not BRD conclusions.
 
 - v0.2.2 (2026-06-02): Aligned module synthesis inputs with
   program-analyzer v0.2.5 routine-local evidence. View 4 and readiness checks

@@ -35,7 +35,7 @@ Data dictionary is approved business meaning.
 ARCAD REF is relationship seed.
 Human-confirmed four-view context is the preferred BRD skeleton.
 Historical specs and scattered documents can be normalized into that skeleton
-when reviewed flows are not yet available.
+when reviewed four-view context is not yet available.
 BRD-stage VAL scenarios are review seeds, not final TC cases.
 SME approval remains the rule and test promotion gate.
 ```

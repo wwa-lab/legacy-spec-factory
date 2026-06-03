@@ -3,7 +3,7 @@ skill: legacy-brd-writer
 scorecard_version: v0.1.6
 static_score: 9.48
 decision: repo-ready
-status: current
+status: superseded_by_v0.1.8
 last_verified: 2026-05-30
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4, date: 2026-05-30 }

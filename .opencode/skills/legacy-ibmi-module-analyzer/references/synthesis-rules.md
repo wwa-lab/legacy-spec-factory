@@ -28,6 +28,11 @@ existing analyses. These rules tell it how.
    operations, skipped mutations, and `LINEAGE-*` / `PERSIST-*` evidence.
 8. **Exception chains stay closed.** `EXCHAIN-*` rows remain visible until they
    map to business outcome, persistence impact, recovery owner, or named TBD.
+9. **BRD eligibility is stricter than view coverage.** A four-view row may be
+   useful for review while still being ineligible for BRD conclusions. Only
+   code-backed or named SME-confirmed rows can mark BRD sections as covered.
+   Candidate-only, generated-draft, missing, or unreviewed source-documented
+   rows become questions/TBDs.
 
 ---
 
@@ -156,6 +161,9 @@ For each pair of flows (A, B):
   names. Must appear as a node in both flows.
 - **No replay path invented** for older flow artifacts. Refresh the flow
   analysis or carry a source TBD / waiver.
+- **No BRD coverage from generated topology.** A diagram edge drawn only to make
+  the topology easier to discuss is `questions_only` until backed by flow
+  analysis or SME confirmation.
 
 ---
 
@@ -254,6 +262,28 @@ For each LINEAGE-* row in each flow:
   behavior. Preserve the field and operation from `LINEAGE-*` / `PERSIST-*`.
 - **No exception-state omission.** If an exception path skips, rolls back,
   retries, or partially commits data, it belongs in View 4.
+
+---
+
+## BRD Source Eligibility
+
+When writing `module-overview.md`, classify each BRD crosswalk row:
+
+| Input Class | BRD Eligibility | Handling |
+| --- | --- | --- |
+| Approved flow/program/inventory evidence | `brd_conclusion_allowed` | May support observed behavior, process flow, dependencies, validation, or error handling |
+| Named SME confirmation | `brd_conclusion_allowed` | May support business context, BAU rhythm, manual process, or rule intent |
+| Source document or RAG snippet without SME/code corroboration | `needs_sme_review` | May support source mapping or review prompts; do not write as final BRD prose |
+| AI-organized context, sparse normalizer output, or generated-draft diagram | `questions_only` | Convert to `TBD-*` or SME question |
+| Missing evidence | `questions_only` | Carry a `TBD-*` with resolver |
+
+Coverage rules:
+
+- `covered` requires at least one `brd_conclusion_allowed` source.
+- `partial` may include a mix of eligible evidence and `needs_sme_review` /
+  `questions_only` gaps.
+- `missing` or `questions_only` means the BRD writer must create questions or
+  TBDs instead of writing a conclusion.
 
 ---
 

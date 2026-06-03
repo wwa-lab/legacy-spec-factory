@@ -41,6 +41,22 @@ Crosswalk, use it as the first source map for the SME-required BRD sections.
 Do not ignore crosswalk gaps: a required area marked `partial` or `missing`
 must become a visible `TBD-*` or a BRD review question.
 
+### Source-of-Truth Firewall
+
+The BRD is evidence-driven, not flow-driven. Four-view module files are a
+coverage map; they do not automatically make facts eligible for BRD prose.
+
+| Upstream Source Eligibility | BRD Use |
+| --- | --- |
+| `brd_conclusion_allowed` from code-backed evidence | May become BRD prose, `BEH-*`, dependency, process step, or error-handling statement |
+| `brd_conclusion_allowed` from named SME confirmation | May become BRD business context or rule intent |
+| `needs_sme_review` / unreviewed `source_documented` | May become source mapping, review prompt, or `TBD-*` |
+| `questions_only`, `candidate_only`, `generated_draft`, `missing` | Must become `TBD-*`, SME question, or deferred evidence gap |
+
+A BRD section is `covered` only when at least one supporting row is
+`brd_conclusion_allowed`. Weak or generated four-view context can help ask
+better questions; it cannot make the BRD look complete.
+
 ### Program Chain Anti-Pattern
 
 Do not use the direct runtime chain as the as-is summary.
@@ -209,6 +225,8 @@ raw IBM i source directly.
 - "The system validates all inputs" ← unless you see explicit validation code
 - "Nightly batch jobs clean up old records" ← unless you see the job definition
   or BAU notes
+- Any process step that appears only in a generated-draft or candidate-only
+  four-view package ← convert it to a `TBD-*` / SME question instead
 
 ### Confidence Assessment
 

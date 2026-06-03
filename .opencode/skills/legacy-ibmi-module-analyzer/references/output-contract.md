@@ -19,6 +19,7 @@ document defines the *file format*; that document defines the *intent*.
 - **Scope Statement:** [one paragraph from SME]
 - **Module Owner:** [SME name / role]
 - **Evidence Mode:** code_backed | context_only
+- **BRD Source Eligibility:** code_backed_only | mixed_with_questions | questions_only
 - **In-scope Flows:** [list of FLOW-* with link to each flow analysis]
 - **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | 
   blocked_pending_source | blocked_pending_sme | rejected
@@ -85,30 +86,51 @@ the boundary; they are not the boundary itself.
 This table is the module-level handoff to `legacy-brd-writer`. It does not make
 the module analysis a BRD; it tells the BRD writer where the SME-required BRD
 sections can safely draw evidence from, and where a `TBD-*` must be carried.
+Rows backed only by AI-organized context, generated drafts, unreviewed source
+documents, or sparse RAG candidates are **questions only** and must not become
+BRD conclusions.
 
-| BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Coverage Status | Carry-Forward TBD |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Function Purpose | View 1 Business Scope + module Scope Statement | ACTOR-* / EVENT-* / EV-* | covered / partial / missing | TBD-* or none |
-| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | covered / partial / missing | TBD-* or none |
-| 3 | Channels | View 1 Actors + View 2 Upstream Systems + flow Trigger Context | ACTOR-* / SYS-* / FLOW-* / EV-* | covered / partial / missing | TBD-* or none |
-| 4 | User Interface / User Touchpoints | View 1 Manual Intervention + triggered screen/report analysis | ACTOR-* / OBJ-* / EV-* | covered / partial / missing | TBD-* or none |
-| 5 | System Interfaces | View 2 Upstream / Downstream Systems + External Interfaces | SYS-* / IF-* / EV-* | covered / partial / missing | TBD-* or none |
-| 6 | Process Flow | View 1 Business Events + View 3 Replay Coverage Summary + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | covered / partial / missing | TBD-* or none |
-| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch points + field lineage + exception-chain seeds | BR-* / SEED-* / LINEAGE-* / EXCHAIN-* / EV-* | covered / partial / missing | TBD-* or none |
-| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | TBD-* / EXCHAIN-* / EV-* / FLOW-* | covered / partial / missing | TBD-* or none |
-| 9 | Dependencies | View 2 System Flow + View 4 Data Flow / Persistence + View 3 Cross-Flow Dependencies | SYS-* / DATA-* / OBJ-* / PERSIST-* / LINEAGE-* / EV-* | covered / partial / missing | TBD-* or none |
-| 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | SYS-* / IF-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
-| 11 | Workflow / Design Notes (optional) | View 3 Call Topology or supplied workflow docs | FLOW-* / DOC-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
-| 12 | Source Document Mapping (optional) | Context package / evidence map / source document index | DOC-* / FRAG-* / EV-* | optional_covered / not_evidenced | TBD-* or none |
+| BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Source Eligibility | Coverage Status | Carry-Forward TBD |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Function Purpose | View 1 Business Scope + module Scope Statement | ACTOR-* / EVENT-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 3 | Channels | View 1 Actors + View 2 Upstream Systems + flow Trigger Context | ACTOR-* / SYS-* / FLOW-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 4 | User Interface / User Touchpoints | View 1 Manual Intervention + triggered screen/report analysis | ACTOR-* / OBJ-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 5 | System Interfaces | View 2 Upstream / Downstream Systems + External Interfaces | SYS-* / IF-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 6 | Process Flow | View 1 Business Events + View 3 Replay Coverage Summary + Flow Replay Path | EVENT-* / FLOW-* / REPLAY-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch points + field lineage + exception-chain seeds | BR-* / SEED-* / LINEAGE-* / EXCHAIN-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | TBD-* / EXCHAIN-* / EV-* / FLOW-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 9 | Dependencies | View 2 System Flow + View 4 Data Flow / Persistence + View 3 Cross-Flow Dependencies | SYS-* / DATA-* / OBJ-* / PERSIST-* / LINEAGE-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | TBD-* or none |
+| 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | SYS-* / IF-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | TBD-* or none |
+| 11 | Workflow / Design Notes (optional) | View 3 Call Topology or supplied workflow docs | FLOW-* / DOC-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | TBD-* or none |
+| 12 | Source Document Mapping (optional) | Context package / evidence map / source document index | DOC-* / FRAG-* / EV-* | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | TBD-* or none |
 
 Rules:
 
 - Sections 1-9 should be `covered` or `partial` before BRD drafting; `missing`
   creates a BRD input gap and must name a `TBD-*`.
+- `covered` requires BRD-eligible source material. A row whose source
+  eligibility is `questions_only` cannot make a section `covered`; it may only
+  produce a `TBD-*` or SME review question.
 - Optional sections 10-12 are `not_evidenced` unless actual source evidence or
   SME input exists. Do not invent them.
 - Coverage status is not approval. SME review still happens in
   `legacy-brd-writer` / `legacy-sme-review-facilitator`.
+
+## BRD Source Eligibility Crosswalk
+
+Use this table when a module contains a mix of code-backed evidence,
+SME-confirmed facts, source-documented hints, RAG candidates, and generated
+draft context.
+
+| Source Type | Eligible BRD Use | Required Handling |
+| --- | --- | --- |
+| `code_backed` / approved flow-program evidence | BRD conclusion, observed behavior, dependency, or process step | Cite `EV-*`, `FLOW-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, or `EXCHAIN-*` |
+| `confirmed_by_sme` | BRD conclusion or business context | Record SME name/role/date or linked review decision |
+| `source_documented` | Supporting source mapping or review prompt until confirmed | Mark `needs_sme_review` unless document carries explicit approval for the claim |
+| `candidate_only` | Question or candidate seed only | Convert to `TBD-*`; do not write as BRD prose |
+| `generated_draft` | Coverage gap or review question only | Convert to `TBD-*`; do not write as BRD prose |
+| `missing` | Gap | Carry `TBD-*` with resolver |
 
 ## Module Review Checklist
 - [ ] All four views are at least `approved_with_non_blocking_tbd`
@@ -129,6 +151,8 @@ Rules:
       business outcome, recovery owner, or named gap
 - [ ] BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries a
       named `TBD-*` for every missing / partial area
+- [ ] No BRD crosswalk row marked `covered` relies only on `candidate_only`,
+      `generated_draft`, unreviewed `source_documented`, or `missing` input
 - [ ] No blocking TBDs remain
 - [ ] Capability seeds reviewed by module owner / BRD reviewer before BRD drafting
 

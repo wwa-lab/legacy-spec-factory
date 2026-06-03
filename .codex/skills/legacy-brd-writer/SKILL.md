@@ -73,6 +73,17 @@ the BRD, but it does not replace `01_inventory/object-map.md`, per-program
 analysis, or flow analysis. A context-only BRD is allowed only as a
 non-approved draft with named owner risk acceptance and visible TBD blockers.
 
+BRD writing follows a **source-of-truth firewall**:
+
+- `confirmed_by_sme` and approved `code_backed` evidence may become BRD
+  conclusions.
+- `source_documented` evidence may support source mapping or SME questions
+  until reviewed.
+- `candidate_only`, `generated_draft`, `questions_only`, and `missing` inputs
+  must become `TBD-*`, review questions, or deferred evidence gaps.
+- A generated or weak four-view flow never makes a BRD section `covered` by
+  itself.
+
 The BRD body follows the SME-required functional analysis shape. Sections 1-9
 are mandatory in `brd.md`: Function Purpose, Business Scenarios / Use Cases,
 Channels, User Interface / User Touchpoints, System Interfaces, Process Flow,
@@ -156,6 +167,8 @@ You must:
   status as `needs_sme_review` (do not promote to `approved`)
 - fill all SME-required BRD sections 1-9, using `TBD-*` where required evidence
   or SME confirmation is missing
+- enforce the BRD source-of-truth firewall: only confirmed SME facts and
+  code-backed evidence can become BRD conclusions
 - include optional sections 10-12 only when security/auth details, workflow or
   design notes, or source document mappings are available from evidence or SME
   input
@@ -192,6 +205,8 @@ You must not:
   diagrams, source documents, or dependencies just to satisfy the BRD shape
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
+- use AI-organized four-view context, generated-draft diagrams, or
+  candidate-only module rows as BRD conclusions
 - invent a new-system comparison, gap classification, risk assessment, or
   gap-analysis disposition
 - promote a `BR-*` seed to `approved` status in the BRD; SME confirmation is
@@ -213,9 +228,12 @@ Accept:
 - **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four views
   at `approved` or `approved_with_non_blocking_tbd`)
   - Prefer module analyses whose `module-overview.md` includes the BRD
-    Functional Analysis Input Crosswalk. Use that crosswalk to populate SME
-    required sections 1-9 and to carry missing / partial areas as `TBD-*`
-    instead of rediscovering them from program or flow details.
+    Functional Analysis Input Crosswalk and BRD Source Eligibility Crosswalk.
+    Use those crosswalks to populate SME required sections 1-9 only where
+    `Source Eligibility` is `brd_conclusion_allowed`; carry
+    `needs_sme_review`, `questions_only`, missing, generated-draft, and
+    candidate-only areas as `TBD-*` instead of rediscovering them from program
+    or flow details.
 - **Approved code evidence backbone** for standard BRDs:
   `01_inventory/inventory.yaml`, `01_inventory/object-map.md`, in-scope
   `02_programs/<MODULE>/<OBJ>/program-analysis.md`, and in-scope
@@ -236,6 +254,9 @@ Stop and require clarification if:
   BRD
 - Context-only draft requested without named owner risk acceptance → stop and
   request risk acceptance or route back to source/object evidence collection
+- A required BRD section is supported only by `candidate_only`,
+  `generated_draft`, `questions_only`, or unreviewed `source_documented` module
+  rows → create `TBD-*` / SME questions; do not draft it as a conclusion
 - The selected capability seed has **blocking TBDs** in the module analysis →
   escalate to SME for resolution before proceeding
 - No **SME owner is assigned** → stop; cannot proceed to review without SME
@@ -315,7 +336,8 @@ The summary below is normative for this skill.
 - **Required for context-only BRD drafts**: module overview or context package
   marked `evidence_mode: context_only`; named owner risk acceptance; missing
   inventory, object-map, program-analysis, and flow-analysis artifacts carried
-  as `TBD-*`; BRD status limited to `draft` or `in_review`.
+  as `TBD-*`; source eligibility labels preserved; BRD status limited to
+  `draft` or `in_review`.
 - **Optional**: BAU notes, supplemental legacy-system context, source document
   pointers, runtime observations, and policy notes from SMEs.
 - **Input readiness scoring**:
@@ -349,14 +371,16 @@ The summary below is normative for this skill.
   points, and error handling (factual statements about what the legacy system
   does); aggregating `BR-*` seeds from module overview and cross-checking
   against program/flow context; computing confidence levels based on evidence
-  strength; surfacing contradictions as TBDs.
+  strength; surfacing contradictions as TBDs; converting questions-only module
+  rows into SME questions.
 - **Forbidden assumptions**: inventing business rules beyond module BR-* seeds +
   SME confirmation; promoting a BR-* seed to `approved` status (only
   `legacy-spec-writer` may do that); generating formal acceptance criteria;
   generating formal `TC-*` test cases or invented exact expected outputs;
   specifying target platform or modernization decisions; adding old-vs-new
   comparison or target-system disposition; reading raw IBM i source code
-  (consume upstream analyses only); treating weak inferences as facts.
+  (consume upstream analyses only); treating weak inferences, generated-draft
+  context, candidate-only rows, or questions-only crosswalk rows as facts.
   Do not label a context-only document or RAG claim as `confirmed_from_code`.
 - **TBD handling**: unconfirmed rule → `BR-*` seed with `status: needs_sme_review`
   (marked in BRD); contradictory evidence → `TBD-*` with `category:
@@ -412,6 +436,9 @@ What can be checked by a script, schema, or deterministic linter:
   `traceability.md`)
 - standard BRDs cite `01_inventory/object-map.md`, in-scope program analyses,
   and in-scope flow analyses; context-only drafts visibly block approval
+- no BRD section marked as a factual conclusion is sourced only from
+  `candidate_only`, `generated_draft`, `questions_only`, or unreviewed
+  `source_documented` rows
 - BRD does not include acceptance criteria, modernization decisions, or target
   platform details
 - `validation-scenarios.md` does not mint `AC-*` or `TC-*`
@@ -437,6 +464,8 @@ upstream evidence:
   were direct code/runtime/SME confirmation)
 - context-only module or document evidence is not presented as code-confirmed
   behavior
+- module crosswalk rows marked `questions_only` or `needs_sme_review` become
+  TBDs/review questions, not BRD conclusions
 - no invented IBM i facts (object names, fields, programs, jobs)
 - no scope creep into other capabilities
 - no acceptance criteria or platform decisions hidden in prose
@@ -487,6 +516,8 @@ decision.
      unknown`, stop and request redaction review
    - If context-only, create `TBD-*` blockers for each missing code-backed
      artifact and prevent approval in `brd-review.md`
+   - Read the module BRD Source Eligibility Crosswalk. Partition input into
+     BRD conclusions allowed, needs SME review, and questions only.
 
 3. **Translate Technical Evidence into Business Process Language**
    - Create a short business-first process flow before writing `BEH-*`
@@ -508,6 +539,10 @@ decision.
      Function Purpose, Business Scenarios / Use Cases, Channels, User
      Interface / User Touchpoints, System Interfaces, Process Flow, Validation
      Rules, Error Handling, and Dependencies.
+   - Populate a section as factual BRD prose only from
+     `brd_conclusion_allowed` rows. For `needs_sme_review` or
+     `questions_only` rows, write a `TBD-*` or review prompt instead of a
+     conclusion.
    - Include Security / Authentication Requirements, Supporting Workflow or
      Design Notes, and Source Document Mapping only when evidence or SME input
      supports them; otherwise omit the optional section or create a `TBD-*` if
@@ -746,6 +781,11 @@ runtime copies. Do not edit adapter copies directly.
 No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
+
+- v0.1.8 (2026-06-03): Added the BRD source-of-truth firewall. BRD conclusions
+  may come only from SME-confirmed or code-backed evidence; source-documented
+  hints require review, and candidate/generated/questions-only module rows
+  become TBDs or SME questions.
 
 - v0.1.7 (2026-05-30): Added code-backed BRD gate. Standard BRDs now require
   `object-map.md`, approved program analyses, and approved flow analyses before

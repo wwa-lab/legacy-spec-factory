@@ -1,6 +1,6 @@
 ---
 name: legacy-flow-context-normalizer
-description: "Normalize scattered Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into draft Mermaid-backed four-view context files for SME review before context intake, module analysis, or BRD generation. Blocks on unauthorized evidence, missing module scope, unreadable opaque files, hidden contradictions, or attempts to treat draft context as approved rules or canonical module flows."
+description: "Normalize scattered Visio, Word, Excel, PDF, PowerPoint, exported diagrams, RAG summaries, SME notes, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, and data dictionaries into evidence-bounded four-view elicitation and coverage files for SME review before context intake. Blocks on unauthorized evidence, missing module scope, unreadable opaque files, hidden contradictions, or attempts to treat AI-organized context as approved rules, BRD facts, or canonical module flows."
 ---
 
 <!--
@@ -20,20 +20,20 @@ Retain this notice in substantial copies or derived versions.
 
 | Field | Notes |
 | --- | --- |
-| Problem solved | Turns scattered docs, diagrams, RAG notes, and SME fragments into draft four-view module context that can be reviewed safely. |
+| Problem solved | Turns scattered docs, diagrams, RAG notes, and SME fragments into four-view evidence slots, gaps, and SME questions that can be reviewed safely. |
 | Input | Normalized documents, exported diagrams, RAG summaries, SME notes, specs, data dictionaries, and known contradictions. |
-| Output | Draft Mermaid-backed L3/L2 context views or L1 source-quality triage with readiness status. |
-| Core prompt strategy | Preserve contradictions, label draft vs reviewed context, avoid canonical claims, and route low-quality inputs to triage. |
+| Output | Evidence-bounded L3/L2 context coverage views or L1 source-quality triage with readiness status. |
+| Core prompt strategy | Preserve contradictions, separate confirmed facts from candidate-only context, avoid generating missing flow logic, and route low-quality inputs to triage. |
 | Upstream skill | `legacy-document-evidence-intake` or external RAG / document discovery. |
 | Downstream consumer | `legacy-module-context-intake`, `legacy-ibmi-module-analyzer`, and BRD preparation. |
-| Validation standard | Module scope is explicit, evidence is authorized, drafts are clearly non-approved, and Mermaid views are traceable to sources. |
-| Known risk | Treating a plausible diagram or RAG summary as approved module flow before SME/source review. |
-| Practical example | Normalize a Function Spec, Visio export, and SME notes into operation/system/program/data-flow draft views for SME review. |
+| Validation standard | Module scope is explicit, evidence is authorized, every view item has a source classification, and candidate-only content cannot feed BRD conclusions. |
+| Known risk | Treating a plausible AI-organized diagram or RAG summary as an approved module flow or BRD fact. |
+| Practical example | Normalize a Function Spec, Visio export, and SME notes into operation/system/program/data coverage views, open questions, and source-backed review prompts. |
 
 ## Purpose
 
-Turn scattered historical documentation and specs into a **draft,
-evidence-linked four-view context review package**:
+Turn scattered historical documentation and specs into an **evidence-linked
+four-view elicitation and coverage package**:
 
 ```text
 00_context_packages/<MODULE-SLUG>/flow-normalization/
@@ -52,15 +52,17 @@ evidence-linked four-view context review package**:
 This skill is the upstream bridge for teams whose knowledge is trapped in
 Visio, Word, Excel, PDF, PowerPoint, exported screenshots, Function Specs,
 Technical Designs, Program Specs, File Specs, interface specs, data dictionary
-extracts, old process decks, runbooks, or SME notes. The four context views
-are the normalization target, not a raw-input requirement. This skill makes the
-material reviewable, but it does **not** approve context, mint final `BR-*`
-rules, or generate a BRD.
+extracts, old process decks, runbooks, or SME notes. The four context views are
+elicitation slots and coverage checks, not a requirement that the SME already
+knows all four views and not permission for the model to invent them. This
+skill makes the material reviewable, but it does **not** approve context, mint
+final `BR-*` rules, generate missing flow sequences, or generate a BRD.
 
-These files are context views under `00_context_packages/`, not the canonical
-module-analysis artifacts under `04_modules/`. When reporting this step to a
-user, call them **draft context views** or a **flow-normalization package**.
-Do not say this step created the final four module flows. The canonical
+These files are context coverage views under `00_context_packages/`, not the
+canonical module-analysis artifacts under `04_modules/`. When reporting this
+step to a user, call them **context coverage views**, an **elicitation
+package**, or a **flow-normalization package**. Do not say this step created
+the final four module flows or BRD-ready process facts. The canonical
 `01-operation-flow.md` / `02-system-flow.md` / `03-program-flow.md` /
 `04-data-flow.md` module artifacts are produced later by
 `legacy-ibmi-module-analyzer`.
@@ -120,12 +122,12 @@ Stop and produce only blocking findings if any apply:
 | Draft flows are requested as approved rules, approved module context, or BRD input without SME review | block; route through SME review first |
 
 Missing one or more of the four standard context views is **not** a stop
-condition. Create the missing view file with a placeholder Mermaid node, a `TBD-*`
-question, and `coverage.<view>: absent` or `partial`. If no flow can be safely
-generated but the authorized documents contain module-relevant clues, produce a
-source-quality triage package instead of failing silently. The goal is to
-improve user experience by making incomplete inputs reviewable instead of
-blocking unless a downstream step would need to invent facts.
+condition. Create the missing view file with a placeholder coverage node, a
+`TBD-*` question, and `coverage.<view>: absent` or `partial`. If no flow can be
+safely supported by supplied evidence, produce a source-quality triage package
+instead of inventing a sequence. The goal is to improve user experience by
+making incomplete inputs reviewable while preventing downstream steps from
+treating AI-organized context as BRD facts.
 
 Unreadable binary/OCR/converter-dependent sources are also **not** a stop
 condition when at least one readable source or scope clue remains. Add the
@@ -138,14 +140,14 @@ just to process optional binaries in hosted-agent mode.
 
 ## Input Quality Ladder
 
-Classify the input set before drafting flows:
+Classify the input set before drafting coverage views:
 
 | Level | Signal | Required response |
 | --- | --- | --- |
-| `L3 strong` | The documents support all four views with visible evidence. | Produce four substantive view files, each with Mermaid flowchart, evidence-linked steps, candidate seeds, and SME questions. |
-| `L2 partial` | The documents support one to three views. | Produce substantive views where evidence exists; create Mermaid placeholders and `TBD-*` questions for missing views; route to SME review. |
-| `L1 sparse` | Documents are authorized and readable, or only source/scope clues remain after optional binaries are skipped, but no coherent flow sequence can be generated. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
-| `L0 blocked` | Evidence authorization is unresolved, the module boundary is unusable, all sources are out of scope, or the user asks to hide contradictions / treat draft flows as approved. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
+| `L3 strong` | The documents support all four views with visible evidence. | Produce four substantive coverage view files with source-linked statements, supported diagram edges only where evidence supplies sequence, candidate seeds, and SME questions. |
+| `L2 partial` | The documents support one to three views. | Produce substantive coverage views where evidence exists; create placeholders and `TBD-*` questions for missing views; route to SME review. |
+| `L1 sparse` | Documents are authorized and readable, or only source/scope clues remain after optional binaries are skipped, but no coherent flow sequence can be evidenced. | Produce the same ten-file package as a source-quality triage artifact: all four view files use placeholders, `open-questions.md` lists the minimum supplement request, and `normalization.status` is `triage_needs_source_enrichment`. |
+| `L0 blocked` | Evidence authorization is unresolved, the module boundary is unusable, all sources are out of scope, or the user asks to hide contradictions / treat candidate coverage as approved. | Stop with blocking findings and route to evidence intake, readable export, or SME boundary clarification. |
 
 `L1 sparse` is still useful output. It should identify what was found, why no
 flow should be inferred, which source types would unlock the next pass, and
@@ -248,7 +250,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   - `0-5 blocked`: evidence authorization unresolved, module scope missing,
     source files unreadable with no export, or all documents out of scope.
   - `6 minimum_pass`: module identity, authorized readable documents, and at
-    least one module-relevant clue are present; if no flow can be produced,
+    least one module-relevant clue are present; if no flow can be evidenced,
     emit `triage_needs_source_enrichment`.
   - `7-8 usable`: documents cover one or more views with visible source
     provenance, gaps, and contradictions; missing views are represented as
@@ -261,12 +263,12 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 
 - **Procedure**: follow the Workflow below.
 - **Allowed inference**: classify document fragments into the four views;
-  normalize labels; create candidate flow steps from supplied document content;
-  connect repeated system, program, file, and actor names across sources when
-  evidence is visible.
+  normalize labels; preserve supplied source order when explicit; connect
+  repeated system, program, file, and actor names across sources when evidence
+  is visible.
 - **Forbidden assumptions**: inventing actors, systems, programs, file names,
   field meanings, sequence order, trigger timing, exception handling, manual
-  workarounds, business rules, SLAs, or modernization decisions. Do not
+  workarounds, business rules, SLAs, BRD facts, or modernization decisions. Do not
   promote API IDs, journey IDs, menu IDs, screen IDs, or business labels into
   AS400 program names or file names.
 - **ID policy**: may mint `DOC-*`, `FRAG-*`, `STEP-*`, `SYS-*`, `PGM-*`,
@@ -279,8 +281,8 @@ This skill conforms to the Legacy Spec Factory Step Contract.
   `00_context_packages/<MODULE-SLUG>/flow-normalization/`.
 - **Required files**: the ten files listed in Purpose.
 - **Required gates**: evidence authorization, readable source, module scope,
-  four-view coverage, contradiction visibility, SME review, and no rule
-  promotion.
+  four-view coverage, contradiction visibility, source classification, SME
+  review, and no rule or BRD-fact promotion.
 - **Handoff status**: only `ready_for_context_intake` and
   `ready_with_warnings` may feed `legacy-module-context-intake`. A partial
   package may use `ready_with_warnings` only when SME explicitly accepts the
@@ -292,18 +294,19 @@ This skill conforms to the Legacy Spec Factory Step Contract.
 ### Validation
 
 - **Mechanical**: all required files exist; the index lists every input and
-  output; every view file has status, summary, evidence-linked flow steps,
+  output; every view file has status, summary, source-linked context items,
   candidate seeds, and gaps; every evidence ID referenced by a view appears in
   `evidence-map.md`.
-- **Semantic**: no draft flow is presented as approved; contradictions are not
-  hidden; View 1 uses business language first; View 2 captures system and
-  integration behavior; View 3 captures application/program/job behavior;
-  View 4 captures data movement and ownership questions; View 3 uses IBM i
-  program/job anchors when available and otherwise carries a supplement TBD;
-  View 4 uses IBM i file/table/data-object anchors when available and
-  otherwise carries a supplement TBD; BRD functional analysis hints record
-  which extracted fragments can feed SME-required BRD areas without treating
-  missing hints as invented facts.
+- **Semantic**: no AI-organized context or candidate coverage is presented as approved
+  or BRD-ready; contradictions are not hidden; View 1 uses business language
+  first; View 2 captures system and integration behavior only where sourced;
+  View 3 captures application/program/job behavior only where anchored; View 4
+  captures data movement and ownership questions only where anchored; View 3
+  uses IBM i program/job anchors when available and otherwise carries a
+  supplement TBD; View 4 uses IBM i file/table/data-object anchors when
+  available and otherwise carries a supplement TBD; BRD functional analysis
+  hints record which extracted fragments can become SME questions or source
+  mapping, not BRD conclusions.
 - **SME / human approval**: SME or accountable owner confirms module boundary,
   flow sequence, missing or obsolete documents, exception behavior, manual
   steps, and which contradictions block context intake.
@@ -371,7 +374,7 @@ orchestrator.
      decision_reason`.
    - For `L1 sparse`, do not invent sequence or edges. Continue to create the
      ten-file package as a triage artifact with all four views marked
-     `absent`, placeholder Mermaid nodes, and prioritized supplement requests.
+     `absent`, placeholder coverage nodes, and prioritized supplement requests.
 
 6. **Classify fragments into four views**
    - Operation / Business Flow: actors, BAU sequence, approvals, manual steps,
@@ -387,11 +390,11 @@ orchestrator.
      retention, and ownership. Business data labels may appear only as
      descriptions unless mapped to concrete IBM i objects.
 
-7. **Draft each view**
+7. **Draft each coverage view**
    - Use `templates/view-template.md`.
-   - Include a `Mermaid Flow Diagram` in every view. The diagram is the
-     SME-readable flow surface; the evidence table remains the traceability
-     surface.
+   - Include a `Mermaid Flow Diagram` in every view only as a sourced review
+     surface. The evidence table remains the traceability surface, and
+     unsupported edges must be replaced by `TBD-*` nodes/questions.
    - Run the View 3 / View 4 technical-anchor gate before drawing diagrams:
      - If View 3 evidence has API/menu/journey/screen labels but no IBM i
        program/job/object names, do **not** draw those labels as program nodes.
@@ -403,8 +406,8 @@ orchestrator.
        placeholder node and `TBD-*` asking for file specs, DDS/DDL, data
        dictionary, CRUD matrix, File I/O map, or SME mapping.
    - Draw Mermaid edges only when the source evidence or SME note supports the
-     sequence. Mark uncertain nodes as `(needs SME review)` instead of making
-     the diagram look approved.
+     sequence. Mark uncertain nodes as `(needs SME review)` or `candidate_only`
+     instead of making the diagram look approved.
    - Keep every major step evidence-linked and marked `needs_sme_review`.
    - Put technical names in `Evidence Basis` when the view is business-facing.
    - If a view has no usable source fragments, still create the view file with
@@ -432,7 +435,7 @@ orchestrator.
     - `draft_needs_sme_review` when flow content is usable but SME decision is
       not recorded.
     - `triage_needs_source_enrichment` when authorized documents are readable
-      and module-relevant, but no flow sequence should be generated. Route to
+      and module-relevant, but no flow sequence is evidenced. Route to
       source owner / SME supplement request, not BRD or context intake.
     - Convert `triage_needs_source_enrichment` to `ready_with_warnings` only
       when a named SME/source owner records that no additional document, spec,
@@ -440,7 +443,8 @@ orchestrator.
       Preserve
       `quality_level: L1 sparse`; do not upgrade coverage or confidence.
     - `ready_for_context_intake` only when SME review confirms all four
-      context views for intake.
+      context views for intake. This status still does not make the context
+      eligible as a BRD fact source by itself.
     - `ready_with_warnings` only when unresolved items are explicitly
       non-blocking and carried into `open-questions.md`; this is the preferred
       status for SME-accepted partial packages.
@@ -532,7 +536,7 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
   flow/context fragments can surface likely inputs for BRD sections 1-9 and
   optional sections 10-12 without making absent facts look confirmed.
 - v0.1.8 (2026-05-29): Clarified canonical timing: this skill creates draft
-  context views under `00_context_packages/`, while final module four-flow
+  context views under `00_context_packages/`, while final module four-view
   artifacts are produced only by `legacy-ibmi-module-analyzer`.
 - v0.1.9 (2026-05-29): Added View 3 / View 4 technical-anchor gates so API,
   journey, menu, screen, and business data labels are not substituted for IBM i
@@ -542,5 +546,10 @@ For sparse packages that were owner-accepted as `ready_with_warnings`, tell
   technical anchors are context only; standard BRD/spec routing must still run
   inventory/object-map, program analysis, and flow analysis before approval.
 - v0.1.11 (2026-05-31): Added a large-module Mermaid preview guardrail and a
-  stop-after-writeback completion boundary so generated flow packages do not
+  stop-after-writeback completion boundary so generated context packages do not
   remain in processing after structural outputs are written.
+- v0.1.12 (2026-06-03): Recast flow normalization as evidence-bounded
+  elicitation and coverage. AI-organized context may create source-linked
+  review surfaces and `TBD-*` questions, but must not generate missing flow
+  logic or feed BRD conclusions without SME confirmation or code-backed
+  evidence.
