@@ -19,6 +19,16 @@ from one of these sources:
 **If you cannot link a claim to Tier 1 or Tier 2 evidence, it must be a TBD,
 not a confident statement in the BRD.**
 
+The BRD source-of-truth firewall is stricter than the module coverage map:
+
+- `confirmed_by_sme` and approved `code_backed` evidence may support BRD
+  conclusions.
+- `source_documented` evidence needs SME or code corroboration before it becomes
+  a conclusion.
+- `candidate_only`, `generated_draft`, `questions_only`, and `missing` inputs
+  must become `TBD-*` items or SME questions.
+- A generated four-view diagram is never evidence by itself.
+
 ---
 
 ## Hallucination Traps
@@ -27,6 +37,29 @@ not a confident statement in the BRD.**
 
 **Trap:**
 ```
+
+### 0a. Treating Generated Four-View Context as BRD Fact
+
+**Trap:**
+```
+The module package has Operation/System/Program/Data view diagrams.
+BRD author copies their steps into sections 2, 6, 8, and 9 as if they were
+confirmed process flow and dependencies.
+```
+
+**Why it's wrong:**
+- Four-view context is a coverage/review surface, not proof
+- Internal models may organize weak fragments into a plausible sequence
+- BRD prose creates stakeholder confidence, so weak flow must stay visible as
+  uncertainty
+
+**What to do instead:**
+1. Check the module BRD Source Eligibility Crosswalk.
+2. Use only `brd_conclusion_allowed` rows for conclusions.
+3. Convert `questions_only`, `candidate_only`, `generated_draft`, and missing
+   rows into `TBD-*` items or SME review questions.
+4. Keep the BRD status `draft` / `in_review` when code-backed or SME-confirmed
+   evidence is missing.
 Flow analysis lists programs A -> B -> C.
 BRD author copies that sequence into "As-Is Summary" and adds file names,
 commit/rollback behavior, and interface-library movement.

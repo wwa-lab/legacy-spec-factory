@@ -18,7 +18,10 @@ so they are executable, not just aspirational.
 ## The Four Views
 
 Each module produces all four views. They are complementary; together they
-form a complete picture of one business module.
+form a complete coverage and review picture of one business module. The views
+do not automatically authorize BRD conclusions: BRD writer may use only
+code-backed or SME-confirmed rows as facts; generated, candidate-only, missing,
+or unreviewed source-documented rows become TBDs or SME questions.
 
 ### View 1 — Operation Flow / Business Background
 

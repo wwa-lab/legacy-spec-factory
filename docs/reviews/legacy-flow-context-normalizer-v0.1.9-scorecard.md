@@ -3,7 +3,7 @@ skill: legacy-flow-context-normalizer
 scorecard_version: v0.1.9
 static_score: 9.51
 decision: repo-ready
-status: current
+status: superseded_by_v0.1.12
 last_verified: 2026-05-29
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4, date: 2026-05-29 }

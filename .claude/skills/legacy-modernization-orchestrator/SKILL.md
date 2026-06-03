@@ -52,9 +52,9 @@ Module-First Entry (scattered docs / external RAG / four-view context)
       - normalize Excel/Word/PPT/Visio/PDF/image → Markdown/CSV/PDF/PNG/SVG + manifests + evidence coordinates
 00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/ (ready / ready_with_warnings before normalization)
    ↓ legacy-flow-context-normalizer
-      - L3/L2: draft Mermaid-backed context views for SME review
-      - L1: source-quality triage when no safe flow can be generated
-00_context_packages/<MODULE-SLUG>/flow-normalization/ (draft or triage, SME/source review first)
+      - L3/L2: evidence-bounded context coverage views for SME review
+      - L1: source-quality triage when no safe sequence can be evidenced
+00_context_packages/<MODULE-SLUG>/flow-normalization/ (coverage, questions, or triage; SME/source review first)
    ↓ legacy-module-context-intake
 00_context_packages/<MODULE-SLUG>/ (context only, not approved module analysis)
    ↓ CODE-BACKED ENRICHMENT CHECKPOINT for standard BRD/spec work
@@ -75,7 +75,7 @@ Evidence Manifest + Redaction Log + Redacted Evidence Bundle
         ↓
    legacy-ibmi-flow-analyzer ───────► flow.md
         ↓
-   legacy-ibmi-module-analyzer ─────► 4-view module analysis
+   legacy-ibmi-module-analyzer ─────► 4-view module coverage + BRD eligibility
    ↓
 [Layer 2 — Platform-Agnostic Synthesis]
    legacy-brd-writer ───────────────► legacy BRD Package for migration discovery
@@ -274,7 +274,7 @@ the full table. Common cases:
 
 | Current Input | Stage |
 | --- | --- |
-| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed flows | Flow Context Normalization |
+| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed four-view context | Flow Context Normalization |
 | `flow-normalization/flow-context-index.yaml` with `triage_needs_source_enrichment` | Flow Context Normalization — source enrichment needed |
 | `flow-normalization/flow-context-index.yaml` with `draft_needs_sme_review` | Flow Context Normalization — SME review needed |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
@@ -326,7 +326,7 @@ for the full table. Common routes:
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
 | Raw Office/Visio/PDF/image docs, no `document-intake` manifest yet (authorized, sensitivity known) | Normalize formats + evidence coordinates | `legacy-document-evidence-intake` | Implemented v0.1.0 |
-| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize or triage context | `legacy-flow-context-normalizer` | Implemented v0.1.10 |
+| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Normalize evidence slots, questions, and coverage | `legacy-flow-context-normalizer` | Implemented v0.1.12 |
 | Evidence Intake (unredacted or unregistered) | Any downstream | `legacy-ibmi-evidence-intake` | Implemented v0.1.0 |
 | Evidence Ready (IBM i source) | Start reverse engineering | `legacy-ibmi-inventory` | Implemented |
 | Evidence Ready (COBOL source) | Start reverse engineering | `legacy-cobol-inventory` | Future — manual workflow |
@@ -358,10 +358,10 @@ substance the skipped layer would have contributed.
 #### Safe Skip Examples
 
 - Document / RAG context → Module Analyzer
-  only as a **context-only** synthesis path when the package is
+  only as a **context-only** assembly path when the package is
   `ready_for_module_analysis` or explicitly risk-accepted
   `ready_with_warnings`; the result must preserve missing source coverage as
-  TBDs and must not claim code-backed approval.
+  TBDs, mark BRD source eligibility, and must not claim code-backed approval.
 - Program Analysis Done → Business Rule Miner
   if runtime evidence is not required for the rule (rule is `confirmed_from_code`)
 
@@ -375,6 +375,9 @@ substance the skipped layer would have contributed.
   required `flow-<FLOW-SLUG>.md` are missing, unless the requester records an
   explicit context-only BRD draft risk acceptance and the BRD remains
   non-approved
+- Generated-draft, candidate-only, or questions-only context → BRD conclusion;
+  these may only produce `TBD-*`, SME questions, or source-owner supplement
+  requests
 - Module Analysis Done → Spec Writer without an approved BRD Package, unless
   the requester explicitly records a technical-spec-only bypass and accepts the
   review risk
@@ -409,14 +412,16 @@ looks weak. The router must not require perfect four-view input before
 starting. Function Specs, Technical Designs, Program Specs, File Specs,
 interface specs, data dictionaries, RAG summaries, and SME notes are all valid
 optional starting material.
+This route is for evidence-bounded elicitation and coverage only. It must not
+promise that the agent will generate BRD-ready flows.
 
 Use this quality-aware routing:
 
 | Input Quality | Route | Expected Status |
 | --- | --- | --- |
-| Documents/specs appear able to support all four views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` or later `ready_for_context_intake` |
-| Documents/specs support only some views | `legacy-flow-context-normalizer` | `draft_needs_sme_review` with placeholders, or SME-accepted `ready_with_warnings` |
-| Documents/specs are authorized/readable but too sparse to form a safe sequence | `legacy-flow-context-normalizer` | `triage_needs_source_enrichment` |
+| Documents/specs appear able to support all four views | `legacy-flow-context-normalizer` | evidence-bounded coverage views with `draft_needs_sme_review` or later `ready_for_context_intake` |
+| Documents/specs support only some views | `legacy-flow-context-normalizer` | coverage views with placeholders/TBDs, or SME-accepted `ready_with_warnings` |
+| Documents/specs are authorized/readable but too sparse to evidence a safe sequence | `legacy-flow-context-normalizer` | `triage_needs_source_enrichment` |
 | Sparse package already has named owner risk acceptance and no additional inputs can be provided | `legacy-module-context-intake` | `ready_with_warnings` only; preserve `quality_level: L1 sparse` and carry-forward TBDs |
 | Documents are unauthorized, unreadable, out of scope, or lack any module boundary | Evidence intake, readable export, or SME boundary clarification | `blocked_*` remediation |
 
@@ -428,6 +433,12 @@ can be provided, route the resulting `ready_with_warnings` package to
 `legacy-module-context-intake`, not to module analysis or BRD generation.
 State that all sparse facts remain low-confidence and cannot become approved
 rules without later corroboration.
+
+Before routing to `legacy-brd-writer`, check the module overview's BRD Source
+Eligibility Crosswalk. If required BRD sections are `questions_only`,
+`candidate_only`, `generated_draft`, `missing`, or unreviewed
+`source_documented`, route to SME review / source enrichment or allow only BRD
+TBDs and review questions. Do not route those rows as BRD conclusions.
 
 ### Code-Backed BRD Enrichment Gate
 
@@ -456,7 +467,7 @@ artifact:
    `01_inventory/object-map.md`
 2. `legacy-ibmi-program-analyzer` for every in-scope `OBJ-*`
 3. `legacy-ibmi-flow-analyzer` for every in-scope business transaction
-4. `legacy-ibmi-module-analyzer` to synthesize the canonical four views
+4. `legacy-ibmi-module-analyzer` to assemble canonical four-view module coverage
 5. `legacy-brd-writer`
 
 Only allow a direct context-only module / BRD draft when the user explicitly
@@ -470,14 +481,15 @@ available for this cycle. In that case:
 - traceability must not use `confirmed_from_code` unless linked code-derived
   evidence exists
 
-### Canonical Four-Flow Timing
+### Canonical Four-View Module Timing
 
-Only `legacy-ibmi-module-analyzer` produces the canonical four module-flow
-artifacts under `04_modules/<MODULE-SLUG>/`. Earlier module-first stages may
-write four files under `00_context_packages/`, but those are draft or
-normalized context views. When reporting upstream work, use wording such as
-"created draft context views" or "normalized a context package"; do not say
-"created the four module flows" until the module analyzer writes
+Only `legacy-ibmi-module-analyzer` produces the canonical four-view module
+coverage artifacts under `04_modules/<MODULE-SLUG>/`. Earlier module-first
+stages may write four files under `00_context_packages/`, but those are
+coverage views, elicitation views, or normalized context views. When reporting
+upstream work, use wording such as "created source-linked coverage views" or
+"normalized a context package"; do not say "created the four module flows" until
+the module analyzer writes
 `module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
 `03-program-flow.md`, and `04-data-flow.md` under `04_modules/`.
 
@@ -1091,6 +1103,12 @@ runtime copies.
 
 ## Version History
 
+- v0.2.11 (2026-06-03): Aligned module-first routing with evidence-bounded
+  flow-context normalization, source eligibility, module BRD eligibility
+  crosswalks, and the BRD source-of-truth firewall. Generated/candidate context
+  now routes to TBDs, SME questions, or source enrichment rather than BRD
+  conclusions.
+
 - v0.2.10 (2026-06-02): Aligned routing tables, gates, and stage cards with
   program-analyzer v0.2.5, flow-analyzer v0.2.2, module-analyzer v0.2.2, and
   spec-writer v0.1.6 so orchestration checks Routine Logic Details,
@@ -1288,9 +1306,9 @@ runtime copies.
   documents to Function Specs, Technical Designs, Program Specs, File Specs,
   interface specs, and data dictionaries as optional starting material for
   `legacy-flow-context-normalizer` v0.1.6.
-- v0.2.4 (2026-05-29): Clarified four-flow timing so module-first context
+- v0.2.4 (2026-05-29): Clarified four-view timing so module-first context
   normalization reports `00_context_packages/` files as context views, while
-  canonical `04_modules/` four-flow artifacts remain owned by
+  canonical `04_modules/` four-view module artifacts remain owned by
   `legacy-ibmi-module-analyzer`.
 - v0.2.0 (2026-05-14): MVP scope expansion. Added stages 3c–3f (flow
   analysis, module analysis) reflecting the implementation of three new

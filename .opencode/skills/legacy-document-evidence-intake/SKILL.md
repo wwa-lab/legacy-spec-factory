@@ -64,8 +64,8 @@ It does **not**:
 - smooth over contradictions or pretend a failed conversion succeeded.
 
 The next normal skill after a successful document intake is
-`legacy-flow-context-normalizer`, which synthesizes the four-view context
-package from the normalized fragments produced here.
+`legacy-flow-context-normalizer`, which organizes evidence-bounded four-view
+coverage, gaps, and SME questions from the normalized fragments produced here.
 
 ## Boundary
 
@@ -78,9 +78,10 @@ Do not use it as a replacement for:
 - `legacy-ibmi-evidence-intake` — when sensitivity is unknown, source
   authorization is missing, production data is unapproved, or redaction is
   required. Route there first; this skill must not inspect unauthorized content.
-- `legacy-flow-context-normalizer` — which owns four-view context synthesis,
-  Mermaid drafting, and `FRAG-*`/view classification. This skill only produces
-  normalized format outputs and coordinates, not flow views.
+- `legacy-flow-context-normalizer` — which owns four-view coverage
+  organization, sparse-input triage, SME review questions, and
+  `FRAG-*`/view classification. This skill only produces normalized format
+  outputs and coordinates, not flow views or BRD facts.
 - `legacy-module-context-intake` — which normalizes already-reviewed context
   or external RAG output.
 

@@ -9,8 +9,8 @@ upstream stage that fits — do not "round up" maturity.
 | ---: | --- | --- |
 | 0 | Evidence Intake (authorization pending) | Raw source members, DDS exports, job logs, spool, screen samples, or DB extracts with `sensitivity: unknown`, missing source-path authorization, or required redaction not approved |
 | 0p | Document Evidence Intake | Business/technical documents are still in raw Office / Visio / PDF / image form (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned pages), authorized and with known sensitivity, but not yet normalized to Markdown/CSV/PDF/PNG/SVG with `document-intake/<DOCSET-SLUG>/intake.manifest.yaml`. Sensitivity-unknown or unauthorized material is stage **0**, not 0p. |
-| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but Operation / Business, System, Program, and Data context views are not yet normalized or SME-reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
-| 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` |
+| 0d | Flow Context Normalization | Scattered Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / interface spec / data dictionary / exported diagram / SME-note documents are available, but evidence-bounded Operation / Business, System, Program, and Data coverage views, source eligibility, or SME questions are not yet normalized/reviewed; also covers `flow-normalization/flow-context-index.yaml` with `normalization.status: triage_needs_source_enrichment` or `draft_needs_sme_review` |
+| 0m | Module Context Intake | External RAG / code-knowledge-graph output, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, or human-confirmed four-view module context not yet normalized into `00_context_packages/<MODULE-SLUG>/` with source eligibility |
 | 0n | Module Context Ready | `00_context_packages/<MODULE-SLUG>/context-index.yaml` with `intake.status: ready_for_module_analysis` or `ready_with_warnings` |
 | 1 | Evidence Ready | Approved evidence manifest; every item has known sensitivity and either `source_path_verified: true` or completed required redaction |
 | 2a | Inventory In Progress | Partial `inventory.yaml` (some objects, no `sme_review.decision`) |
@@ -21,7 +21,7 @@ upstream stage that fits — do not "round up" maturity.
 | 3c | Flow Analysis In Progress | `flow-<FLOW-SLUG>.md` for some but not all in-scope flows |
 | 3d | Flow Analysis Done | `flow-<FLOW-SLUG>.md` for all in-scope flows at `status: approved` or `approved_with_non_blocking_tbd` |
 | 3e | Module Analysis In Progress | `04_modules/<MODULE-SLUG>/` exists with one or more of the four views drafted |
-| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd). For standard code-backed BRD/spec work, the views must be backed by approved inventory, in-scope program analyses, and in-scope flow analyses; context-only views with missing source coverage remain 3e/in review unless an explicit non-approved context-only draft path is recorded. If no approved BRD Package exists for the selected capability, the next route remains BRD discovery writing / review, not spec writing. |
+| 3f | Module Analysis Done | `04_modules/<MODULE-SLUG>/` with all four views (Operation/System/Program/Data) approved (or approved_with_non_blocking_tbd) and a BRD Source Eligibility Crosswalk. For standard code-backed BRD/spec work, the views must be backed by approved inventory, in-scope program analyses, and in-scope flow analyses; context-only views with missing source coverage remain 3e/in review unless an explicit non-approved context-only draft path is recorded. If no approved BRD Package exists for the selected capability, the next route remains BRD discovery writing / review, not spec writing. |
 | 5a | BRD Discovery In Review | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: draft` or `status: in_review`, or BRD review/sign-off is incomplete |
 | 5b | BRD Discovery Approved | `05_brds/<CAPABILITY-SLUG>/brd.md` exists with `status: approved`; route to spec only if a separate post-BRD promotion / disposition decision exists |
 | 5c | Post-BRD Comparison / Disposition Open | Approved BRD exists, but old-vs-new comparison, risk assessment, gap analysis, or promotion decision is still pending outside the BRD Package |
@@ -65,6 +65,9 @@ When flow-normalization output is sparse:
 - `draft_needs_sme_review` remains stage **0d** until SME review confirms the
   package or explicitly accepts non-blocking gaps.
   Do not round it up to module context ready.
+- Generated-draft or candidate-only flow context remains stage **0d** or **0m**
+  until `legacy-module-context-intake` records source eligibility. It must not
+  be treated as BRD-ready flow evidence.
 
 When documents are still in raw Office/Visio/PDF/image form:
 
@@ -105,6 +108,10 @@ When a module or BRD was generated from `00_context_packages/` only:
   named owner risk acceptance says source/object evidence is unavailable for
   this cycle. It must not be treated as **3f Module Analysis Done** or **5b BRD
   Discovery Approved** for code-backed downstream routing.
+- If the module overview's BRD Source Eligibility Crosswalk marks required BRD
+  sections as `questions_only`, `candidate_only`, `generated_draft`, missing,
+  or unreviewed `source_documented`, those rows can only advance as BRD review
+  questions/TBDs. They do not make the BRD section covered.
 
 When only forward chain artifacts exist:
 

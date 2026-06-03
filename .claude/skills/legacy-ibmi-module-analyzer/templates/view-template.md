@@ -13,6 +13,8 @@ Diagram rules:
 - Use `flowchart TD` unless the reviewed source flow is explicitly
   left-to-right.
 - Place this section before evidence, inventory, or traceability tables.
+- Treat the diagram as a sourced coverage/review surface, not independent
+  evidence.
 - Rendered Mermaid preview is optional. Do not block completion on IDE or
   browser preview when this fenced Mermaid source is present and structurally
   reviewed.
@@ -31,7 +33,9 @@ Diagram rules:
   `FLOW-*`, `PGM-*`, `DATA-*`, `OBJ-*`, `BR-*`, or `TBD-*`, replacing hyphens
   with underscores.
 - Do not add diagram nodes or edges unless they are backed by the evidence /
-  traceability sections below or by a named `TBD-*`.
+  traceability sections below or by a named `TBD-*`. Candidate-only or
+  generated-draft context must be labeled as review material and cannot make a
+  BRD section covered.
 
 ## [View-specific sections, per `references/output-contract.md`]
 
