@@ -1,348 +1,260 @@
-# Synthesis Rules: How to Aggregate Across Flows and Programs
+# Synthesis Rules: Focused Module Assembly
 
-This document defines the aggregation rules for each of the four views.
-The module-analyzer does not re-analyze code or flows; it composes
-existing analyses. These rules tell it how.
+This document defines how `legacy-ibmi-module-analyzer` aggregates approved
+flows, program analyses, inventory evidence, and reviewed module-first context
+into the default module package:
+
+- `module-overview.md`
+- `03-program-flow.md`
+- `04-data-flow.md`
+- `module-review-checklist.md`
+
+`01-operation-flow.md` and `02-system-flow.md` are not default outputs. Do not
+generate them unless the user explicitly asks and supplies strong SME,
+architecture, or interface evidence. In normal runs, operation and system
+context belongs in `module-overview.md` as source-backed notes, BRD crosswalk
+rows, SME questions, or `TBD-*` gaps.
 
 ---
 
 ## General Synthesis Principles
 
-1. **Inputs are authoritative.** If a flow analysis says X, the module
-   analysis must not say not-X without explicit SME override (and an
-   `EV-` link to the override).
-2. **Aggregation is union, not intersection.** Every object touched by any
-   flow appears in View 4. Every actor referenced in any flow appears
-   in View 1. Coverage is broader at the module level.
-3. **Deduplicate by stable ID.** Same OBJ-* in two flows → one row in
-   View 4 with both flows listed.
-4. **Preserve evidence chains.** Every aggregated fact must retain
-   pointers to the source flow / program / SME note.
-5. **TBDs propagate up.** A blocking TBD in any flow becomes a blocking
-   TBD at the module level (unless resolved during module synthesis).
+1. **Inputs are authoritative.** If an approved flow says X, the module
+   package must not say not-X without an explicit SME override and an `EV-*`
+   link to the override.
+2. **Aggregate by union, not intersection.** Every in-scope flow appears in
+   Program Flow. Every durable object, critical field, carrier, and external
+   output touched by an in-scope flow appears in Data Flow.
+3. **Deduplicate by stable ID.** Same `OBJ-*`, `FLOW-*`, `REPLAY-*`,
+   `LINEAGE-*`, `PERSIST-*`, or `EXCHAIN-*` in multiple inputs becomes one
+   module row with all source references preserved.
+4. **Preserve evidence chains.** Every aggregated fact must point back to the
+   source flow, program, inventory item, SME note, document coordinate, or
+   context-package row.
+5. **TBDs propagate up.** A blocking TBD in any in-scope flow becomes a module
+   TBD unless resolved during module synthesis.
 6. **Replay stays visible.** Do not replace a replayable program chain with a
-   generic module summary. Preserve `REPLAY-*` paths through View 3 and the
-   overview readiness table.
-7. **Persistence and fields stay specific.** Module aggregation may group
-   related rows, but it must preserve critical field names, file/object names,
-   operations, skipped mutations, and `LINEAGE-*` / `PERSIST-*` evidence.
+   generic module summary. Preserve `REPLAY-*` paths in `03-program-flow.md`
+   and summarize readiness in `module-overview.md`.
+7. **Persistence and fields stay specific.** Keep object names, field names,
+   operations, skipped mutations, commit/rollback/retry behavior, source
+   identifiers, business meanings, and `LINEAGE-*` / `PERSIST-*` evidence.
 8. **Exception chains stay closed.** `EXCHAIN-*` rows remain visible until they
-   map to business outcome, persistence impact, recovery owner, or named TBD.
-9. **BRD eligibility is stricter than view coverage.** A four-view row may be
-   useful for review while still being ineligible for BRD conclusions. Only
+   map to business outcome, persistence impact, recovery owner, message
+   inventory, or a named `TBD-*`.
+9. **BRD eligibility is stricter than module coverage.** A row can be useful
+   for review while still being ineligible for BRD conclusions. Only
    code-backed or named SME-confirmed rows can mark BRD sections as covered.
-   Candidate-only, generated-draft, missing, or unreviewed source-documented
-   rows become questions/TBDs.
 
 ---
 
-## View 1 — Operation Flow / Business Background
+## Program Flow Aggregation
 
 ### Inputs
-- All in-scope `flow-<FLOW-SLUG>.md` (specifically their Trigger Context,
-  Flow Replay Path, Business Capability Seeds, and Exception Propagation Chain
-  operational notes)
-- SME-provided BAU notes
-- SME interview transcripts (if available)
-- Business documentation, ops manuals
 
-### Aggregation Rules
-
-| Field | Source | Rule |
-| --- | --- | --- |
-| Business Actors | SME notes; not from code | Union; deduplicate by role |
-| Business Events | Each in-scope flow contributes one event (its business event name) plus replay path | One row per flow; cite `REPLAY-*` where available |
-| BAU Rhythm | SME notes; cross-checked against scheduler entries in flows | Cadence comes from SME; scheduler entries confirm |
-| Manual Intervention Points | SME notes; cross-checked against operational outcomes in each flow's Exception Propagation Chain | Union; preserve `EXCHAIN-*` where it explains recovery |
-| Exception Lifecycle | SME description; cross-checked against `EXCHAIN-*` rows in flows | SME-led, but every material code-observed exception outcome must be mapped or carried as TBD |
-| Business Rule Seeds | Union of all flows' SEED-* | Deduplicate by candidate-rule wording; combine references |
-
-### Anti-Hallucination
-
-- **No actor inferred from code.** A program named "MGRAPPRV" does not
-  imply a "manager" actor unless SME confirms.
-- **No BAU rhythm from log file inspection.** Cut-off times must come
-  from SME or scheduler entry, not from observed timestamps.
-- **No exception procedure from comments in code.** Comments rot; SME
-  is authoritative.
-- **No generic exception closure.** Message IDs, return codes, skipped writes,
-  and retry/rollback behavior from `EXCHAIN-*` cannot be replaced by "error
-  handled" unless the details are immaterial and SME waives them.
-
----
-
-## View 2 — System Flow
-
-### Inputs
-- Each flow's Trigger Context (for inbound systems) and External Calls
-  (for outbound systems / interfaces)
-- Each flow's Flow Persistence Matrix for durable files, queues, spool, IFS,
-  response payloads, and external handoffs
-- Each flow's Exception Propagation Chain when exceptions notify external
-  systems or produce manual/operational outputs
-- Architecture diagrams, integration specifications, SME
-
-### Aggregation Rules
-
-| Field | Source | Rule |
-| --- | --- | --- |
-| Upstream Systems | Trigger Context of API/Remote and Menu flows | One per distinct source system |
-| Downstream Systems | Flow nodes that write external interface files / send remote calls, plus durable outputs from `PERSIST-*` rows | One per distinct target system or manual consumer |
-| Integration Patterns | Each upstream/downstream relationship has one pattern | Capture per relationship |
-| SLA | SME / integration spec | Per interface |
-| Auth | SME / integration spec | Per interface |
-| Security Boundaries | Architecture diagram + SME | Document at module level |
-
-### Anti-Hallucination
-
-- **No "system" inferred from a CALL** unless the called program is
-  outside this module and at the boundary (e.g., a CALL to GLINTERFACE
-  is a system call; a CALL to ORDVAL inside the same module is not).
-- **No SLA assumed from "the program runs fast"** — must come from a
-  documented contract or SME assertion.
-
----
-
-## View 3 — Program Flow
-
-### Inputs
-- All in-scope flow analyses
+- All in-scope `flow-<FLOW-SLUG>.md` files
 - Each flow's Flow Replay Path
+- Each flow's edge Evidence Source / Resolution rows
 - Each flow's Flow Persistence Matrix and Exception Propagation Chain where
   they affect final outcomes
-- Programs are referenced by ID; not re-analyzed
+- Approved program analyses for every referenced program
+- Approved inventory and object map
 
-### Aggregation Rules
+### Required Rows
 
 | Field | Source | Rule |
 | --- | --- | --- |
-| Flow Inventory | One row per `flow-<FLOW-SLUG>.md` | direct copy of metadata |
-| Replay Coverage Summary | Each flow's `REPLAY-*`, key decision paths, exception branches, persisted outcomes | One row per flow; missing replay / lineage / persistence coverage creates `TBD-*` unless waived |
-| Cross-Flow Dependencies | Computed by scanning each flow's Cross-Program Data Flow section for shared carriers (files / DTAARAs / DTAQs / MSGQs / spool / IFS / external handoffs) | Where producer flow ≠ consumer flow, that's a cross-flow dependency |
-| Shared Sub-Programs | Computed by scanning each flow's Nodes; any program appearing in ≥2 flows is shared | Sort by number of containing flows |
-| Overall Call Topology | Top-level Mermaid synthesis showing flows side-by-side, shared programs, final outcomes, and exception exits | Manual / SME-reviewed; do not use ASCII tree as primary topology |
+| Flow Inventory | One row per approved in-scope flow | Copy flow ID, business event, trigger, entry program, status, and evidence links. |
+| Replay Coverage Summary | `REPLAY-*`, final outcomes, exception branches | One row per flow. Missing trigger, branch, persistence, response, or exception disposition creates `TBD-*` unless waived. |
+| Edge Resolution Summary | Flow edge evidence | Preserve static, dynamic, command, menu, scheduler, trigger, API, and manual entry resolution evidence. |
+| Cross-Flow Dependencies | Shared carriers, files, queues, DTAARAs, MSGQs, spool, IFS, external handoffs | Record only dependencies evidenced by approved flow/data evidence or named SME confirmation. |
+| Shared Sub-Programs | Programs appearing in two or more flows | Sort by number of containing flows and preserve `OBJ-*` IDs. |
+| Exception / Recovery Summary | `EXCHAIN-*` rows affecting flow outcomes | Preserve messages, skipped writes, rollback/retry, manual recovery, downstream notification, and unresolved gaps. |
+| Mermaid Flow Diagram | Flow/program topology | Show flows, shared programs, durable/external outcomes, and exception exits before evidence tables. |
 
-### Computing Replay Coverage (Algorithm)
+### Replay Coverage Algorithm
 
-```
+```text
 For each in-scope flow F:
-    Collect all REPLAY-* rows from F.
-    Collect final outcomes from Flow Persistence Matrix and Exception
-    Propagation Chain.
-    Mark coverage complete only if F has:
-        trigger / entry path,
-        major decision branches,
-        final response or batch outcome,
-        durable persistence / skipped persistence outcome,
-        exception branch disposition.
-    If any piece is missing:
-        record the missing surface in Replay Coverage Summary and create
-        TBD-* unless a named SME waiver exists.
+    collect REPLAY-* rows
+    collect final outcomes from persistence and exception-chain rows
+    mark coverage complete only if F has:
+        trigger / entry path
+        major decision branches
+        final response or batch outcome
+        durable persistence or skipped persistence outcome
+        exception branch disposition
+    if any required piece is missing:
+        create a module TBD unless a named SME waiver exists
 ```
 
-### Computing Cross-Flow Dependencies (Algorithm)
+### Program Flow Anti-Hallucination
 
-```
-For each pair of flows (A, B):
-    For each data exchange in A's Cross-Program Data Flow section:
-        If exchange mechanism is "Shared file" / "Shared DTAARA" /
-           "Shared DTAQ" / "Shared work file":
-            Look for matching object in B's Cross-Program Data Flow.
-            If found and roles complement (A produces, B consumes):
-                Record cross-flow dependency A→B via that object.
-```
-
-### Anti-Hallucination
-
-- **No dependency inferred** beyond what data-flow sections explicitly
-  show. If A writes X and B reads X but the flows don't note it, do not
-  invent the dependency — confirm with SME or treat as TBD.
-- **No "shared utility"** inferred just because two programs have similar
-  names. Must appear as a node in both flows.
-- **No replay path invented** for older flow artifacts. Refresh the flow
-  analysis or carry a source TBD / waiver.
-- **No BRD coverage from generated topology.** A diagram edge drawn only to make
-  the topology easier to discuss is `questions_only` until backed by flow
-  analysis or SME confirmation.
+- Do not infer a dependency from similar program names.
+- Do not invent replay paths for older or incomplete flow artifacts.
+- Do not treat a diagram edge as BRD evidence unless it is backed by approved
+  flow evidence or SME confirmation.
+- Do not turn cross-flow topology into business process prose without the BRD
+  crosswalk proving source eligibility.
 
 ---
 
-## View 4 — Data Flow
+## Data Flow Aggregation
 
 ### Inputs
+
 - Every flow's Cross-Program Data Flow section
 - Every flow's Cross-Program Field Lineage section
 - Every flow's Flow Persistence Matrix section
 - Every flow's Exception Propagation Chain when exceptions affect data,
-  durable outputs, rollback, retry, or skipped writes
-- Every program's Data Touch Map and Object Dependencies sections (from
-  each `program-analysis-<OBJ-ID>.md`)
-- Every program's Key File & Field Logic, File I/O Purpose, Field Mutation
-  Matrix, Validation Logic, and Routine Logic Details routine-local
-  conditioned calculation blocks, carrier/lineage, and exception closure rows
-  where supplied by program-analyzer v0.2.5; preserve source identifiers plus
-  business meanings for critical fields
-- inventory.yaml (for cross-reference)
+  durable outputs, rollback, retry, partial commit, or skipped writes
+- Every program's Data Touch Map and Object Dependencies sections
+- Program-analyzer field and routine evidence: Key File & Field Logic, File
+  I/O Purpose, Field Mutation Matrix, Validation Logic, Routine Logic Details,
+  conditioned calculation blocks, carrier/lineage rows, and routine-local
+  exception closure
+- Approved inventory and object map
 
-### Aggregation Rules
+### Required Rows
 
 | Field | Source | Rule |
 | --- | --- | --- |
-| Data Objects in Scope | Union of every flow `DATA-*` carrier plus every program Data Touch Map / Object Dependencies entry | One row per meaningful data object / carrier |
-| Producer Flows / Consumer Flows | Determined by each flow's Cross-Program Data Flow section | Producer = flow with writer/sender/creator node; Consumer = flow with reader/receiver node |
-| Coupling Score | Number of flows touching the object | Integer |
-| Data Lifecycle | Union of all flow `State Impact` values and program Data Touch operations | Created (first write) / Updated (subsequent writes) / Read / Archived / Purged |
-| Module Persistence Matrix | Union of all flow `PERSIST-*` outcomes, grouped by object / field / output | Preserve operation, field, commit/rollback/retry, skipped mutation, and consumer |
-| Critical Field Lineage Across Module | Union of module-critical `LINEAGE-*` rows | Preserve source field, carriers, transforms, persisted locations, output locations, and consumers |
-| Exception-Aware Data Risks | `EXCHAIN-*` rows with data or persistence impact | Map to skipped write, rollback, retry, partial commit, manual recovery, or TBD |
-| Critical Data Trails | Flow critical trails plus SME review; trace key business records end-to-end | Evidence-backed, SME-confirmed for business meaning |
-| DB Table Relationships | From DDS / SQL definitions in inventory | Direct mapping |
-| Cross-Module Data Dependencies | Objects in this view owned by another module OR consumed by another module | Boundary detection |
+| Data Objects in Scope | Flow carriers plus program Data Touch Map and Object Dependencies | One row per meaningful object/carrier with `OBJ-*`, operations, source flows, and evidence. |
+| Producer / Consumer Flows | Cross-Program Data Flow and persistence rows | Producer = writer/sender/creator; Consumer = reader/receiver/downstream consumer. |
+| Coupling Score | Distinct flows touching the object | Preserve as count and risk indicator, not as a modernization recommendation. |
+| Data Lifecycle | Flow state impact + program operations | Created, Updated, Read, Archived, Purged, Returned, Sent, Skipped, or Unknown. |
+| Module Persistence Matrix | `PERSIST-*` rows | Group by object/field/output while preserving operation, commit, rollback, retry, skipped mutation, and consumer. |
+| Critical Field Lineage Across Module | `LINEAGE-*` rows | Preserve source field, carriers, transforms, persisted/output locations, consumers, and business meanings. |
+| Exception-Aware Data Risks | `EXCHAIN-*` rows with data impact | Map to skipped write, rollback, retry, partial commit, manual recovery, notification, or `TBD-*`. |
+| Cross-Module Data Dependencies | Objects owned or consumed outside the module | Include only evidenced external ownership/consumption, or mark as `TBD-*`. |
+| Mermaid Flow Diagram | Data lifecycle / carrier movement | Show data movement and durable outcomes before evidence tables. |
 
-### Computing Coupling Score
+### Coupling Algorithm
 
-```
+```text
 For each object O in scope:
-    coupling[O] = number of distinct flows that touch O (read or write)
+    coupling[O] = number of distinct flows that read, write, send, receive,
+                  return, persist, or skip mutation of O
 
 Coupling thresholds:
-    1     - low (single-flow private object)
-    2     - moderate (shared between 2 flows)
-    3-5   - high (module-level shared)
-    6+    - very high (hot path; modernization risk)
+    1     = low
+    2     = moderate
+    3-5   = high
+    6+    = very high
 ```
 
-### Computing Data Lifecycle Stages
+### Persistence Algorithm
 
-```
-For each object O:
-    Created: earliest-running flow that has a WRITE/INSERT to O without
-             a prior CHAIN/SELECT (creation, not update)
-    Updated: any flow with UPDATE on O
-    Read:    any flow with CHAIN/READE/SELECT on O
-    Archived: typically a separate archival job/flow (often out of module)
-    Purged:  typically a separate purge job (often out of module)
-```
-
-Archived and Purged are often "out of module" → mark as `external` and
-create a non-blocking TBD if not in scope of this module.
-
-### Computing Module Persistence Matrix
-
-```
+```text
 For each flow F:
     For each PERSIST-* row in F:
-        Group by object / field / durable output.
-        Preserve the operation (write/update/delete/queue/spool/response/etc.).
-        Preserve commit, rollback, retry, and recovery notes.
-        Preserve skipped mutations and exception-driven alternate outcomes.
-        Add producer flow F and all consumers named by F or View 2.
+        group by object / field / durable output
+        preserve operation, commit, rollback, retry, and recovery notes
+        preserve skipped mutations and exception-driven alternate outcomes
+        add producer flow F and evidenced consumers
 ```
 
-### Computing Critical Field Lineage
+### Data Flow Anti-Hallucination
 
-```
-For each LINEAGE-* row in each flow:
-    If the field is business-critical, persisted, returned to an external
-    party, used in a decision, or consumed by another module:
-        Add or merge it into Critical Field Lineage Across Module.
-        Preserve source field, intermediate carriers, transformations,
-        persistence/output locations, consumers, and evidence IDs.
-    If a program boundary or transform is missing:
-        record TBD-*; do not infer the missing mapping.
-```
+- Do not assume archival or purge behavior without SME confirmation or a
+  visible archive/purge job.
+- Do not assert DB relationships without DDS, DDL, SQL, or inventory evidence.
+- Do not prescribe coupling-hotspot mitigation in module analysis.
+- Do not collapse field-level behavior into file-level summaries when a field
+  mutation changes validation, output, persistence, or downstream behavior.
+- Do not omit exception-state data behavior.
 
-### Anti-Hallucination
+---
 
-- **No archival/purge** assumed without SME confirmation or a visible
-  archive job in inventory.
-- **No DB relationship** asserted without DDS / SQL evidence.
-- **No coupling-hotspot mitigation** prescribed without SME consultation.
-- **No file-level shortcut** when a field-level update changes downstream
-  behavior. Preserve the field and operation from `LINEAGE-*` / `PERSIST-*`.
-- **No exception-state omission.** If an exception path skips, rolls back,
-  retries, or partially commits data, it belongs in View 4.
+## Module Overview Synthesis
+
+`module-overview.md` is the first-read SME and BRD intake artifact. It should
+make the useful module context visible without forcing weak Operation/System
+views into standalone files.
+
+### Required Overview Content
+
+| Section | Rule |
+| --- | --- |
+| Module Identity | Include `MODULE-*`, business name, scope, owner, status, and evidence mode. |
+| In-Scope Flows | List every in-scope `FLOW-*`, status, trigger, entry point, and evidence link. |
+| Evidence View Index | List only the default Program Flow and Data Flow artifacts unless optional user-requested views exist. |
+| Program-Chain Readiness | Summarize replay, edge resolution, missing dynamic calls, unresolved branches, and waivers. |
+| Persistence & Critical Field Summary | Summarize objects, fields, persistence, lineage, skipped mutation, and data-risk hotspots. |
+| Exception & Recovery Summary | Summarize messages, exception chains, recovery owners, rollback/retry, skipped writes, and unresolved business intent. |
+| Optional Source-Backed Context Notes | Capture SME-confirmed BAU notes, source-backed interface context, or operational context that does not justify standalone 01/02 files. |
+| Capability Seeds | List `CAP-*` seeds with source eligibility and review status. |
+| BRD Source Eligibility Crosswalk | Classify each BRD input area as covered, partial, missing, or questions-only based on eligible evidence. |
+| Module Review Checklist | Name required reviewers and approval decisions for overview, Program Flow, Data Flow, and BRD crosswalk. |
 
 ---
 
 ## BRD Source Eligibility
 
-When writing `module-overview.md`, classify each BRD crosswalk row:
+When writing the crosswalk, classify each row:
 
 | Input Class | BRD Eligibility | Handling |
 | --- | --- | --- |
-| Approved flow/program/inventory evidence | `brd_conclusion_allowed` | May support observed behavior, process flow, dependencies, validation, or error handling |
-| Named SME confirmation | `brd_conclusion_allowed` | May support business context, BAU rhythm, manual process, or rule intent |
-| Source document or RAG snippet without SME/code corroboration | `needs_sme_review` | May support source mapping or review prompts; do not write as final BRD prose |
-| AI-organized context, sparse context package, or generated-draft diagram | `questions_only` | Convert to `TBD-*` or SME question |
-| Missing evidence | `questions_only` | Carry a `TBD-*` with resolver |
+| Approved flow/program/inventory evidence | `brd_conclusion_allowed` | May support observed behavior, process flow, dependencies, validation, data, or error handling. |
+| Named SME confirmation | `brd_conclusion_allowed` | May support business context, BAU rhythm, manual process, or rule intent. |
+| Source document or RAG snippet without SME/code corroboration | `needs_sme_review` | May support review prompts; do not write as final BRD prose. |
+| AI-organized context, sparse context package, or generated-draft diagram | `questions_only` | Convert to `TBD-*` or SME question. |
+| Missing evidence | `questions_only` | Carry a `TBD-*` with resolver. |
 
 Coverage rules:
 
 - `covered` requires at least one `brd_conclusion_allowed` source.
-- `partial` may include a mix of eligible evidence and `needs_sme_review` /
-  `questions_only` gaps.
+- `partial` may include eligible evidence plus review gaps.
 - `missing` or `questions_only` means the BRD writer must create questions or
   TBDs instead of writing a conclusion.
 
+### BRD Crosswalk Source Mapping
+
+| BRD Area | Preferred Module Sources | Gap Handling |
+| --- | --- | --- |
+| Function Purpose | Scope statement, module owner notes, capability seeds, SME-confirmed purpose | If purpose is only a program label, create `TBD-*`. |
+| Business Scenarios / Use Cases | In-scope flows, replay summaries, SME scenario notes | Missing scenario owner, replay path, or outcome becomes `TBD-*`. |
+| Channels | Flow trigger context, source-backed interface notes, screen/report analyzer outputs | Do not infer channels from object names. |
+| User Interface / Touchpoints | Screen/report analyzer outputs, flow UI surfaces, SME-confirmed manual touchpoints | If UI evidence is required but absent, block or carry source TBD. |
+| System Interfaces | Flow external calls, durable external outputs, source-backed interface notes | Keep interface purpose business-readable; do not invent SLA/auth/security boundaries. |
+| Process Flow | Flow inventory and replay coverage summary | Convert flows to business phases only where evidence supports that framing. |
+| Validation Rules | Program Validation Logic, flow branch points, field lineage, exception-chain seeds, SME-confirmed rules | Seeds remain review questions until approved. |
+| Error Handling | Program Exception Handling, Message Inventory, flow Exception Propagation Chain, module Exception & Recovery Summary | Unclear intent, message ownership, or recovery procedure becomes SME `TBD-*`. |
+| Dependencies | Cross-flow dependencies, data dependencies, approved external handoffs | Do not prescribe mitigations; list business role and risk only. |
+
+Optional BRD sections 10-12 must be marked `not_evidenced` unless real security,
+authentication, workflow/design, or source-document mapping exists.
+
 ---
 
-## Cross-View Consistency Check
+## Evidence-View Consistency Check
 
-After all four views are built, run these checks:
+Run these checks before marking the module package approved:
 
 | Check | Rule |
 | --- | --- |
-| Actor → Code Path | Every ACTOR-* in View 1 must map to at least one entry node in View 3 OR be tagged `manual_actor: yes`. |
-| System → Flow | Every SYS-* in View 2 must appear in View 3 as the source/target of at least one flow. |
-| Rule Seed → Evidence | Every BR-* in View 1 must reference evidence from View 3, View 4, or SME notes; do not frame the rule around program/file names unless the technical object is itself the business term. |
-| Replay → Business Event | Every `REPLAY-*` in View 3 maps to a View 1 business event, exception outcome, or named `TBD-*`. |
-| Persistence → System / Data | Every external or durable `PERSIST-*` output maps to View 2 system/manual consumers or View 4 objects / outputs. |
-| Exception Chain → Operation / BRD | Every material `EXCHAIN-*` maps to View 1 exception lifecycle and BRD Error Handling crosswalk coverage, or carries a named `TBD-*`. |
-| Lineage / Persistence → Data View | Every module-critical `LINEAGE-*` and durable `PERSIST-*` claim appears in View 4. |
-| Data Object → Flow | Every object row in View 4 must reference at least one flow in View 3. |
-| Flow → Data | Every flow in View 3 should touch at least one object in View 4 (otherwise the flow is pure compute — possible but unusual). |
+| Flow -> Program Flow | Every in-scope flow appears in `03-program-flow.md`. |
+| Flow -> Data Flow | Every flow with durable or carrier behavior has corresponding rows in `04-data-flow.md`. |
+| Replay -> Overview | Every incomplete replay path appears in Program-Chain Readiness or has a waiver. |
+| Persistence -> Data Flow | Every durable `PERSIST-*` and skipped mutation appears in Data Flow. |
+| Lineage -> Data Flow | Every module-critical `LINEAGE-*` row appears in Data Flow. |
+| Exception -> Overview/Data | Every material `EXCHAIN-*` maps to exception summary, data-risk row, recovery owner, or `TBD-*`. |
+| Capability -> Crosswalk | Every `CAP-*` seed has a source eligibility status and downstream BRD handling. |
+| Optional Context -> Eligibility | SME/source notes in overview are marked eligible, needs review, or questions-only. |
 
-Mismatches create cross-view TBDs that must be resolved (or explicitly
-waived by SME) before the module is approved.
-
-## BRD Functional Analysis Crosswalk
-
-After the four views pass cross-view consistency, populate
-`module-overview.md` with a BRD Functional Analysis Input Crosswalk. The goal
-is to make `legacy-brd-writer` deterministic: it should copy and synthesize
-from named view rows and evidence links, not infer missing BRD sections from
-program names.
-
-| BRD Area | Module Sources | Gap Handling |
-| --- | --- | --- |
-| Function Purpose | Scope Statement + View 1 Business Scope | If business purpose is only a program label, create `TBD-*`. |
-| Business Scenarios / Use Cases | View 1 Business Events, BAU Rhythm, Manual Intervention Points, Flow Replay Path | Missing scenario owner, replay path, or outcome becomes `TBD-*`. |
-| Channels | Flow Trigger Context + View 2 Upstream Systems + View 1 Actors | Do not infer channels from object names; mark missing as `TBD-*`. |
-| User Interface / Touchpoints | View 1 manual points + screen/report analyzer outputs + flow UI surfaces | If triggered screen/report analysis is required but absent, block or carry a source TBD per trigger rules. |
-| System Interfaces | View 2 systems, interfaces, integration patterns | Keep interface purpose business-readable; leave protocol details as evidence. |
-| Process Flow | View 1 events + View 3 flow inventory + Replay Coverage Summary | Convert flows to business phases; do not copy call topology as BRD process. |
-| Validation Rules | View 1 BR seeds + flow branch points + field lineage + exception-chain seeds | Seeds remain review questions; BRD does not promote them to approved rules. |
-| Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | Unclear business intent, message ownership, or recovery procedure becomes SME `TBD-*`. |
-| Dependencies | View 2 integrations + View 3 cross-flow dependencies + View 4 data / persistence dependencies | Do not prescribe mitigations; list business role and risk only. |
-
-Optional BRD sections 10-12 must be marked `not_evidenced` unless real security
-/ authentication evidence, workflow or design notes, or source document mapping
-exists in the input package. Optional coverage is allowed to be absent; do not
-pad it with plausible text.
+Mismatches create module TBDs that must be resolved or explicitly waived before
+approval.
 
 ---
 
-## How to Handle BAU That Has No Code Trace
+## Handling BAU With No Code Trace
 
-Some BAU procedures exist only in human practice — e.g., "Finance reviews
-the spool every morning before 09:00 and emails the auth team if exceptions
-are found." This has no code path.
+Some BAU procedures exist only in human practice, such as "Finance reviews the
+spool every morning and emails the auth team if exceptions are found." This has
+no code path.
 
-**Rule:** Document it in View 1 (manual intervention point) with
-`evidence_strength: confirmed_by_sme` and link to a named SME note.
-Do not try to map it to View 3 (no code). Tag the associated business
-rule seed as "BAU-driven, not enforced by code" — this is critical
-information for `legacy-brd-writer` to capture the business choice first, and
-for later spec-writing to decide whether the target system should encode this
-rule programmatically or preserve the manual process.
+Record this in `module-overview.md` under Optional Source-Backed Context Notes
+with `evidence_strength: confirmed_by_sme` and a named SME note. Do not force it
+into Program Flow or Data Flow. If it affects BRD or future spec behavior, add a
+crosswalk row and a BRD/source eligibility status so reviewers decide whether it
+is legacy context, a candidate rule, or a target-system requirement.

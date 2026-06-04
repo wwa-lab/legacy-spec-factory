@@ -48,13 +48,13 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 04_modules/CARD-AUTH/01-operation-flow.md
-      - ACTOR-CARD-AUTH-003
+      - 04_modules/CARD-AUTH/module-overview.md
+      - TBD-CARD-AUTH-003
       - 04_modules/CARD-AUTH/03-program-flow.md
     resolver: runner
-    recommended_action: Add a View 3 entry node for Settlement Operator or tag the actor as manual.
-    referenced_check: "Module semantic: every View 1 actor appears in View 3 (or is tagged manual)"
-    notes: "Cross-view inconsistency between View 1 and View 3."
+    recommended_action: Mark Settlement Operator as a source-backed manual context note with SME evidence, or add a Program Flow entry / TBD if it is expected to map to code.
+    referenced_check: "Module semantic: source-backed context notes map to Program/Data evidence or carry named TBDs"
+    notes: "Module overview names a manual operator but the Program Flow has no mapped code path or manual-only tag."
 
   - finding_id: FIND-CARD-AUTH-003
     dimension: 6
@@ -74,7 +74,7 @@ findings:
     severity: blocking
     step_type: module
     points_to:
-      - 04_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/module-overview.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     recommended_action: Surface the IFS drop path contradiction as TBD-CARD-AUTH-007 and route it to SME.
@@ -85,7 +85,7 @@ unresolved_items:
   - id: TBD-CARD-AUTH-007
     category: contradictory_evidence
     points_to:
-      - 04_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/module-overview.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     blocks_current_step: yes

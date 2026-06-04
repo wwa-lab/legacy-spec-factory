@@ -51,8 +51,8 @@ real screen-driven rules.
 
 ### Consumed by
 
-- `legacy-ibmi-module-analyzer` View 1 (Operation Flow) — screen rules are
-  central to user-facing operation
+- `legacy-ibmi-module-analyzer` module overview / BRD crosswalk — screen rules
+  are central to user-facing operation
 - `legacy-spec-writer` — UI surface section + behaviors
 
 ## Trigger 2 — `legacy-ibmi-data-model-analyzer`

@@ -49,10 +49,10 @@ Legacy Spec Factory, but it does not approve business rules, replace source
 analysis, or bypass SME review.
 
 Do not create intake flow Markdown files in this package. If upstream material
-is organized as Operation / Business Flow, System Flow, Program Flow, and Data
-Flow, carry that structure as coverage metadata, evidence-map rows, candidate
-facts, and open questions. The canonical four module views are created only
-under `04_modules/<MODULE-SLUG>/` by `legacy-ibmi-module-analyzer`.
+is organized as legacy view-like buckets, carry that structure as coverage
+metadata, evidence-map rows, candidate facts, and open questions. The
+canonical module package is created only under `04_modules/<MODULE-SLUG>/` by
+`legacy-ibmi-module-analyzer`.
 
 This package also acts as a **BRD source-of-truth firewall**. Each carried
 claim must be classified as one of:
@@ -160,8 +160,8 @@ run later.
 
 Artifact preview guardrail: context Markdown files are the canonical review
 surface. Do not open IDE, browser, Mermaid, or Markdown previews unless the
-user explicitly asks for visual inspection. For large modules or four-view
-packages copied from large normalization runs, record
+user explicitly asks for visual inspection. For large modules or large context
+packages copied from normalization runs, record
 `run_validation.artifact_preview_status: skipped_large_package` and continue
 after structural validation/manual review. Never reopen the same preview or
 open every view as a completion check.
@@ -220,7 +220,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
     carried as TBDs.
   - `7-8 usable`: source snippets, dictionary mappings, impact scope, and
     contradiction checks are traceable.
-  - `9-10 strong`: approved evidence manifest, SME-reviewed four-view context,
+  - `9-10 strong`: approved evidence manifest, SME-reviewed module context,
     source/runtime snippets, dictionary ownership, and resolved high-severity
     contradictions are supplied.
 
@@ -297,8 +297,7 @@ This skill conforms to the Legacy Spec Factory Step Contract.
      outputs or source metadata. Missing OCR/Markdown/converter output becomes
      a low-confidence `TBD-*`, not a blocker.
 4. **Package context coverage and source eligibility**
-   - Do not create Operation / Business Flow, System Flow, Program Flow, or
-     Data Flow intake Markdown files.
+   - Do not create standalone flow-view intake Markdown files.
    - Capture supplied context as coverage metadata in `context-index.yaml`,
      evidence rows and candidate facts in `rag-evidence-map.md`, and routed
      gaps in `open-questions.md`.
@@ -413,7 +412,7 @@ handoff input until standard code-backed and SME approval gates pass.
 - `scripts/validate_context_package.py` - local structural validator.
 - `../../docs/rag-setup-detail.md` - external RAG bundle boundary.
 - `../../docs/rag-output-sample/` - compact synthetic RAG output example.
-- `../../docs/module-analysis-model.md` - downstream four-view module model.
+- `../../docs/module-analysis-model.md` - downstream focused module model.
 - `../../docs/evidence-and-knowledge-taxonomy.md` - knowledge type and evidence
   strength vocabulary.
 
@@ -423,7 +422,7 @@ handoff input until standard code-backed and SME approval gates pass.
   to `context-index.yaml` so downstream module analysis can preserve channel,
   UI, interface, validation, error, and dependency gaps without inventing them.
 - v0.1.4 (2026-05-29): Clarified that intake context is not the canonical
-  four-view module artifact produced by `legacy-ibmi-module-analyzer`.
+  module artifact produced by `legacy-ibmi-module-analyzer`.
 - v0.1.5 (2026-05-30): Added code-backed handoff guidance so context packages
   preserve technical anchors but route to inventory/object-map, program
   analysis, and flow analysis before standard BRD/spec approval.
@@ -448,7 +447,7 @@ handoff input until standard code-backed and SME approval gates pass.
   review pass.
 - v0.1.11 (2026-06-03): Removed intake flow file generation. Context packages
   now contain only index, evidence map, contradiction log, and open questions;
-  canonical four-view files are produced only by module analysis.
+  canonical module files are produced only by module analysis.
 - v0.1.12 (2026-06-03): Retired the separate flow-context normalizer path from
   active module-context intake guidance.
 - v0.1.1 (2026-05-26): Added business-signal-first candidate seed guidance so

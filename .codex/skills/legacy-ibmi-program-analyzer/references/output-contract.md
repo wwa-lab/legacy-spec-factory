@@ -1,20 +1,25 @@
 # Output Contract: Program Analysis
 
-This document defines the precise shape and required fields for each `program-analysis-<OBJ-ID>.md` artifact produced by the analyzer.
+This document defines the precise shape and required fields for each
+`program-analysis-<OBJ-ID>.md` or standalone exploratory `program-analysis.md`
+artifact produced by the analyzer.
 
 ## File Structure
 
 Each program analysis follows this markdown structure:
 
 ```markdown
-# Program Analysis: [Program Name] (OBJ-*)
+# Program Analysis: [Program Name] (OBJ-* or unlinked)
 
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
 ## Metadata
 ## Analysis Coverage & Scope
 ## Program Call Map
 ## Routine Cards
 ## Routine Logic Details
-## Validation Logic
 ## Deep Read Windows
 ## Entry Points & Parameters
 ## Object Dependencies
@@ -32,18 +37,144 @@ Each program analysis follows this markdown structure:
 
 ---
 
+## Calculation Logic Section
+
+This section must appear immediately after the title, before Metadata. It is
+the IT SME first-read view of the program's material calculation and assignment
+logic. It is not a replacement for Routine Logic Details or the Logic
+Decomposition Ledger; every row must point to deeper evidence.
+
+```markdown
+## Calculation Logic
+
+| Calculation / Assignment | Target Field / Variable | Source Operands / Carriers | Guard / Branch | Output / Business Effect | Supporting Detail Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| Approved amount derivation | `ApprovedAmount` (approved credit amount) | `RequestAmount`, `CreditLimit`, `CREDFILE` lookup | credit limit branch | returned amount and approval decision | Routine Logic Details -> CreditChk conditioned block | EV-CREDIT-CHECK-002 |
+```
+
+**Requirements:**
+- Include arithmetic, derived amounts, quantity calculations,
+  status/result assignments, key construction, message/status carriers,
+  outbound payload fields, and persisted field updates that materially affect
+  program outcome.
+- Preserve source identifiers with business meanings.
+- Link every row to Routine Logic Details, conditioned calculation blocks,
+  Logic Decomposition Ledger rows, Key File & Field Logic, File I/O mutation
+  rows, or source-backed TBDs.
+- Add `Calculation logic unresolved:` when operands, precision/conversion,
+  branch priority, source carriers, or output carriers are unclear.
+
+---
+
+## Validation Logic Section
+
+This section must appear immediately after Calculation Logic, before Exception
+Handling.
+It is the IT SME first-read view of validation, status, return-code, message,
+indicator-driven, and generic-handler outcomes.
+
+```markdown
+## Validation Logic
+
+| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| D | denial return literal | response_status | `DecisionCode`, lines 42-45 | request exceeds credit limit | Routine Logic Details -> CreditChk outcome reverse trace | return value | caller receives denial | confirmed |
+```
+
+**Requirements:**
+- Create one row per explicit message ID, status code, return code, response
+  value, SQLSTATE, CPF/MCH/RNX/CPD message, user-defined code,
+  indicator-driven outcome, or generic catch-all token.
+- Do not group multiple message IDs into one row.
+- Include message descriptions from the best available source, or mark
+  unresolved and create an Open Item.
+- Link every material row back to Routine Logic Details, a conditioned
+  calculation block, an outcome reverse trace, exception closure, or a
+  source-backed TBD.
+
+---
+
+## Exception Handling Section
+
+This section must appear immediately after Validation Logic, before Message
+Inventory. It is the IT SME first-read view of how the program closes
+business, parameter, I/O, external-call, system, and generic exceptions.
+
+```markdown
+## Exception Handling
+
+| Exception / Error Path | Trigger | Detection Mechanism | Fields / Messages Set | Handling Action | Downstream Effect | Supporting Detail Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Credit file not found | `%FOUND(CREDFILE)` false | IF branch after CHAIN | return literal `D`, `ApprovedAmount=0` | RETURN | caller receives denial; no file mutation | Routine exception closure -> CreditChk; Validation Logic `D` | EV-CREDIT-CHECK-003 |
+```
+
+**Requirements:**
+- Include every observed business, parameter, file I/O, SQL, external-call,
+  system, and generic-handler exception path.
+- State the detection mechanism, handling action, and downstream effect for
+  each path.
+- Do not infer specific message IDs from generic handlers.
+- Link each row to Routine Logic Details, routine-local exception closure, the
+  Error Handling section, the Exception Closure Ledger, Validation Logic, or a
+  source-backed TBD.
+
+---
+
+## Message Inventory Section
+
+This section must appear immediately after Exception Handling, before Metadata.
+It is the IT SME first-read view of every observed message/code/literal and its
+meaning.
+
+```markdown
+## Message Inventory
+
+| Message / Code / Literal | Message Description | Message Source | Emitted / Set By | Trigger / Handler | Carrier / Destination | Related Validation / Exception Row | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| D | denial decision | source literal/comment | return literal | not found or amount exceeds limit | return parameter | Validation Logic `D`; Exception Handling denial rows | confirmed |
+```
+
+**Requirements:**
+- Create one row per explicit message ID, status value, return code, response
+  literal, SQLSTATE, CPF/MCH/RNX/CPD message, operator message, or shop-local
+  message token.
+- Preserve exact source codes/literals and do not group message families.
+- Include the best available description source. If unavailable, write
+  `unresolved - message description not available` and create an Open Item.
+- Approved reference packs may supply the description source. Cite them as
+  `reference pack: <pack_id>/<file>#<row-or-anchor>`. Do not invent message
+  rows from the catalog; the message/code/literal must first be observed in
+  source, runtime evidence, or SME notes.
+- Cross-reference the related Validation Logic and Exception Handling rows.
+
+---
+
 ## Metadata Section
 
 ```markdown
 ## Metadata
 
-- **Program ID:** OBJ-CREDIT-CHECK-003
+- **Program ID:** OBJ-CREDIT-CHECK-003 | unlinked - inventory not provided
 - **Program Name:** CREDITCHK
 - **Program Type:** RPGLE | CLLE | COBOL
 - **Library:** CREDITLIB or not recorded in inventory
 - **Build Target:** &TGTLIB/CREDITCHK or not recorded
 - **Build / Library Evidence:**
   - EV-CREDIT-CHECK-000: build member creates &TGTLIB/CREDITCHK
+- **Reference Packs Used:**
+  - REF-CREDIT-CHECK-001: message_catalog/control_file/field_dictionary,
+    source formats xlsx/docx/pdf, normalized outputs under
+    00_reference_packs/CREDIT-CHECK-CONTROL-FILES/normalized/, version
+    2026-06-04, authorization approved_for_analysis
+- **Document Intake Manifests:**
+  - 00_context_packages/CREDIT-CHECK/document-intake/CONTROL-FILES/intake.manifest.yaml
+- **Reference Lookup Coverage:**
+  - Messages: 3 matched / 1 unresolved
+  - Fields: 8 matched / 2 unresolved
+  - Control values: 4 matched / 0 unresolved
+- **Analysis Intent:** standalone_exploratory | chain_ready
+- **Inventory Linkage:** linked | missing | blocked | not_applicable
+- **Downstream Readiness:** ready_for_flow_after_approval | not_chain_ready | blocked_pending_source
 - **Source Location:** [file path or collection ID]
 - **Collection Date:** YYYY-MM-DD
 - **Entry Points:** MAIN, VALIDATECREDIT
@@ -56,22 +187,33 @@ Each program analysis follows this markdown structure:
 - **Dynamic Calls:**
   - `TARGET_PGM` -> dynamic_unresolved
 - **Evidence IDs:**
-  - EV-CREDIT-CHECK-001
-  - EV-CREDIT-CHECK-002
-- **Status:** draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
+  - EV-CREDIT-CHECK-001 or source-range/local-reference for standalone exploratory analysis
+  - EV-CREDIT-CHECK-002 or source-range/local-reference for standalone exploratory analysis
+- **Status:** draft_exploratory | draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 ```
 
 **Required fields:**
-- Program ID (OBJ-*) — must exist in approved inventory
+- Program ID:
+  - `chain_ready` — `OBJ-*` must exist in approved inventory.
+  - `standalone_exploratory` — may be `unlinked - inventory not provided`;
+    do not fabricate `OBJ-*`.
 - Program Name and Type
 - Library, Build Target, and Build / Library Evidence when known. If the
   current source mixes these concepts, split them rather than storing a
   long combined value.
+- Reference Packs Used, Document Intake Manifests, and Reference Lookup
+  Coverage when message catalogs, control files, code tables, or data
+  dictionaries are supplied. For Excel/Word/PDF/image sources, cite the
+  normalized Markdown/CSV/text output and original source format.
+- Analysis Intent, Inventory Linkage, and Downstream Readiness.
 - At least one entry point
 - Static Calls and Dynamic Calls as separate multi-line lists. Do not put
   long call lists in one bullet.
-- Evidence IDs as a multi-line list or compact table.
-- Status (default: draft)
+- Evidence IDs as a multi-line list or compact table. `chain_ready` uses
+  resolved `EV-*`; `standalone_exploratory` may use source ranges or local
+  references, but must mark the artifact `not_chain_ready`.
+- Status (`draft_exploratory` for standalone exploratory analysis; `draft` for
+  chain-ready analysis before SME review)
 
 ---
 
@@ -499,9 +641,10 @@ transaction amount is loaded.
 
 Validation Logic is a front-loaded inventory of the program's validation,
 status, return-code, response, message, and generic-handler outcomes. It must
-appear immediately after `Routine Logic Details` and before `Deep Read Windows`
-so reviewers can find outcome logic without hunting through late error-handling
-prose. Do not duplicate this table later under `Error Handling`.
+appear immediately after top-of-document `Calculation Logic` and before
+`Exception Handling` so IT SMEs can find outcome logic without hunting through
+late error-handling prose. Do not duplicate this table later under
+`Error Handling`.
 
 ```markdown
 ## Validation Logic
@@ -518,8 +661,8 @@ literal code assignments were not fully traced.
 ```
 
 **Requirements:**
-- Validation Logic must be placed before `Deep Read Windows`, not buried inside
-  `Error Handling`.
+- Validation Logic must be placed immediately after `Calculation Logic`, before
+  `Exception Handling`, not buried inside `Error Handling`.
 - Create one row per observed explicit message ID, error code, status code,
   response code, return code, SQLSTATE, CPF/MCH/RNX/CPD message,
   indicator-driven error branch, exception/log output code, data queue response
@@ -529,10 +672,11 @@ literal code assignments were not fully traced.
   "validation messages" is invalid; create separate rows and duplicate the
   branch/source context as needed.
 - Each row must include a `Message Description` for that specific code. The
-  description must come from a message file, source literal, source comment,
-  runtime evidence, vendor reference, or SME note. If no description is
-  available, write `unresolved - message description not available`, mark
-  Evidence Status `unresolved`, and create an Open Item / TBD.
+  description must come from a message file, approved reference pack, source
+  literal, source comment, runtime evidence, vendor reference, or SME note. If
+  no description is available, write
+  `unresolved - message description not available`, mark Evidence Status
+  `unresolved`, and create an Open Item / TBD.
 - Columns: Message / Status Code, Message Description, Validation / Error Type,
   Set By / Source Lines, Trigger Condition, Reverse Trigger Chain / Routine
   Logic Link, Output Carrier, Downstream Effect, Evidence Status.
@@ -994,8 +1138,12 @@ Use one or more of these role labels:
 - File Access Summary columns: File name, record format, Type (PF / LF / DSPF / PRTF), Operations, Key fields, Purpose, read/mutation conditions, indicators/status checks, Evidence link
 - Field Mutation Matrix columns: File, operation, routine/line range, access key or record condition, field mutated/persisted, source value or expression, assignment evidence, error/rollback handling
 - Key Fields must use `FIELD_NAME` (business meaning) whenever
-  resolvable. If unresolved, use `field unresolved` (business meaning) or
-  `FIELD_NAME` (meaning unresolved).
+  resolvable. If an approved dictionary/reference pack supplies a
+  `standard_field_id`, include it inline or in the row note. If unresolved, use
+  `field unresolved` (business meaning) or `FIELD_NAME` (meaning unresolved).
+- Field and control-value meanings from reference packs must cite the
+  pack/file/row or anchor used. If reference-pack meaning conflicts with code
+  behavior, preserve both and create a contradiction TBD.
 - Purpose must describe why the file is accessed with an action verb
   such as validate, read, detect, write, send, or log. Purpose must not
   replace field descriptions.
@@ -1229,23 +1377,30 @@ Before approval, SME must validate:
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Program Call Map keeps Visual Overview compact and uses Call Evidence for auditable caller/callee evidence
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Calculation Logic is front-loaded immediately after the title, covers material whole-program calculations/assignments, and links every row to routine-level or ledger evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows input variables, transformation logic, output variables, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes file access behavior
+- [ ] Reference-pack lookups, if used, cite pack ID/version/file/row and do not override source-backed behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Validation Logic is front-loaded after Routine Logic Details, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one row per explicit message/code/literal with description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
 - [ ] TBDs are non-blocking or properly flagged for follow-up
 - [ ] No invented subroutines or undocumented file access
-- [ ] All evidence links reference existing inventory items (OBJ-*, EV-*)
+- [ ] Evidence linkage matches analysis intent: `chain_ready` references
+  existing inventory items (`OBJ-*`, `EV-*`); `standalone_exploratory` uses
+  source ranges/local references, marks inventory linkage as missing, and does
+  not fabricate `OBJ-*` or `EV-*`
 - [ ] Status field is set correctly (`draft` → `needs_sme_review` /
-  `blocked_pending_source` → `approved` / `approved_with_non_blocking_tbd` /
-  `rejected`)
+  `draft_exploratory` / `blocked_pending_source` → `approved` /
+  `approved_with_non_blocking_tbd` / `rejected`)
 
 **SME sign-off:**
 
@@ -1311,9 +1466,16 @@ Markdown and HTML export:
 
 ## Review Status Values
 
+- **draft_exploratory** — standalone source-grounded analysis for inspection,
+  skill testing, or early understanding. It is complete enough to review the
+  analyzer output, but `Downstream Readiness` must remain `not_chain_ready`
+  until inventory/object/evidence linkage is added.
 - **draft** — initial analysis, ready for SME review
 - **needs_sme_review** — waiting for SME validation (has blocking TBDs or ambiguities)
-- **blocked_pending_source** — source incomplete or unavailable; analysis paused pending artifact delivery (DDS, CALL definitions, file descriptions) or SME unblock. Analyzer stops instead of guessing.
+- **blocked_pending_source** — source incomplete or unavailable, or a
+  `chain_ready` run is missing required inventory/object/evidence linkage.
+  Analyzer stops instead of guessing. Missing inventory alone does not block
+  `standalone_exploratory`; it marks downstream readiness as `not_chain_ready`.
 - **approved** — SME confirmed all behaviors and resolved TBDs
 - **approved_with_non_blocking_tbd** — SME approved despite non-blocking TBDs (e.g., undocumented call without impact on this program's behavior)
 - **rejected** — SME found serious errors or inconsistencies

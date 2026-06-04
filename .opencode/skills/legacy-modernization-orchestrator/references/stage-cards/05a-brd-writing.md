@@ -11,7 +11,7 @@ unclear?" in SME-readable language.
 
 ## Need before starting
 
-- `04_modules/<MODULE-SLUG>/` — overview + all 4 views, all approved
+- `04_modules/<MODULE-SLUG>/` — overview + Program Flow + Data Flow, all approved
 - For standard code-backed BRDs: `01_inventory/object-map.md`, all in-scope
   `02_programs/<MODULE>/<OBJ>/program-analysis.md`, and all in-scope
   `03_flows/<MODULE>/flow-<FLOW-SLUG>.md`, approved or

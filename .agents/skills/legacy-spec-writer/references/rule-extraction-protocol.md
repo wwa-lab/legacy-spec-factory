@@ -31,10 +31,10 @@ it stays `draft` or `needs_sme_review`.
 
 Start from the module overview's "Capability Seeds" section. Each
 `CAP-*` seed has 0 or more underlying `BR-*` seeds in its module
-View 1 + each constituent flow's `SEED-*`.
+overview / BRD crosswalk + each constituent flow's `SEED-*`.
 
 For the target capability, collect all candidate BR seeds:
-- Every BR-* from module View 1 mapping to this capability
+- Every `BR-*` from module overview / BRD crosswalk mapping to this capability
 - Every SEED-* from any in-scope flow that has been flagged as a
   rule-candidate (vs. a process-only seed)
 

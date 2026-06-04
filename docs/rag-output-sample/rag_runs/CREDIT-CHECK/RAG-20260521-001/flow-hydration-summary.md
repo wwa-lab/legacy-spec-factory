@@ -13,7 +13,7 @@
 
 ## Module-First Hydration Result
 
-### 01 Operation / Business Flow
+### Module Context Notes
 
 Customer service submits a customer number and requested order amount for credit
 evaluation. The observed legacy path returns an approve/deny decision and an
@@ -29,7 +29,7 @@ Evidence:
 | `RUN-CREDIT-CHECK-SPOOL-001` | spool sample | One denied over-limit scenario with capped approved amount | observed_in_runtime |
 | `SME-CREDIT-CHECK-001` | SME note | SME confirms inactive denial and over-limit cap behavior | sme_confirmed |
 
-### 02 System Flow
+### Source-Backed System Notes
 
 The operational entry wrapper `CRDTCMD` calls `CREDITCHK`. `CREDITCHK` reads
 credit status and available credit from logical file `CREDITVW`, emits messages

@@ -48,7 +48,7 @@ The Legacy Spec Factory approach is module-first, program-grounded, and capabili
 
 ```text
 Legacy evidence + historical docs + RAG/code graph + SME fragments
-  -> four-view coverage, gaps, and SME questions
+  -> module coverage, gaps, and SME questions
   -> observed behavior
   -> inferred business rule seeds
   -> validation scenario seeds
@@ -71,7 +71,7 @@ The repo already contains a skill-based pipeline for legacy understanding:
 - `legacy-ibmi-inventory`: identifies programs, files, screens, reports, and object relationships
 - `legacy-ibmi-program-analyzer`: extracts program behavior, calls, I/O, errors, and coverage
 - `legacy-ibmi-flow-analyzer`: connects programs into business transaction flows
-- `legacy-ibmi-module-analyzer`: assembles four-view module coverage plus a BRD Source Eligibility Crosswalk
+- `legacy-ibmi-module-analyzer`: assembles focused module coverage plus a BRD Source Eligibility Crosswalk
 - `legacy-brd-writer`: drafts the capability-level legacy BRD Package
 - `legacy-sme-review-facilitator`: records SME review decisions and sign-off
 - `legacy-step-validator` and `legacy-traceability-packager`: enforce validation and traceability
@@ -217,7 +217,7 @@ This method does not:
 - decide whether every legacy behavior should be preserved
 - perform old-vs-new gap classification inside the BRD
 - generate target Java/cloud implementation directly from raw code
-- require SMEs to provide complete flow diagrams or module four-view coverage before discovery can start
+- require SMEs to provide complete flow diagrams or a finished module package before discovery can start
 - turn AI-organized coverage or RAG candidates into BRD facts
 
 The approved BRD is a human-reviewed legacy baseline. Later spec generation, gap analysis, golden-master tests, and SDD handoff require separate gates.

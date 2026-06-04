@@ -302,10 +302,11 @@ Flow analyzer accepts optional `bau_notes` parameter (derived from runtime obser
 
 ### In Module Analyzer
 
-Module analyzer uses runtime observations to ground View 1 (Operation Flow):
+Module analyzer uses runtime observations to ground module overview
+source-backed context:
 
 ```yaml
-## View 1: Operation Flow / Business Context
+## Optional Source-Backed Context Notes
 
 ### BAU Rhythm (informed by runtime mining)
 - Observation ID: RTE-CREDIT-CHECK-003

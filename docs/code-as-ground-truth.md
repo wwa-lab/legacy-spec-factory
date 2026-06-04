@@ -126,17 +126,16 @@ verified against tier 1.
 
 ### `legacy-ibmi-module-analyzer`
 
-The 4-view model has a per-view authority pattern:
+The focused module model has a view-specific authority pattern:
 
-| View | Primary Tier | Why |
+| Surface | Primary Tier | Why |
 | --- | --- | --- |
-| 1. Operation Flow | Tier 2 (SME) | Business context is irreducibly human |
-| 2. System Flow | Tier 2 + Tier 3 (architecture docs, integration specs) | Architectural intent lives outside code |
-| 3. Program Flow | Tier 1 (via aggregated flow / program analyses) | Programs and calls are code facts |
-| 4. Data Flow | Tier 1 (via aggregated object dependencies and DDS) | File structure is a code fact |
+| Module overview context notes | Tier 2 / Tier 3, cross-checked by Tier 1 where behavior is code-observable | Business and architecture context often lives outside code |
+| Program Flow | Tier 1 (via aggregated flow / program analyses) | Programs and calls are code facts |
+| Data Flow | Tier 1 (via aggregated object dependencies and DDS) | File structure is a code fact |
 
-**However**, even in View 1 and View 2, **tier 1 contradicts tier 2 when
-they disagree about behavior**:
+**However**, even for module overview context, **tier 1 contradicts tier 2 when
+they disagree about code-observable behavior**:
 - SME says "we always log every transaction" but TXNLOGPF write is
   inside an IF block in NODE-04 → BEH records the conditional log;
   TBD asks SME to confirm whether the IF-guarded behavior is intent

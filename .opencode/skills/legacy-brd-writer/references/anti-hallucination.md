@@ -27,7 +27,7 @@ The BRD source-of-truth firewall is stricter than the module coverage map:
   a conclusion.
 - `candidate_only`, `generated_draft`, `questions_only`, and `missing` inputs
   must become `TBD-*` items or SME questions.
-- A generated four-view diagram is never evidence by itself.
+- A generated module-context diagram is never evidence by itself.
 - Internal POC drafts may include weak or candidate material only as labeled
   hypotheses for review. A `poc_draft` BRD can be useful early, but it must not
   make unsupported prose look like approved legacy behavior.

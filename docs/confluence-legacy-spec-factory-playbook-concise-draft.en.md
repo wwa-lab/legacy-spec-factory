@@ -183,7 +183,7 @@ After reading this page, the team should understand:
 | Area | Content |
 |---|---|
 | Business Flow | Business trigger, actors, main path, exception paths, and business outcome. |
-| System Flow | System interactions, interface calls, batch triggers, and external dependencies. |
+| Source-backed Context Notes | System interactions, interface calls, batch triggers, and external dependencies, only when source-backed. |
 | Program Flow | Supporting technical trace: entry points, key branches, error paths, and call-chain evidence. Do not use this as the main business-process narrative. |
 | Data Flow | Inputs, outputs, file reads/writes, key fields, and data-state changes. |
 | Controls / Workarounds | Manual checks, reruns, reconciliations, report checks, and operational routines. |

@@ -507,6 +507,18 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
+- v0.1.10 (2026-06-04): Aligned program-analysis validation with analyzer
+  v0.2.7. The validator now checks that Exception Handling appears immediately
+  after Validation Logic, Message Inventory appears immediately after Exception
+  Handling and before Metadata, and both sections link back to closure evidence
+  without inventing message IDs from generic handlers.
+
+- v0.1.9 (2026-06-04): Aligned program-analysis validation with analyzer
+  v0.2.6. The validator now checks that Calculation Logic appears immediately
+  after the title, Validation Logic appears immediately after Calculation
+  Logic and before Metadata, and both first-read sections link back to
+  routine-level evidence, ledgers, or source-backed TBDs.
+
 - v0.1.8 (2026-06-02): Tightened program-analysis validation for
   conditioned calculation, outcome reverse-trace coverage, and front-loaded
   Validation Logic. The validator now checks that Routine Logic Details include

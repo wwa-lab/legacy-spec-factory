@@ -44,7 +44,7 @@ Program     = evidence granularity
 Capability  = BRD output unit
 ```
 
-A module can start from reviewed context, SME fragments, historical documents, or approved flow evidence. Flow analysis is still valuable evidence, but complete flow diagrams or module four-view coverage are not prerequisites for starting discovery.
+A module can start from reviewed context, SME fragments, historical documents, or approved flow evidence. Flow analysis is still valuable evidence, but complete flow diagrams or a finished module package are not prerequisites for starting discovery.
 
 The main evidence-to-BRD transformation is:
 
@@ -61,7 +61,7 @@ EV-* evidence
 The repo also distinguishes the default enterprise path from selective source verification:
 
 - Document and flow context normalization when historical materials are scattered; this produces coverage, gaps, and SME questions, not BRD-ready flow facts.
-- Module context intake when RAG/code graph evidence, SME fragments, or reviewed four-view context are available.
+- Module context intake when RAG/code graph evidence, SME fragments, or reviewed module context are available.
 - Selective program, flow, runtime, data model, screen, or report analysis when evidence is missing, conflicting, or high risk.
 - BRD writing after module coverage carries a BRD Source Eligibility Crosswalk; only eligible evidence becomes factual prose.
 - SME review and decision write-back before final BRD approval.
@@ -81,7 +81,7 @@ The current skill family supports the BRD discovery chain through specialized ro
 | Program analysis | `legacy-ibmi-program-analyzer` | Extract call maps, data touch maps, routine logic, file I/O, validation logic, error handling, and coverage |
 | Flow analysis | `legacy-ibmi-flow-analyzer` | Connect multiple programs into transaction flows, replay paths, persistence, lineage, and exception chains |
 | Data / UI / runtime support | `legacy-ibmi-data-model-analyzer`, `legacy-ibmi-screen-report-analyzer`, `legacy-ibmi-runtime-evidence-miner` | Add DB2/DDS, DSPF/PRTF, job log, spool, and runtime observations |
-| Module coverage | `legacy-ibmi-module-analyzer` | Assemble four-view module coverage, capability/rule seeds, and a BRD Source Eligibility Crosswalk |
+| Module coverage | `legacy-ibmi-module-analyzer` | Assemble the focused module package, capability/rule seeds, and a BRD Source Eligibility Crosswalk |
 | BRD drafting | `legacy-brd-writer` | Produce capability-level BRD package with observed behaviors, inferred rules, TBDs, traceability, and validation scenario seeds |
 | Review | `legacy-sme-review-facilitator` | Convert open items into SME questions and record decisions |
 | Governance | `legacy-step-contract`, `legacy-step-validator`, `legacy-traceability-packager` | Enforce input/output/validation contracts and traceability coverage |
@@ -275,7 +275,7 @@ The current method has clear boundaries:
 - It does not decide future-state scope or target architecture inside the BRD.
 - It does not perform No-gap / Gap1 / Gap2 classification before the BRD is approved and new-system context is available.
 - It does not allow context-only or RAG-only claims to be labeled as `confirmed_from_code`.
-- It does not require SMEs to provide complete flow diagrams or module four-view coverage before discovery can start.
+- It does not require SMEs to provide complete flow diagrams or a finished module package before discovery can start.
 - It does not promote generated or candidate coverage into factual BRD prose.
 - It does not make a large program safe by summarizing fixed chunks.
 

@@ -7,7 +7,8 @@ Capability **Credit Limit Enforcement** (`CAP-CREDIT-CHECK-001`) has run through
 - `01_inventory/inventory.yaml` — `sme_review.decision: approved`
 - `02_programs/CREDIT-CHECK/program-analysis.md` — `approved`
 - `03_flows/CREDIT-CHECK/credit-check-auth/flow.md` — `approved`
-- `04_modules/card-auth/` — all four views `approved`
+- `04_modules/card-auth/` — module overview, Program Flow, Data Flow, and
+  review checklist `approved`
 - `05_brds/CREDIT-CHECK/brd.md` — `approved` (SME: John Smith, 2026-05-14)
 - `05_specs/CREDIT-CHECK/spec.yaml` — `approved` (SME: John Smith, 2026-05-15)
 - `evidence/manifest.yaml` — `package_state: approved_for_inventory`

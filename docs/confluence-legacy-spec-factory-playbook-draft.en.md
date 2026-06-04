@@ -172,11 +172,9 @@ This page answers: "Where does this capability sit in the enterprise system land
 
 Capture the current business process before writing the target-state solution.
 
-Organize the process using four views:
+Organize the process using focused module views:
 
 ```text
-Operation / Business Flow
-System Flow
 Program Flow
 Data Flow
 ```

@@ -199,7 +199,7 @@
 2. Observations will be consumed by:
    - [ ] `legacy-ibmi-program-analyzer` (optional runtime_hints)
    - [ ] `legacy-ibmi-flow-analyzer` (optional bau_notes)
-   - [ ] `legacy-ibmi-module-analyzer` (View 1 context)
+   - [ ] `legacy-ibmi-module-analyzer` (module overview source-backed context)
 3. Any TBDs flagged here will be tracked as `pending_sme_judgment`
 4. Archive this completed checklist with the final observations JSON
 

@@ -68,7 +68,7 @@ the redaction checks passed.
 | Check | Result | Evidence / Tool | Dimension |
 | --- | --- | --- | --- |
 | `module-overview.md` present with required sections | pass | filesystem | 3 |
-| All four views present | pass | filesystem | 3 |
+| Default module package files present | pass | filesystem | 3 |
 | `module-review-checklist.md` present | pass | filesystem | 3 |
 | IDs minted are restricted to allowed prefixes | pass | linter | 3 |
 | Every in-scope flow is `approved` or `approved_with_non_blocking_tbd` | **fail** | `FLOW-CHARGEBACK-001` is `blocked_pending_sme` | 1 |
@@ -80,9 +80,8 @@ Mechanical verdict: **blocked**
 | Check | Finding | Blocking? | Linked IDs | Dimension |
 | --- | --- | --- | --- | --- |
 | Cross-flow synthesis matches the flow analyses | View 3 cites a node from the unapproved `FLOW-CHARGEBACK-001` | yes | NODE-CHARGEBACK-002 | 2 |
-| Every View 1 actor appears in View 3 | View 1 names "Settlement Operator" which does not appear in View 3 | yes | ACTOR-CARD-AUTH-003 | 2 |
-| Every View 2 system appears in View 3 | pass | — | 2 |
-| Every View 4 data object traces to a flow in View 3 | pass | — | 2 |
+| Source-backed context notes map to Program/Data evidence or carry named TBDs | Module overview names "Settlement Operator" but Program Flow has no mapped code path or manual-only tag | yes | TBD-CARD-AUTH-003 | 2 |
+| Every Data Flow object traces to a flow in Program Flow | pass | — | 2 |
 | Tier-2 SME claims contradicting tier-1 code surfaced as TBDs | One SME claim ("we no longer use the IFS drop path") contradicts code in `RPG2` but no TBD surfaces this | yes | TBD-CARD-AUTH-007 (missing) | 9 |
 | Capability seeds remain questions | pass | seeds phrased as questions | 5 |
 | BAU rhythm / regulatory / manual procedures come from SME | pass | cited from BAU notes | 4 |
@@ -93,8 +92,8 @@ Semantic verdict: **blocked**
 
 | Check | Result | Recorded SME role / date / IDs | Dimension |
 | --- | --- | --- | --- |
-| Each view names its expected SME | pass | View 1: business owner; View 2: integration architect; etc. | 6 |
-| Per-view review checklist present | pass | embedded in each `0N-*.md` | 6 |
+| Module overview, Program Flow, and Data Flow name expected reviewers | pass | overview: business owner; Program Flow: dev lead; Data Flow: data analyst | 6 |
+| Evidence-view review checklist present | pass | Program Flow and Data Flow review rows | 6 |
 | Module-level review checklist present | pass | `module-review-checklist.md` | 6 |
 | SME approval recorded for any view that claims `approved` | **fail** | `04-data-flow.md` claims `approved` but no SME role / date / IDs recorded | 6 |
 
@@ -112,7 +111,7 @@ SME readiness verdict: **not_ready**
 
 | Finding ID | Severity | Layer | Points to | Resolver | Recommended action |
 | --- | --- | --- | --- | --- | --- |
-| FIND-CARD-AUTH-002 | blocking | semantic | `01-operation-flow.md`; `ACTOR-CARD-AUTH-003`; `03-program-flow.md` | runner | Add a View 3 entry node for "Settlement Operator" or tag the actor as a manual actor with no code path. |
+| FIND-CARD-AUTH-002 | blocking | semantic | `module-overview.md`; `TBD-CARD-AUTH-003`; `03-program-flow.md` | runner | Mark "Settlement Operator" as source-backed manual context with SME evidence, or add a Program Flow entry / TBD if it is expected to map to code. |
 
 ### 3. Output contract completeness
 
@@ -154,7 +153,7 @@ SME readiness verdict: **not_ready**
 
 | Finding ID | Severity | Layer | Points to | Resolver | Recommended action |
 | --- | --- | --- | --- | --- | --- |
-| FIND-CARD-AUTH-004 | blocking | semantic | `02-system-flow.md`; RPG2 source via `program-analysis-OBJ-CARD-AUTH-005.md` | sme | Surface the SME-vs-code disagreement on the IFS drop path as a new `TBD-CARD-AUTH-007` (`category: contradictory_evidence`) and route to SME to resolve. |
+| FIND-CARD-AUTH-004 | blocking | semantic | `module-overview.md`; RPG2 source via `program-analysis-OBJ-CARD-AUTH-005.md` | sme | Surface the SME-vs-code disagreement on the IFS drop path as a new `TBD-CARD-AUTH-007` (`category: contradictory_evidence`) and route to SME to resolve. |
 
 ### 10. Redaction and sensitivity safety
 
@@ -169,7 +168,7 @@ unresolved_items:
   - id: TBD-CARD-AUTH-007
     category: contradictory_evidence
     points_to:
-      - 04_modules/CARD-AUTH/02-system-flow.md
+      - 04_modules/CARD-AUTH/module-overview.md
       - program-analysis-OBJ-CARD-AUTH-005.md
     resolver: sme
     blocks_current_step: yes

@@ -25,7 +25,7 @@ Walk the files in pipeline order — each one consumes the previous:
 | 2c → 3b | [`02_programs/PRICE-CALC/PRICECALC/program-analysis.md`](02_programs/PRICE-CALC/PRICECALC/program-analysis.md) | Per-program control flow, I/O, calls, error handling with evidence-citing rows |
 | 3b (supplemental) | [`02_programs/PRICE-CALC/programs-batch-digest.md`](02_programs/PRICE-CALC/programs-batch-digest.md) | SME-facing one-page scan grouped by criticality; reduces 50-file review to one |
 | 3b → 3d | [`03_flows/PRICE-CALC/flow-calculate-price.md`](03_flows/PRICE-CALC/flow-calculate-price.md) | End-to-end transaction with trigger context, sequence, capability seeds |
-| 3d → 3f | [`04_modules/PRICE-CALC/module-overview.md`](04_modules/PRICE-CALC/module-overview.md) | 4-view synthesis + capability + rule seeds (`BR-*`, `CAP-*`) |
+| 3d → 3f | [`04_modules/PRICE-CALC/module-overview.md`](04_modules/PRICE-CALC/module-overview.md) | Focused module synthesis + capability + rule seeds (`BR-*`, `CAP-*`) |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/spec.yaml`](05_specs/CAP-PRICE-CALCULATION/spec.yaml) | Machine-readable contract for forward SDLC |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/spec.md`](05_specs/CAP-PRICE-CALCULATION/spec.md) | Human-readable spec |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/traceability.md`](05_specs/CAP-PRICE-CALCULATION/traceability.md) | Rule → evidence → test mapping |
@@ -64,8 +64,8 @@ browser to inspect the generated review workspace.
 
 To stay compact, this example omits:
 
-- View 2 / 3 / 4 file bodies (referenced in `module-overview.md` but
-  written as one-liner stubs to keep the example small)
+- Optional Operation/System context files (the focused module package keeps
+  this example to overview + Program Flow + Data Flow)
 - Optional Layer 1 artifacts (DSPF / PRTF / data model)
 - Runtime evidence mining (job logs)
 - Equivalence pack and forward handoff (stages 9 / 10)

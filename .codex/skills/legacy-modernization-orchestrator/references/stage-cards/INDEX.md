@@ -18,7 +18,7 @@ decision via the **Quick Card** block in `SKILL.md → Output Structure`.
 | [02-inventory](02-inventory.md) | 2a–2c | Inventory | You are building or have built `inventory.yaml` |
 | [03-program-analysis](03-program-analysis.md) | 3a–3b | Program Analysis | Inventory approved; analyzing one program at a time |
 | [04-flow-analysis](04-flow-analysis.md) | 3c–3d | Flow Analysis | Multiple programs analyzed; tracing one business transaction end-to-end |
-| [05-module-analysis](05-module-analysis.md) | 3e–3f | Module Analysis | Several flows belong to the same module; need 4-view synthesis |
+| [05-module-analysis](05-module-analysis.md) | 3e–3f | Module Analysis | Several flows belong to the same module; need focused module synthesis |
 | [05a-brd-writing](05a-brd-writing.md) | 3f + 5a–5c | BRD Discovery Writing And Review | Module approved; producing the legacy BRD Package for SME / business discovery review |
 | [06-spec-writing](06-spec-writing.md) | 8a–8c | Spec Writing | Module and BRD approved plus explicit post-BRD promotion / disposition; producing `spec.yaml` + `spec.md` per capability |
 | [07-forward-handoff](07-forward-handoff.md) | 10 | Forward SDLC Handoff | Spec approved + equivalence pack ready; crossing to `build-agent-skill` |

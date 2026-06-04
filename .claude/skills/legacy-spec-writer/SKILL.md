@@ -67,13 +67,13 @@ Accept:
     Persistence Matrix with File I/O Purpose, and Exception Propagation Chain
     consuming routine-local exception closure where available.
 - **All approved program analyses** referenced by those flows
-  - Prefer program-analyzer v0.2.5 or later outputs that include Call Evidence,
+  - Prefer program-analyzer v0.2.7 or later outputs that include Call Evidence,
     Routine Logic Details with conditioned calculation blocks, routine-local
     field lineage / carriers and routine-local exception closure, Logic
     Decomposition Ledger, Key File & Field Logic with source identifiers plus
     business meanings, File I/O Purpose, Field Mutation Matrix, dynamic-call
-    resolution status, front-loaded Validation Logic, and Exception Closure
-    Ledger.
+    resolution status, front-loaded Calculation Logic, Validation Logic,
+    Exception Handling, Message Inventory, and Exception Closure Ledger.
 - **All approved inventory** (`01_inventory/inventory.yaml`)
 - **Capability seed** — one specific `CAP-*` from the module overview;
   the SME has confirmed this is a distinct capability worth specifying
@@ -104,9 +104,9 @@ Accept:
     File I/O rows — cross-program invariants get lost that way.
   - When `inventory.yaml.sme_review.downstream_required.screen_report_analyzer.required: true`
     → the approved `screen-report-analysis.md` artifacts contribute to
-    the UI-driven `behaviors` and `business_rules` of the spec (already
-    surfaced via View 1 of the module analyzer, but spec-writer should
-    cite them as evidence_ids in the spec's UI-facing rules).
+    the UI-driven `behaviors` and `business_rules` of the spec (surfaced via
+    the module overview / BRD crosswalk, but spec-writer should cite them as
+    evidence_ids in the spec's UI-facing rules).
 
 Trigger rules:
 [`skills/legacy-ibmi-inventory/references/downstream-triggers.md`](../legacy-ibmi-inventory/references/downstream-triggers.md).
@@ -176,7 +176,8 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: approved `04_modules/<MODULE-SLUG>/` (all four views at
+- **Required**: approved `04_modules/<MODULE-SLUG>/` (`module-overview.md`,
+  `03-program-flow.md`, `04-data-flow.md`, and `module-review-checklist.md` at
   `approved` or `approved_with_non_blocking_tbd`); approved
   `flow-<FLOW-SLUG>.md` for every flow the module references; approved
   `program-analysis-<OBJ-ID>.md` for every program in those flows;
@@ -315,8 +316,8 @@ to the orchestrator. The Forward Handoff Gate
    - These are *factual* — what the system does, not why
 
 4. **Lift Business Rules (BR-*)**
-   - From module analysis's BR-* seeds (View 1) + cross-checked against
-     flow analyses' SEED-* + SME confirmation
+   - From module analysis's BR-* seeds in `module-overview.md` / BRD crosswalk
+     + cross-checked against flow analyses' `SEED-*` + SME confirmation
    - This is the most delicate step — see `references/rule-extraction-protocol.md`
    - Each BR must:
      - Be confirmed by SME (or explicitly marked `needs_sme_review`)

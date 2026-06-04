@@ -1,4 +1,4 @@
-# View 4: Data Flow — Card Authorization
+# Data Flow — Card Authorization
 
 ## Status: draft → needs_sme_review
 

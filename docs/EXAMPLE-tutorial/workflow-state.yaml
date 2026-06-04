@@ -69,7 +69,7 @@ history:
     capability_id: CAP-PRICE-CALCULATION
     stage_after: "3f Module Analysis Done"
     artifact: 04_modules/PRICE-CALC/module-overview.md
-    note: "4-view synthesis — 2 BR seeds, 1 CAP seed (CAP-PRICE-CALCULATION)"
+    note: "focused module synthesis — 2 BR seeds, 1 CAP seed (CAP-PRICE-CALCULATION)"
   - at: 2026-05-16T15:00:00Z
     skill: legacy-spec-writer
     capability_id: CAP-PRICE-CALCULATION

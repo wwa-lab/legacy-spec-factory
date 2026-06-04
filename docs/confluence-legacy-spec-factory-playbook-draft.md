@@ -167,11 +167,9 @@ missing
 
 沉淀当前业务流程，不急着写目标方案。
 
-建议按四视图组织：
+建议按聚焦模块视图组织：
 
 ```text
-Operation / Business Flow
-System Flow
 Program Flow
 Data Flow
 ```

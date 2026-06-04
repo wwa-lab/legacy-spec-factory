@@ -80,7 +80,7 @@ Record the SME's confirmation in `inventory.yaml.sme_review.criticality_confirme
 | --- | --- |
 | `legacy-ibmi-program-analyzer` | Same depth for all; LLM does the work uniformly |
 | `legacy-ibmi-flow-analyzer` | Flows that touch ≥1 critical program inherit critical priority |
-| `legacy-ibmi-module-analyzer` | View 1 BR seeds tagged `critical` if rooted in critical programs |
+| `legacy-ibmi-module-analyzer` | Module overview / BRD crosswalk `BR-*` seeds tagged `critical` if rooted in critical programs |
 | `legacy-sme-review-facilitator` | Routes review batches by bucket — critical: per-program; standard: 30% sample; low_risk: batch digest |
 | `legacy-spec-writer` | Acceptance criteria depth scales with criticality (critical: explicit per-case; low_risk: shape-only) |
 | `legacy-golden-master-test-planner` | Test coverage thresholds scale with criticality |

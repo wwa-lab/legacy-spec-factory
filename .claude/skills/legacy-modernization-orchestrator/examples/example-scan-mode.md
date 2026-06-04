@@ -27,8 +27,8 @@ Quick artifact probe (per
 
 ```
 01_inventory/inventory.yaml                       → exists, sme_review.decision: approved
-04_modules/CREDIT-CHECK/module-overview.md        → exists, 4 views approved, lists CAP-ORDER-PRICING + CAP-CREDIT-CHECK
-04_modules/AR/module-overview.md                  → exists, View 4 still draft, lists CAP-AR-POSTING
+04_modules/CREDIT-CHECK/module-overview.md        → exists, focused package approved, lists CAP-ORDER-PRICING + CAP-CREDIT-CHECK
+04_modules/AR/module-overview.md                  → exists, Data Flow still draft, lists CAP-AR-POSTING
 05_brds/CAP-ORDER-PRICING/brd.md                  → status: approved
 05_brds/CAP-CREDIT-CHECK/brd.md                   → status: approved
 05_brds/CAP-AR-POSTING/                           → missing
@@ -101,9 +101,9 @@ focus_intent: continued)`.
 
 Stage derivation for `CAP-AR-POSTING`:
 
-- `04_modules/AR/module-overview.md` exists; View 4 is still draft → stage
+- `04_modules/AR/module-overview.md` exists; Data Flow is still draft → stage
   `3e Module Analysis In Progress` (NOT `3f`).
-- Next safe skill: `legacy-ibmi-module-analyzer` to complete View 4.
+- Next safe skill: `legacy-ibmi-module-analyzer` to complete Data Flow.
 
 ## Orchestrator Output (Round 2)
 
@@ -111,18 +111,19 @@ Stage derivation for `CAP-AR-POSTING`:
 ## Workflow Decision
 
 - **Current Stage:** 3e Module Analysis In Progress (for CAP-AR-POSTING / AR)
-- **Desired Outcome:** Complete the 4-view module synthesis
-- **Recommended Next Skill:** `legacy-ibmi-module-analyzer` (status: Implemented v0.1.0)
-- **Why:** View 4 (Data Flow) is still draft. Finishing it advances the
+- **Desired Outcome:** Complete the focused module synthesis
+- **Recommended Next Skill:** `legacy-ibmi-module-analyzer` (status: Implemented v0.2.4)
+- **Why:** Data Flow is still draft. Finishing it advances the
   module to `3f`, which is the prerequisite for BRD writing / review.
 
 ## Routing Notes
 
 - **Stage skip safe?** No. Skipping to spec-writer would orphan the
   unfinished data view and starve the spec of evidence linkage.
-- **Gate check:** Module synthesis completeness — blocked on View 4.
+- **Gate check:** Module synthesis completeness — blocked on Data Flow.
 - **Minimum input needed next:** the partial `04-data-flow.md`, the
-  approved Views 1–3, and SME contact for the data-lifecycle review.
+  approved module overview and Program Flow, and SME contact for the
+  data-lifecycle review.
 - **Route confidence:** High.
 - **Next artifact expected:** approved
   `04_modules/AR/04-data-flow.md` plus an updated
@@ -131,11 +132,11 @@ Stage derivation for `CAP-AR-POSTING`:
 ## Next Step
 
 - **Invoke:** `legacy-ibmi-module-analyzer`
-- **Produce:** completed View 4 + updated `module-overview.md`
+- **Produce:** completed Data Flow + updated `module-overview.md`
 - **Save reminder:** save under `04_modules/AR/`; consumed by
-  `legacy-brd-writer` once all four views are approved.
-- **SME reminder:** confirm any `inferred_business_rule` in View 1 or any
-  new ones surfaced by completing View 4.
+  `legacy-brd-writer` once the focused module package is approved.
+- **SME reminder:** confirm any `inferred_business_rule` in the module overview
+  / BRD crosswalk or any new ones surfaced by completing Data Flow.
 - **Review/export reminder:** Not applicable for this blocked module step. Once
   stable `spec.md`, `traceability.md`, or review-pack Markdown exists, use
   `legacy-html-exporter` only as a browser-friendly companion view.
@@ -150,8 +151,8 @@ YOU ARE HERE:  3e Module Analysis In Progress
 JUST SAVED:    nothing yet (this is the resume turn)
 RUN NEXT:      legacy-ibmi-module-analyzer   [implemented]
 WILL PRODUCE:  04_modules/AR/04-data-flow.md
-GATE CHECK:    BLOCKED: module-completeness — View 4 still draft
-SME ACTION:    required — confirm any new inferred_business_rule surfaced in View 4
+GATE CHECK:    BLOCKED: module-completeness — Data Flow still draft
+SME ACTION:    required — confirm any new inferred_business_rule surfaced in Data Flow
 STAGE CARD:    references/stage-cards/05-module-analysis.md
 STATE FILE:    workflow-state.yaml [created]
 MANUAL FALLBACK: not needed (skill is implemented)
@@ -244,6 +245,6 @@ Please commit it so the next session can resume from the same point."
   downstream" capability (`CAP-ORDER-PRICING` at stage 9), the user might
   legitimately want to work on the unfinished `CAP-AR-POSTING` instead.
 - Stage `3e` was correctly identified — not "rounded up" to `3f` despite
-  three of four views being approved.
+  the overview and Program Flow being approved.
 - The state file is now the resume point. Next turn, Step 0 reads it; the
   user does not need to re-explain anything.

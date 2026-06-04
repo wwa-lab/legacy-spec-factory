@@ -522,7 +522,8 @@ Return only:
 - current stage is `Flow Analysis Done` or equivalent Stage 3d wording
 - recommended next skill is `legacy-ibmi-module-analyzer`
 - Inventory Completeness Gate is reported as passed
-- next artifact expected mentions `module-overview.md` or the four module views
+- next artifact expected mentions `module-overview.md` or the focused module
+  package
 - no files are created or edited
 
 #### Scenario (Positive — Module Analysis Done)
@@ -531,10 +532,11 @@ Return only:
 Use /legacy-modernization-orchestrator.
 
 User input:
-I have an approved CARD-AUTH module analysis with all four views approved,
+I have an approved CARD-AUTH module analysis with module-overview.md,
+03-program-flow.md, 04-data-flow.md, and module-review-checklist.md approved,
 approved flow analyses, approved program analyses, approved inventory, and a
-capability seed CAP-CREDIT-LIMIT-ENFORCEMENT. I need a modernization-ready
-spec package, but I have not created a BRD Package yet. What should I run next?
+capability seed CAP-CREDIT-LIMIT-ENFORCEMENT. I need a modernization-ready spec
+package, but I have not created a BRD Package yet. What should I run next?
 
 Return only:
 - current stage
@@ -874,16 +876,18 @@ the same commands.
 
 ### `legacy-ibmi-program-analyzer`
 
-#### Scenario (Positive — Simple RPGLE CRUD)
+#### Scenario (Positive — Standalone Program Inspection)
 
 ```text
 Use /legacy-ibmi-program-analyzer.
 
 User input:
-I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates
-customer credit limits. Analyze its control flow, file I/O, entry points,
-external calls, key file / key field logic, field-level updates, and complete
-exception handling.
+I have RPGLE source for CREDITCHK. I only want to run this skill and inspect
+the program-analysis output; I am not generating BRD, spec, flow analysis, or
+module analysis yet, and I do not have inventory.yaml. It validates customer
+credit limits. Analyze its control flow, file I/O, entry points, external
+calls, key file / key field logic, field-level updates, and complete exception
+handling.
 
 Provide the analysis in the output contract format.
 ```
@@ -892,11 +896,13 @@ Provide the analysis in the output contract format.
 
 The response must include all of the following:
 
-- **Metadata section:** Program ID (OBJ-CREDIT-VALIDATION-001), Program Type (RPGLE), entry points list
+- **Metadata section:** Program ID is `unlinked - inventory not provided` or equivalent non-OBJ marker, Program Type (RPGLE), entry points list
+- **Exploratory mode:** `Analysis Intent: standalone_exploratory`, `Inventory Linkage: missing`, `Downstream Readiness: not_chain_ready`
 - **Analysis Coverage & Scope:** `standard` mode, source index summary, coverage ledger, and no claim that analysis exceeds supplied source coverage
 - **Program Call Map:** RDi-style structural map, not a statement-level flowchart; includes Call Evidence rather than legacy call-tree / call-edge tables
 - **Routine Cards / Deep Read Windows:** `CreditChk` routine card with coverage value `deep_read`; coverage values, if present, use only `indexed_only`, `deep_read`, or `blocked`; Deep Read Windows may use `full-source-read` as the source range/reason for small programs
 - **Routine Logic Details:** `CreditChk` has step-by-step logic, field calculation / assignment rows for `ApprovedAmount` and return decision literals, conditioned calculation block rows for the `%FOUND` / approval / denial guards, outcome reverse trace rows from `'A'` / `'D'` back to the branch guard and operand chain, routine-local field lineage / carrier rows, routine-local exception closure rows, branch outcomes, exits, evidence, and TBDs for unresolved DDS/precision/carrier/exception gaps
+- **Calculation Logic:** appears immediately after the title and before Validation Logic; summarizes whole-program material calculations/assignments such as `ApprovedAmount` and return decision literals, with supporting links back to Routine Logic Details / Logic Decomposition / field mutation evidence
 - **Entry Points & Parameters:** CreditChk procedure with (CustID, RequestAmount) parameters and return decision code
 - **Data Touch Map:** CREDFILE lookup and CreditChk output/return carrier, including `ApprovedAmount` if source declares it
 - **Logic Decomposition Ledger:** decision points and business-relevant logic blocks are listed with evidence and no invented purpose
@@ -905,12 +911,15 @@ The response must include all of the following:
 - **File I/O:** CREDFILE with CHAIN operation and Purpose; CUSTFILE marked as declared but unused; field-level Field Mutation Matrix is present for any updated/returned fields
 - **External Calls:** None (correctly identifies no external CALLs)
 - **Dynamic call status:** no unresolved dynamic calls are treated as confirmed
-- **Validation Logic:** appears immediately after Routine Logic Details and before Deep Read Windows; all visible indicators, return codes, message IDs, CPF/MCH/SQL statuses, or user-defined errors are listed with one row per explicit message/status code, code-specific Message Description, reverse trigger chain / Routine Logic link, output carrier, downstream effect, and evidence status; not limited to UCC* / LCC* prefixes; unresolved descriptions become TBDs instead of grouped summaries
+- **Validation Logic:** appears immediately after Calculation Logic and before Exception Handling; all visible indicators, return codes, message IDs, CPF/MCH/SQL statuses, or user-defined errors are listed with one row per explicit message/status code, code-specific Message Description, reverse trigger chain / Routine Logic link, output carrier, downstream effect, and evidence status; not limited to UCC* / LCC* prefixes; unresolved descriptions become TBDs instead of grouped summaries
+- **Exception Handling:** appears immediately after Validation Logic and before Message Inventory; every observed business, parameter, I/O, external-call, system, or generic exception path includes trigger, detection mechanism, handling action, downstream effect, supporting detail link, and evidence
+- **Message Inventory:** appears immediately after Exception Handling and before Metadata; every explicit message ID, return code, response literal, SQLSTATE/status, CPF/MCH/RNX/CPD message, operator message, or shop-local message token has one row with exact value, description source, emitted/set-by location, carrier/destination, related Validation/Exception row, and evidence status
 - **Exception Closure Ledger:** cross-references Validation Logic rows and includes generic handlers without inventing specific message IDs
 - **Routine / Window Data Flow:** routine-level field/data movement is captured or named as a TBD
 - **Open Items / Limitations:** centralized blocking/non-blocking gaps are present when needed
-- **Evidence tagging:** All major behaviors tagged with `confirmed_from_code` or evidence IDs
-- **Status:** draft or needs_sme_review (not blocked_pending_source; source is complete)
+- **Evidence tagging:** All major behaviors tagged with `confirmed_from_code`, source ranges/local references, or evidence IDs when supplied
+- **Status:** draft_exploratory (not blocked_pending_source; source is complete and missing inventory is only a downstream-readiness gap)
+- **No fabricated linkage:** Does not invent `OBJ-*` or `EV-*`; missing inventory is reported as a downstream promotion blocker, not a current analysis blocker
 - **No TBDs created for complete source sections** (though "confirm CREDFILE DDS field list" may appear as non-blocking pending)
 - No files are created or edited
 
@@ -944,17 +953,17 @@ Analyze this source and show me the correct TBD handling.
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK. I only want to run this skill and inspect the program-analysis output; I am not generating BRD, spec, flow analysis, or module analysis yet, and I do not have inventory.yaml. It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK. I only want to run this skill and inspect the program-analysis output; I am not generating BRD, spec, flow analysis, or module analysis yet, and I do not have inventory.yaml. It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK (OBJ-CREDIT-VALIDATION-001). It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
+  "Use /legacy-ibmi-program-analyzer. User input: I have RPGLE source for CREDITCHK. I only want to run this skill and inspect the program-analysis output; I am not generating BRD, spec, flow analysis, or module analysis yet, and I do not have inventory.yaml. It validates customer credit limits. Analyze its control flow, file I/O, entry points, external calls, key file / key field logic, field-level updates, and complete exception handling. Provide the analysis in the output contract format."
 ```
 
 For the negative scenario, substitute the incomplete-source prompt above into
@@ -1070,17 +1079,17 @@ Return the flow analysis output showing the correct stop/blocking behavior.
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Validation Logic. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Validation Logic. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Validation Logic. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
+  "Use /legacy-ibmi-flow-analyzer. User input: I have a scheduler entry NIGHTLY-RECON that fires daily at 22:00 and submits a batch job. The batch calls four RPG programs in sequence: RECONCL (CL entry, orchestrator), RECON01R (validates transactions), RECON02R (builds exception report), RECONSQL (final cross-check with GL ledger via SQL). All four program analyses are approved and include Call Evidence, Routine Logic Details with routine-local carrier/lineage and exception closure, File I/O Purpose, source identifier + business meaning fields, and front-loaded Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Help me analyze the complete flow, including data exchanges, edge Evidence Source / Resolution, replay path, cross-program field lineage, persistence outcomes with purpose, exception propagation, and commit boundaries. Return the flow analysis with all required sections populated, including Transaction Call Map, Common Dependencies, Flow Replay Path, Cross-Program Field Lineage, Flow Persistence Matrix, and Exception Propagation Chain."
 ```
 
 For the negative scenario, substitute the missing-program-analysis prompt above into
@@ -1205,28 +1214,27 @@ AUTH-MODULE scope confirmed, and BAU notes from the Module Owner.
 Each flow analysis includes Flow Replay Path, Cross-Program Field Lineage,
 Flow Persistence Matrix, and Exception Propagation Chain sections.
 Module slug is AUTH-MODULE, business name is "Authorization Processing". Help me
-assemble the four-view module coverage map.
+synthesize the focused module analysis.
 
-Return the module-overview.md and all four views (01-operation-flow.md through
-04-data-flow.md) following the output contract format. Each view must include
-`## Mermaid Flow Diagram` with a fenced Mermaid `flowchart` before evidence or
-traceability tables; do not return table-only flow views.
+Return `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, and
+`module-review-checklist.md` following the output contract format. Do not
+return `01-operation-flow.md` or `02-system-flow.md`. Program Flow and Data Flow
+must each include `## Mermaid Flow Diagram` with a fenced Mermaid `flowchart`
+before evidence or traceability tables; do not return table-only flow views.
 ```
 
 #### Pass Criteria (Positive)
 
 The response must include all of the following:
 
-- **Module-overview.md:** MODULE-AUTH-MODULE-001 ID, Scope Statement, In-scope Flows list with FLOW-* links, View Index table showing all 4 views with status, at least one CAP-* capability seed, Module Review Checklist with cross-view consistency checks, no blocking TBDs (or only non-blocking TBDs)
+- **Module-overview.md:** MODULE-AUTH-MODULE-001 ID, Scope Statement, In-scope Flows list with FLOW-* links, Evidence View Index table showing Program Flow and Data Flow with status, at least one CAP-* capability seed, BRD Source Eligibility Crosswalk, Module Review Checklist with consistency checks, no blocking TBDs (or only non-blocking TBDs)
 - **Module-overview.md v0.2 summaries:** Module Program-Chain Readiness, Module Persistence & Critical Field Summary, and Module Exception & Recovery Summary are populated for all three flows
-- **01-operation-flow.md:** Business Scope, Business Actors (ACTOR-*), Business Events (EVENT-*), BAU Rhythm, Manual Intervention Points, Exception Lifecycle, Business Rule Seeds (BR-*), evidence linking to SME or BAU source
-- **02-system-flow.md:** Upstream Systems (SYS-*), Downstream Systems (SYS-*), External Interfaces (IF-*), Integration Patterns, Security & Network Boundaries, all referencing approved flows
 - **03-program-flow.md:** Flow Inventory (all 3 flows), Replay Coverage Summary (`REPLAY-*`), Cross-Flow Dependencies (shared file), Shared Sub-Programs, Call Topology, evidence from approved program/flow analyses
 - **04-data-flow.md:** Data Objects (with OBJ-* and Coupling Score), Lifecycle per object, Module Persistence Matrix (`PERSIST-*`), Critical Field Lineage Across Module (`LINEAGE-*`), Exception-Aware Data Risks (`EXCHAIN-*`), Coupling Hotspots, DB Table Relationships, Cross-Module Dependencies, evidence from program analyses
-- **Mermaid diagrams:** Each of the four view files includes `## Mermaid Flow Diagram` with a fenced Mermaid `flowchart` before inventory, evidence, or traceability tables; no view represents flow only as a table
-- **Status values:** All views marked as `draft` or `approved_with_non_blocking_tbd` (no blocked status; all required evidence present)
-- **All four views present:** No view is marked blocked or missing
-- **Evidence tagged:** All major actors, systems, programs, data objects, and lifecycle phases link to EV-*, OBJ-*, FLOW-*, or SME confirmation
+- **Mermaid diagrams:** Program Flow and Data Flow each include `## Mermaid Flow Diagram` with a fenced Mermaid `flowchart` before inventory, evidence, or traceability tables; neither view represents flow only as a table
+- **Status values:** Program Flow and Data Flow marked as `draft` or `approved_with_non_blocking_tbd` (no blocked status; all required evidence present)
+- **No deprecated defaults:** The response does not include `01-operation-flow.md` or `02-system-flow.md`
+- **Evidence tagged:** All major programs, data objects, lifecycle phases, exception paths, source-backed context notes, and capability seeds link to EV-*, OBJ-*, FLOW-*, or SME confirmation
 - No files are created or edited
 
 #### Scenario (Negative — Missing Flow Analysis With Coverage Allowed)
@@ -1253,32 +1261,32 @@ Return only:
   BRD/source eligibility; not approved for BRD conclusions.
 - **Module-overview.md:** Identifies MODULE-AUTH-MODULE-001 and the three
   flows; shows FLOW-BATCH-001 as missing approved flow evidence.
-- **Coverage allowed:** May assemble four-view coverage from approved flows,
-  inventory, and BAU notes, but batch-specific behavior must be labeled
+- **Coverage allowed:** May assemble focused module coverage from approved
+  flows, inventory, and BAU notes, but batch-specific behavior must be labeled
   `needs_sme_review` or `questions_only`.
 - **Creates TBD:** TBD-AUTH-MODULE-001: FLOW-BATCH-001 lacks approved
   flow-analysis; routes to `legacy-ibmi-flow-analyzer` or SME/source enrichment.
 - **BRD Source Eligibility Crosswalk:** Rows depending on FLOW-BATCH-001 are
   `questions_only` or `needs_sme_review`; they cannot become BRD factual prose.
-- **View Index:** Shows all four views as present with partial/incomplete
-  coverage where batch evidence is missing.
+- **Evidence View Index:** Shows Program Flow and Data Flow as present with
+  partial/incomplete coverage where batch evidence is missing.
 - No files are created or edited
 
 #### Reference Commands
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and module scope notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the focused module analysis. Return module-overview.md, 03-program-flow.md, 04-data-flow.md, and module-review-checklist.md following the output contract format. Do not return 01-operation-flow.md or 02-system-flow.md. Program Flow and Data Flow must each include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and module scope notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the focused module analysis. Return module-overview.md, 03-program-flow.md, 04-data-flow.md, and module-review-checklist.md following the output contract format. Do not return 01-operation-flow.md or 02-system-flow.md. Program Flow and Data Flow must each include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and BAU notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me assemble the four-view module coverage map. Return the module-overview.md and all four views (01-operation-flow.md through 04-data-flow.md) following the output contract format. Each view must include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
+  "Use /legacy-ibmi-module-analyzer. Contract-only no-write smoke test. Do not create or edit files. Do not inspect or rely on the actual workspace filesystem; use only the scenario text below and the skill contract. User input: I have three approved flow analyses (FLOW-AUTH-001, FLOW-BATCH-001, FLOW-MANUAL-001), and each includes Flow Replay Path, edge Evidence Source / Resolution, Cross-Program Field Lineage, Flow Persistence Matrix with Purpose, and Exception Propagation Chain. I also have approved program analyses for all programs, an approved inventory with the AUTH-MODULE scope confirmed, and module scope notes from the Module Owner. Module slug is AUTH-MODULE, business name is \"Authorization Processing\". Help me synthesize the focused module analysis. Return module-overview.md, 03-program-flow.md, 04-data-flow.md, and module-review-checklist.md following the output contract format. Do not return 01-operation-flow.md or 02-system-flow.md. Program Flow and Data Flow must each include ## Mermaid Flow Diagram with a fenced Mermaid flowchart before evidence or traceability tables; do not return table-only flow views."
 ```
 
 For the negative scenario, substitute the missing-flow-analysis prompt above into
@@ -1293,7 +1301,8 @@ Use /legacy-spec-writer.
 
 User input:
 I have:
-- Approved module analysis (CARD-AUTH module, all four views approved)
+- Approved module analysis (CARD-AUTH module overview, Program Flow, Data Flow,
+  and review checklist approved)
 - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved)
 - Approved program analyses for all 8 programs referenced by those flows
 - Approved inventory with CARD-AUTH scope confirmed
@@ -1314,7 +1323,7 @@ The response must include all of the following:
 - **Capability & scope:** capability.owner = Anna Chen, scope.in_scope lists credit limit validation, scope.out_of_scope excludes card issuance
 - **Evidence section:** All EV-* IDs referenced by the three flows and eight programs are listed with evidence_strength (confirmed_from_code / confirmed_by_sme)
 - **Observed Behaviors (BEH-*):** At least 3 behaviors (e.g., "validates transaction against customer credit limit", "propagates hold decision to downstream") each tracing to ≥1 EV-*
-- **Business Rules (BR-*):** At least 2 business rules lifted from module View 1 seeds, each with review_status (draft or approved based on SME confirmation), linked to supporting BEH-*
+- **Business Rules (BR-*):** At least 2 business rules lifted from module overview / BRD crosswalk seeds, each with review_status (draft or approved based on SME confirmation), linked to supporting BEH-*
 - **Modernization Decisions (DEC-*):** At least 1 decision (e.g., "store transaction audit in append-only table"), referencing BR-* or target_platform
 - **Data model:** Target entities (e.g., CreditTransaction, CustomerCreditLimit) mapped to legacy OBJ-* with field mappings
 - **Process flow & I/O:** process_flow.steps are business-visible phases and outcomes from the ONUS-AUTH flow analysis, not one step per legacy program; inputs (e.g., transaction), outputs (e.g., hold_decision)
@@ -1360,17 +1369,17 @@ Return:
 
 ```bash
 codex exec -C . -s read-only --ephemeral -m gpt-5.4-mini \
-  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module overview, Program Flow, Data Flow, and review checklist approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
 ```
 
 ```bash
 claude -p --model haiku --permission-mode dontAsk --tools Read --max-budget-usd 0.20 \
-  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module overview, Program Flow, Data Flow, and review checklist approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
 ```
 
 ```bash
 opencode run -m opencode/minimax-m2.5-free \
-  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module, all four views approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
+  "Use /legacy-spec-writer. User input: I have: - Approved module analysis (CARD-AUTH module overview, Program Flow, Data Flow, and review checklist approved) - Approved flow analyses: ONUS-AUTH, NIGHTLY-RECON, MANUAL-AUTH (all approved) - Approved program analyses for all 8 programs referenced by those flows - Approved inventory with CARD-AUTH scope confirmed - Approved BRD Package under 05_brds/CREDIT-LIMIT-ENFORCEMENT/ with sections 1-9 reviewed by Anna Chen - SME owner: Anna Chen (capability owner) - Capability seed: CAP-CREDIT-LIMIT-ENFORCEMENT - Target platform: Java 21 + Spring Boot 3 + PostgreSQL. Help me write the spec for credit limit enforcement. Return the spec.yaml structure, spec.md outline, and indication that spec-review.md and traceability.md will be produced."
 ```
 
 For the negative scenario, substitute the incomplete-upstream-analysis prompt above into

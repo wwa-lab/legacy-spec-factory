@@ -74,15 +74,15 @@ raw Office / Visio / PDF / image documents (not yet normalized)
 scattered docs/specs / draft context evidence / sparse module notes /
 external RAG bundle + human-confirmed module context
   └─ module-context-intake
-       └─ module-analyzer (validates / synthesizes approved 4-view module)
+       └─ module-analyzer (validates / synthesizes focused module package)
 ```
 
 **Anti-pattern**: treating draft document-derived context steps, generated
 diagrams, or RAG candidates as approved `BR-*` rules or BRD conclusions, or
 reporting upstream context packages as the final four module flows. Context
 intake preserves candidates, source eligibility, and gaps;
-`legacy-ibmi-module-analyzer` produces the canonical `04_modules/` four-view
-module coverage and BRD eligibility map.
+`legacy-ibmi-module-analyzer` produces the canonical `04_modules/` focused
+module overview, Program Flow, Data Flow, and BRD eligibility map.
 
 ---
 
@@ -103,9 +103,9 @@ unclear, or when a high-risk rule needs source-level verification.
 | [`legacy-ibmi-evidence-intake`](../skills/legacy-ibmi-evidence-intake/SKILL.md) | raw evidence bundles | `evidence/manifest.yaml`, `redaction-log.md` | **First** — gates everything else |
 | [`legacy-ibmi-inventory`](../skills/legacy-ibmi-inventory/SKILL.md) | approved evidence + source listings | `01_inventory/inventory.yaml`, object map | After intake |
 | [`legacy-ibmi-runtime-evidence-miner`](../skills/legacy-ibmi-runtime-evidence-miner/SKILL.md) | approved job logs / spool files + inventory mappings | `runtime-evidence.jsonl`, mining checklist | After intake + inventory; parallel evidence enrichment |
-| [`legacy-ibmi-program-analyzer`](../skills/legacy-ibmi-program-analyzer/SKILL.md) | one program (RPGLE/CLLE/COBOL) | `program-analysis-<OBJ-ID>.md` | Once per program in inventory |
+| [`legacy-ibmi-program-analyzer`](../skills/legacy-ibmi-program-analyzer/SKILL.md) | one program (RPGLE/CLLE/COBOL); inventory required only for downstream-ready chain output | `program-analysis-<OBJ-ID>.md` or exploratory `program-analysis.md` | Once per program in inventory, or standalone for skill-output inspection |
 | [`legacy-ibmi-flow-analyzer`](../skills/legacy-ibmi-flow-analyzer/SKILL.md) | multiple program-analyses for one transaction | `flow-<FLOW-SLUG>.md` | After per-program analysis is done |
-| [`legacy-ibmi-module-analyzer`](../skills/legacy-ibmi-module-analyzer/SKILL.md) | related flows | `04_modules/<MODULE-SLUG>/` (4-view) | After flows for a capability are done |
+| [`legacy-ibmi-module-analyzer`](../skills/legacy-ibmi-module-analyzer/SKILL.md) | related flows | `04_modules/<MODULE-SLUG>/` (overview + Program/Data views) | After flows for a capability are done |
 | [`legacy-ibmi-data-model-analyzer`](../skills/legacy-ibmi-data-model-analyzer/SKILL.md) | DDS PF/LF + related programs | `03_data_models/<DATA-SLUG>/` | Parallel to program/flow analysis |
 | [`legacy-ibmi-screen-report-analyzer`](../skills/legacy-ibmi-screen-report-analyzer/SKILL.md) | DSPF/PRTF + driving programs | `screen-report-analysis-<OBJ-ID>.md` | Parallel to program/flow analysis |
 

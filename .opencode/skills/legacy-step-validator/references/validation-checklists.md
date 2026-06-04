@@ -29,7 +29,7 @@ only — split if you find yourself wanting two.
 | Package fingerprint | Detected step |
 | --- | --- |
 | `01_inventory/inventory.yaml` + `01_inventory/object-map.md` | inventory |
-| Single `program-analysis-<OBJ-ID>.md` (with Program Call Map, Data Touch Map, control flow, file I/O sections) | program analysis |
+| Single `program-analysis-<OBJ-ID>.md` or standalone `program-analysis.md` (with Program Call Map, Data Touch Map, control flow, file I/O sections) | program analysis |
 | Single `flow-<FLOW-SLUG>.md` (with trigger model, nodes, edges, data flow sections) | flow analysis |
 | `04_modules/<MODULE-SLUG>/module-overview.md` + four `0N-*.md` view files | module analysis |
 | `05_brds/<CAPABILITY-SLUG>/brd.md` + `brd-review.md` + `validation-scenarios.md` + `traceability.md` | BRD writing |
@@ -109,19 +109,23 @@ If either fails, dimension 7 is `blocked`.
 
 ## Program analysis step
 
-Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
+Detected when a single `program-analysis-<OBJ-ID>.md` or standalone
+`program-analysis.md` is supplied.
 
 ### Mechanical
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
 | File exists and follows `templates/program-analysis.md` section order | 3 | blocking |
-| Header cites `OBJ-*` from an `approved` / `approved_with_non_blocking_tbd` inventory | 1 | blocking |
-| Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + Call Evidence + reverse caller index), Routine Cards, Routine Logic Details, front-loaded Validation Logic before Deep Read Windows, Deep Read Windows, entry points, object dependencies, Data Touch Map, Logic Decomposition Ledger, Key File & Field Logic, Routine / Window Data Flow, control flow, File I/O with Purpose + Field Mutation Matrix, External Calls with dynamic-call resolution status, Error Handling with Exception Closure Ledger, Redundancy Candidate Notes, Open Items / Limitations, SME checklist sections present | 3 | blocking |
+| Metadata declares `Analysis Intent` (`standalone_exploratory` or `chain_ready`), `Inventory Linkage`, and `Downstream Readiness` | 1 | blocking |
+| `chain_ready` header cites `OBJ-*` from an `approved` / `approved_with_non_blocking_tbd` inventory; `standalone_exploratory` may use `Program ID: unlinked - inventory not provided` and is not blocked for missing inventory | 1 | blocking for `chain_ready`; non_blocking warning for `standalone_exploratory` |
+| Top-of-document Calculation Logic, Validation Logic, Exception Handling, Message Inventory, Analysis Coverage & Scope, Program Call Map (visual overview + node inventory + Call Evidence + reverse caller index), Routine Cards, Routine Logic Details, Deep Read Windows, entry points, object dependencies, Data Touch Map, Logic Decomposition Ledger, Key File & Field Logic, Routine / Window Data Flow, control flow, File I/O with Purpose + Field Mutation Matrix, External Calls with dynamic-call resolution status, Error Handling with Exception Closure Ledger, Redundancy Candidate Notes, Open Items / Limitations, SME checklist sections present | 3 | blocking |
 | Analysis mode is one of `standard`, `segmented`, or `large_program` | 3 | blocking |
 | Coverage Ledger records routines found, routines deep-read, external edges resolved, data touches resolved, blocking gaps, and non-blocking gaps | 3 | blocking |
 | Segmented or large-program mode includes Routine Cards and Deep Read Windows | 3 | blocking |
-| Every non-trivial behaviour has ≥1 `EV-*` link | 4 | blocking |
+| Evidence matches intent: `chain_ready` gives every non-trivial behaviour ≥1 `EV-*` link; `standalone_exploratory` gives source ranges/local references and marks the artifact `not_chain_ready` without fabricating `EV-*` | 4 | blocking for `chain_ready`; non_blocking warning for `standalone_exploratory` |
+| Reference-pack lookups, if used, list pack ID/version/authorization in Metadata and cite pack/file/row or anchor for message, field, or control-value meanings | 4 | blocking |
+| Reference-pack lookups from Excel/Word/PDF/image sources cite normalized output plus source coordinates or document-intake manifest; unreadable raw documents are carried as lookup TBDs, not treated as absent entries | 4 | blocking |
 | Open Items / Limitations grouped by `pending_source` / `pending_sme_judgment` / `non_blocking`, with resolver role and blocking status | 8 | blocking |
 | No `BR-*` or `CAP-*` minted (only program-local `BEH-*`, `EX-*`, `TBD-*`) | 3 | blocking |
 
@@ -134,10 +138,15 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 | Key file / key field logic is grounded in source operations, DDS / externally described fields, or named SME notes; every resolvable key field or variable preserves source identifier plus business meaning; no field semantics are invented from names alone | 4 | blocking |
 | File I/O rows identify the specific file/object, operation, Purpose, key fields with source identifier + meaning, affected field(s), condition, before/after/source value where evidenced, and skipped/no-op cases where relevant | 3 | blocking |
 | External/dynamic calls carry a resolution status; unresolved or `needs_sme_review` dynamic calls are listed in Open Items / Limitations and not treated as confirmed | 4 | blocking |
-| Validation Logic is placed immediately after Routine Logic Details and inventories every observed message ID, return code, indicator, SQLSTATE/status, CPF/MCH escape, user-defined error code, output carrier, downstream effect, reverse trigger chain / Routine Logic link, and evidence status; it is not limited to known prefixes such as UCC* / LCC*; each explicit message/status code has its own row and a code-specific Message Description, with unresolved descriptions marked as TBD instead of grouped summaries | 4 | blocking |
+| Calculation Logic is placed immediately after the title, summarizes the whole program's material calculations/assignments for IT SME first-read review, preserves source identifiers with business meaning, and links every row to Routine Logic Details, conditioned calculation blocks, Logic Decomposition, Key File & Field Logic, File I/O mutation rows, or source-backed TBDs | 4 | blocking |
+| Validation Logic is placed immediately after Calculation Logic and before Exception Handling, and inventories every observed message ID, return code, indicator, SQLSTATE/status, CPF/MCH escape, user-defined error code, output carrier, downstream effect, reverse trigger chain / Routine Logic link, and evidence status; it is not limited to known prefixes such as UCC* / LCC*; each explicit message/status code has its own row and a code-specific Message Description, with unresolved descriptions marked as TBD instead of grouped summaries | 4 | blocking |
+| Exception Handling is placed immediately after Validation Logic and before Message Inventory, covers every observed business/parameter/I/O/external-call/system/generic exception path, states trigger, detection mechanism, handling action, downstream effect, and links each row to routine-level or Error Handling closure evidence | 4 | blocking |
+| Message Inventory is placed immediately after Exception Handling and before Metadata, creates one row per explicit message/code/literal, preserves exact source values, includes description source, emitted/set-by location, trigger/handler, carrier/destination, related Validation/Exception row, and evidence status | 4 | blocking |
 | Exception Closure Ledger cross-references Validation Logic rows and covers generic catch-all handlers without inventing specific message IDs | 4 | blocking |
 | Flow-header (if present) reconciled against code-derived Program Call Map Call Evidence; mismatches recorded as Open Items / Limitations | 9 | blocking |
 | Evidence strength not overstated (no `weakly_inferred` posing as `confirmed_from_code`) | 5 | blocking |
+| Reference-pack meanings explain observed identifiers only; they do not create unobserved branches, calls, file mutations, message emissions, or business rules | 5 | blocking |
+| Dictionary/control-file conflicts with source behavior are preserved as contradiction TBDs rather than silently resolved | 5 | blocking |
 | Knowledge type matches each statement's nature (observed vs inferred) | 5 | blocking |
 | Whole-program summary does not claim more certainty than the coverage ledger supports | 5 | blocking |
 | State-changing or external-boundary routines are not left `indexed_only` without a blocking or non-blocking review item | 4 | blocking |
@@ -156,6 +165,9 @@ Detected when a single `program-analysis-<OBJ-ID>.md` is supplied.
 
 Program analysis is ready for flow analysis when:
 
+- `Analysis Intent = chain_ready`
+- `Inventory Linkage = linked`
+- `Downstream Readiness = ready_for_flow_after_approval`
 - `status` ∈ `approved`, `approved_with_non_blocking_tbd`
 - SME sign-off recorded when required by the program's risk class
 - Program Call Map Call Evidence, Logic Decomposition Ledger, Key File &
@@ -163,6 +175,11 @@ Program analysis is ready for flow analysis when:
   Resolution Status, Validation Logic, Exception Closure Ledger, Routine /
   Window Data Flow, and Open Items / Limitations are present or their gaps are
   named `TBD-*`
+
+`standalone_exploratory` program analysis may pass for skill-output inspection
+with warnings when source coverage is complete, but it is never ready for flow,
+module, BRD, spec, or traceability steps until rerun or relinked as
+`chain_ready`.
 
 ## Flow analysis step
 
@@ -216,18 +233,18 @@ Flow is ready for module analysis when:
 
 ## Module analysis step
 
-Detected when `04_modules/<MODULE-SLUG>/` contains `module-overview.md`
-plus four `0N-*.md` view files.
+Detected when `04_modules/<MODULE-SLUG>/` contains `module-overview.md`,
+`03-program-flow.md`, `04-data-flow.md`, and `module-review-checklist.md`.
 
 ### Mechanical
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| `module-overview.md` exists with 4-view index, top blocking TBDs, Module Program-Chain Readiness, Module Persistence & Critical Field Summary, Module Exception & Recovery Summary, capability seeds, BRD Functional Analysis Input Crosswalk, and review checklist | 3 | blocking |
-| All four views (`01-operation-flow.md`, `02-system-flow.md`, `03-program-flow.md`, `04-data-flow.md`) exist | 3 | blocking |
+| `module-overview.md` exists with Evidence View Index, top blocking TBDs, Module Program-Chain Readiness, Module Persistence & Critical Field Summary, Module Exception & Recovery Summary, optional source-backed context notes when available, capability seeds, BRD Functional Analysis Input Crosswalk, and review checklist | 3 | blocking |
+| Default module package files (`03-program-flow.md`, `04-data-flow.md`, and `module-review-checklist.md`) exist | 3 | blocking |
 | `module-review-checklist.md` exists | 3 | blocking |
-| View 3 includes Replay Coverage Summary; View 4 includes Module Persistence Matrix, Critical Field Lineage Across Module, and Exception-Aware Data Risks | 3 | blocking |
-| `MODULE-*`, `VIEW-*`, `ACTOR-*`, `SYS-*`, module-level `BR-*` seeds, module-level `CAP-*` seeds, `TBD-*` minted; upstream `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `OBJ-*`, `EV-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and `EXCHAIN-*` reused; no unapproved ID families minted | 3 | blocking |
+| Program Flow includes Replay Coverage Summary; Data Flow includes Module Persistence Matrix, Critical Field Lineage Across Module, and Exception-Aware Data Risks | 3 | blocking |
+| `MODULE-*`, module-level `BR-*` seeds, module-level `CAP-*` seeds, `TBD-*` minted; upstream `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`, `OBJ-*`, `EV-*`, `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, and `EXCHAIN-*` reused; no unapproved ID families minted | 3 | blocking |
 | Every in-scope flow is `approved` or `approved_with_non_blocking_tbd` | 1 | blocking |
 
 ### Semantic
@@ -235,13 +252,11 @@ plus four `0N-*.md` view files.
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
 | Cross-flow synthesis matches the flow analyses; no new IBM i facts introduced | 4 | blocking |
-| Every View 1 actor appears in View 3 (or is tagged manual) | 2 | blocking |
-| Every View 2 system appears in View 3 as a trigger or external call | 2 | blocking |
-| Every `REPLAY-*` path in View 3 maps to a View 1 business event, exception outcome, persisted outcome, or named `TBD-*` | 2 | blocking |
-| Every external or durable `PERSIST-*` output maps to View 2 system/manual consumers or View 4 objects / outputs | 2 | blocking |
-| Every module-critical `LINEAGE-*` and durable `PERSIST-*` claim appears in View 4 | 2 | blocking |
-| Every material `EXCHAIN-*` has a View 1 operational outcome and BRD Error Handling crosswalk coverage, or a named `TBD-*` | 2 | blocking |
-| Every View 4 data object traces to at least one flow in View 3 | 2 | blocking |
+| Every `REPLAY-*` path in Program Flow maps to an in-scope flow outcome, exception outcome, persisted outcome, or named `TBD-*` | 2 | blocking |
+| Every external or durable `PERSIST-*` output maps to Data Flow objects / outputs, sourced external consumers, or named `TBD-*` | 2 | blocking |
+| Every module-critical `LINEAGE-*` and durable `PERSIST-*` claim appears in Data Flow | 2 | blocking |
+| Every material `EXCHAIN-*` has Exception & Recovery Summary coverage, Data Flow impact coverage where applicable, BRD Error Handling crosswalk coverage, or a named `TBD-*` | 2 | blocking |
+| Every Data Flow object traces to at least one flow in Program Flow | 2 | blocking |
 | Tier-2 SME claims contradicting tier-1 code are surfaced as TBDs, not overrides | 9 | blocking |
 | Capability seeds and business-rule seeds remain *questions* | 5 | blocking |
 | BAU rhythm, regulatory references, manual procedures come from SME, not inferred | 4 | blocking |
@@ -250,13 +265,14 @@ plus four `0N-*.md` view files.
 
 | Check | Maps to dimension | Severity |
 | --- | --- | --- |
-| Each view names its expected SME (business owner / integration architect / dev lead / data analyst) | 6 | blocking |
-| Per-view review checklist present | 6 | non_blocking |
+| Module overview, Program Flow, and Data Flow name expected reviewers (business owner / dev lead / data analyst / integration reviewer when source-backed interface notes exist) | 6 | blocking |
+| Evidence-view review checklist present | 6 | non_blocking |
 | Module-level review checklist present | 6 | blocking |
 
 ### Next-step gate
 
-Module is ready for BRD writing when **all four views** are at least
+Module is ready for BRD writing when `module-overview.md`, Program Flow, Data
+Flow, and the module review checklist are at least
 `approved_with_non_blocking_tbd`, the module overview is signed off, and the
 BRD Functional Analysis Input Crosswalk covers sections 1-9 or carries named
 `TBD-*` gaps. Spec writing remains downstream of an approved BRD Package plus

@@ -135,7 +135,7 @@ This document defines the types of observations that can be extracted from IBM i
 
 **Downstream consumption**:
 - Flow analyzer documents interactive trigger model
-- Module analyzer for View 1 operational context
+- Module analyzer for source-backed module overview context
 - Used for user load planning
 
 ---
