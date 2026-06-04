@@ -334,9 +334,9 @@ matrix. Summary:
 | Step | Skill | Primary Input | Primary Output | SME Required At Pass? |
 | --- | --- | --- | --- | --- |
 | Inventory | `legacy-ibmi-inventory` | approved evidence manifest with source-path authorization or required redaction | `inventory.yaml`, `object-map.md` | Yes for inventory completion — `sme_review.decision` must be `approved` or `approved_with_non_blocking_tbd`; no for starting developer-led inventory |
-| Program analysis | `legacy-ibmi-program-analyzer` | approved inventory + program source | `program-analysis.md` per program | Recommended; required if program affects money, inventory, compliance, or customer status |
+| Program analysis | `legacy-ibmi-program-analyzer` | program source; approved inventory required for `chain_ready`, optional reference packs for field/message/control meanings, optional inventory for `standalone_exploratory` inspection | `program-analysis.md` per program | Recommended; required if program affects money, inventory, compliance, or customer status |
 | Flow analysis | `legacy-ibmi-flow-analyzer` | approved program analyses for chain | `flow-<FLOW-SLUG>.md` | Recommended; required if cross-program rule emerges |
-| Module analysis | `legacy-ibmi-module-analyzer` | approved flow analyses + BAU notes | 4-view module package | Yes — for module-level capability seeds and BR-* seeds |
+| Module analysis | `legacy-ibmi-module-analyzer` | approved flow analyses + module scope notes | focused module package | Yes — for module-level capability seeds and BR-* seeds |
 | Spec writing | `legacy-spec-writer` | approved module + flow + program + inventory | `spec.yaml`, `spec.md`, `spec-review.md`, `traceability.md` | Yes — `business_rules[*].review_status = approved` requires SME |
 | Spec review | `legacy-spec-reviewer` (planned) | drafted spec | `review-report.md` | Yes — SME sign-off transitions spec from `in_review` to `approved` |
 | Forward SDLC handoff | doc-only gate (`docs/forward-sdlc-contract.md`) | approved spec | handoff bundle to `wwa-lab/build-agent-skill` | Yes — gate is the SME-recognized contract |
@@ -504,10 +504,9 @@ No runtime-specific assumptions are baked into this canonical source.
 
 ## Version History
 
-- v0.1.2 (2026-05-29): Renamed scattered-context Step Contract wording
-  from "draft four-flow package" to "draft four-view context package" so
+- v0.1.2 (2026-05-29): Renamed scattered-context Step Contract wording so
   upstream context notes are not confused with canonical module-analysis
-  flow artifacts.
+  artifacts.
 - v0.1.3 (2026-05-31): Added the global artifact-preview and
   stop-after-writeback completion boundary so steps do not keep processing
   after outputs, validation status, and workflow-state write-back are recorded.

@@ -47,7 +47,7 @@ also records which skill pairs were intentionally **not** merged and why.
 ## Reverse Chain Map
 
 ```
-Module-First Entry (scattered docs / external RAG / four-view context)
+Module-First Entry (scattered docs / external RAG / module context)
    ↓ legacy-document-evidence-intake (only when source is raw Office/Visio/PDF/image and not yet normalized)
       - normalize Excel/Word/PPT/Visio/PDF/image → Markdown/CSV/PDF/PNG/SVG + manifests + evidence coordinates
 00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/ (ready / ready_with_warnings / blocked-by-tooling metadata)
@@ -77,7 +77,7 @@ Evidence Manifest + Redaction Log + Redacted Evidence Bundle
         ↓
    legacy-ibmi-flow-analyzer ───────► flow.md
         ↓
-   legacy-ibmi-module-analyzer ─────► 4-view module coverage + BRD eligibility
+   legacy-ibmi-module-analyzer ─────► focused module package + BRD eligibility
    ↓
 [Layer 2 — Platform-Agnostic Synthesis]
    legacy-brd-writer ───────────────► legacy BRD Package for migration discovery
@@ -276,7 +276,7 @@ the full table. Common cases:
 
 | Current Input | Stage |
 | --- | --- |
-| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed four-view context | Module Context Intake — degraded context allowed |
+| Scattered authorized Visio / Word / Excel / PDF / PowerPoint / Function Spec / Technical Design / Program Spec / File Spec / SME-note docs without SME-reviewed module context | Module Context Intake — degraded context allowed |
 | Raw legacy source / job log / spool that has not been redacted | Evidence Intake (pre-redaction) |
 | Redacted evidence bundle with sensitivity recorded | Evidence Ready |
 | `inventory.yaml` with `sme_review.decision: blocked` | Inventory Blocked |
@@ -326,7 +326,7 @@ for the full table. Common routes:
 | Current Stage | Desired Outcome | Route To | Skill Status |
 | --- | --- | --- | --- |
 | Raw Office/Visio/PDF/image docs, no `document-intake` manifest yet (authorized, sensitivity known) | Normalize formats + evidence coordinates | `legacy-document-evidence-intake` | Implemented v0.1.0 |
-| Scattered docs, specs, or sparse module notes, no reviewed four-view context | Package as low-confidence module context with TBDs | `legacy-module-context-intake` | Implemented v0.1.8 |
+| Scattered docs, specs, or sparse module notes, no reviewed module context | Package as low-confidence module context with TBDs | `legacy-module-context-intake` | Implemented v0.1.8 |
 | Program-flow seed (`Program A -> Program B -> Program C`) and user wants daily BRD delivery | Accept as scope seed, expand inventory and per-node program analyses, then analyze the flow | `legacy-ibmi-inventory` first | Implemented |
 | Scattered docs/source metadata/context package/program-flow seed, user wants daily delivery BRD | Run full chain with exception-only approvals and produce `delivery_draft` plus daily review pack | earliest missing implemented step | Implemented |
 | Scattered docs/source metadata/context package, user explicitly wants early internal POC BRD | Produce a non-approved BRD review artifact with low-confidence hypotheses and approval/spec blockers | `legacy-brd-writer` | Implemented v0.1.9 |
@@ -337,7 +337,7 @@ for the full table. Common routes:
 | Inventory Done | Understand one program | `legacy-ibmi-program-analyzer` | **Implemented v0.2.5** |
 | Inventory Done | Map calls / CRUD / DSPF | (subsumed by program / flow / module analyses) | n/a |
 | Program Analysis Done | Analyze a complete call chain | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** |
-| Flow Analysis Done | Synthesize module (4 views) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.2** |
+| Flow Analysis Done | Synthesize module (focused package) | `legacy-ibmi-module-analyzer` | **Implemented v0.2.4** |
 | Module context ready but no `01_inventory/object-map.md`, `02_programs/`, or `03_flows/` for a requested standard/code-backed BRD | Build code evidence backbone | `legacy-ibmi-inventory` first, then program / flow analysis | **Implemented** |
 | Module context ready but no code evidence backbone, and requester wants daily delivery | Build the code evidence backbone automatically with exception-only approval; carry non-critical gaps into daily review | earliest missing implemented step | **Implemented** |
 | Module context ready but no code evidence backbone, and requester wants internal POC BRD now | Produce `poc_draft` only; do not approve or route to spec/handoff | `legacy-brd-writer` | **Implemented v0.1.9** |
@@ -397,8 +397,8 @@ If a skip is unsafe, say so and route to the missing prerequisite.
 **Default rule: no intermediate flow package.** Route scattered documents,
 source metadata, document-intake manifests, RAG output, and SME notes directly
 to `legacy-module-context-intake` after the safety evidence checks below. Do
-not create Operation / Business Flow, System Flow, Program Flow, or Data Flow
-intake files in `00_context_packages/<MODULE-SLUG>/`.
+not create standalone flow-view intake files in
+`00_context_packages/<MODULE-SLUG>/`.
 
 - If the inputs are raw Office / Visio / PDF / image files (`.xlsx`, `.xlsm`,
   `.xls`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.vsdx`, `.vsd`, `.pdf`, `.png`,
@@ -426,7 +426,7 @@ intake files in `00_context_packages/<MODULE-SLUG>/`.
 
 When the user has historical documents/specs but no SME-reviewed module
 context, route to `legacy-module-context-intake` even when the material looks
-weak. The router must not require perfect four-view input, Markdown, OCR, or a
+weak. The router must not require perfect module evidence, Markdown, OCR, or a
 separate context-preparation package before starting. Function Specs,
 Technical Designs, Program Specs, File Specs, interface specs, data
 dictionaries, RAG summaries, SME notes, raw PDF/PNG metadata, and source-owner
@@ -437,8 +437,8 @@ Use this quality-aware routing:
 
 | Input Quality | Route | Expected Status |
 | --- | --- | --- |
-| Documents/specs appear able to support all four views | `legacy-module-context-intake` | `ready_with_warnings` or `ready_for_module_analysis` after provenance/source eligibility checks |
-| Documents/specs support only some views | `legacy-module-context-intake` | `ready_with_warnings`; missing views become carry-forward `TBD-*` |
+| Documents/specs appear able to support module overview plus Program/Data evidence | `legacy-module-context-intake` | `ready_with_warnings` or `ready_for_module_analysis` after provenance/source eligibility checks |
+| Documents/specs support only part of the module package | `legacy-module-context-intake` | `ready_with_warnings`; missing coverage becomes carry-forward `TBD-*` |
 | Documents/specs are authorized but unreadable, non-Markdown, OCR/tool-constrained, or too sparse to evidence a safe sequence | `legacy-module-context-intake` | `ready_with_warnings`; preserve source metadata, warnings, and low-confidence TBDs |
 | Documents are unauthorized, have unknown sensitivity, need unapproved redaction, or user requests hidden contradictions / approved facts without evidence | Evidence intake, redaction, or SME review | safety `blocked_*` remediation |
 
@@ -532,7 +532,7 @@ artifact:
    `01_inventory/object-map.md`
 2. `legacy-ibmi-program-analyzer` for every in-scope `OBJ-*`
 3. `legacy-ibmi-flow-analyzer` for every in-scope business transaction
-4. `legacy-ibmi-module-analyzer` to assemble canonical four-view module coverage
+4. `legacy-ibmi-module-analyzer` to assemble the focused module package
 5. `legacy-brd-writer`
 
 Allow a direct context-only module / BRD draft when the user explicitly records
@@ -555,17 +555,16 @@ gaps into `TBD-*`, `question-pack.md`, and `delivery-risk-summary.md`. If the
 user asks to promote the result beyond daily delivery, switch to
 `approved_baseline` and re-check the standard gates.
 
-### Canonical Four-View Module Timing
+### Canonical Module Package Timing
 
-Only `legacy-ibmi-module-analyzer` produces the canonical four-view module
-coverage artifacts under `04_modules/<MODULE-SLUG>/`. Earlier module-first
-stages may write four files under `00_context_packages/`, but those are
-coverage views, elicitation views, or normalized context views. When reporting
-upstream work, use wording such as "created source-linked coverage views" or
-"normalized a context package"; do not say "created the four module flows" until
-the module analyzer writes
-`module-overview.md`, `01-operation-flow.md`, `02-system-flow.md`,
-`03-program-flow.md`, and `04-data-flow.md` under `04_modules/`.
+Only `legacy-ibmi-module-analyzer` produces the canonical module package under
+`04_modules/<MODULE-SLUG>/`. Earlier module-first stages may write normalized
+context views under `00_context_packages/`, but those are source-linked context
+inputs, not approved module analysis. When reporting upstream work, use wording
+such as "created source-linked coverage views" or "normalized a context
+package"; do not say "created the module analysis" until the module analyzer
+writes `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, and
+`module-review-checklist.md` under `04_modules/`.
 
 ### BRD Discovery Review Gate
 
@@ -1128,9 +1127,9 @@ This skill coordinates the rest of the reverse chain:
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
 | `legacy-ibmi-inventory` | **Implemented v0.1.0** | First call after evidence redaction; produces `inventory.yaml` |
-| `legacy-ibmi-program-analyzer` | **Implemented v0.2.5** | Per-program: Program Call Map Call Evidence, Routine Logic Details with conditioned calculation blocks, routine-local lineage / carriers and exception closure, source identifier + meaning fields, File I/O Purpose, object deps, dynamic-call resolution, front-loaded Validation Logic, exception closure |
+| `legacy-ibmi-program-analyzer` | **Implemented v0.2.7** | Per-program: front-loaded Calculation Logic, Validation Logic, Exception Handling, Message Inventory, Program Call Map Call Evidence, Routine Logic Details with conditioned calculation blocks, routine-local lineage / carriers and exception closure, source identifier + meaning fields, File I/O Purpose, object deps, dynamic-call resolution, exception closure |
 | `legacy-ibmi-flow-analyzer` | **Implemented v0.2.2** | Per call chain: 7 trigger models; replay path; edge Evidence Source / Resolution; field lineage consuming routine-local carriers, persistence matrix with purpose; exception chain consuming routine-local exception closure; commit boundaries |
-| `legacy-ibmi-module-analyzer` | **Implemented v0.2.2** | 4-view module synthesis plus module replay readiness, edge-resolution coverage, critical field lineage, persistence purpose, and exception recovery summaries per `docs/module-analysis-model.md` |
+| `legacy-ibmi-module-analyzer` | **Implemented v0.2.4** | Focused module synthesis with overview, Program Flow, Data Flow, module replay readiness, edge-resolution coverage, critical field lineage, persistence purpose, BRD source eligibility, and exception recovery summaries per `docs/module-analysis-model.md` |
 | `legacy-ibmi-runtime-evidence-miner` | Future (deferred from MVP) | Mine job logs, spool, samples to strengthen evidence |
 
 ### Layer 1 — Future platforms
@@ -1143,7 +1142,7 @@ contract Layer 2 expects.
 
 | Skill | Status | Orchestrator Use |
 | --- | --- | --- |
-| `legacy-business-rule-miner` | Subsumed by module-analyzer View 1 + spec-writer rule-extraction protocol | (BR seeds in module View 1; spec-writer formalizes) |
+| `legacy-business-rule-miner` | Subsumed by module-analyzer overview / BRD crosswalk + spec-writer rule-extraction protocol | (BR seeds in module overview / BRD crosswalk; spec-writer formalizes) |
 | `legacy-capability-mapper` | Subsumed by module-analyzer overview Capability Seeds | (CAP-* in `module-overview.md`) |
 | `legacy-brd-writer` | **Implemented v0.1.7** | Produce the legacy BRD Package as the legacy-system discovery baseline without old-vs-new comparison or disposition notes |
 | `legacy-spec-writer` | **Implemented v0.1.6** | Produce `spec.yaml` + `spec.md` + `spec-review.md` + `traceability.md` per capability after BRD review plus explicit post-BRD promotion / disposition decision and analyzer v0.2.5 routine-local evidence consumption |
@@ -1384,9 +1383,13 @@ runtime copies.
 - v0.2.3 (2026-05-28): Expanded module-first routing triggers beyond flow
   documents to Function Specs, Technical Designs, Program Specs, File Specs,
   interface specs, and data dictionaries as optional starting material.
-- v0.2.4 (2026-05-29): Clarified four-view timing so module-first context
-  normalization reports `00_context_packages/` files as context views, while
-  canonical `04_modules/` four-view module artifacts remain owned by
+- v0.2.14 (2026-06-04): Aligned routing with module-analyzer v0.2.4 focused
+  package. The default `04_modules/` output is now `module-overview.md`,
+  `03-program-flow.md`, `04-data-flow.md`, and `module-review-checklist.md`;
+  Operation/System views are not default outputs.
+- v0.2.4 (2026-05-29): Clarified module artifact timing so module-first
+  context normalization reports `00_context_packages/` files as context views,
+  while canonical `04_modules/` module artifacts remain owned by
   `legacy-ibmi-module-analyzer`.
 - v0.2.5 (2026-06-03): Made context-normalization quality gaps non-blocking
   for routing. Missing Markdown, unreadable/OCR-limited documents,

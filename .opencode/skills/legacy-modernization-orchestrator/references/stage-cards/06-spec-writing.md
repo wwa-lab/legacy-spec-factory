@@ -1,18 +1,18 @@
 # Stage 06: Spec Writing (one capability at a time)
 
-**You are here if:** module analysis is approved (4 views + overview), the
-selected `CAP-*` has an approved legacy BRD Package plus an explicit post-BRD
-promotion / disposition decision (or an explicit technical-spec-only bypass),
-and you want to produce a per-capability `spec.yaml` + `spec.md` that
-downstream forward SDLC can consume.
+**You are here if:** module analysis is approved (overview + Program Flow +
+Data Flow), the selected `CAP-*` has an approved legacy BRD Package plus an
+explicit post-BRD promotion / disposition decision (or an explicit
+technical-spec-only bypass), and you want to produce a per-capability
+`spec.yaml` + `spec.md` that downstream forward SDLC can consume.
 
 You produce **one spec per `CAP-*`** capability seed listed in
 `module-overview.md`. Do not bundle multiple capabilities into one spec.
 
 ## Need before starting
 
-- `04_modules/<MODULE-SLUG>/` — overview + all 4 views, all approved
-  (prefer module-analyzer v0.2.2 evidence summaries for replay, edge
+- `04_modules/<MODULE-SLUG>/` — overview + Program Flow + Data Flow, all approved
+  (prefer module-analyzer v0.2.4 evidence summaries for replay, edge
   resolution, field lineage, routine-local evidence carry-forward,
   persistence purpose, and exception recovery)
 - `05_brds/<CAPABILITY-SLUG>/` — approved BRD Package with `brd.md`,

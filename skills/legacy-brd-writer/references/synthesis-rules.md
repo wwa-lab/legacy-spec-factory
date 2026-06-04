@@ -54,7 +54,7 @@ coverage map; they do not automatically make facts eligible for BRD prose.
 | `questions_only`, `candidate_only`, `generated_draft`, `missing` | Must become `TBD-*`, SME question, or deferred evidence gap |
 
 A BRD section is `covered` only when at least one supporting row is
-`brd_conclusion_allowed`. Weak or generated four-view context can help ask
+`brd_conclusion_allowed`. Weak or generated module context can help ask
 better questions; it cannot make the BRD look complete.
 
 Internal POC exception: weak/source-documented/candidate material may appear in
@@ -232,7 +232,7 @@ raw IBM i source directly.
 - "Nightly batch jobs clean up old records" ← unless you see the job definition
   or BAU notes
 - Any process step that appears only in a generated-draft or candidate-only
-  four-view package ← convert it to a `TBD-*` / SME question instead
+  module package ← convert it to a `TBD-*` / SME question instead
 
 ### Confidence Assessment
 

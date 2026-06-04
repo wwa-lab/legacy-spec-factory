@@ -20,9 +20,9 @@ risk assessment, or formal gap analysis move into a trusted `spec.yaml` /
 
 The preferred enterprise scenario is **module-first**: the team supplies a
 business module or subsystem context, SME fragments, and RAG-retrieved evidence.
-Complete four reviewed views (Operation / Business Flow, System Flow, Program
-Flow, and Data Flow) are useful when available, but most SMEs cannot provide
-them up front. In practice, knowledge is scattered across Visio, Word, Excel,
+Complete reviewed module context is useful when available, but most SMEs
+cannot provide it up front. In practice, knowledge is scattered across Visio,
+Word, Excel,
 PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File Specs,
 interface specs, data dictionaries, or SME-note artifacts.
 `legacy-module-context-intake` now accepts those materials directly, with
@@ -47,9 +47,9 @@ from a **module**, not from a blank source-code excavation.
 
 | Layer | Owner | Role |
 | --- | --- | --- |
-| Historical documents and specs | BA / SME / engineering team | Supplies Visio, Word, Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, data dictionaries, RAG summaries, screenshots, or SME notes when standard four-view context does not yet exist |
+| Historical documents and specs | BA / SME / engineering team | Supplies Visio, Word, Excel, PDF, PowerPoint, Function Specs, Technical Designs, Program Specs, File Specs, interface specs, data dictionaries, RAG summaries, screenshots, or SME notes when standard module context does not yet exist |
 | External RAG / code knowledge graph | Outside this repo | Retrieves source snippets, ARCAD REF relationships, table / field impact, data dictionary context, contradictions, and retrieval gaps |
-| Human-confirmed context | BA / SME / engineering team | Provides fragments or reviewed Operation / Business, System, Program, and Data context when available |
+| Human-confirmed context | BA / SME / engineering team | Provides fragments or reviewed module scope, program/data context, and SME notes when available |
 | Legacy Spec Factory | This repo | Normalizes scattered documents/specs into evidence-bounded coverage, questions, and sparse-input triage when needed, then normalizes the RAG bundle + reviewed or risk-accepted context into a context package, assembles module coverage, and drafts the legacy BRD Package from eligible evidence only |
 | SME chat review | SME + assistant | Reviews focused questions in chat; AI may suggest, but SME decides |
 | Downstream SDLC | Atlas / forward delivery agents | Consumes approved specs and sealed handoff packages only after discovery disposition gates pass |
@@ -171,8 +171,8 @@ Capability  = BRD output unit
 
 In practice, teams start with the best module context they have: reviewed
 flows when available, SME fragments, or historical documents/specs that can be
-organized into four-view coverage (Operation / Business Flow, System Flow,
-Program Flow, and Data Flow). RAG, runtime logs, reports, dictionaries, ARCAD
+organized into focused module coverage (module overview, Program Flow, and
+Data Flow). RAG, runtime logs, reports, dictionaries, ARCAD
 REF, screens, source snippets, and sample transactions are supplemental
 evidence used to fill gaps, expose contradictions, and verify high-risk
 behavior. They are not final truth by themselves.
@@ -181,8 +181,8 @@ Program-level and flow-level skills produce evidence-backed analysis, not
 BRDs. A program analysis captures facts such as calls, branches, I/O, object
 dependencies, error handling, and observed behaviors. A flow analysis connects
 multiple programs into one business transaction from trigger to outcome. The
-module analyzer then assembles those materials into a four-view module coverage
-map with BRD source eligibility, and the BRD writer selects a specific `CAP-*`
+module analyzer then assembles those materials into a focused module package
+with BRD source eligibility, and the BRD writer selects a specific `CAP-*`
 capability from that module context to create a capability-level BRD Package
 from eligible evidence only.
 
@@ -224,7 +224,7 @@ selective verification as needed:
   -> legacy-ibmi-data-model-analyzer / legacy-ibmi-screen-report-analyzer
 
 legacy-ibmi-module-analyzer
-  -> assemble approved 4-view module coverage + BRD source eligibility
+  -> assemble approved module overview + Program/Data evidence + BRD source eligibility
 
 legacy-brd-writer
   -> produce capability-level BRD Package from confirmed/code-backed evidence;
@@ -321,7 +321,7 @@ AI Retrieval / External RAG / Code Knowledge Graph
         |
         v
 Module Context
-  Operation / Business Flow, System Flow, Program Flow, Data Flow
+  module overview, source-backed context notes, Program Flow, Data Flow
         |
         v
 Legacy Understanding Layer
@@ -676,7 +676,7 @@ even if the static review score is higher.
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
 | `legacy-ibmi-program-analyzer` | [v0.2.5 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.2.5-scorecard.md) | 9.66 | 9.0 | Repo-ready | v0.2.5 requires Routine Logic Details with conditioned calculation block rows, outcome reverse traces, front-loaded Validation Logic, field calculation rows, routine-local lineage/carrier rows, and routine-local exception closure; three-runtime execution evidence is pending |
 | `legacy-ibmi-flow-analyzer` | [v0.2.2 scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md) | 9.62 | 9.0 | Repo-ready | v0.2.2 consumes program v0.2.5 Routine Logic Details, routine-local carrier/lineage rows, and routine-local exception closure for flow lineage and exception propagation; three-runtime smoke pending |
-| `legacy-ibmi-module-analyzer` | [v0.2.3 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.2.3-scorecard.md) | 9.62 | 9.0 | Repo-ready (provisional) | v0.2.3 adds BRD source eligibility to module coverage; three-runtime smoke pending |
+| `legacy-ibmi-module-analyzer` | [v0.2.3 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.2.3-scorecard.md) | 9.62 | 9.0 | Repo-ready (provisional) | v0.2.4 focuses module output on overview + Program/Data views; updated scorecard and three-runtime smoke pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
 | `legacy-brd-writer` | [v0.1.8 scorecard](docs/reviews/legacy-brd-writer-v0.1.8-scorecard.md) | 9.52 | 9.0 | Repo-ready (provisional) | v0.1.8 adds the BRD source-of-truth firewall; three-runtime smoke pending |
@@ -763,7 +763,7 @@ The active skill family is organized around two operating paths:
 
 - **Default path — Module-first context.** External RAG / code-knowledge-graph
   output, data dictionary mappings, ARCAD REF, source snippets,
-  human-confirmed four-view context, and SME fragments enter as a reviewed
+  human-confirmed module context, and SME fragments enter as a reviewed
   module context package.
 - **Verification path — Platform-specific extraction.** IBM i source,
   runtime, data, screen, and report analyzers are used selectively when the
@@ -841,7 +841,7 @@ full status matrix and scorecard links.
 | 5 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
 | 6 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready; run three-runtime smoke tests |
 | 7 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.2.2 routine-local evidence consumption alignment; run three-runtime smoke tests |
-| 8 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.2.3 BRD source-eligibility hardening; run three-runtime smoke tests |
+| 8 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.2.4 focused module-output hardening; run three-runtime smoke tests |
 | 9 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready after v0.1.8 source-of-truth firewall hardening; run three-runtime smoke before field-pilot label |
 | 10 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.6 analyzer v0.2.5 routine-local evidence consumption; finish remaining smoke |
 | 11 | `legacy-step-contract` | Governance | Existing | Field-pilot ready; keep as shared quality contract |
@@ -887,9 +887,9 @@ Governance/Infrastructure skills (already implemented):
 | --- | --- | --- | --- |
 | `legacy-ibmi-evidence-intake` | Register evidence, assign `EV-*` IDs, govern redaction, and produce an approved evidence manifest before inventory | `evidence/manifest.yaml`, `redaction-log.md` | Repo-ready (v0.1.0, 9.16; three-runtime smoke passed) |
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (9.0 capped) |
-| `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, per-routine field calculations, conditioned calculation blocks, outcome reverse traces, front-loaded Validation Logic, routine-local carrier/lineage ties, data flow, key-field lineage, file mutations, and exception closure | `program-analysis.md` | Repo-ready (v0.2.5, 9.0 capped; runtime smoke pending) |
+| `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, per-routine field calculations, conditioned calculation blocks, outcome reverse traces, front-loaded Validation Logic, routine-local carrier/lineage ties, data flow, key-field lineage, file mutations, and exception closure; supports standalone exploratory inspection before inventory linkage | `program-analysis.md` | Repo-ready (v0.2.5, 9.0 capped; runtime smoke pending) |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs, replay path, edge resolution, field lineage consuming routine-local carriers, persistence purpose, exception chains consuming routine-local closure, and business-readable capability seeds | `flow-<FLOW-SLUG>.md` | Repo-ready (v0.2.2, 9.0 capped; smoke pending) |
-| `legacy-ibmi-module-analyzer` | Assemble a Mermaid-backed 4-view module coverage map from reviewed Operation / Business, System, Program, Data context and approved flow/program evidence, including BRD source eligibility, module replay readiness, edge-resolution coverage, critical field lineage, routine-local evidence carry-forward, persistence purpose, and exception recovery summaries for BRD discovery | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.2.3 provisional, 9.0 capped; smoke pending) |
+| `legacy-ibmi-module-analyzer` | Assemble a Mermaid-backed focused module package from reviewed module context and approved flow/program evidence, including BRD source eligibility, module replay readiness, Program Flow, Data Flow, edge-resolution coverage, critical field lineage, routine-local evidence carry-forward, persistence purpose, and exception recovery summaries for BRD discovery | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.2.4 provisional, 9.0 capped; smoke pending) |
 | `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
 | `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |
 | `legacy-ibmi-call-graph-analyzer` | Extract program calls, job flow, service boundaries, and dependencies | `call-graph.md`, `call-graph.json` | Folded into program/flow analyzer for MVP |
@@ -1079,11 +1079,10 @@ knowledge-hub.manifest.yaml
 
 04_modules/
   <MODULE-SLUG>/
-    01-operation-flow.md
-    02-system-flow.md
+    module-overview.md
     03-program-flow.md
     04-data-flow.md
-    module-overview.md
+    module-review-checklist.md
 
 05_specs/
   <CAP-SLUG>/
@@ -1383,10 +1382,9 @@ Primary module-first chain:
 04_modules/
   <MODULE-SLUG>/
     module-overview.md
-    01-operation-flow.md
-    02-system-flow.md
     03-program-flow.md
     04-data-flow.md
+    module-review-checklist.md
 
 05_brds/
   <CAPABILITY-SLUG>/

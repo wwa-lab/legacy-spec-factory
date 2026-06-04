@@ -1,4 +1,4 @@
-# View 3: Program Flow — Card Authorization
+# Program Flow — Card Authorization
 
 ## Status: draft → needs_sme_review
 

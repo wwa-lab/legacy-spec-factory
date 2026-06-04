@@ -14,13 +14,17 @@
 - **Mermaid Preview Status:** not_requested
 - **Completion Boundary:** stop_after_writeback
 
-## View Index
+## Evidence View Index
 | View | File | Status | Reviewer |
 | --- | --- | --- | --- |
-| 1. Operation Flow | 01-operation-flow.md | draft | Anna Chen (Card Ops) |
-| 2. System Flow | 02-system-flow.md | draft | David Park (Integration Architect) |
-| 3. Program Flow | 03-program-flow.md | draft | Liu Wei (Dev Lead) |
-| 4. Data Flow | 04-data-flow.md | draft | Maria Lopez (Data Analyst) |
+| Program Flow | 03-program-flow.md | draft | Liu Wei (Dev Lead) |
+| Data Flow | 04-data-flow.md | draft | Maria Lopez (Data Analyst) |
+
+## Optional Source-Backed Context Notes
+| Context Area | Source | Eligibility | Notes / TBD |
+| --- | --- | --- | --- |
+| Business operation / BAU | Anna Chen SME notes, 2026-05-12 | confirmed_by_sme | On-us authorization, manual authorization, and nightly reconciliation are in scope. Settlement and dispute handling are out of scope. |
+| Channels / systems / interfaces | approved flow trigger context and integration notes | mixed_with_questions | Visa/MC MQ, CSR menu, scheduler, GL handoff, risk monitoring, and compliance/report consumers appear in approved flow evidence or source-backed notes. |
 
 ## Top Blocking TBDs (aggregated across all views)
 
@@ -63,37 +67,35 @@
 
 | CAP Seed | Business Signal | Evidence Basis | SME Question |
 | --- | --- | --- | --- |
-| CAP-CARD-AUTH-001 | On-us authorization has distinct actors, decision outcome, and real-time response obligation | View 1 actors/events + View 3 entry-flow evidence | Is "On-Us Authorization" a distinct capability or part of broader "Authorization"? |
-| CAP-CARD-AUTH-002 | Daily reconciliation has a separate BAU rhythm, cut-off, exception review, and finance owner | View 1 BAU + View 3 nightly recon evidence | Is "Daily Reconciliation" a separate capability or part of "Authorization"? |
-| CAP-CARD-AUTH-003 | Credit limit enforcement is a policy cluster reused across authorization channels | View 1 BR seeds + supporting behavior/evidence | Is "Credit Limit Enforcement" its own capability or a rule within "Authorization"? |
+| CAP-CARD-AUTH-001 | On-us authorization has distinct actors, decision outcome, and real-time response obligation | SME scope notes + Program Flow entry/replay evidence | Is "On-Us Authorization" a distinct capability or part of broader "Authorization"? |
+| CAP-CARD-AUTH-002 | Daily reconciliation has a separate BAU rhythm, cut-off, exception review, and finance owner | SME/source notes + Program Flow nightly recon evidence | Is "Daily Reconciliation" a separate capability or part of "Authorization"? |
+| CAP-CARD-AUTH-003 | Credit limit enforcement is a policy cluster reused across authorization channels | Program/Data Flow behavior and lineage evidence | Is "Credit Limit Enforcement" its own capability or a rule within "Authorization"? |
 
 ## BRD Functional Analysis Input Crosswalk
 
 | BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Coverage Status | Carry-Forward TBD |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Function Purpose | View 1 Business Scope + module scope statement | EVENT-CARD-AUTH-01, EVENT-CARD-AUTH-02 | covered | none |
-| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001, REPLAY-NIGHTLY-RECON-001 | covered | none |
-| 3 | Channels | View 2 Upstream Systems + flow Trigger Context | SYS-CARD-AUTH-01, FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 | covered | none |
-| 4 | User Interface / User Touchpoints | View 1 Manual Intervention + manual auth flow | FLOW-MANUAL-AUTH-001 | partial | TBD-CARD-AUTH-004 (screen-report analysis for CSR menu pending) |
-| 5 | System Interfaces | View 2 Upstream / Downstream Systems | SYS-CARD-AUTH-01, SYS-CARD-AUTH-10, IF-CARD-AUTH-01 | covered | none |
-| 6 | Process Flow | View 1 Events + View 3 Replay Coverage Summary | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001 | covered | none |
-| 7 | Validation Rules | View 1 Business Rule Seeds + field lineage + exception-chain seeds | BR-CARD-AUTH-01, BR-CARD-AUTH-02, BR-CARD-AUTH-03, LINEAGE-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-003 |
-| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | EXCHAIN-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-002 |
-| 9 | Dependencies | View 2 System Flow + View 4 Data Flow / Persistence Matrix | SYS-CARD-AUTH-10, DATA-AUTHLOG, DATA-GLPOST, PERSIST-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-001 |
-| 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | IF-CARD-AUTH-01 | optional_covered | none |
-| 11 | Workflow / Design Notes (optional) | View 3 topology | FLOW-ONUS-AUTH-001 | optional_covered | none |
+| 1 | Function Purpose | Module scope statement + SME notes | MODULE-CARD-AUTH-001, Anna Chen SME note | covered | none |
+| 2 | Business Scenarios / Use Cases | In-scope flows + Program Flow replay coverage + SME/source notes | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001, REPLAY-NIGHTLY-RECON-001 | covered | none |
+| 3 | Channels | Flow trigger context + source-backed interface notes | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001 | covered | none |
+| 4 | User Interface / User Touchpoints | Screen/report analysis + manual auth flow trigger context | FLOW-MANUAL-AUTH-001 | partial | TBD-CARD-AUTH-004 (screen-report analysis for CSR menu pending) |
+| 5 | System Interfaces | Flow external calls + source-backed interface notes | IF-CARD-AUTH-01, FLOW-ONUS-AUTH-001, FLOW-NIGHTLY-RECON-001 | covered | none |
+| 6 | Process Flow | Program Flow replay coverage + Flow Replay Path | FLOW-ONUS-AUTH-001, FLOW-MANUAL-AUTH-001, FLOW-NIGHTLY-RECON-001, REPLAY-ONUS-AUTH-001 | covered | none |
+| 7 | Validation Rules | Program/flow Validation Logic + field lineage + exception-chain seeds | LINEAGE-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-003 |
+| 8 | Error Handling | Module Exception Summary + flow Exception Propagation Chain | EXCHAIN-ONUS-AUTH-001, EXCHAIN-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-002 |
+| 9 | Dependencies | Program Flow dependencies + Data Flow persistence/dependencies | DATA-AUTHLOG, DATA-GLPOST, PERSIST-NIGHTLY-RECON-001 | partial | TBD-CARD-AUTH-001 |
+| 10 | Security / Authentication (optional) | Source-backed interface/security notes | IF-CARD-AUTH-01 | optional_covered | none |
+| 11 | Workflow / Design Notes (optional) | Program Flow topology | FLOW-ONUS-AUTH-001 | optional_covered | none |
 | 12 | Source Document Mapping (optional) | Not supplied in this module example | none | not_evidenced | none |
 
 ## Module Review Checklist
 
-- [ ] All four views are at least `approved_with_non_blocking_tbd`
-- [ ] Cross-view consistency check passed
-  - [X] Every actor in View 1 maps to entry node in View 3 — Cardholder/Merchant → Visa MQ entry, Risk Officer → manual_actor: yes
-  - [X] Every system in View 2 appears in View 3 — Visa, GL, Risk Monitoring all referenced
-  - [X] Every BR seed in View 1 references supporting evidence — all 4 seeds traced
-  - [X] Every replay path maps to a business event or exception outcome
-  - [X] Durable persistence outputs map to View 2 consumers or View 4 objects
-  - [X] Every data object in View 4 traces to flow in View 3 — all traced
+- [ ] Program Flow is at least `approved_with_non_blocking_tbd`
+- [ ] Data Flow is at least `approved_with_non_blocking_tbd`
+- [ ] Program/Data consistency check passed
+  - [X] Every replay path maps to a module event, persisted outcome, exception outcome, or named TBD
+  - [X] Durable persistence outputs map to Data Flow objects or source-backed downstream consumers
+  - [X] Every data object in Data Flow traces to Program Flow / approved flow evidence
 - [ ] Replay / field-lineage / persistence / exception-chain coverage summarized
 - [ ] Critical field lineage and persistence risks carried into BRD crosswalk
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs

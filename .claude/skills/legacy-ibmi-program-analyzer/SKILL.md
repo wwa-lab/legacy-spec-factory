@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-program-analyzer
-description: Analyze individual IBM i programs (RPGLE, CLLE, COBOL) to extract control flow, file I/O, external calls, and error handling with evidence backing. Use when diving deep into one program's behavior from an approved inventory. Layer 1 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Analyze individual IBM i programs (RPGLE, CLLE, COBOL) to extract control flow, file I/O, external calls, and error handling with evidence backing. Use when diving deep into one program's behavior from an approved inventory, or in standalone exploratory mode when the user only wants to inspect a skill output before BRD/spec chain readiness. Layer 1 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -21,12 +21,12 @@ Retain this notice in substantial copies or derived versions.
 | Field | Notes |
 | --- | --- |
 | Problem solved | Creates an evidence-backed technical analysis of one RPGLE, CLLE, or COBOL program. |
-| Input | One approved source program, its `OBJ-*` inventory entry, referenced DDS/copybooks, and optional runtime or SME notes. |
-| Output | `program-analysis-<OBJ-ID>.md` covering call map, control flow, file I/O, external calls, and error handling. |
-| Core prompt strategy | Extract concrete code behavior first, tag every inference, avoid business-rule invention, and stop on missing inventory/source. |
-| Upstream skill | `legacy-ibmi-inventory`. |
+| Input | One approved source program; for chain-ready output, its `OBJ-*` inventory entry; referenced DDS/copybooks; optional runtime, SME notes, and project reference packs for message catalogs, control files, or data dictionaries. |
+| Output | `program-analysis-<OBJ-ID>.md` for chain-ready runs, or standalone `program-analysis.md` for exploratory inspection, covering call map, control flow, file I/O, external calls, and error handling. |
+| Core prompt strategy | Extract concrete code behavior first, enrich field/message meanings from approved reference packs, tag every inference, avoid business-rule invention, and separate exploratory analysis warnings from downstream blocking gates. |
+| Upstream skill | `legacy-ibmi-inventory` for chain-ready output; none required for standalone exploratory output. |
 | Downstream consumer | `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, data-model analysis, batch digest, and spec synthesis. |
-| Validation standard | Program ID resolves in approved inventory, evidence tags are present, and all calls/files/errors are grounded in source. |
+| Validation standard | Chain-ready output resolves Program ID in approved inventory; standalone exploratory output marks inventory linkage missing and uses source ranges/local evidence without claiming downstream readiness. |
 | Known risk | Inferring business intent from field or routine names without SME or runtime confirmation. |
 | Practical example | Analyze `ORDENTR` RPGLE to document subroutines, PF/LF I/O, display-file indicators, and calls to credit-check programs. |
 
@@ -39,6 +39,19 @@ business rules and does not generate modernization code. It produces
 evidence-backed analysis ready for SME validation and downstream spec
 generation.
 
+This skill supports two intent modes:
+
+- **`standalone_exploratory`** — user wants to inspect one program or see the
+  skill's output shape. Missing inventory/OBJ/EV linkage is a warning and a
+  downstream-readiness blocker, not a current-analysis block. Produce the
+  analysis from the supplied source, mark `status: draft_exploratory`, and
+  state clearly that the artifact is not eligible for flow/module/BRD/spec
+  handoff until inventory linkage is added.
+- **`chain_ready`** — user wants an artifact that can feed
+  `legacy-ibmi-flow-analyzer`, module analysis, BRD, or spec work. Require an
+  approved inventory entry, canonical `OBJ-*`, evidence IDs, and normal Step
+  Contract validation.
+
 ## Inputs
 
 Accept:
@@ -46,21 +59,36 @@ Accept:
 - One RPGLE, CLLE, or COBOL source file (the program to analyze)
 - Optional: DDS copybook definitions (DSPF, PRTF, PF, LF) referenced by the program
 - Optional: SME notes on entry points, quirks, or runtime behavior
-- **Required:** Program must be referenced in an approved `01_inventory/inventory.yaml` via program ID (OBJ-*)
+- Optional: project/company reference packs containing message catalogs,
+  control files, code tables, data dictionaries, or dictionary-center mappings.
+  Original files may be Markdown, CSV, Excel, Word, PDF, or normalized
+  document-intake outputs. Preferred paths:
+  `00_reference_packs/<PACK-SLUG>/reference-pack-index.yaml` or
+  `00_context_packages/<MODULE-SLUG>/field-dictionary-context.md`.
+- **Required for `chain_ready`:** Program must be referenced in an approved
+  `01_inventory/inventory.yaml` via program ID (`OBJ-*`)
+- **Allowed for `standalone_exploratory`:** inventory may be absent when the
+  user is only evaluating a skill output or analyzing a program locally. Do not
+  fabricate `OBJ-*` or `EV-*`; use source ranges/local source references and
+  mark `inventory_linkage: missing`.
 
 Stop and require clarification if:
 
 - Program source is missing or incomplete (create a `blocked_pending_source`
   artifact or TBD routing note instead of guessing)
 - Program is marked `blocked` in the inventory
-- Program ID (OBJ-*) cannot be located in inventory
+- Program ID (`OBJ-*`) cannot be located in inventory **and** the user asked
+  for chain-ready/downstream output
 - Source contains raw, unredacted production data (require redaction review per `../../docs/data-collection-and-redaction.md`)
 
 ## Output Contract
 
 Produce:
 
-- `program-analysis-<OBJ-ID>.md` per program (one file per analysis session)
+- `program-analysis-<OBJ-ID>.md` per program for chain-ready runs (one file
+  per analysis session)
+- `program-analysis.md` for standalone exploratory inspection when no
+  inventory-backed `OBJ-*` exists yet
 
 Use:
 
@@ -70,7 +98,12 @@ Use:
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
 - `references/evidence-tagging.md` for evidence strength levels and tagging methodology
+- `references/reference-pack-lookup.md` for using project/company Markdown
+  / CSV / Excel / Word / PDF control files, message catalogs, and data
+  dictionaries
 - `templates/evidence-tags.md` as a quick reference card for inline evidence annotation
+- `templates/reference-pack-index.yaml` as the recommended index for
+  project/company Markdown lookup packs
 
 Follow:
 
@@ -94,28 +127,35 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: one RPGLE / CLLE / COBOL source program; the program's
-  `OBJ-*` ID located in an `approved` (or
-  `approved_with_non_blocking_tbd`) `01_inventory/inventory.yaml`.
+- **Required**: one RPGLE / CLLE / COBOL source program.
+- **Required for chain-ready output**: the program's `OBJ-*` ID located in an
+  `approved` (or `approved_with_non_blocking_tbd`)
+  `01_inventory/inventory.yaml`.
 - **Optional**: DDS copybook source (DSPF, PRTF, PF, LF) for files the
-  program touches; SME notes on entry points, quirks, or runtime behavior.
+  program touches; SME notes on entry points, quirks, or runtime behavior;
+  approved project reference packs for message descriptions, control-file
+  values, field meanings, and `standard_field_id` mappings. For raw
+  Excel/Word/PDF/image inputs, prefer `legacy-document-evidence-intake`
+  normalized Markdown/CSV/text outputs with evidence coordinates.
 - **Input readiness scoring**:
-  - `0-5 blocked`: program source missing/incomplete, `OBJ-*` not found,
-    inventory status blocked, or evidence authorization unresolved.
-  - `6 minimum_pass`: one current program source and its approved inventory
-    `OBJ-*` link are present; missing copybooks/runtime details become TBDs.
+  - `0-5 blocked`: program source missing/incomplete, inventory status blocked
+    for a chain-ready request, or evidence authorization unresolved.
+  - `6 minimum_pass`: one current program source is present. If approved
+    inventory linkage is absent, proceed only as `standalone_exploratory`.
   - `7-8 usable`: referenced DDS/copybooks and object metadata are available
     for most file and display/report interactions.
   - `9-10 strong`: runtime logs, screen/report samples, SME notes, known
     edge cases, and parameter/interface notes are also supplied.
   - Missing runtime samples or SME notes does not block static program
     analysis; it limits confidence for business meaning and exception realism.
-- **Readiness checks**: Inventory Completeness Gate passing; program is
-  not marked `blocked` in inventory; source is current production (tier 1)
-  rather than archival; evidence authorization is resolved.
-- **Stop conditions**: source missing or incomplete; program marked
-  `blocked` in inventory; `OBJ-*` not found in inventory; raw unredacted
-  production data present.
+- **Readiness checks**: source is current production (tier 1) rather than
+  archival when known; evidence authorization is resolved. For `chain_ready`,
+  Inventory Completeness Gate passes and the program is not marked `blocked`
+  in inventory.
+- **Stop conditions**: source missing or incomplete; program marked `blocked`
+  in inventory for a chain-ready request; `OBJ-*` not found in inventory for a
+  chain-ready request; raw unredacted production data present. Missing
+  inventory alone does not stop `standalone_exploratory` analysis.
 
 ### Execution
 
@@ -136,40 +176,59 @@ field-level rules. The summary below is normative for this skill.
 - **Forbidden assumptions**: inventing subroutines, file access beyond
   what I/O statements show, business meaning from field names, external
   call parameters absent from source or copybooks, error codes not
-  explicitly caught or returned; reading non-redacted evidence.
+  explicitly caught or returned; reading non-redacted evidence. Reference-pack
+  lookup may explain an observed identifier, but it must not create a behavior
+  claim that is absent from source, runtime evidence, or SME notes.
 - **TBD handling**: missing DDS → `TBD: pending_source`; undefined
   subroutine reference → `TBD: pending_source`; unclear error path →
   `TBD: pending_sme_judgment`; non-blocking gaps tagged `non_blocking`.
 
 ### Output
 
-- **Canonical artifact**: `program-analysis-<OBJ-ID>.md` (one per program).
-- **Required sections**: `Metadata`, `Analysis Coverage & Scope`,
+- **Canonical artifact**: `program-analysis-<OBJ-ID>.md` for chain-ready runs
+  or `program-analysis.md` for standalone exploratory inspection (one per
+  program).
+- **Required sections**: `Calculation Logic`, `Validation Logic`,
+  `Exception Handling`, `Message Inventory`, `Metadata`, `Analysis Coverage & Scope`,
   `Program Call Map`, `Routine Cards`, `Routine Logic Details`,
-  `Validation Logic`, `Deep Read Windows`, `Entry Points & Parameters`,
+  `Deep Read Windows`, `Entry Points & Parameters`,
   `Object Dependencies`,
   `Logic Decomposition Ledger`, `Data Touch Map`,
   `Key File & Field Logic`, `Control Flow`, `File I/O`,
   `External Calls`, `Error Handling`, `Redundancy Candidate Notes`,
   `TBDs & Blocking Status`, `Review Checklist`.
-- **Required IDs**: reuses `OBJ-*` and `EV-*` from inventory; mints
-  program-local `BEH-*`, `EX-*`, and `TBD-*`. Does not mint `BR-*`,
-  `CAP-*`, `DEC-*`.
+- **Required IDs**: `chain_ready` output reuses `OBJ-*` and `EV-*` from
+  inventory/evidence manifest. `standalone_exploratory` output must not
+  fabricate `OBJ-*` or `EV-*`; it uses source ranges/local source references
+  and records `inventory_linkage: missing`. Both modes may mint program-local
+  `BEH-*`, `EX-*`, and `TBD-*`. Does not mint `BR-*`, `CAP-*`, `DEC-*`.
+- **Reference pack metadata**: when message catalogs, control files, code
+  tables, or data dictionaries are used, record pack path, pack ID/version,
+  authorization status, and lookup coverage in Metadata.
 - **Handoff status**: `status: draft` until SME review; `approved` or
   `approved_with_non_blocking_tbd` is required before
   `legacy-ibmi-flow-analyzer` runs against the chain that includes this
-  program.
+  program. `status: draft_exploratory` is never eligible for downstream
+  flow/module/BRD/spec use without rerun or linkage update.
 
 ### Validation
 
-- **Mechanical**: every non-trivial behavior has ≥1 `EV-*` link; every
-  call/object reference resolves against inventory; every TBD has a
-  blocking-status tag; required sections all present.
+- **Mechanical**: in `chain_ready`, every non-trivial behavior has ≥1 `EV-*`
+  link and every call/object reference resolves against inventory. In
+  `standalone_exploratory`, every non-trivial behavior has source-range/local
+  evidence and unresolved inventory/object/evidence mappings are listed as
+  downstream-readiness gaps, not current-analysis blockers. In both modes,
+  every TBD has a blocking-status tag and required sections are present.
+  Reference-pack facts must cite the pack/file/row or anchor used.
 - **AI semantic**: behaviors are consistent with the linked source lines;
   no invented subroutines, fields, files, field mutations, message IDs,
   or error codes; evidence strength not overstated (no
-  `weakly_inferred` posing as `confirmed_from_code`); flow header (if
-  present) reconciled against the code-derived program call map.
+  `weakly_inferred` posing as `confirmed_from_code`); front-loaded
+  Calculation Logic, Validation Logic, Exception Handling, and Message
+  Inventory reconcile against routine-level evidence and ledgers; flow header (if
+  present) reconciled against the code-derived program call map. Dictionary or
+  control-file meanings enrich observed identifiers; they do not override code
+  behavior. Contradictions become TBDs.
 - **Report quality**: Program Call Map uses compact `Visual Overview`
   plus auditable `Call Evidence`; key fields and variables preserve
   `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning)
@@ -179,10 +238,11 @@ field-level rules. The summary below is normative for this skill.
   file I/O semantics, external interface contracts, and error handling
   realism. Required when the program affects money, inventory,
   compliance, or customer status; recommended otherwise.
-- **Blocking conditions**: any `BEH-*` without evidence; any invented
+- **Blocking conditions**: any `BEH-*` without source evidence; any invented
   IBM i fact; any unresolved `pending_source` TBD on a section that is
-  load-bearing for the next flow analysis; SME absence when SME is
-  required by the program's risk class.
+  load-bearing for the next flow analysis; SME absence when SME is required by
+  the program's risk class. Missing inventory blocks only `chain_ready` /
+  downstream promotion, not standalone exploration.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with
@@ -202,11 +262,49 @@ to the orchestrator.
      them with indexed routines, deep-read windows, resolved call/data
      edges, and explicit gaps
 
-2. **Select Program & Verify Inventory**
-   - Accept program ID (OBJ-*) from approved `01_inventory/inventory.yaml`
+2. **Select Program & Resolve Analysis Intent**
+   - Determine whether the user wants `standalone_exploratory` or
+     `chain_ready` output. If the user says they only want to inspect/analyze a
+     program, see skill output, run a test, or are not producing BRD/spec,
+     default to `standalone_exploratory`.
+   - Accept program ID (OBJ-*) from approved `01_inventory/inventory.yaml` when available
    - Confirm program name, type (RPGLE / CLLE / COBOL), and library
-   - Stop if program is marked `blocked` or inventory is not approved
+   - Stop if program is marked `blocked` or inventory is not approved for a
+     `chain_ready` request
+   - If inventory is missing in `standalone_exploratory`, continue analysis,
+     mark `inventory_linkage: missing`, and create a downstream-readiness gap
+     instead of `blocked_pending_source`
    - Document source location and collection date
+
+2a. **Load Approved Reference Packs (Optional)**
+   - If the user, inventory, or context package provides company control files,
+     message catalogs, code tables, data dictionaries, or dictionary-center
+     mappings, resolve them through
+     `references/reference-pack-lookup.md`.
+   - Prefer `00_reference_packs/<PACK-SLUG>/reference-pack-index.yaml` for
+     enterprise/shared packs and
+     `00_context_packages/<MODULE-SLUG>/field-dictionary-context.md` for
+     module-specific dictionary context.
+   - Confirm authorization status is `approved_for_analysis`,
+     `internal_reference`, or `synthetic` before using content. If status is
+     unknown, do not silently consume the files; ask for approval or create a
+     reference-pack TBD.
+   - For Excel, Word, PDF, image, or scanned inputs, prefer normalized
+     Markdown/CSV/text outputs and coordinates from
+     `legacy-document-evidence-intake`. If only raw files are supplied and
+     they are not directly readable in the current runtime, route to
+     `legacy-document-evidence-intake` or create a reference-pack readability
+     TBD. Do not treat conversion/tooling failure as evidence that the lookup
+     entry does not exist.
+   - Build a lookup index from exact identifiers only: message ID, status code,
+     return code, SQLSTATE, CPF/MCH/RNX/CPD ID, file name, record format,
+     field name, alias, `standard_field_id`, control-file field, and
+     control-file value.
+   - Record the pack path, pack ID/version, owner, source format, normalized
+     output path, document-intake manifest when available, and lookup coverage
+     in Metadata. Reference packs are explanation evidence for observed
+     identifiers; they do not prove that a branch, call, file mutation, or
+     exception path exists.
 
 3. **Extract Entry Points & Parameters**
    - Identify main entry point (program parameter list, return value or status code)
@@ -282,6 +380,16 @@ to the orchestrator.
    - Preserve condition order and nesting when it changes behavior. Do
      not flatten mutually exclusive tiers or fallback branches into
      unrelated bullet points.
+   - Build a front-loaded **Calculation Logic** section immediately after
+     the title and before Metadata. It must summarize the whole program's
+     material calculation and assignment chains for IT SME first-read
+     review, including arithmetic, derived amounts, status/result
+     assignments, key construction, message/status carriers, outbound
+     payload fields, and persisted field updates. Every row must link back
+     to Routine Logic Details, a conditioned calculation block, the Logic
+     Decomposition Ledger, Key File & Field Logic, or a Field Mutation row.
+     Do not leave a critical calculation only in a later routine-local
+     subsection or ledger.
    - Add **Routine / Window Data Flow** for every load-bearing routine or
      deep-read window: purpose, input variables, transformation logic,
      output variables, side effects, source lines, and evidence. Use
@@ -380,6 +488,15 @@ to the orchestrator.
        unresolved); mark inferred meanings inline.
      - preserve variable flow as `VARIABLE_NAME` (business meaning)
        [input/output/input-output/local/control]
+     - when an approved reference pack maps a field, include
+       `standard_field_id`, reference-pack file/row, dictionary version, and
+       owner/steward when available
+     - if a control-file/code-table lookup gives a value meaning, cite it as
+       reference-pack evidence while keeping the condition and assignment
+       source-backed
+     - if dictionary/control-file meaning conflicts with code behavior, keep
+       both facts visible and create a contradiction TBD instead of selecting
+       one silently
      - create TBDs when DDS/copybook metadata is missing, physical-field
        mapping is unclear, or a variable participates in a critical path
        but its source cannot be proven
@@ -436,7 +553,7 @@ to the orchestrator.
      rollback, skip write, log, send message, continue), and downstream
      impact.
    - Build a front-loaded **Validation Logic** section immediately after
-     Routine Logic Details and before Deep Read Windows. It must list every
+     Calculation Logic and before Exception Handling. It must list every
      validation, status, response, return-code, message, indicator-driven
      outcome, and generic handler outcome observed in source or message-file
      references, including `CPF*`, `CPD*`, `MCH*`, `RNX*`, `SQL*`, shop-local
@@ -455,9 +572,10 @@ to the orchestrator.
      code, or generic catch-all token. Do not group multiple message IDs into
      one row and do not replace individual descriptions with summary labels
      such as "validation messages" or "call-specific message IDs".
-   - Populate Message Description from message files, source literals,
-     comments, runtime evidence, vendor references, or SME notes. If the
-     description is not available, write
+   - Populate Message Description from message files, approved reference-pack
+     message catalogs/control files/code tables, source literals, comments,
+     runtime evidence, vendor references, or SME notes. If the description is
+     not available, write
      `unresolved - message description not available`, mark the row
      unresolved, and create a TBD / Open Item.
    - If literal code assignments cannot be fully traced, state
@@ -473,6 +591,26 @@ to the orchestrator.
      `ON-ERROR`, generic exception paragraph), mark it as generic
      coverage and still list the specific observed messages handled
      elsewhere. Do not infer specific message IDs from a generic handler.
+   - Build a front-loaded **Exception Handling** section immediately after
+     Validation Logic and before Message Inventory. It must summarize every
+     observed business, parameter, file I/O, SQL, external-call, system, and
+     generic-handler exception path with trigger, detection mechanism,
+     fields/messages set, handling action, downstream effect, supporting detail
+     link, and evidence. Every path must show whether it closes through return,
+     rollback, skip, continue, abort, log/message output, or downstream
+     suppression.
+   - Build a front-loaded **Message Inventory** section immediately after
+     Exception Handling and before Metadata. It must create one row per exact
+     message ID, status value, return code, response literal, SQLSTATE,
+     CPF/MCH/RNX/CPD message, operator message, or shop-local message token
+     observed in the program. Preserve exact codes/literals, include the best
+     available description source, carrier/destination, trigger/handler,
+     related Validation Logic / Exception Handling row, and evidence status.
+     When a message/control value is found in an approved reference pack, set
+     Message Source to `reference pack: <pack_id>/<file>#<row-or-anchor>` and
+     still trace Emitted / Set By and Trigger / Handler from source.
+     If no description is available, write
+     `unresolved - message description not available` and create an Open Item.
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
    - Create TBD if error handling is unclear or context-dependent
 
@@ -575,6 +713,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Routine Logic Details explain every load-bearing routine/subroutine/procedure, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence
 - [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
 - [ ] Routine Logic Details include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
+- [ ] Calculation Logic is front-loaded immediately after the title, summarizes the whole program's material calculations/assignments, and links every row to Routine Logic Details, Logic Decomposition, Key File & Field Logic, or Field Mutation evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
@@ -582,7 +721,9 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
 - [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
-- [ ] Validation Logic is front-loaded after Routine Logic Details, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
+- [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one row per explicit message/code/literal with description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
@@ -635,3 +776,11 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Requires outcome reverse traces from material message/status/error outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
   - Renamed the current output section from `Error Code Inventory` to front-loaded `Validation Logic`, placed immediately after Routine Logic Details
   - Forbids hiding condition-scoped calculation chains only in generic branch outcomes, Validation Logic summaries, or the Logic Decomposition Ledger
+- v0.2.6 (2026-06-04): IT SME first-read core logic front-loading
+  - Added top-of-document `Calculation Logic` immediately after the title
+  - Moved `Validation Logic` to immediately follow `Calculation Logic`
+  - Requires both top sections to summarize whole-program core behavior while linking back to routine-level evidence and ledgers
+- v0.2.7 (2026-06-04): IT SME first-read exception and message front-loading
+  - Added top-of-document `Exception Handling` immediately after Validation Logic
+  - Added top-of-document `Message Inventory` immediately after Exception Handling
+  - Requires exception paths and every observed message/code/literal to be reviewable before Metadata while still linking back to detailed closure evidence

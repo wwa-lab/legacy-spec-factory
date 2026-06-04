@@ -129,7 +129,7 @@ must use the artifact's own enum, not a generic one.
 | Artifact | Status Field | Allowed Values |
 | --- | --- | --- |
 | `inventory.yaml` | `sme_review.decision` | `pending`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
-| `program-analysis.md` | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
+| `program-analysis.md` | `status` | `draft_exploratory`, `draft`, `needs_sme_review`, `blocked_pending_source`, `approved`, `approved_with_non_blocking_tbd`, `rejected` |
 | `flow-<SLUG>.md` | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `04_modules/<MODULE-SLUG>/` views | `status` | `draft`, `in_review`, `approved`, `approved_with_non_blocking_tbd`, `blocked` |
 | `spec.yaml` | `status` | `draft`, `in_review`, `approved`, `rejected`, `retired` |
@@ -297,13 +297,20 @@ authoritative procedure.
 
 ### Program Analysis (`legacy-ibmi-program-analyzer`)
 
-- INPUT: approved inventory + program source + DDS for files it touches
+- INPUT: program source; approved inventory + DDS/copybook evidence for
+  `chain_ready`; standalone exploratory runs may proceed without inventory but
+  must mark `inventory_linkage: missing` and `downstream_readiness:
+  not_chain_ready`; optional approved reference packs may provide message,
+  field, control-file, and data-dictionary meanings
 - EXECUTION: program-analyzer workflow
 - OUTPUT: `program-analysis.md` per program
 - VALIDATION:
-  - mechanical: every `BEH-*` and `EX-*` links to `EV-*`; control flow
+  - mechanical: `chain_ready` links every `BEH-*` and `EX-*` to `EV-*`;
+    `standalone_exploratory` uses source ranges/local references and is blocked
+    only from downstream promotion, not from output inspection; control flow
     references real subroutines
   - semantic: no invented subroutine names; error paths reflect actual code
+    and reference-pack meanings do not override source-backed behavior
   - SME: recommended; required if program affects money, inventory,
     compliance, or customer status
 
@@ -341,11 +348,12 @@ authoritative procedure.
 - INPUT: approved flow analyses for every flow in the module, BAU notes,
   inventory, or a ready `00_context_packages/<MODULE-SLUG>/` package for
   module-first runs
-- EXECUTION: module-analyzer 4-view synthesis per
+- EXECUTION: module-analyzer focused synthesis per
   `docs/module-analysis-model.md`
-- OUTPUT: `04_modules/<MODULE-SLUG>/` with the four views plus overview
+- OUTPUT: `04_modules/<MODULE-SLUG>/` with module overview, Program Flow,
+  Data Flow, and module review checklist
 - VALIDATION:
-  - mechanical: all four views present; capability seeds carry IDs
+  - mechanical: default module package files present; capability seeds carry IDs
   - semantic: cross-flow synthesis matches the flow analyses or supplied
     context package; no new IBM i facts that did not exist in upstream inputs
   - SME: required for capability seeds and `BR-*` seeds

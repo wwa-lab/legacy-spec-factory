@@ -17,13 +17,13 @@ tells you **where each value comes from**.
 | `status` | workflow state | starts `draft`; → `in_review` after self-check; → `approved` after SME sign-off |
 | `source_system` | inventory.yaml | copy `name`, `libraries`, `collection_date` |
 | `target_platform` | SME / platform hint | architecture string + service hint |
-| `business_goal` | approved BRD section 1, cross-checked against module View 1 Business Scope | one-sentence summary |
+| `business_goal` | approved BRD section 1, cross-checked against module overview Scope Statement and BRD crosswalk | one-sentence summary |
 | `scope.in_scope` / `scope.out_of_scope` | approved BRD section 1 + SME + module overview Scope Statement | per-capability narrowing of module scope |
 | `evidence[]` | every EV-* referenced by any in-scope flow / program analysis and approved BRD traceability | one row per EV; never inline raw sensitive data |
 | `observed_behaviors[]` | flow analyses' Flow Replay Path, branch points, edge Evidence Source / Resolution, Flow Persistence Matrix, Exception Propagation Chain + program analyses' Routine Logic Details, Logic Decomposition Ledger, Validation Logic, Exception Closure Ledger | factual: what the legacy does |
-| `business_rules[]` | module View 1 BR seeds + SME confirmation | one BR per confirmed candidate |
+| `business_rules[]` | module overview / BRD crosswalk BR seeds + SME confirmation | one BR per confirmed candidate |
 | `modernization_decisions[]` | derived from BRs + target_platform constraints + SME | each DEC has rationale |
-| `data_model.entities[]` | module View 4 (Data Flow), Module Persistence Matrix, DDS / SQL definitions | each major PF/LF/SQL table or durable output that the target system will own |
+| `data_model.entities[]` | Data Flow, Module Persistence Matrix, DDS / SQL definitions | each major PF/LF/SQL table or durable output that the target system will own |
 | `data_model.entities[].fields[]` | DDS / SQL definitions + Critical Field Lineage Across Module + flow Cross-Program Field Lineage + program Routine Logic Details routine-local carrier/lineage rows where field calculations or handoffs are material | type maps to target type per platform; semantics stay evidence-backed |
 | `process_flow.steps[]` | approved BRD section 6 + business-visible phases and outcomes from the relevant Flow Replay Path; Transaction Call Map is supporting evidence | one STEP per business step, not one STEP per program node |
 | `inputs[]` | approved BRD sections 3-5 + flow analysis Trigger Context + UI surfaces input fields | source = api/screen/batch/file/integration/manual |

@@ -22,7 +22,7 @@ The pilot must deliver:
 
 - one business **module** (multiple business capabilities)
 - one reviewed `spec.yaml` / `spec.md` for at least one capability in that module
-- module-level 4-view analysis (Operation / System / Program / Data)
+- module-level focused analysis (module overview + Program Flow + Data Flow)
 - multiple flow analyses (one per business transaction in the module)
 - per-program analyses for every program in scope
 - one SME approval pass per analysis layer
@@ -32,9 +32,9 @@ The pilot must deliver:
 | # | Skill | Layer | Status | Role |
 |---|---|---|---|---|
 | 1 | `legacy-ibmi-inventory` | 1 (platform-specific) | ✅ v0.1.0 | Catalogue every legacy object touched by the module |
-| 2 | `legacy-ibmi-program-analyzer` | 1 (platform-specific) | ✅ v0.2.5 | Deep-dive one program: Program Call Map Call Evidence, Routine Logic Details with conditioned calculation blocks, outcome reverse traces, and routine-local lineage/exception closure, source identifier + meaning fields, File I/O Purpose, dynamic-call resolution, front-loaded Validation Logic, object deps, exception closure |
+| 2 | `legacy-ibmi-program-analyzer` | 1 (platform-specific) | ✅ v0.2.7 | Deep-dive one program: top-of-document Calculation Logic, Validation Logic, Exception Handling, and Message Inventory for IT SME first-read review, Program Call Map Call Evidence, Routine Logic Details with conditioned calculation blocks, outcome reverse traces, and routine-local lineage/exception closure, source identifier + meaning fields, File I/O Purpose, dynamic-call resolution, object deps, exception closure |
 | 3 | `legacy-ibmi-flow-analyzer` | 1.5 (platform-specific) | ✅ v0.2.2 | Analyze a call chain (job flow, menu option, subfile dispatch, F-key branch, trigger, scheduler, API) with replay path, edge resolution, field lineage consuming routine-local carrier evidence, persistence purpose, and exception chain consuming routine-local exception closure |
-| 4 | `legacy-ibmi-module-analyzer` | 1.5 (platform-specific) | ✅ v0.2.3 | Assemble a business module coverage map from approved flows or reviewed module context, producing the **4-view model** plus BRD source eligibility, module readiness, edge-resolution coverage, routine-local evidence carry-forward, persistence / critical field, and exception recovery summaries. See `docs/module-analysis-model.md`. |
+| 4 | `legacy-ibmi-module-analyzer` | 1.5 (platform-specific) | ✅ v0.2.4 | Assemble a business module coverage map from approved flows or reviewed module context, producing the focused module overview plus Program Flow and Data Flow, BRD source eligibility, module readiness, edge-resolution coverage, routine-local evidence carry-forward, persistence / critical field, and exception recovery summaries. See `docs/module-analysis-model.md`. |
 | 5 | `legacy-spec-writer` | 2 (platform-agnostic) | ✅ v0.1.6 | Produce `spec.yaml` + `spec.md` from approved BRD plus module / flow / program evidence, preserving routine-local lineage and exception closure |
 
 Entry-point router:
@@ -48,11 +48,10 @@ Entry-point router:
 ```
 inventory ──► program-analyzer ──► flow-analyzer ──► module-analyzer ──► spec-writer
                                                           │
-                                                          └── 4 views:
-                                                              1. Operation flow / Business background
-                                                              2. System flow
-                                                              3. Program flow (aggregates flows)
-                                                              4. Data flow
+                                                          └── focused module package:
+                                                              - module overview
+                                                              - Program Flow
+                                                              - Data Flow
 ```
 
 Every layer is an aggregation of the one below it. Every layer cross-checks
@@ -67,7 +66,7 @@ back to the inventory skill.
   - `legacy-ibmi-inventory` v0.1.0
   - `legacy-ibmi-program-analyzer` v0.2.5
   - `legacy-ibmi-flow-analyzer` v0.2.2
-  - `legacy-ibmi-module-analyzer` v0.2.3
+  - `legacy-ibmi-module-analyzer` v0.2.4
   - `legacy-spec-writer` v0.1.6
 - Pre-inventory evidence governance is implemented as
   `legacy-ibmi-evidence-intake` v0.1.0.
@@ -77,7 +76,7 @@ back to the inventory skill.
 - Runtime smoke status is mixed:
   - `legacy-step-contract` and `legacy-step-validator` passed Codex CLI,
     Claude Code, and OpenCode smoke tests for their earlier contracts;
-    `legacy-step-validator` v0.1.8 needs updated analyzer/downstream routine-local evidence smoke.
+    `legacy-step-validator` v0.1.10 needs updated analyzer/downstream routine-local evidence smoke.
   - `legacy-ibmi-evidence-intake` is synced to all runtimes; smoke execution
     is pending.
   - `legacy-ibmi-flow-analyzer`, `legacy-spec-writer`, and
@@ -101,7 +100,7 @@ For at least one business module in the pilot library:
   - Inventory is complete and SME-approved
   - Every program in scope has an approved `program-analysis-<OBJ-ID>.md`
   - Every business transaction (flow) has an approved `flow-<FLOW-SLUG>.md`
-  - The module has an approved 4-view analysis
+  - The module has an approved focused module analysis
   - At least one capability inside the module has an approved `spec.yaml`
   - Every approved business rule has evidence or explicit SME approval
   - Every blocking TBD is explicit

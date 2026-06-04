@@ -13,7 +13,7 @@ Plus: SME contact for the module is **not yet assigned**.
 
 ## Expected Module-Analyzer Behavior
 
-The skill must **refuse to produce all four views** and instead produce a
+The skill must **refuse to produce the default evidence views** and instead produce a
 `module-overview.md` marked `blocked_pending_source` with explicit
 routing back to upstream skills.
 
@@ -33,13 +33,11 @@ routing back to upstream skills.
   - FLOW-ORDER-FULFILL-001 ✅
 - **Status:** **blocked_pending_source**
 
-## View Index
+## Evidence View Index
 | View | File | Status |
 | --- | --- | --- |
-| 1. Operation Flow | (not produced) | blocked — no SME |
-| 2. System Flow | (not produced) | blocked — incomplete inputs |
-| 3. Program Flow | (not produced) | blocked — flow missing |
-| 4. Data Flow | (not produced) | blocked — flow missing |
+| Program Flow | (not produced) | blocked — flow missing |
+| Data Flow | (not produced) | blocked — flow missing |
 
 ## Blocking TBDs
 
@@ -55,22 +53,18 @@ routing back to upstream skills.
 - **TBD-ORDER-MGMT-002:** No SME contact assigned for this module
   - Blocking: pending_sme_judgment
   - Routes to: SME assignment process
-  - Action: identify module owner; View 1 cannot be produced without SME
-    input on business scope, actors, BAU rhythm
+  - Action: identify module owner; module scope and BRD crosswalk cannot be
+    approved without SME input
 
 ## Why The Module Cannot Be Synthesized Yet
 
-- View 1 (Operation Flow) requires SME input on business scope, actors,
-  and BAU — none of which is in code. Without an assigned SME, View 1
-  would be pure invention.
-- View 3 (Program Flow) requires all in-scope flow analyses to aggregate.
-  Missing FLOW-ORDER-VALIDATE-001 means View 3 would have a gap of
+- Program Flow requires all in-scope flow analyses to aggregate.
+  Missing FLOW-ORDER-VALIDATE-001 means Program Flow would have a gap of
   unknown size.
-- View 4 (Data Flow) depends on every flow's data-flow section. Missing
+- Data Flow depends on every flow's data-flow section. Missing
   flow → missing data exchanges → incomplete picture.
-- View 2 (System Flow) could partially be derived from the two completed
-  flows, but would still miss whatever upstream/downstream systems
-  appear only in the missing flow.
+- Business/system context can be carried only as source-backed overview notes
+  or TBDs; it must not become standalone generated flow files.
 
 ## Routing Decision
 
@@ -87,9 +81,9 @@ The orchestrator should:
 
 ## Why This Output Is Correct
 
-- ✅ Refuses to produce View 1/3/4 with missing inputs
+- ✅ Refuses to produce Program Flow / Data Flow with missing inputs
 - ✅ Does not invent business scope, actors, or BAU
-- ✅ Does not produce a partial View 3 omitting the missing flow silently
+- ✅ Does not produce a partial Program Flow omitting the missing flow silently
 - ✅ Explicit routing to flow-analyzer for the missing flow
 - ✅ Escalates SME assignment as a separate blocker
 
@@ -97,7 +91,7 @@ The orchestrator should:
 
 - ❌ Produce a "best-effort" module overview by ignoring FLOW-ORDER-VALIDATE
 - ❌ Invent business actors or BAU from program names
-- ❌ Write View 4 with only the data objects visible in the 2 available flows
+- ❌ Write Data Flow with only the data objects visible in the 2 available flows
 - ❌ Approve the module despite blocking TBDs
 
 ## The Anti-Hallucination Test

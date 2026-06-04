@@ -54,7 +54,7 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 - `legacy-ibmi-inventory` (complements; identifies OBJ-* targets)
 - `legacy-ibmi-program-analyzer` (consumes optional `runtime_hints`)
 - `legacy-ibmi-flow-analyzer` (consumes optional `bau_notes`)
-- `legacy-ibmi-module-analyzer` (feeds View 1: Operation Flow context)
+- `legacy-ibmi-module-analyzer` (feeds module overview source-backed context)
 
 ---
 
@@ -208,7 +208,7 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 - Consumers:
   - `legacy-ibmi-program-analyzer` (optional `runtime_hints` parameter)
   - `legacy-ibmi-flow-analyzer` (optional `bau_notes` parameter)
-  - `legacy-ibmi-module-analyzer` (View 1 Operation Flow context)
+  - `legacy-ibmi-module-analyzer` (module overview source-backed context)
   - SME review process
 
 **Review Artifact: `mining-checklist.md`**
@@ -265,7 +265,7 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 **Downstream Consumption Check**
 - Program analyzer can read `runtime_hints` from JSONL
 - Flow analyzer can read `bau_notes` from JSONL
-- Module analyzer can use View 1 context from observations
+- Module analyzer can use module overview context from observations
 - No downstream skill is blocked by missing or malformed observations
 
 ---
@@ -321,9 +321,9 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 
 **Integration rule**: Flow analyzer uses BAU notes to estimate trigger frequency and document error recovery patterns that source code alone cannot supply.
 
-### Module Analyzer: View 1 Context
+### Module Analyzer: Module Overview Context
 ```yaml
-## View 1: Operation Flow / Business Context
+## Optional Source-Backed Context Notes
 
 ### BAU Rhythm (informed by runtime mining)
 - Overnight batch window: 01:00–02:30 (confirmed by logs, 5 runs) — RTE-CREDIT-CHECK-008
@@ -331,7 +331,9 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 - Error recovery: Manual retry on file lock; successful 95% of time (from error logs) — RTE-CREDIT-CHECK-010
 ```
 
-**Integration rule**: Module analyzer uses runtime-mined observations to substantiate View 1 (Operation Flow) without relying purely on SME memory.
+**Integration rule**: Module analyzer uses runtime-mined observations to
+substantiate source-backed module overview notes and exception/recovery
+summaries without relying purely on SME memory.
 
 ---
 
@@ -339,7 +341,8 @@ Extract structured evidence observations from IBM i runtime artifacts (job logs,
 
 After mining `runtime-evidence.jsonl`, the skill performs a cross-check
 pass against any `inferred_business_rule` entries already present in
-`02_programs/<MODULE>/<OBJ>/program-analysis.md` and module View 1.
+`02_programs/<MODULE>/<OBJ>/program-analysis.md` and the module overview /
+BRD crosswalk.
 
 Goal: promote rules whose code-side inference is corroborated by ≥ N
 runtime samples (default N=3) from `review_status: needs_sme_review` to
@@ -475,7 +478,7 @@ After mining is complete, present SME with these questions before approving outp
 **Optional integration follow-up**:
 - Verify program-analyzer consumes `runtime_hints` from `runtime-evidence.jsonl`
 - Verify flow-analyzer consumes `bau_notes`
-- Verify module-analyzer grounds View 1 in runtime observations
+- Verify module-analyzer grounds module overview context in runtime observations
 
 ---
 
@@ -496,7 +499,7 @@ orchestrator → "stage: analysis; next: legacy-ibmi-program-analyzer"
 → legacy-ibmi-runtime-evidence-miner
        + optional runtime_hints fed into program-analyzer
        + optional bau_notes fed into flow-analyzer
-       + optional View 1 context fed into module-analyzer
+       + optional module overview context fed into module-analyzer
 ```
 
 ### Output Consumption Examples

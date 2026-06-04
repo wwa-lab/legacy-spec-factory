@@ -80,11 +80,10 @@ Program Flow 逐字段梳理计算取信逻辑错误
 
 **我们的实现**:
 - `legacy-ibmi-flow-analyzer` → 跨程序事务流分析 (one flow per transaction)
-- `legacy-ibmi-module-analyzer` → 4视图综合分析:
-  1. **Operation Flow** - 业务操作流程，BAU (Business-as-Usual)
-  2. **System Flow** - 系统级数据流，调度，消息队列
-  3. **Program Flow** - 程序级调用链和CRUD
-  4. **Data Flow** - 数据模型和关系
+- `legacy-ibmi-module-analyzer` → 聚焦模块综合分析:
+  1. **Module Overview** - 模块范围、source-backed context、能力/规则种子、BRD crosswalk
+  2. **Program Flow** - 程序级调用链和CRUD
+  3. **Data Flow** - 数据模型和关系
 
 **输出**:
 - `03_flows/<CAP>/flow-<FLOW-SLUG>.md` (事务级)

@@ -14,13 +14,17 @@
 - **Mermaid Preview Status:** not_requested | skipped_large_module | passed | failed | timed_out
 - **Completion Boundary:** stop_after_writeback
 
-## View Index
+## Evidence View Index
 | View | File | Status | Reviewer |
 | --- | --- | --- | --- |
-| 1. Operation Flow | 01-operation-flow.md | draft | [SME] |
-| 2. System Flow | 02-system-flow.md | draft | [SME] |
-| 3. Program Flow | 03-program-flow.md | draft | [SME] |
-| 4. Data Flow | 04-data-flow.md | draft | [SME] |
+| Program Flow | 03-program-flow.md | draft | [Dev lead] |
+| Data Flow | 04-data-flow.md | draft | [Data owner] |
+
+## Optional Source-Backed Context Notes
+| Context Area | Source | Eligibility | Notes / TBD |
+| --- | --- | --- | --- |
+| Business operation / BAU | [SME note / source doc / missing] | confirmed_by_sme / source_documented / missing | [summary or TBD-*] |
+| Channels / systems / interfaces | [flow trigger / integration spec / SME / missing] | code_backed / source_documented / missing | [summary or TBD-*] |
 
 ## Top Blocking TBDs
 (Aggregate of `pending_source` and `pending_sme_judgment` from all views.)
@@ -56,17 +60,17 @@ wrappers. Use program flow only as evidence for boundaries and dependencies.
 
 | BRD Section | SME-Required Area | Primary Module Source | Evidence / IDs | Source Eligibility | Coverage Status | Carry-Forward TBD |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Function Purpose | View 1 Business Scope + Scope Statement | [EV-* / SME note] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 2 | Business Scenarios / Use Cases | View 1 Business Events + BAU Rhythm + Flow Replay Path | [EVENT-* / FLOW-* / REPLAY-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 3 | Channels | View 1 Actors + View 2 Upstream Systems + Trigger Context | [ACTOR-* / SYS-* / FLOW-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 4 | User Interface / User Touchpoints | View 1 Manual Intervention + screen/report evidence | [OBJ-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 5 | System Interfaces | View 2 Systems and External Interfaces | [SYS-* / IF-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 6 | Process Flow | View 1 Events + View 3 Replay Coverage Summary + Flow Replay Path | [EVENT-* / FLOW-* / REPLAY-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 7 | Validation Rules | View 1 Business Rule Seeds + flow branch points + field lineage + exception-chain seeds | [BR-* / SEED-* / LINEAGE-* / EXCHAIN-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 8 | Error Handling | View 1 Exception Lifecycle + flow Exception Propagation Chain | [EXCHAIN-* / EV-* / FLOW-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 9 | Dependencies | View 2 + View 3 + View 4 data / persistence dependencies | [SYS-* / DATA-* / OBJ-* / PERSIST-* / LINEAGE-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
-| 10 | Security / Authentication (optional) | View 2 Security & Network Boundaries | [IF-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | none / TBD-[SLUG]-[NNN] |
-| 11 | Workflow / Design Notes (optional) | View 3 topology or supplied workflow docs | [FLOW-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | none / TBD-[SLUG]-[NNN] |
+| 1 | Function Purpose | Module scope statement + SME/source notes | [EV-* / SME note] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 2 | Business Scenarios / Use Cases | In-scope flows + Program Flow replay coverage + SME/source notes | [FLOW-* / REPLAY-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 3 | Channels | Flow trigger context + source-backed interface notes | [FLOW-* / IF-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 4 | User Interface / User Touchpoints | Screen/report analysis + flow trigger context | [OBJ-* / EV-* / FLOW-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 5 | System Interfaces | Flow external calls + source-backed interface notes | [IF-* / EDGE-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 6 | Process Flow | Program Flow replay coverage + Flow Replay Path | [FLOW-* / REPLAY-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 7 | Validation Rules | Program/flow Validation Logic + field lineage + exception-chain seeds | [LINEAGE-* / EXCHAIN-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 8 | Error Handling | Module Exception Summary + flow Exception Propagation Chain | [EXCHAIN-* / EV-* / FLOW-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 9 | Dependencies | Program Flow dependencies + Data Flow persistence/dependencies | [DATA-* / OBJ-* / PERSIST-* / LINEAGE-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | covered / partial / missing | none / TBD-[SLUG]-[NNN] |
+| 10 | Security / Authentication (optional) | Source-backed interface/security notes | [IF-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | none / TBD-[SLUG]-[NNN] |
+| 11 | Workflow / Design Notes (optional) | Program Flow topology or supplied workflow docs | [FLOW-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | none / TBD-[SLUG]-[NNN] |
 | 12 | Source Document Mapping (optional) | Context package / evidence map | [DOC-* / FRAG-* / EV-*] | brd_conclusion_allowed / needs_sme_review / questions_only | optional_covered / not_evidenced | none / TBD-[SLUG]-[NNN] |
 
 This crosswalk feeds `legacy-brd-writer`. It should not invent missing BRD
@@ -74,14 +78,15 @@ content; partial or missing required areas must carry a `TBD-*`.
 `questions_only` rows must become SME questions or TBDs, not BRD conclusions.
 
 ## Module Review Checklist
-- [ ] All four views are at least `approved_with_non_blocking_tbd`
+- [ ] Program Flow is at least `approved_with_non_blocking_tbd`
+- [ ] Data Flow is at least `approved_with_non_blocking_tbd`
 - [ ] For `code_backed` mode, `01_inventory/object-map.md`, in-scope
       `program-analysis.md`, and in-scope `flow-*.md` artifacts are present
       and approved
 - [ ] For `context_only` mode, missing object-map / program / flow artifacts
       are carried as `TBD-*` blockers and the module is not approved for a
       standard BRD/spec path
-- [ ] Cross-view consistency check passed
+- [ ] Program/Data consistency check passed
 - [ ] Replay / field-lineage / persistence / exception-chain coverage
       summarized for every in-scope flow, or named TBD / waiver recorded
 - [ ] Critical field lineage and persistence risks carried into the BRD

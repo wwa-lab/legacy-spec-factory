@@ -32,7 +32,7 @@ _No open blockers._
 | 2026-05-16T16:45:00+00:00 | legacy-spec-writer | CAP-PRICE-CALCULATION | 8c Spec Approved | SME signed off — promoted to approved |
 | 2026-05-16T16:00:00+00:00 | legacy-sme-review-facilitator | CAP-PRICE-CALCULATION | 8a Spec Drafted | SME confirmed 2 inferred rules, resolved 1 TBD |
 | 2026-05-16T15:00:00+00:00 | legacy-spec-writer | CAP-PRICE-CALCULATION | 8a Spec Drafted | draft spec — 2 rules, 1 TBD |
-| 2026-05-16T14:00:00+00:00 | legacy-ibmi-module-analyzer | CAP-PRICE-CALCULATION | 3f Module Analysis Done | 4-view synthesis — 2 BR seeds, 1 CAP seed (CAP-PRICE-CALCULATION) |
+| 2026-05-16T14:00:00+00:00 | legacy-ibmi-module-analyzer | CAP-PRICE-CALCULATION | 3f Module Analysis Done | focused module synthesis — 2 BR seeds, 1 CAP seed (CAP-PRICE-CALCULATION) |
 | 2026-05-16T13:00:00+00:00 | legacy-ibmi-flow-analyzer | — | 3d Flow Analysis Done | synthesized flow-calculate-price |
 | 2026-05-16T11:45:00+00:00 | legacy-ibmi-batch-digest | — | 3b Program Analysis Done | digest for PRICE-CALC — critical/1, standard/0, low_risk/0, not-analyzed/0 |
 | 2026-05-16T11:30:00+00:00 | legacy-ibmi-program-analyzer | — | 3b Program Analysis Done | analyzed PRICECALC |

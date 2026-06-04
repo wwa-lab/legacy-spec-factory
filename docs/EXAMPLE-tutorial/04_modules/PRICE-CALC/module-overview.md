@@ -12,14 +12,12 @@
 - Programs: [PRICECALC](../../02_programs/PRICE-CALC/PRICECALC/program-analysis.md)
 - Flows: [calculate-price](../../03_flows/PRICE-CALC/flow-calculate-price.md)
 
-## Views
+## Evidence View Index
 
 | View | File | Status |
 | --- | --- | --- |
-| 1. Operation Flow | [`01-operation-flow.md`](01-operation-flow.md) | approved |
-| 2. System Flow | (stub for example — see view-1 for full detail) | approved |
-| 3. Program Flow | (stub for example — see `02_programs/.../program-analysis.md`) | approved |
-| 4. Data Flow | (stub for example — see PRICEFL fields in inventory) | approved |
+| Program Flow | [`03-program-flow.md`](03-program-flow.md) | approved |
+| Data Flow | [`04-data-flow.md`](04-data-flow.md) | approved |
 
 ## Capability Seeds
 
@@ -27,7 +25,7 @@
 | --- | --- | --- |
 | CAP-PRICE-CALCULATION | Calculate final unit price for one order line | FLOW-PRICE-CALCULATE-LINE |
 
-## Business Rule Seeds (from View 1)
+## Business Rule Seeds
 
 | BR ID | Rule | Evidence IDs | Knowledge Type | Review Status |
 | --- | --- | --- | --- | --- |

@@ -28,7 +28,7 @@ Retain this notice in substantial copies or derived versions.
 | Downstream consumer | SMEs, gap-analysis / old-vs-new reviewers, `legacy-spec-writer`, and decision writers. |
 | Validation standard | BRD sections complete enough for the requested mode, evidence strength declared, unresolved gaps visible, and approval/spec gates not bypassed. |
 | Known risk | Mistaking old-system description for a mandate to preserve every behavior in the target system. |
-| Practical example | Given a four-view order-entry module analysis, produce a BRD package that lists observed hold-release behavior and questions for SME confirmation. |
+| Practical example | Given an approved order-entry module overview with Program Flow and Data Flow evidence, produce a BRD package that lists observed hold-release behavior and questions for SME confirmation. |
 
 ## Purpose
 
@@ -68,7 +68,7 @@ old-vs-new comparison, target-system requirements, or SDD handoff files.
 `legacy-golden-master-test-planner`.
 
 For the standard migration-discovery path, the BRD is **code-backed**. A
-module-first context package or document-normalized four-view draft can inform
+module-first context package or document-normalized draft can inform
 the BRD, but it does not replace `01_inventory/object-map.md`, per-program
 analysis, or flow analysis. A context-only BRD is allowed only as a
 non-approved draft with named owner risk acceptance and visible TBD blockers.
@@ -101,7 +101,7 @@ BRD writing follows a **source-of-truth firewall**:
   until reviewed.
 - `candidate_only`, `generated_draft`, `questions_only`, and `missing` inputs
   must become `TBD-*`, review questions, or deferred evidence gaps.
-- A generated or weak four-view flow never makes a BRD section `covered` by
+- A generated or weak module-context flow never makes a BRD section `covered` by
   itself.
 
 The BRD body follows the SME-required functional analysis shape. Sections 1-9
@@ -248,7 +248,7 @@ You must not:
   diagrams, source documents, or dependencies just to satisfy the BRD shape
 - invent business rules beyond what the module analysis suggests + SME
   confirmation
-- use AI-organized four-view context, generated-draft diagrams, or
+- use AI-organized module context, generated-draft diagrams, or
   candidate-only module rows as BRD conclusions
 - invent a new-system comparison, gap classification, risk assessment, or
   gap-analysis disposition
@@ -268,8 +268,10 @@ You must not:
 
 Accept:
 
-- **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with all four views
-  at `approved` or `approved_with_non_blocking_tbd`)
+- **Approved module analysis** (`04_modules/<MODULE-SLUG>/` with
+  `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, and
+  `module-review-checklist.md` at `approved` or
+  `approved_with_non_blocking_tbd`)
   - Prefer module analyses whose `module-overview.md` includes the BRD
     Functional Analysis Input Crosswalk and BRD Source Eligibility Crosswalk.
     Use those crosswalks to populate SME required sections 1-9 only where
@@ -390,7 +392,8 @@ The summary below is normative for this skill.
 ### Input
 
 - **Required for standard code-backed BRDs**: approved
-  `04_modules/<MODULE-SLUG>/` (all four views at `approved` or
+  `04_modules/<MODULE-SLUG>/` (`module-overview.md`, `03-program-flow.md`,
+  `04-data-flow.md`, and `module-review-checklist.md` at `approved` or
   `approved_with_non_blocking_tbd`, `evidence_mode: code_backed`); one or more
   `CAP-*` capability seeds from the module overview, validated by SME; named
   capability-owner SME; all referenced `flow-<FLOW-SLUG>.md` and
@@ -688,7 +691,8 @@ decision.
      may appear after the business behavior only as supporting context
 
 5. **Aggregate Business Rules (BR-*)**
-   - From module analysis's `BR-*` seeds (View 1 / Capability Seeds)
+   - From module analysis's `BR-*` seeds in `module-overview.md` / Capability
+     Seeds / BRD crosswalk
    - Cross-check against flow / program analyses
    - Keep each BR-* at status `needs_sme_review` (do NOT promote to `approved`);
      that is spec-writer's job

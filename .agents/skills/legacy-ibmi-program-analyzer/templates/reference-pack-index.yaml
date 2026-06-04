@@ -1,0 +1,56 @@
+schema_version: "0.1"
+pack_id: "REF-<SLUG>-001"
+pack_slug: "<PACK-SLUG>"
+owner: "<Business/Data/Message owner>"
+version: "<YYYY-MM-DD or release/version>"
+authorization_status: "unknown" # approved_for_analysis | internal_reference | synthetic | blocked | unknown
+description: "<What these control files, message catalogs, or dictionaries cover>"
+document_intake_manifest: null # optional path to legacy-document-evidence-intake intake.manifest.yaml
+
+files:
+  - path: "normalized/messages.md"
+    source_path: "source/messages.xlsx"
+    source_format: "xlsx" # md | csv | txt | xlsx | xlsm | xls | docx | doc | pdf | png | jpg
+    type: "message_catalog" # message_catalog | field_dictionary | control_file | code_table | data_dictionary | interface_dictionary
+    version: "<YYYY-MM-DD or release/version>"
+    key_columns:
+      - "message_id"
+      - "status_code"
+      - "description"
+    evidence_coordinate_kind: "workbook / sheet / row / column"
+    notes: "<Message IDs, return/status codes, SQLSTATEs, CPF/MCH/RNX/CPD IDs, or shop-local codes covered>"
+
+  - path: "normalized/fields.md"
+    source_path: "source/data-dictionary.docx"
+    source_format: "docx"
+    type: "field_dictionary"
+    version: "<YYYY-MM-DD or release/version>"
+    key_columns:
+      - "legacy_field"
+      - "record_format"
+      - "standard_field_id"
+      - "business_meaning"
+    evidence_coordinate_kind: "heading / paragraph / table"
+    notes: "<DDS/DB2/API/screen/report aliases and standard dictionary IDs covered>"
+
+  - path: "normalized/control-values.md"
+    source_path: "source/control-file-guide.pdf"
+    source_format: "pdf"
+    type: "control_file"
+    version: "<YYYY-MM-DD or release/version>"
+    key_columns:
+      - "file"
+      - "field"
+      - "value"
+      - "meaning"
+    evidence_coordinate_kind: "page / table / row"
+    notes: "<Control file values or code table values covered>"
+
+lookup_policy:
+  exact_identifier_first: true
+  allow_fuzzy_match_without_steward_approval: false
+  cite_pack_file_row: true
+  prefer_normalized_outputs: true
+  route_raw_unreadable_documents_to_document_evidence_intake: true
+  create_tbd_on_unmatched_identifier: true
+  create_tbd_on_code_dictionary_conflict: true

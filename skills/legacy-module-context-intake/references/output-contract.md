@@ -168,7 +168,7 @@ Rules:
 
 Context coverage is recorded in `context-index.yaml.coverage` and in the
 evidence/candidate rows of `rag-evidence-map.md`. Do not create separate
-Operation / Business Flow, System Flow, Program Flow, or Data Flow intake files.
+standalone flow-view intake files.
 
 Coverage dimensions:
 

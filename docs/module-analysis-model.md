@@ -1,226 +1,176 @@
-# Module Analysis Model: The 4-View Standard
+# Module Analysis Model: Focused Evidence Views
 
-This document defines the standard module-level analysis model used by
-Legacy Spec Factory. It is the design basis for the
-`legacy-ibmi-module-analyzer` skill, the evidence backbone for
-`legacy-brd-writer`, and downstream input context for `legacy-spec-writer`.
+This document defines the module-level analysis model used by Legacy Spec
+Factory for IBM i / AS400 modernization.
 
-## Origin
+The model is intentionally focused on the two module artifacts that are
+consistently evidence-backed in field work:
 
-Banking, insurance, and securities firms have used a 4-view model for
-30+ years to document, modernize, and audit large mainframe / midrange
-systems. The view names vary by firm and methodology (TOGAF, Zachman,
-shop-internal frameworks), but the substance is consistent.
+- `03-program-flow.md` — program and flow replay coverage
+- `04-data-flow.md` — data movement, lineage, persistence, and exception-state
+  impact
 
-Legacy Spec Factory adopts the four views with concrete IBM i bindings
-so they are executable, not just aspirational.
+`01-operation-flow.md` and `02-system-flow.md` are no longer default module
+outputs. Field testing showed they frequently became weak summaries or
+incorrect business/architecture narratives unless backed by strong SME,
+operations, integration, or architecture evidence. Business and system context
+is still valuable, but it belongs in `module-overview.md` as source-backed
+context notes, BRD crosswalk evidence, or explicit TBDs.
 
-## The Four Views
+## Default Artifacts
 
-Each module produces all four views. They are complementary; together they
-form a complete coverage and review picture of one business module. The views
-do not automatically authorize BRD conclusions: BRD writer may use only
-code-backed or SME-confirmed rows as facts; generated, candidate-only, missing,
-or unreviewed source-documented rows become TBDs or SME questions.
+A module analysis produces:
 
-### View 1 — Operation Flow / Business Background
+```text
+04_modules/<MODULE-SLUG>/
+├── module-overview.md          ← summary, evidence-view index, readiness, BRD crosswalk
+├── 03-program-flow.md          ← Program Flow: application/program view + replay coverage
+├── 04-data-flow.md             ← Data Flow: data, lineage, persistence, exception impact
+└── module-review-checklist.md  ← SME sign-off for the module package
+```
 
-**Question answered:** "What does this module do for the business?"
+The numbering for `03` and `04` is preserved to reduce disruption for existing
+links and downstream references. The missing `01` and `02` slots are reserved
+for non-default, explicitly requested, source-backed business/system views if a
+future workflow needs them.
 
-**Captures:**
-- Business scope statement (e.g., "Card Authorization for On-Us Transactions")
-- Business actors (cardholders, merchants, banks, risk team, call center)
-- Business events processed (swipe, online, refund, pre-auth, chargeback, …)
-- BAU (Business As Usual) rhythm: cut-off times, peak hours, month-end,
-  year-end, seasonal patterns
-- Manual intervention points (reject queue, manual approval, compensation
-  transactions)
-- Exception handling (chargeback, dispute, fraud lifecycle)
-- Business-rule seeds (BR-\* candidates; resolved to rules by spec-writer)
-
-**Primary source:** SME interviews, business documentation, operations
-manuals, BAU notes. Code is a secondary source.
-
-**Anti-pattern:** Do not derive business rules from field names. The fact
-that a field is called `CREDLIMIT` does not explain *why* the limit exists,
-*who* sets it, *how often* it changes, or *what happens* when it is
-breached. The Operation Flow captures the business reality the code is
-trying to encode.
-
-### View 2 — System Flow
-
-**Question answered:** "How does this module participate in the broader
-system landscape?"
-
-**Captures:**
-- Upstream systems (ATM, POS, internet banking, mobile, call center, …)
-- Downstream systems (clearing, GL, risk, fraud detection, reporting,
-  analytics, …)
-- External interfaces (Visa, Mastercard, UnionPay, SWIFT, regulator,
-  partner banks)
-- Integration patterns (real-time API, batch file drop, MQ message,
-  IFS file, JDBC, web service)
-- Synchronous vs asynchronous boundaries
-- SLA constraints (response time, throughput, cut-off windows)
-- Network and security boundaries (DMZ, encryption, mTLS, signed payloads)
-
-**Primary source:** Architecture diagrams, integration specifications,
-operations runbooks. Code confirms or refutes; SME judgment fills gaps.
-
-### View 3 — Program Flow
+## Program Flow
 
 **Question answered:** "What is the actual program-level call structure and
 replay readiness across all transactions in this module?"
 
 **Captures:**
-- Inventory of flows in scope (one row per `flow-<FLOW-SLUG>.md`
-  produced by `legacy-ibmi-flow-analyzer`)
-- Per-flow summary: trigger model, entry program, exit program, runtime
-  model (batch, interactive, scheduled, triggered, API)
-- Cross-flow dependencies: which flow must run before which; which flow
-  writes data another flow reads
-- Replay coverage: whether each in-scope flow can be traced from trigger to
-  final response, durable persistence, rollback, skipped work, or manual
-  outcome
-- Key decision and exception paths, with `REPLAY-*`, `PERSIST-*`, and
-  `EXCHAIN-*` evidence carried from flow analysis
-- Shared sub-programs called from multiple flows (utility programs,
-  validation routines, audit writers)
+- Inventory of flows in scope, one row per `flow-<FLOW-SLUG>.md`
+- Per-flow summary: trigger model, entry program, exit program, runtime model
+- Cross-flow dependencies: which flow writes data another flow reads
+- Replay coverage from trigger to final response, durable persistence,
+  rollback, skipped work, or manual outcome
+- Key decision and exception paths, carrying `REPLAY-*`, `PERSIST-*`, and
+  `EXCHAIN-*` evidence from flow analysis
+- Shared sub-programs called from multiple flows
 - Overall call topology of the module
 
-**Primary source:** All `flow-<FLOW-SLUG>.md` documents produced by
-`legacy-ibmi-flow-analyzer`, plus their child `program-analysis-<OBJ-ID>.md`
-documents.
+**Primary source:** approved `flow-<FLOW-SLUG>.md` documents and approved child
+`program-analysis-<OBJ-ID>.md` artifacts.
 
-**This view is the aggregate of the application/program perspective.**
-It does not re-analyze individual programs; it references and synthesizes
-them.
+This view does not re-analyze individual programs; it references and
+synthesizes approved flow/program evidence.
 
-### View 4 — Data Flow
+## Data Flow
 
 **Question answered:** "How does data move through this module?"
 
 **Captures:**
-- All data objects in scope (PF, LF, DSPF, PRTF, \*DTAARA, \*DTAQ, \*MSGF,
-  copybooks, parameter data structures) — aggregated from flow `DATA-*`
-  rows and backed by program Data Touch Maps / Object Dependencies
-- Data lifecycle per object: **Created → Updated → Read → Archived → Purged**
-  with the program(s) responsible at each stage
-- Critical field lineage across programs and flows, preserving the source
-  field, carrier, transformation, persisted/output locations, and consumers
-- Module persistence matrix: field-level writes, updates, deletes, skipped
-  mutations, queues, spool, IFS handoffs, response payloads, checkpoints, and
-  commit / rollback / retry effects
-- Exception-aware data risks: how exception chains affect data state,
-  persistence, skipped mutations, manual recovery, and downstream consumers
-- Critical data trails (e.g., a transaction record's path from intake to
-  GL posting to reporting to archive)
-- Shared data objects within the module (coupling hotspots — files,
-  data areas, data queues touched by multiple flows)
-- DB table relationships (PK / FK, master / detail, lookup)
-- Cross-module data dependencies (input interface files, output interface
-  files, shared reference tables)
-- Data retention / archival policy (where applicable)
+- Data objects in scope: PF, LF, DSPF, PRTF, `*DTAARA`, `*DTAQ`, `*MSGF`,
+  copybooks, parameter data structures, queues, spool, IFS handoffs, and
+  response payloads
+- Data lifecycle per object: created, updated, read, sent/received, archived,
+  purged
+- Critical field lineage across programs and flows
+- Module persistence matrix: writes, updates, deletes, skipped mutations,
+  response payloads, queues, spool files, checkpoints, commit/rollback/retry
+  effects
+- Exception-aware data risks: how exception chains affect state and downstream
+  consumers
+- Coupling hotspots and cross-module data dependencies
+- DB table relationships where evidenced
 
-**Primary source:** Aggregated `Cross-Program Data Flow` sections from
-every `flow-<FLOW-SLUG>.md`, backed by flow `Cross-Program Field Lineage`,
-`Flow Persistence Matrix`, and `Exception Propagation Chain` sections; every
-program's `Data Touch Map`, `Object Dependencies`, `Key File & Field Logic`,
-`File I/O Purpose`, `Field Mutation Matrix`, and `Validation Logic`; DDS
-definitions from inventory; SME notes on data ownership and retention.
+**Primary source:** flow `Cross-Program Field Lineage`, `Flow Persistence
+Matrix`, and `Exception Propagation Chain` sections; program `Data Touch Map`,
+`Object Dependencies`, `Key File & Field Logic`, `File I/O Purpose`, `Field
+Mutation Matrix`, and `Validation Logic`; inventory/DDS evidence; data-model
+dictionary output where triggered.
 
-## View Independence vs Cross-View Linking
+## Module Overview
 
-The four views are produced together but read independently — an SME for
-business operations reads View 1, an integration architect reads View 2,
-a developer reads View 3, a data analyst reads View 4.
+`module-overview.md` is the place to collect:
 
-However, every claim must be cross-linkable:
-- A business rule seed in View 1 must reference the program(s) in View 3
-  that enforce it (or the missing programs that should)
-- An upstream system in View 2 must reference the entry program(s) it
-  invokes in View 3
-- Every `REPLAY-*` path in View 3 must map to a business event, exception
-  outcome, persisted outcome, or named `TBD-*`
-- Every external or durable `PERSIST-*` output must map to a View 2 system /
-  manual consumer or a View 4 object / output
-- Every material `EXCHAIN-*` must map to a View 1 operational outcome and BRD
-  Error Handling coverage, or carry a named `TBD-*`
-- A data object's lifecycle in View 4 must reference the program(s) in
-  View 3 that act on it
-- Critical `LINEAGE-*` and durable `PERSIST-*` claims must appear in View 4
+- Module identity, scope, owner, evidence mode, and status
+- Evidence view index for Program Flow and Data Flow
+- Optional source-backed business operation / BAU notes
+- Optional source-backed channel, system, interface, SLA, security, and
+  architecture notes
+- Top blocking TBDs
+- Module Program-Chain Readiness
+- Module Persistence & Critical Field Summary
+- Module Exception & Recovery Summary
+- Capability seeds for BRD/spec work
+- BRD Functional Analysis Input Crosswalk
+- BRD Source Eligibility Crosswalk
+- Module review checklist and sign-off
 
-This is enforced through the shared ID conventions
-(`docs/id-conventions.md`): every business actor, system, program,
-data object, and flow has a stable ID, and cross-references use those IDs.
+Rows backed only by generated drafts, RAG candidates, unreviewed documents, or
+missing evidence must remain `questions_only` or `needs_sme_review`; they do
+not become BRD conclusions.
 
-## Output Artifact
+## Consistency Rules
 
-A module analysis produces a directory:
-
-```
-04_modules/<MODULE-SLUG>/
-├── module-overview.md          ← summary, 4-view index, readiness, blocking TBDs
-├── 01-operation-flow.md        ← View 1: Business view
-├── 02-system-flow.md           ← View 2: Integration view
-├── 03-program-flow.md          ← View 3: Application / program view + replay coverage
-├── 04-data-flow.md             ← View 4: Data, lineage, persistence, exception impact
-└── module-review-checklist.md  ← SME sign-off for the whole module
-```
+- Every `REPLAY-*` path in Program Flow maps to a module event, persisted
+  outcome, exception outcome, or named `TBD-*`.
+- Every external or durable `PERSIST-*` output maps to a Data Flow object,
+  output carrier, downstream consumer, or named `TBD-*`.
+- Every module-critical `LINEAGE-*` and durable `PERSIST-*` claim appears in
+  Data Flow.
+- Every material `EXCHAIN-*` has module-level error/recovery crosswalk coverage
+  or a named `TBD-*`.
+- Every data object in Data Flow traces to at least one approved flow/program,
+  dictionary row, inventory object, or named source gap.
+- Any business operation or system-interface claim in the overview must cite
+  named SME/source evidence or become a TBD.
 
 ## Granularity Rules
 
-- **Capability ⊂ Module.** A module contains one or more business
-  capabilities. (A capability such as "Credit Limit Check" lives inside a
-  module such as "Card Authorization".) `spec.yaml` is produced per
-  capability; the module analysis informs all capabilities under it.
-- **Flow ⊂ Module.** A module contains multiple flows (business
-  transactions). A flow is the unit produced by `legacy-ibmi-flow-analyzer`.
-- **Program ⊂ Flow.** A program participates in one or more flows.
-- **Object ⊂ Program.** Objects (files, data areas, …) are referenced by
-  one or more programs.
+- **Capability within Module.** A module contains one or more business
+  capabilities. `spec.yaml` is produced per capability; module analysis informs
+  all capabilities under it.
+- **Flow within Module.** A module contains multiple flows. A flow is the unit
+  produced by `legacy-ibmi-flow-analyzer`.
+- **Program within Flow.** A program participates in one or more flows.
+- **Object within Program.** Objects are referenced by one or more programs.
 
-```
+```text
 Module
-├─ Capability   (BR-* groups; spec.yaml unit)
+├─ Capability   (CAP-* seeds; BRD/spec unit candidate)
 ├─ Flow         (business transaction; flow-*.md)
 │   └─ Program  (program-analysis-*.md)
 │       └─ Object Dependencies + File I/O Purpose + Field Mutation Matrix
 ├─ Replay / Lineage / Persistence / Exception evidence
-└─ BAU notes    (manual, periodic, exception-handling processes)
+└─ Source-backed SME/context notes
 ```
 
-## Status Values (per view)
+## Status Values
 
-Each view, independently:
-- `draft` — initial synthesis, ready for SME review
+Each default evidence view and the overview use:
+
+- `draft` — initial synthesis, ready for review
 - `needs_sme_review` — has blocking TBDs or ambiguities
-- `approved` — SME confirmed
+- `approved` — reviewer confirmed
 - `approved_with_non_blocking_tbd` — approved with known non-blocking gaps
-- `rejected` — SME found errors
+- `blocked_pending_source` — missing required source evidence
+- `blocked_pending_sme` — missing required owner/scope/SME judgment
+- `rejected` — reviewer found errors
 
-The whole module is `approved` only when **all four views are at least
-`approved_with_non_blocking_tbd`**.
+The module is approved only when `module-overview.md`, `03-program-flow.md`,
+`04-data-flow.md`, and `module-review-checklist.md` are approved or
+`approved_with_non_blocking_tbd`, and no blocking BRD crosswalk gaps remain.
 
-## Why Four Views, Not Three or Five
+## Why Not Default Operation/System Views
 
-- **Three views** (e.g., dropping Data Flow into Program Flow) loses the
-  data-ownership story, which is critical for modernization (target system
-  data model design depends on legacy data flow).
-- **Five views** (e.g., adding a separate "Security view" or "Performance
-  view") spreads attention thin in MVP; security and performance concerns
-  are folded into System Flow and Operation Flow respectively, and can be
-  extracted in a later release if needed.
+Operation Flow and System Flow are useful only when the evidence is strong:
+SME-reviewed operating procedures, BAU notes, integration specs, architecture
+diagrams, runbooks, or confirmed interface contracts. Code alone cannot prove
+business actors, BAU rhythm, SLAs, network boundaries, or business intent.
 
-Four is the smallest number that produces a complete picture without
-overlap or omission for an IBM i / AS400 reverse-modernization context.
+Default generation of those files created polished artifacts that looked
+authoritative while often being speculative. The focused model keeps the
+default package anchored to code-backed program/data evidence and moves weaker
+business/system material into overview notes and BRD crosswalk TBDs.
 
 ## Relationship to Existing Documents
 
-- `docs/id-conventions.md` — stable IDs used across all four views
-- `docs/evidence-and-knowledge-taxonomy.md` — evidence tagging applies to
-  every claim in every view
-- `docs/skill-review-gate.md` — module-analyzer must score ≥ 9.5 / 10
-- `docs/runtime-matrix.md` — module-analyzer must sync to all runtime adapters
-- `schemas/spec.schema.yaml` — `spec.yaml` references the module ID and
-  capability ID; module analysis grounds those references
+- `docs/id-conventions.md` — stable IDs used across module artifacts
+- `docs/evidence-and-knowledge-taxonomy.md` — evidence tagging applies to every
+  claim
+- `docs/skill-review-gate.md` — module-analyzer review gate
+- `docs/runtime-matrix.md` — module-analyzer runtime sync status
+- `schemas/spec.schema.yaml` — `spec.yaml` references module/capability IDs
