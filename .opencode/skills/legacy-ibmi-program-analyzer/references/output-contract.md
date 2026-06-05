@@ -123,29 +123,39 @@ business, parameter, I/O, external-call, system, and generic exceptions.
 ## Message Inventory Section
 
 This section must appear immediately after Exception Handling, before Metadata.
-It is the IT SME first-read view of every observed message/code/literal and its
-meaning.
+It is the IT SME first-read summary of observed message/code/literal meanings.
+For message-dense programs, it must stay compact and link to the detailed
+message sidecars rather than expanding every occurrence in the main analysis.
 
 ```markdown
 ## Message Inventory
 
-| Message / Code / Literal | Message Description | Message Source | Emitted / Set By | Trigger / Handler | Carrier / Destination | Related Validation / Exception Row | Evidence Status |
+| Message / Code / Literal | Short Description | Type | Occurrences | Primary Routine(s) | First Seen / Set By | Trigger / Handler Summary | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| D | denial decision | source literal/comment | return literal | not found or amount exceeds limit | return parameter | Validation Logic `D`; Exception Handling denial rows | confirmed |
+| D | denial decision | response_status | 3 | CreditChk | lines 42-45 | not found or amount exceeds limit | MSG-CREDIT-001 |
 ```
 
 **Requirements:**
-- Create one row per explicit message ID, status value, return code, response
+- Create one summary row per explicit message ID, status value, return code, response
   literal, SQLSTATE, CPF/MCH/RNX/CPD message, operator message, or shop-local
-  message token.
+  message token in the main summary. If the same token appears multiple times,
+  summarize it once with occurrence count and link to details.
 - Preserve exact source codes/literals and do not group message families.
-- Include the best available description source. If unavailable, write
+- Include the best available short description. If unavailable, write
   `unresolved - message description not available` and create an Open Item.
 - Approved reference packs may supply the description source. Cite them as
   `reference pack: <pack_id>/<file>#<row-or-anchor>`. Do not invent message
   rows from the catalog; the message/code/literal must first be observed in
   source, runtime evidence, or SME notes.
 - Cross-reference the related Validation Logic and Exception Handling rows.
+- When there are more than 10 message/code/literal rows, or when the program is
+  `segmented` / `large_program`, keep this section as a summary and place full
+  details in `message-inventory.md` plus machine-readable
+  `message-inventory.yaml`.
+- Detail IDs use `MSG-<PROGRAM>-NNN` and point to sidecar rows that include
+  description source, all occurrences, routines, source lines, carrier /
+  destination, trigger / handler, related Validation / Exception rows, and
+  evidence status.
 
 ---
 
@@ -276,11 +286,18 @@ complete understanding. Align terminology with
 - Count source lines, routine definitions, external calls, and object
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
-  helper:
-  `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`.
-  Use its `source-index.yaml`, `routine-index.md`,
-  `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as seeds for this
-  section and for Routine Cards / Deep Read Windows.
+  helper. Use the platform's existing Python launcher only:
+  - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  Do not configure a Python environment or install packages. If neither
+  platform launcher is available, stop and report the terminal error.
+  Use its `source-index.yaml`, `program-analysis-summary.yaml`,
+  `routine-index.md`, `all-routine-coverage-ledger.md`,
+  `deep-read-plan.md`, `routine-logic-details.md`,
+  `routine-logic-details.yaml`, `message-inventory.md`, and
+  `message-inventory.yaml` as seeds for this section, Routine Cards,
+  Deep Read Windows, routine detail review, message review, and downstream
+  flow/module aggregation.
 - Select one mode: `standard`, `segmented`, or `large_program`.
 - Use `segmented` or `large_program` when the source cannot safely fit
   with evidence windows, or when call/data density requires
@@ -337,29 +354,39 @@ diagram and not a statement-level control-flow chart.
 
 ### View 1: Visual Overview
 
-```markdown
+````markdown
 ### Visual Overview
 
 Evidence basis: source-level flow header + derived call analysis
 
-```mermaid
-flowchart LR
-  MAIN["CU101A mainline"]
-  MAIN --> SR990["SR990 first-time initialization"]
-  MAIN --> SR100["SR100 preliminary validation"]
-  SR100 --> SR110["SR110 amount conversion"]
-  SR100 --> CHECKEXPOSE["CHECKEXPOSE external program"]
+```text
+CU101A mainline
+|-- SR990 first-time initialization / parameter lists / runtime configuration
+|   |-- define data areas and control values
+|   |-- read package-level control
+|-- SR100 preliminary validation
+|   |-- SR110 amount conversion
+|   |-- CHECKEXPOSE external program
+|-- SR980 return / termination path
 ```
-```
+````
 
 **Rules:**
-- Prefer a compact graph over a complete visual tangle. The full edge
+- The primary `Visual Overview` must be a fenced `text` ASCII hierarchy,
+  starting with `<PROGRAM> mainline` and using `|--` branch connectors.
+  It should read like an RDi / source-reader call hierarchy, not a Mermaid
+  graph.
+- Prefer a compact hierarchy over a complete visual tangle. The full edge
   evidence table remains the source of truth.
 - Include internal nodes (`EXSR`, procedure calls) and external boundary
   nodes (`CALL`, `CALLP`, API, data queue, message queue, service
   program) when they help a reader understand the program quickly.
 - Mark common or hub nodes in the label when useful, but do not invent
   roles from names alone.
+- If a source flow header is useful, normalize it into the same `|--`
+  hierarchy and cite it through `Evidence basis`, `Evidence Source`, and
+  drift TBDs. Source header entries that conflict with code-derived calls
+  must not be presented as confirmed edges.
 
 ### View 2: Node Inventory
 
@@ -460,7 +487,12 @@ Evidence basis: source-level flow header + derived call analysis
 
 ### Source-Level Flow Header Handling
 
-If the source has a flow-header comment block (common in IBM i shops), the analyzer uses it as documented intent and navigation evidence in `Visual Overview` and `Call Evidence`. The header is useful for orientation and SME comparison, but it is not authoritative when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
+If the source has a flow-header comment block (common in IBM i shops),
+the analyzer uses it as documented intent and navigation evidence in
+`Visual Overview` and `Call Evidence`. The displayed `Visual Overview`
+remains the required compact fenced `text` ASCII hierarchy. The header is
+useful for orientation and SME comparison, but it is not authoritative
+when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
 
 **Then** independently derive a Program Call Map from code. Actual call
 sites are authoritative for behavior facts and code-derived call edges.
@@ -537,8 +569,27 @@ message, report output, or branch that changes downstream behavior. Routine
 Cards summarize coverage; Routine Logic Details explain what the routine
 actually does.
 
+For routine-dense programs, this section must remain compact in
+`program-analysis.md` and link to sidecar detail instead of expanding every
+routine inline:
+
+- `routine_count <= 25`: full Routine Logic Details may appear in the main
+  analysis.
+- `routine_count > 25`: the main analysis contains a summary table and the full
+  detail lives in `routine-logic-details.md` plus machine-readable
+  `routine-logic-details.yaml`.
+- `routine_count > 80` or source lines > 10,000: human-authored semantic detail
+  must be split into `routine-logic-details/part-*.md` shard files by
+  mainline/dispatch, state-changing routines, validation/message routines,
+  external boundaries, and indexed utilities.
+
 ```markdown
 ## Routine Logic Details
+
+| Routine | Role | Source Lines | Coverage | Deep Read Status | State Impact | Detail |
+| --- | --- | --- | --- | --- | --- | --- |
+| MAIN | entry dispatch | 1-3084 | deep_read | completed | control flow | RLOG-AUTH-001 |
+| SR120 | validation/message routine | 520-780 | deep_read | completed | response status | RLOG-AUTH-017 |
 
 ### SR120 ValidateExposure
 
@@ -597,11 +648,14 @@ transaction amount is loaded.
 ```
 
 **Requirements:**
-- Include one `### <routine>` subsection for each load-bearing routine,
-  procedure, paragraph, or mainline segment. Load-bearing means it performs
+- Include one summary row for each load-bearing routine, procedure, paragraph,
+  or mainline segment in `program-analysis.md`. Load-bearing means it performs
   field calculation, validation, branching that changes downstream behavior,
   file mutation, external handoff, error/status assignment, display/report
   output, or queue/message interaction.
+- In routine-dense programs, full `### <routine>` subsections belong in the
+  routine sidecar, not inline in the main analysis. Summary rows must link to
+  stable `RLOG-<PROGRAM>-NNN` detail IDs.
 - Technical utility routines may be omitted only when Routine Cards mark them
   `indexed_only` and Open Items / Limitations explain why no business/state
   claims depend on them.
@@ -1396,6 +1450,8 @@ Before approval, SME must validate:
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Program Call Map keeps Visual Overview compact and uses Call Evidence for auditable caller/callee evidence
 - [ ] Parameter contracts match actual usage (no invented parameters)
+- [ ] Routine Logic Details summarize every load-bearing routine in the main analysis and route routine-dense detail to `routine-logic-details.md` / `routine-logic-details.yaml` with stable `RLOG-*` IDs
+- [ ] Routine Logic Details or sidecar detail explain field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, evidence, and outcome reverse traces for each deep-read load-bearing routine
 - [ ] Calculation Logic is front-loaded immediately after the title, covers material whole-program calculations/assignments, and links every row to routine-level or ledger evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows input variables, transformation logic, output variables, side effects, source lines, and evidence
@@ -1407,7 +1463,7 @@ Before approval, SME must validate:
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
-- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one row per explicit message/code/literal with description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal, links message-dense details to `message-inventory.md` / `message-inventory.yaml`, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status in the summary or sidecar
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable; long lists use intentional line breaks
 - [ ] Redundancy candidates are conservative and do not remove hidden rules

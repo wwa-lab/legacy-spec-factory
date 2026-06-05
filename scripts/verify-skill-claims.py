@@ -40,6 +40,7 @@ class Claim:
     decision: str | None = None
     runtimes: dict[str, str] = field(default_factory=dict)  # codex/claude_code/opencode -> status
     last_verified: str | None = None
+    notes: str | None = None
 
 
 def parse_scorecard_frontmatter(path: Path) -> Claim | None:
@@ -108,15 +109,16 @@ def parse_runtime_matrix() -> list[Claim]:
     for line in text.splitlines():
         # Match: | `skill` | vX.Y.Z | codex | claude | opencode | [scorecard](...) | date | notes |
         m = re.match(
-            r"^\|\s*`(legacy-[a-z0-9-]+)`\s*\|\s*(v\d+\.\d+\.\d+)\s*\|\s*([a-z _]+?)\s*\|\s*([a-z _]+?)\s*\|\s*([a-z _]+?)\s*\|\s*[^|]*\|\s*([^|]+?)\s*\|",
+            r"^\|\s*`(legacy-[a-z0-9-]+)`\s*\|\s*(v\d+\.\d+\.\d+)\s*\|\s*([a-z _]+?)\s*\|\s*([a-z _]+?)\s*\|\s*([a-z _]+?)\s*\|\s*[^|]*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|",
             line,
         )
         if not m:
             continue
-        skill, ver, codex, claude, opencode, last_v = m.groups()
+        skill, ver, codex, claude, opencode, last_v, notes = m.groups()
         claim = Claim(source="runtime-matrix", skill=skill, version=ver)
         claim.runtimes = {"codex": codex.strip(), "claude_code": claude.strip(), "opencode": opencode.strip()}
         claim.last_verified = last_v.strip()
+        claim.notes = notes.strip()
         claims.append(claim)
     return claims
 
@@ -170,6 +172,34 @@ def collect_scorecards() -> list[Claim]:
     return out
 
 
+def version_key(version: str) -> tuple[int, int, int]:
+    """Parse vMAJOR.MINOR.PATCH into a sortable tuple."""
+    if not re.match(r"^v\d+\.\d+\.\d+$", version):
+        raise ValueError(version)
+    major, minor, patch = (int(part) for part in version[1:].split("."))
+    return major, minor, patch
+
+
+def is_declared_scorecard_pending_runtime_version(mx: Claim, sc: Claim) -> bool:
+    """Allow runtime-matrix to track a newer synced version awaiting review.
+
+    The truth table and scorecard remain the reviewed source of truth. The
+    runtime matrix may be ahead only when the row clearly says the updated
+    scorecard is pending and does not claim improved runtime status.
+    """
+    try:
+        if version_key(mx.version) <= version_key(sc.version):
+            return False
+    except ValueError:
+        return False
+
+    notes = (mx.notes or "").lower()
+    if "scorecard" not in notes or "pending" not in notes:
+        return False
+
+    return all(mx.runtimes.get(rt) == sc.runtimes.get(rt) for rt in RUNTIMES)
+
+
 def check_drift() -> list[str]:
     issues: list[str] = []
     scorecards = collect_scorecards()
@@ -216,7 +246,7 @@ def check_drift() -> list[str]:
 
         # Check 5: matrix vs scorecard runtime status
         if mx:
-            if mx.version != sc.version:
+            if mx.version != sc.version and not is_declared_scorecard_pending_runtime_version(mx, sc):
                 issues.append(f"[{skill}] matrix version {mx.version} != scorecard version {sc.version}")
             for rt in RUNTIMES:
                 sc_st = sc.runtimes.get(rt)
@@ -260,7 +290,10 @@ def check_drift() -> list[str]:
 def main():
     issues = check_drift()
     if not issues:
-        print("OK: all skill claims agree across scorecards, truth table, runtime matrix, and README.")
+        print(
+            "OK: skill claims agree across scorecards, truth table, runtime matrix, and README. "
+            "Newer synced runtime-matrix versions are explicitly scorecard-pending."
+        )
         return 0
     print(f"DRIFT DETECTED: {len(issues)} issue(s)\n")
     for i, msg in enumerate(issues, 1):

@@ -8,6 +8,10 @@ This document defines the precise shape and required fields for every
 ```markdown
 # Flow Analysis: [Business Event Name] (FLOW-*)
 
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
 ## Metadata
 ## Trigger Context
 ## Transaction Call Map
@@ -29,6 +33,113 @@ This document defines the precise shape and required fields for every
 
 ---
 
+## Calculation Logic Section
+
+This section must appear immediately after the title, before Metadata. It is the
+SME first-read view of material cross-program calculations, assignments, and
+payload derivations that affect the flow outcome. It summarizes; it does not
+replace program-level `RLOG-*`, `DATA-*`, `LINEAGE-*`, or field-mutation
+evidence.
+
+```markdown
+## Calculation Logic
+
+| Flow Calculation / Assignment | Producing Node(s) | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Flow Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Authorization response amount derivation | NODE-02 CU106 | response amount field | request amount, account/product controls | approval branch | outbound response payload | RLOG-CU106-017; LINEAGE-ONUS-AUTH-003 | confirmed |
+```
+
+**Requirements:**
+- Include only calculations/assignments that materially affect the flow outcome,
+  outbound payload, persisted state, downstream call, approval/decline status,
+  settlement/reversal amount, audit record, or exception path.
+- Link every row to upstream compact artifacts (`program-analysis-summary.yaml`,
+  `routine-logic-details.yaml`, `source-index.yaml`) or flow IDs such as
+  `DATA-*`, `LINEAGE-*`, `PERSIST-*`, or `TBD-*`.
+- Do not invent calculations at flow level. If the program-level detail is
+  missing, write `unresolved - pending program detail` and create a
+  `missing_program_artifact` or `pending_deep_read` TBD.
+
+---
+
+## Validation Logic Section
+
+This section must appear immediately after Calculation Logic, before Exception
+Handling. It is the SME first-read view of how validation, response status,
+return codes, branch decisions, and generic handler outcomes propagate across
+programs in the flow.
+
+```markdown
+## Validation Logic
+
+| Message / Status / Outcome | Description | Producing Node | Trigger Chain | Carrier / Destination | Flow Effect | Related Message / Exception | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| D | decline response | NODE-02 CU106 | request validation failed -> response code set | outbound response DS | caller receives decline; downstream posting skipped | MSG-CU106-004; EXCHAIN-ONUS-AUTH-002 | confirmed |
+```
+
+**Requirements:**
+- Include cross-program validation outcomes, response codes, return codes,
+  SQLSTATE / CPF / MCH / RNX / CPD messages, shop-local message IDs, indicator
+  outcomes, generic catch-all outcomes, and externally visible status values.
+- Preserve exact source codes/literals and link to program-level `MSG-*`,
+  `RLOG-*`, and flow-level `EXCHAIN-*` / `DATA-*` evidence.
+- If multiple programs touch the same outcome, show the producing node and the
+  propagation path instead of duplicating unrelated program detail.
+
+---
+
+## Exception Handling Section
+
+This section must appear immediately after Validation Logic, before Message
+Inventory. It is the SME first-read view of how local exceptions become
+flow-level outcomes.
+
+```markdown
+## Exception Handling
+
+| Exception / Error Path | Origin Node | Detection Mechanism | Fields / Messages Set | Handling Action | Flow-Level Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| External auth advice timeout | NODE-04 CU120A | return code after CALLP | timeout status, operator message | log and abort | flow exits before response confirmation | RLOG-CU120A-009; EXCHAIN-ONUS-AUTH-003 | needs_sme_review |
+```
+
+**Requirements:**
+- Include every observed business, parameter, file I/O, SQL, external-call,
+  system, and generic-handler exception that changes flow outcome, skips a
+  node, changes persistence, commits/rolls back, logs/messages, or returns an
+  external status.
+- State whether the flow returns, rolls back, skips downstream work, continues,
+  aborts, logs, or leaves a pending operator/manual action.
+- Do not infer specific message IDs from generic handlers.
+
+---
+
+## Message Inventory Section
+
+This section must appear immediately after Exception Handling, before Metadata.
+It is the SME first-read summary of flow-relevant message/code/literal meanings.
+Detailed per-program message occurrences remain in each program's
+`message-inventory.md` / `message-inventory.yaml`.
+
+```markdown
+## Message Inventory
+
+| Message / Code / Literal | Short Description | Producing Node(s) | Occurrences | Flow Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| UCC1852 | unresolved - message description not available | NODE-02 CU106 | 2 | decline response candidate | MSG-CU106-001 | unresolved |
+```
+
+**Requirements:**
+- Create one summary row per exact flow-relevant message/code/literal. Do not
+  group message families.
+- Aggregate from program-level `message-inventory.yaml` sidecars. If the
+  description is unavailable, keep `unresolved - message description not
+  available` and create an Open Item / TBD.
+- For many messages, keep this section compact and link to program-level
+  `MSG-*` detail IDs; do not copy all per-program occurrence rows into the flow
+  document.
+
+---
+
 ## Metadata Section
 
 ```markdown
@@ -36,15 +147,19 @@ This document defines the precise shape and required fields for every
 
 - **Flow ID:** FLOW-ONUS-AUTH-001
 - **Business Event Name:** On-Us Card Authorization (online)
+- **Analysis Intent:** standalone_exploratory | chain_ready
+- **Flow Scan Mode:** orchestrated | assemble_existing
 - **Trigger Model:** API / Remote (Visa inbound auth request)
 - **Module:** [MODULE-SLUG] (e.g., CARD-AUTH)
 - **Entry Node:** NODE-ONUS-AUTH-01 (program CU101A / OBJ-AUTH-ONUS-001)
 - **Exit Node(s):** NODE-ONUS-AUTH-14 (program CU199Z / OBJ-AUTH-ONUS-014, returns response to Visa)
 - **Runtime Model:** synchronous, real-time, sub-second SLA
-- **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme
+- **Status:** draft_exploratory | draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme
 ```
 
 **Status values:**
+- `draft_exploratory` — Standalone quick-validation analysis; may have missing
+  inventory, approval, or compact sidecars and is not downstream-ready.
 - `draft` — Initial analysis; workflow incomplete, awaiting SME review
 - `needs_sme_review` — All sections populated; awaiting SME judgment on business accuracy
 - `approved` — SME reviewed and confirmed; ready for downstream processing
@@ -160,11 +275,13 @@ NODE-03 (CU205A)  ── customer history detail
 ```markdown
 ### Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
+Flow scan mode: `orchestrated` | `assemble_existing`
+
+| Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | `program-analysis-OBJ-AUTH-ONUS-001.md` | mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
-| NODE-ONUS-AUTH-02 | CU110A (OBJ-AUTH-ONUS-002) | Credit orchestrator | `program-analysis-OBJ-AUTH-ONUS-002.md` | mode=segmented; readiness=warning; routines=indexed_only technical utility | TBD-ONUS-AUTH-021: non-blocking utility routine coverage gap | Calls credit-check sub-flow |
-| NODE-ONUS-AUTH-03 | CU111S (OBJ-AUTH-ONUS-003) | Data access (SQLRPG) | `program-analysis-OBJ-AUTH-ONUS-003.md` | mode=large_program; readiness=blocked; routines=indexed_only state-impacting routine | TBD-ONUS-AUTH-022: credit update routine not deep-read; route to program analyzer unless named SME waiver recorded | DB2 cursor over credit-history |
+| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routines=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; human=`program-analysis-OBJ-AUTH-ONUS-001.md` | mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
+| NODE-ONUS-AUTH-02 | CU110A (OBJ-AUTH-ONUS-002) | Credit orchestrator | summary=present; source=present; routines=present; messages=missing | mode=segmented; readiness=warning; routines=indexed_only technical utility | TBD-ONUS-AUTH-021: missing_program_artifact message sidecar; non-blocking utility routine coverage gap | Calls credit-check sub-flow |
+| NODE-ONUS-AUTH-03 | CU111S (OBJ-AUTH-ONUS-003) | Data access (SQLRPG) | summary=present; source=present; routines=present; messages=present | mode=large_program; readiness=blocked; routines=indexed_only state-impacting routine | TBD-ONUS-AUTH-022: credit update routine not deep-read; route to program analyzer unless named SME waiver recorded | DB2 cursor over credit-history |
 | ... | ... | ... | ... | ... | ... | ... |
 ```
 
@@ -178,8 +295,19 @@ NODE-03 (CU205A)  ── customer history detail
 - `exit` — last program; returns response or commits
 
 **Requirements:**
-- Every Node must have an approved `program-analysis-<OBJ-ID>.md`. If
-  not → blocking TBD (route back to program-analyzer).
+- Set `Flow scan mode` to `orchestrated` when the flow analyzer starts from an
+  entry trigger and discovers/analyzes the program set. Set it to
+  `assemble_existing` when the user provides existing per-program analysis
+  directories to combine.
+- Every Node must have approved program analysis evidence. Preferred node
+  inputs are `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, and `message-inventory.yaml`, with
+  `program-analysis-<OBJ-ID>.md` used for human-readable confirmation when
+  needed.
+- If a node lacks required compact artifacts, create a
+  `missing_program_artifact` TBD. Fill only the missing program artifact when
+  source is available; do not concatenate complete program-analysis Markdown
+  files as a workaround.
 - `Coverage Status` must use the structured format
   `mode=<standard|segmented|large_program>; readiness=<approved|warning|blocked>; routines=<deep_read|indexed_only|blocked plus short qualifier>`.
   SME waivers are recorded in `Blocking Coverage Gaps` or review notes,
@@ -187,8 +315,10 @@ NODE-03 (CU205A)  ── customer history detail
 - Every Node must carry upstream program coverage state from the program
   analysis, including any routine-level `deep_read`, `indexed_only`, or
   `blocked` gaps that affect flow readiness.
-- For program-analysis v0.2.4 and later, every Node must expose whether
-  the flow consumed the upstream Call Evidence, Logic Decomposition Ledger,
+- For program-analysis v0.2.5 and later, every Node must expose whether
+  the flow consumed compact upstream sidecars (`program-analysis-summary.yaml`,
+  `source-index.yaml`, `routine-logic-details.yaml`,
+  `message-inventory.yaml`) for Call Evidence, Logic Decomposition Ledger,
   Routine Logic Details, routine-local field lineage / carrier rows,
   routine-local exception closure rows, Key File & Field Logic, File I/O
   Purpose, Field Mutation Matrix, Validation Logic, Exception Closure
@@ -560,8 +690,13 @@ Same conventions as program-analyzer. Group by:
 
 - **Pending Source** — missing program-analysis, missing DSPF, missing
   copybook
+- **Missing Program Artifact** — missing `program-analysis-summary.yaml`,
+  `source-index.yaml`, `routine-logic-details.yaml`, `message-inventory.yaml`,
+  or human-readable program analysis needed to support a flow claim
 - **Pending SME Judgment** — trigger model unclear, error intent unclear,
   capability seed unanswered
+- **Downstream-Readiness Gap** — acceptable in `standalone_exploratory`, but
+  must be resolved or waived before `chain_ready`
 - **Non-Blocking** — known gaps that don't affect downstream
 
 ---

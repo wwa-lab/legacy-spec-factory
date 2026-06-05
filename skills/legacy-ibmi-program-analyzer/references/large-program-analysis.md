@@ -63,20 +63,38 @@ The source index is a compact inventory, not a business interpretation.
 When local file access is available, build the first-pass index with the
 canonical helper before asking an LLM to synthesize behavior:
 
+Windows:
+
+```powershell
+py -3 scripts\index-rpg-source.py path\to\PROGRAM.rpgle `
+  --program PROGRAM `
+  --out-dir path\to\PROGRAM-analysis
+```
+
+macOS/Linux:
+
 ```bash
 python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --program PROGRAM \
   --out-dir path/to/PROGRAM-analysis
 ```
 
+Do not configure a Python environment or install packages for this helper. If
+the platform launcher is unavailable, stop and report the terminal error.
+
 The helper writes:
 
 | Artifact | Purpose |
 | --- | --- |
-| `source-index.yaml` | Machine-readable structure inventory: routines, calls, declared files, file operations, messages, recommended deep-read windows, and mode selection. |
+| `source-index.yaml` | Machine-readable structure inventory: routines, calls, declared files, file operations, messages, message inventory summary, recommended deep-read windows, and mode selection. |
+| `program-analysis-summary.yaml` | Compact machine-readable program summary for flow/module analyzers; prefer this over concatenating large Markdown analyses. |
 | `routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
 | `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
 | `deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
+| `routine-logic-details.md` | Reviewer-readable sidecar seed for routine-level detail IDs, line ranges, call/data evidence, deep-read priority, and pending semantic detail. |
+| `routine-logic-details.yaml` | Machine-readable routine logic inventory for downstream flow/module/spec consumers and later semantic enrichment. |
+| `message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
+| `message-inventory.yaml` | Machine-readable detailed message inventory for downstream flow/module/spec consumers and reference-pack enrichment. |
 
 These files are allowed intermediate artifacts. They do not replace
 `program-analysis.md`, and they must not be treated as business conclusions.
@@ -103,6 +121,28 @@ Capture:
 - observed message IDs, error codes, return/status codes, and generic catch-all
   handlers
 
+For large or message-dense programs, keep the front-loaded `Message Inventory`
+inside `program-analysis.md` as a compact summary. Store per-occurrence message
+details in `message-inventory.md` and machine-readable details in
+`message-inventory.yaml`; link summary rows to stable `MSG-<PROGRAM>-NNN`
+detail IDs instead of expanding every occurrence in the main analysis.
+
+For routine-dense programs, keep front-loaded `Routine Logic Details` inside
+`program-analysis.md` as a compact summary. Store per-routine semantic detail in
+`routine-logic-details.md` and machine-readable detail in
+`routine-logic-details.yaml`; link summary rows to stable `RLOG-<PROGRAM>-NNN`
+detail IDs. When a program has more than 80 routines or more than 10,000 source
+lines, split human-authored semantic detail into
+`routine-logic-details/part-*.md` files by mainline/dispatch, state-changing
+routines, validation/message routines, external boundaries, and indexed
+utilities.
+
+Downstream flow/module analyzers must prefer `program-analysis-summary.yaml`,
+`source-index.yaml`, `routine-logic-details.yaml`, and
+`message-inventory.yaml` when aggregating multiple programs. They should not
+concatenate multiple full `program-analysis.md` files; human-readable Markdown
+is for targeted clarification only.
+
 ## Routine Card
 
 Each routine card records one semantic unit:
@@ -127,10 +167,18 @@ SME confirmation belongs in evidence or review fields, not the coverage field.
 Deep-read windows should prioritize:
 
 - entry mainline and trigger handling
+- routines directly dispatched from the mainline
 - routines on hot call paths
 - routines with external calls
 - routines that write, update, delete, commit, roll back, send messages, or send
   queue payloads
+- routines with file reads followed by `%FOUND`, `%EOF`, `%EQUAL`, `IF`,
+  `WHEN`, `DOW`, `DOU`, or similar branch logic
+- display/report boundaries such as `EXFMT`
+- explicit error handlers such as `MONITOR`, `ON-ERROR`, `%ERROR`, `MONMSG`,
+  `SNDPGMMSG`, or `SNDMSG`
+- routines assigning outcome/status carriers such as response, return code,
+  approval/decline, card/account/customer, amount, ARPC, or cryptogram fields
 - routines touching money, account/customer IDs, inventory, approval/decline
   state, posting flags, audit IDs, or error/return codes
 - routines involved in contradictions or flow-header drift

@@ -113,9 +113,9 @@ literal meanings need SME confirmation for caller contract.
 
 Evidence basis: derived call analysis only
 
-```mermaid
-flowchart LR
-  CREDITCHK["CREDITCHK CreditChk procedure"]
+```text
+CREDITCHK mainline
+|-- CreditChk procedure
 ```
 
 ### Node Inventory
@@ -486,7 +486,7 @@ The record-not-found exception row links to Validation Logic row `'D'`.
 Before approval, SME must validate:
 
 - [X] External entry points and callable procedures are correct and complete — Single callable procedure CreditChk with documented parameters
-- [X] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table — no internal or external calls detected
+- [X] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table — no internal or external calls detected
 - [X] Parameter contracts match actual usage — No invented parameters; all declared in P spec
 - [X] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior — not-found branch and amount comparison are captured
 - [X] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence — CreditChk input/output flow captured

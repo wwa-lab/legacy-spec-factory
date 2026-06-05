@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mxfile host="app.diagrams.net" version="30.0.2">
   <diagram id="module-first-brd-factory-ieov" name="Module-First BRD Factory IEOV">
-    <mxGraphModel dx="1800" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1120" math="0" shadow="0">
+    <mxGraphModel dx="1800" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1120" background="#06131f" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
+        <mxCell id="page-bg" value="" style="shape=rect;html=1;fillColor=#06131f;strokeColor=none;rounded=0;whiteSpace=wrap;movable=0;resizable=0;rotatable=0;deletable=0;connectable=0;locked=1;" vertex="1" parent="1">
+          <mxGeometry x="1" y="1" width="1798" height="1118" as="geometry"/>
+        </mxCell>
 
         <mxCell id="2" value="Diagram A - BRD Factory Logic&#xa;MODULE-FIRST BRD FACTORY&#xa;Document intake + module flows + supplemental evidence + IEOV validation -&gt; trusted BRD package" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#06131f;strokeColor=#089fd4;fontColor=#f2f8ff;fontSize=30;fontStyle=1;spacing=16;" vertex="1" parent="1">
           <mxGeometry x="40" y="24" width="1720" height="104" as="geometry"/>

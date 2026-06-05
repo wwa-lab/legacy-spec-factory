@@ -96,8 +96,9 @@ Use:
 - `references/output-contract.md` for field definitions and evidence tagging
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
-  local file access is available; root wrapper:
-  `scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  local file access is available; root wrapper examples:
+  - Windows: `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
 - `references/evidence-tagging.md` for evidence strength levels and tagging methodology
@@ -169,11 +170,16 @@ field-level rules. The summary below is normative for this skill.
   `references/large-program-analysis.md`. When the source file is accessible
   on disk, first run `scripts/index_rpg_source.py` (or the root
   `scripts/index-rpg-source.py` wrapper) to produce `source-index.yaml`,
-  `routine-index.md`, `all-routine-coverage-ledger.md`, and
-  `deep-read-plan.md`. These are pre-analysis structure artifacts, not the
-  final program analysis. Do not produce whole-program business narrative until
-  the source index, routine cards, Program Call Map, Data Touch Map, and
-  coverage ledger exist.
+  `program-analysis-summary.yaml`, `routine-index.md`,
+  `all-routine-coverage-ledger.md`, `deep-read-plan.md`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`,
+  `message-inventory.md`, and `message-inventory.yaml` for compact sidecar
+  review. Use the platform's existing Python launcher only: Windows should
+  prefer `py -3`; macOS/Linux should prefer `python3`. Do not configure a
+  Python environment or install packages for this helper. These are
+  pre-analysis structure artifacts, not the final program analysis. Do not
+  produce whole-program business narrative until the source index, routine
+  cards, Program Call Map, Data Touch Map, and coverage ledger exist.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
   calculations and branch logic from source statements; file I/O from
   F-spec and I/O statements; field lineage from visible assignments,
@@ -263,10 +269,15 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
-     and use its `source-index.yaml`, `routine-index.md`,
-     `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as the
-     deterministic pre-analysis index
+     - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     Do not configure a Python environment or install packages. If neither
+     platform launcher is available, stop and report the terminal error.
+   - Use `source-index.yaml`, `program-analysis-summary.yaml`,
+     `routine-index.md`, `all-routine-coverage-ledger.md`,
+     `deep-read-plan.md`, `routine-logic-details.md`,
+     `routine-logic-details.yaml`, `message-inventory.md`, and
+     `message-inventory.yaml` as the deterministic pre-analysis index
    - Select analysis mode: `standard`, `segmented`, or `large_program`
    - For `segmented` or `large_program`, build the structure index before
      any business summary prose
@@ -337,6 +348,17 @@ to the orchestrator.
      performs field calculation, validation, downstream-affecting branching,
      file mutation, external handoff, error/status assignment, display/report
      output, or queue/message interaction.
+   - For routine-dense programs, keep `program-analysis.md` compact:
+     - `routine_count <= 25`: full Routine Logic Details may live in the main
+       analysis.
+     - `routine_count > 25`: the main analysis must contain a Routine Logic
+       Details summary table with `RLOG-<PROGRAM>-NNN` detail IDs, while full
+       details live in `routine-logic-details.md` and
+       `routine-logic-details.yaml`.
+     - `routine_count > 80` or source lines > 10,000: split human-authored
+       semantic detail into `routine-logic-details/part-*.md` files by
+       mainline/dispatch, state-changing routines, validation/message routines,
+       external boundaries, and indexed utilities.
    - In Routine Logic Details, explain each routine's execution trigger,
      step-by-step logic, field calculations/assignments, branch outcomes,
      exits, and evidence. Do not summarize a routine as "validation logic" or
@@ -425,7 +447,13 @@ to the orchestrator.
      |    |-- SR110           Currency conversion
      |    |    |-- SR111      Convert transaction amount
      ```
-     If present, capture it verbatim — it is the program author's documented intent (tier 3 evidence per `../../docs/code-as-ground-truth.md`). Useful as a navigation aid, **not authoritative** when it disagrees with actual EXSR/CALL statements.
+     If present, use it as documented intent and navigation evidence
+     (tier 3 evidence per `../../docs/code-as-ground-truth.md`) and render
+     the `Visual Overview` as a normalized fenced `text` hierarchy using
+     `|--` branches. Preserve useful author labels, but reconcile the tree
+     against actual EXSR/CALL statements before presenting it as the program
+     call map. The header is **not authoritative** when it disagrees with
+     actual EXSR/CALL statements.
    - **Independently derive a program call map from code** by scanning
      for EXSR / CALLP / CALL / PERFORM / CALLPRC statements and
      BEGSR-ENDSR / BEGPR-ENDPR / paragraph definitions.
@@ -434,7 +462,9 @@ to the orchestrator.
      - If header exists but code differs → create TBD (comment drift, dead code, or missing subroutine)
      - If no header exists → use code-derived graph, tag `confirmed_from_code` (from EXSR/CALL/PERFORM statements)
    - Produce the required views (see `references/output-contract.md`):
-     - **Visual overview** (RDi-style orientation graph; compact by design)
+     - **Visual overview** (RDi-style fenced `text` hierarchy using
+       `|--` branches; compact by design but detailed enough to orient
+       SMEs; not Mermaid)
      - **Node inventory** (mainline, internal routines, procedures, external programs, APIs, queues, services)
      - **Call Evidence** (caller, callee, call type, condition, source
        lines, evidence source, and resolution status)
@@ -613,15 +643,19 @@ to the orchestrator.
      rollback, skip, continue, abort, log/message output, or downstream
      suppression.
    - Build a front-loaded **Message Inventory** section immediately after
-     Exception Handling and before Metadata. It must create one row per exact
+     Exception Handling and before Metadata. It must create one summary row per exact
      message ID, status value, return code, response literal, SQLSTATE,
      CPF/MCH/RNX/CPD message, operator message, or shop-local message token
      observed in the program. Preserve exact codes/literals, include the best
-     available description source, carrier/destination, trigger/handler,
-     related Validation Logic / Exception Handling row, and evidence status.
+     available short description, occurrence count, primary routines, first
+     seen/set-by location, trigger/handler summary, and detail ID.
+     For message-dense, segmented, or large programs, keep the main section
+     compact and store full per-occurrence detail in `message-inventory.md`
+     and `message-inventory.yaml`.
      When a message/control value is found in an approved reference pack, set
      Message Source to `reference pack: <pack_id>/<file>#<row-or-anchor>` and
-     still trace Emitted / Set By and Trigger / Handler from source.
+     still trace Emitted / Set By and Trigger / Handler from source in the
+     sidecar detail.
      If no description is available, write
      `unresolved - message description not available` and create an Open Item.
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
@@ -721,11 +755,12 @@ analysis describes what the code actually does.
 The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before approval, SME must validate:
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
-- [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
+- [ ] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
-- [ ] Routine Logic Details explain every load-bearing routine/subroutine/procedure, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence
-- [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
-- [ ] Routine Logic Details include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
+- [ ] Routine Logic Details summarize every load-bearing routine/subroutine/procedure in the main analysis and route routine-dense detail to `routine-logic-details.md` / `routine-logic-details.yaml` with stable `RLOG-*` IDs
+- [ ] Routine Logic Details or sidecar detail explain field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence for each deep-read load-bearing routine
+- [ ] Routine Logic Details or sidecar detail break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
+- [ ] Routine Logic Details or sidecar detail include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
 - [ ] Calculation Logic is front-loaded immediately after the title, summarizes the whole program's material calculations/assignments, and links every row to Routine Logic Details, Logic Decomposition, Key File & Field Logic, or Field Mutation evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
@@ -736,7 +771,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
-- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one row per explicit message/code/literal with description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal, links message-dense details to `message-inventory.md` / `message-inventory.yaml`, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status in the summary or sidecar
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable in rendered tables/lists
 - [ ] Redundancy candidates are conservative and do not remove hidden rules
@@ -797,3 +832,7 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Added top-of-document `Exception Handling` immediately after Validation Logic
   - Added top-of-document `Message Inventory` immediately after Exception Handling
   - Requires exception paths and every observed message/code/literal to be reviewable before Metadata while still linking back to detailed closure evidence
+- v0.2.8 (2026-06-05): Program Call Map visual format tightening
+  - Required `Visual Overview` to remain a compact fenced `text` ASCII hierarchy
+  - Standardized the tree shape around `PROGRAM mainline` plus `|--` branch connectors
+  - Requires source flow headers to be reconciled against code-derived Call Evidence before use as the visual map

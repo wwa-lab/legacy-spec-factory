@@ -132,17 +132,12 @@ handler message IDs need source or SME confirmation.
 
 Evidence basis: derived call analysis only
 
-```mermaid
-flowchart LR
-  MAIN["ORDSUBMIT mainline"]
-  PROCESS["ProcessOrders"]
-  VALIDATE["ValidateCredit"]
-  SHIP["GetShipCost"]
-  RISK["UPDTRISK external program"]
-  MAIN --> PROCESS
-  PROCESS --> VALIDATE
-  PROCESS --> SHIP
-  PROCESS --> RISK
+```text
+ORDSUBMIT mainline
+|-- ProcessOrders main batch loop
+|   |-- ValidateCredit credit validation
+|   |-- GetShipCost shipping cost lookup/calculation
+|   |-- UPDTRISK external program
 ```
 
 ### Node Inventory
@@ -765,7 +760,7 @@ The exception rows link to Validation Logic rows `-99`, `'D'`, `-1`,
 Before approval, SME must validate:
 
 - [X] External entry points and callable procedures are correct and complete — Main program plus 3 callable procedures documented
-- [X] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table — internal procedures and UPDTRISK edge captured
+- [X] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table — internal procedures and UPDTRISK edge captured
 - [X] Parameter contracts match actual usage — All parameters confirmed from procedure specifications
 - [X] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior — ORDFILE loop, denial branch, external RC branch, and shipping fallback captured
 - [X] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence — ProcessOrders and ValidateCredit flow captured
