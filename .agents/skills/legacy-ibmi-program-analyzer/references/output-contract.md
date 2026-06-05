@@ -192,6 +192,19 @@ meaning.
 - **Status:** draft_exploratory | draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 ```
 
+**Source reference portability requirements:**
+
+- Do not emit source evidence links with `file://`, `vscode://`, `command:`,
+  `javascript:`, or `vscode-resource.vscode-cdn.net` hrefs. These are
+  runtime-specific and can open incorrectly from VSCode Markdown preview or
+  exported HTML.
+- Use repo-relative Markdown links only when the source file is packaged beside
+  the artifact, for example `[CU101A.RPGLE](source/CU101A.RPGLE)`, and include
+  explicit line ranges separately.
+- When source is outside the artifact package, use plain source references
+  such as `CU101A.RPGLE lines 120-148`, `source-index.yaml#routine-SR100`, or
+  `EV-*` IDs instead of local filesystem URLs.
+
 **Required fields:**
 - Program ID:
   - `chain_ready` — `OBJ-*` must exist in approved inventory.
@@ -262,6 +275,12 @@ complete understanding. Align terminology with
 **Requirements:**
 - Count source lines, routine definitions, external calls, and object
   dependencies before synthesis.
+- When a local source file is available, prefer the deterministic pre-analysis
+  helper:
+  `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`.
+  Use its `source-index.yaml`, `routine-index.md`,
+  `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as seeds for this
+  section and for Routine Cards / Deep Read Windows.
 - Select one mode: `standard`, `segmented`, or `large_program`.
 - Use `segmented` or `large_program` when the source cannot safely fit
   with evidence windows, or when call/data density requires

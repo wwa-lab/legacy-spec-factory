@@ -174,6 +174,7 @@ These checks must be deterministic and reproducible:
 | Forbidden tools not used | Step did not call `generate_java`, read unauthorized evidence, etc. |
 | ID minting policy respected | A flow analysis did not mint `BR-*` |
 | Non-outputs absent | Inventory did not produce `spec.yaml` |
+| Portable links only | `scripts/check-portable-links.py <artifact-dir>` finds no active `file://`, `vscode://`, `command:`, `javascript:`, VSCode webview CDN, or local absolute-path links |
 
 If any mechanical check fails, the overall status is locked to `blocked`
 regardless of later layers. The validator may continue with AI semantic and

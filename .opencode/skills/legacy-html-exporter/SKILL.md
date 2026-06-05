@@ -162,10 +162,13 @@ By default, write HTML companions beside the Markdown source:
 The HTML output must:
 
 - remain standalone with no network dependency
-- preserve headings, tables, lists, checklists, links, quotes, and code blocks
+- preserve headings, tables, lists, checklists, safe links, quotes, and code blocks
 - keep the underlying Markdown path visible so reviewers know the canonical
   source
 - avoid inventing or transforming business content
+- downgrade runtime-specific local links (`file://`, `vscode://`, `command:`,
+  `javascript:`, VSCode webview CDN, and local absolute paths) into visible
+  source references instead of clickable `href` values
 
 The HTML output must NOT:
 
@@ -265,8 +268,9 @@ Do not inspect more files than the active branch requires.
 ### Validation
 
 - **Mechanical**: generated `.html` file exists for every exported `.md`;
-  directory export writes `index.html`; links are emitted; no source `.md` is
-  overwritten
+  directory export writes `index.html`; safe links are emitted; unsafe
+  local/runtime-specific links are not emitted as clickable `href` values; no
+  source `.md` is overwritten
 - **Human-facing**: tables remain readable; checklists render as checkboxes;
   large review docs remain navigable via headings / table of contents
 - **Governance**: user / SME can browse the docs more easily, but the canonical

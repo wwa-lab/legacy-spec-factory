@@ -60,6 +60,27 @@ The safe pipeline is:
 
 The source index is a compact inventory, not a business interpretation.
 
+When local file access is available, build the first-pass index with the
+canonical helper before asking an LLM to synthesize behavior:
+
+```bash
+python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
+  --program PROGRAM \
+  --out-dir path/to/PROGRAM-analysis
+```
+
+The helper writes:
+
+| Artifact | Purpose |
+| --- | --- |
+| `source-index.yaml` | Machine-readable structure inventory: routines, calls, declared files, file operations, messages, recommended deep-read windows, and mode selection. |
+| `routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
+| `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
+| `deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
+
+These files are allowed intermediate artifacts. They do not replace
+`program-analysis.md`, and they must not be treated as business conclusions.
+
 Capture:
 
 - source line count

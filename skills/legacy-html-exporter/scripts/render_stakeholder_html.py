@@ -30,6 +30,7 @@ LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 STRONG_RE = re.compile(r"\*\*(.+?)\*\*")
 EM_RE = re.compile(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)")
 CODE_SPAN_RE = re.compile(r"`([^`]+)`")
+WINDOWS_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 @dataclass
@@ -70,12 +71,34 @@ def restore_code_spans(text: str, tokens: list[str]) -> str:
     return text
 
 
+def is_unsafe_local_href(href: str) -> bool:
+    lowered = href.strip().lower()
+    return (
+        lowered.startswith("file:")
+        or lowered.startswith("vscode:")
+        or lowered.startswith("command:")
+        or lowered.startswith("javascript:")
+        or "vscode-resource.vscode-cdn.net" in lowered
+        or WINDOWS_PATH_RE.match(href.strip()) is not None
+        or href.startswith(("/Users/", "/home/", "/var/", "/tmp/"))
+    )
+
+
+def render_link(match: re.Match[str]) -> str:
+    label = match.group(1)
+    href = match.group(2).strip()
+    if is_unsafe_local_href(href):
+        return (
+            f'<span class="local-source-ref"><code>{label}</code>'
+            '<span class="local-link-note"> local source reference; open from the workspace path, not the browser</span>'
+            "</span>"
+        )
+    return f'<a href="{html.escape(href, quote=True)}">{label}</a>'
+
+
 def render_inline(text: str) -> str:
     escaped, code_tokens = preserve_code_spans(html.escape(text, quote=True))
-    escaped = LINK_RE.sub(
-        lambda m: f'<a href="{html.escape(m.group(2), quote=True)}">{m.group(1)}</a>',
-        escaped,
-    )
+    escaped = LINK_RE.sub(render_link, escaped)
     escaped = STRONG_RE.sub(r"<strong>\1</strong>", escaped)
     escaped = EM_RE.sub(r"<em>\1</em>", escaped)
     return restore_code_spans(escaped, code_tokens)

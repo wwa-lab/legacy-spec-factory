@@ -57,6 +57,7 @@ Run these **before** any step-specific check. If any fails, status is
 | Input readiness summary exists with `score`, `status`, `hard_blockers`, `optional_missing`, and `quality_boosters_available` | mechanical | 1 | non_blocking |
 | `STEP-*` / `TBD-*` ID prefixes conform to `docs/id-conventions.md` | mechanical | 3 | blocking |
 | All cross-referenced IDs resolve (no dangling `EV-*` / `OBJ-*` / `BR-*`) | mechanical | 4 | blocking |
+| Portable link check passes: no active `file://`, `vscode://`, `command:`, `javascript:`, VSCode webview CDN, or local absolute-path links; use `scripts/check-portable-links.py <artifact-dir>` when artifacts are on disk | mechanical | 3 | blocking |
 | Knowledge type labels are one of `observed_behavior`, `inferred_business_rule`, `modernization_decision`, `unknown_tbd` | mechanical | 5 | blocking |
 | Evidence strength labels are one of the eight allowed values | mechanical | 5 | blocking |
 
