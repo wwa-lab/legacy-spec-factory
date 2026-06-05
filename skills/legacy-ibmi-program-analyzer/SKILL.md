@@ -95,6 +95,9 @@ Use:
 - `templates/program-analysis.md` as starting point
 - `references/output-contract.md` for field definitions and evidence tagging
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
+- `scripts/index_rpg_source.py` as the deterministic source-index helper when
+  local file access is available; root wrapper:
+  `scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
 - `references/evidence-tagging.md` for evidence strength levels and tagging methodology
@@ -163,9 +166,14 @@ field-level rules. The summary below is normative for this skill.
 - **Large-program mode**: when source is greater than 10,000 lines,
   contains more than 25 routines, contains more than 20 external calls,
   or cannot safely fit in context with evidence windows, use
-  `references/large-program-analysis.md`. Do not produce whole-program
-  business narrative until the source index, routine cards, Program Call
-  Map, Data Touch Map, and coverage ledger exist.
+  `references/large-program-analysis.md`. When the source file is accessible
+  on disk, first run `scripts/index_rpg_source.py` (or the root
+  `scripts/index-rpg-source.py` wrapper) to produce `source-index.yaml`,
+  `routine-index.md`, `all-routine-coverage-ledger.md`, and
+  `deep-read-plan.md`. These are pre-analysis structure artifacts, not the
+  final program analysis. Do not produce whole-program business narrative until
+  the source index, routine cards, Program Call Map, Data Touch Map, and
+  coverage ledger exist.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
   calculations and branch logic from source statements; file I/O from
   F-spec and I/O statements; field lineage from visible assignments,
@@ -254,6 +262,11 @@ to the orchestrator.
 1. **Size & Structure Preflight**
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
+   - If local source file access is available, run:
+     `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     and use its `source-index.yaml`, `routine-index.md`,
+     `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as the
+     deterministic pre-analysis index
    - Select analysis mode: `standard`, `segmented`, or `large_program`
    - For `segmented` or `large_program`, build the structure index before
      any business summary prose

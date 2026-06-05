@@ -262,6 +262,12 @@ complete understanding. Align terminology with
 **Requirements:**
 - Count source lines, routine definitions, external calls, and object
   dependencies before synthesis.
+- When a local source file is available, prefer the deterministic pre-analysis
+  helper:
+  `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`.
+  Use its `source-index.yaml`, `routine-index.md`,
+  `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as seeds for this
+  section and for Routine Cards / Deep Read Windows.
 - Select one mode: `standard`, `segmented`, or `large_program`.
 - Use `segmented` or `large_program` when the source cannot safely fit
   with evidence windows, or when call/data density requires
