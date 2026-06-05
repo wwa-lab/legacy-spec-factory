@@ -72,6 +72,31 @@ Use the header recommended in `README.md` for future skill files.
 - Follow `docs/data-collection-and-redaction.md` before using logs, spool,
   sample transactions, or DB extracts.
 
+## Python Command Convention
+
+Before invoking any Python script — including temporary validation
+scripts, one-off helpers, YAML checks, and Markdown sanity checks —
+use the following resolution order:
+
+1. **Windows:** try `py -3` first, then fall back to `python`
+2. **macOS / Linux:** use `python3`
+
+If every attempt fails, **stop immediately** and report:
+
+```
+Python runtime unavailable. Install Python 3 and ensure `py -3` (Windows)
+or `python3` (macOS/Linux) is accessible, then retry.
+```
+
+Do **not**:
+- Configure PATH or environment variables
+- Install Python or create a virtual environment
+- Retry silently or guess an alternate interpreter path
+
+The field deployment environment is Windows. macOS is used for skill
+development and local testing. The launcher resolution above applies
+to both.
+
 ## Skill Review Gate
 
 Claude Code may generate or revise skills, but generated skills are not accepted

@@ -11,7 +11,7 @@ SME decisions.
    different operators take different projects.
 2. **Coordinate via the picker, not via assumptions.** If you must share
    one project, `git pull` before every orchestrator turn, and run
-   `python3 scripts/list-projects.py` to see whose state is current.
+   `py -3 scripts/list-projects.py` (macOS: `python3`) to see whose state is current.
 3. **Treat `workflow-state.yaml` as merge-aware**, never as a free-for-all
    YAML file. See [Merge Strategy](#merge-strategy) below for the per-key
    rule set.
@@ -89,14 +89,16 @@ apply these rules **by section**:
 Once the conflict markers are gone, **always** run:
 
 ```bash
-python3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml
+# Windows: py -3   macOS/Linux: python3
+py -3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml
 ```
 
 If the lint fails (e.g. duplicate capability IDs, history out of order),
 fix the specific finding and re-run. Then regenerate the human snapshot:
 
 ```bash
-python3 scripts/generate-status.py docs/<project>/
+# Windows: py -3   macOS/Linux: python3
+py -3 scripts/generate-status.py docs/<project>/
 git add docs/<project>/workflow-state.yaml docs/<project>/STATUS.md
 git commit
 ```
@@ -154,7 +156,7 @@ Coordinate via git review or skill-level pairing instead.
 - Open `docs/<project>/STATUS.md` — it shows the post-merge view of
   reality. If it looks wrong, re-run an orchestrator turn to re-derive
   stage from artifacts. The artifact is the source of truth.
-- Run `python3 scripts/list-projects.py` to see all projects in the repo
+- Run `py -3 scripts/list-projects.py` (macOS: `python3`) to see all projects in the repo
   and who last touched each.
 - Per the contract, **artifacts beat state**. A surprising state file is
   an opportunity to re-derive, not a problem to manually patch.

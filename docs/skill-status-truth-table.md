@@ -68,7 +68,7 @@ under `docs/reviews/` for historical reference.
 
 ## Verification
 
-Run `python3 scripts/verify-skill-claims.py` to check that:
+Run `py -3 scripts/verify-skill-claims.py` (macOS: `python3`) to check that:
 
 1. Every skill listed here has a current scorecard with frontmatter
 2. README "Current Skill Scores" matches this table

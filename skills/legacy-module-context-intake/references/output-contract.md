@@ -46,7 +46,7 @@ intake:
 run_validation:
   structural_status: not_run
   structural_method: not_run
-  validator_command: "python3 skills/legacy-module-context-intake/scripts/validate_context_package.py 00_context_packages/CREDIT-CHECK"
+  validator_command: "py -3 skills/legacy-module-context-intake/scripts/validate_context_package.py 00_context_packages/CREDIT-CHECK"
   artifact_preview_status: not_requested
   artifact_preview_reason: "Preview is optional; context Markdown files and evidence maps are the canonical package."
   completion_boundary: stop_after_writeback

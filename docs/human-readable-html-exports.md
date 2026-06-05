@@ -17,22 +17,24 @@ directory tree into HTML companions.
 
 ## Usage
 
+> Windows: `py -3`  ·  macOS/Linux: `python3`
+
 Render one file:
 
 ```bash
-python3 scripts/render_stakeholder_html.py path/to/spec.md
+py -3 scripts/render_stakeholder_html.py path/to/spec.md
 ```
 
 Render one folder:
 
 ```bash
-python3 scripts/render_stakeholder_html.py 05_specs/CAP-PRICE-CALCULATION
+py -3 scripts/render_stakeholder_html.py 05_specs/CAP-PRICE-CALCULATION
 ```
 
 Render a whole project tree:
 
 ```bash
-python3 scripts/render_stakeholder_html.py docs/EXAMPLE-tutorial --recursive
+py -3 scripts/render_stakeholder_html.py docs/EXAMPLE-tutorial --recursive
 ```
 
 ## Output Behavior

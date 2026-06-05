@@ -356,5 +356,6 @@ document under exactly one family.
 Run:
 
 ```bash
-python3 scripts/verify-skill-claims.py
+py -3 scripts/verify-skill-claims.py          # Windows
+python3 scripts/verify-skill-claims.py        # macOS/Linux
 ```

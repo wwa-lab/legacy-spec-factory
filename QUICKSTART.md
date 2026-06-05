@@ -14,6 +14,7 @@ minimal project showing every artifact in the chain.
 ## Prerequisites
 
 - Python 3.10+ with PyYAML (`pip install pyyaml`)
+  - Windows (field): `py -3`  · macOS/Linux (dev): `python3`  · never bare `python`
 - An LSF-aware runtime: Claude Code, OpenCode, Codex, or any runtime where
   the LSF skills are available
 - An IBM i / AS400 source bundle (RPGLE / CLLE / COBOL / DDS / DB2
@@ -211,17 +212,19 @@ SDLC repo). Legacy Spec Factory's reverse chain ends here.
 ## Useful commands
 
 ```bash
+# Windows: py -3   macOS/Linux: python3
+
 # Validate that workflow-state.yaml is well-formed
-python3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml
+py -3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml
 
 # Re-render the human-readable project snapshot
-python3 scripts/generate-status.py docs/<project>/
+py -3 scripts/generate-status.py docs/<project>/
 # → writes docs/<project>/STATUS.md
 
 # Show every project in this repo
-python3 scripts/list-projects.py
-python3 scripts/list-projects.py --markdown   # pipe to a report
-python3 scripts/list-projects.py --json       # pipe to other tools
+py -3 scripts/list-projects.py
+py -3 scripts/list-projects.py --markdown   # pipe to a report
+py -3 scripts/list-projects.py --json       # pipe to other tools
 ```
 
 ---
@@ -293,7 +296,7 @@ folders never appear.
 | --- | --- |
 | Orchestrator didn't trigger on your message | Try a more explicit phrase from Step 1 |
 | Stage seems wrong | Open `STATUS.md` — if it disagrees with reality, run an orchestrator turn to re-derive |
-| State file looks corrupt | `python3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml` |
+| State file looks corrupt | `py -3 scripts/check-workflow-state.py docs/<project>/workflow-state.yaml` (macOS: `python3`) |
 | Lost focus mid-session | Just say "where am I?" — orchestrator re-reads state and re-shows the Quick Card |
 | SME blocked you | Open `STATUS.md` → "Open Blockers" → use the SME review email template (see `legacy-sme-review-facilitator` skill) |
 

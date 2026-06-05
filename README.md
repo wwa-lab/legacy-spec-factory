@@ -585,8 +585,8 @@ Use [scripts/render_stakeholder_html.py](scripts/render_stakeholder_html.py) to
 export any Markdown artifact into a styled HTML companion:
 
 ```bash
-python3 scripts/render_stakeholder_html.py 05_specs/CAP-PRICE-CALCULATION/spec.md
-python3 scripts/render_stakeholder_html.py docs/EXAMPLE-tutorial --recursive
+py -3 scripts/render_stakeholder_html.py 05_specs/CAP-PRICE-CALCULATION/spec.md
+py -3 scripts/render_stakeholder_html.py docs/EXAMPLE-tutorial --recursive
 ```
 
 Typical good candidates:
@@ -660,7 +660,7 @@ field pilot unless the gap is explicitly accepted by the project owner.
 
 **Single source of truth**: [`docs/skill-status-truth-table.md`](docs/skill-status-truth-table.md).
 The table below is the README view of that table. Run
-`python3 scripts/verify-skill-claims.py` to confirm they agree.
+`py -3 scripts/verify-skill-claims.py` (macOS: `python3`) to confirm they agree.
 `Review Record` is the latest reviewed scorecard version. A runtime adapter may
 already be synced to a newer canonical skill version; those rows stay capped
 until the updated scorecard and runtime smoke evidence exist.
@@ -1756,7 +1756,7 @@ The next implementation steps are:
    and step validator v0.1.10.
 2. Run the smoke protocol in Codex, Claude Code, and OpenCode for each remaining
    capped skill, then update [docs/runtime-matrix.md](docs/runtime-matrix.md).
-3. Re-run `python3 scripts/verify-skill-claims.py` and keep README,
+3. Re-run `py -3 scripts/verify-skill-claims.py` (macOS: `python3`) and keep README,
    [docs/skill-status-truth-table.md](docs/skill-status-truth-table.md), and
    [docs/runtime-matrix.md](docs/runtime-matrix.md) aligned.
 4. Promote only skills whose scorecard decision and runtime evidence agree.
