@@ -340,29 +340,39 @@ diagram and not a statement-level control-flow chart.
 
 ### View 1: Visual Overview
 
-```markdown
+````markdown
 ### Visual Overview
 
 Evidence basis: source-level flow header + derived call analysis
 
-```mermaid
-flowchart LR
-  MAIN["CU101A mainline"]
-  MAIN --> SR990["SR990 first-time initialization"]
-  MAIN --> SR100["SR100 preliminary validation"]
-  SR100 --> SR110["SR110 amount conversion"]
-  SR100 --> CHECKEXPOSE["CHECKEXPOSE external program"]
+```text
+CU101A mainline
+|-- SR990 first-time initialization / parameter lists / runtime configuration
+|   |-- define data areas and control values
+|   |-- read package-level control
+|-- SR100 preliminary validation
+|   |-- SR110 amount conversion
+|   |-- CHECKEXPOSE external program
+|-- SR980 return / termination path
 ```
-```
+````
 
 **Rules:**
-- Prefer a compact graph over a complete visual tangle. The full edge
+- The primary `Visual Overview` must be a fenced `text` ASCII hierarchy,
+  starting with `<PROGRAM> mainline` and using `|--` branch connectors.
+  It should read like an RDi / source-reader call hierarchy, not a Mermaid
+  graph.
+- Prefer a compact hierarchy over a complete visual tangle. The full edge
   evidence table remains the source of truth.
 - Include internal nodes (`EXSR`, procedure calls) and external boundary
   nodes (`CALL`, `CALLP`, API, data queue, message queue, service
   program) when they help a reader understand the program quickly.
 - Mark common or hub nodes in the label when useful, but do not invent
   roles from names alone.
+- If a source flow header is useful, normalize it into the same `|--`
+  hierarchy and cite it through `Evidence basis`, `Evidence Source`, and
+  drift TBDs. Source header entries that conflict with code-derived calls
+  must not be presented as confirmed edges.
 
 ### View 2: Node Inventory
 
@@ -463,7 +473,12 @@ Evidence basis: source-level flow header + derived call analysis
 
 ### Source-Level Flow Header Handling
 
-If the source has a flow-header comment block (common in IBM i shops), the analyzer uses it as documented intent and navigation evidence in `Visual Overview` and `Call Evidence`. The header is useful for orientation and SME comparison, but it is not authoritative when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
+If the source has a flow-header comment block (common in IBM i shops),
+the analyzer uses it as documented intent and navigation evidence in
+`Visual Overview` and `Call Evidence`. The displayed `Visual Overview`
+remains the required compact fenced `text` ASCII hierarchy. The header is
+useful for orientation and SME comparison, but it is not authoritative
+when it disagrees with actual EXSR/CALL/PERFORM/CALLP/CALLPRC call sites.
 
 **Then** independently derive a Program Call Map from code. Actual call
 sites are authoritative for behavior facts and code-derived call edges.

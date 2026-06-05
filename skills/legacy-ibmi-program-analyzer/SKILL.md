@@ -431,7 +431,13 @@ to the orchestrator.
      |    |-- SR110           Currency conversion
      |    |    |-- SR111      Convert transaction amount
      ```
-     If present, capture it verbatim — it is the program author's documented intent (tier 3 evidence per `../../docs/code-as-ground-truth.md`). Useful as a navigation aid, **not authoritative** when it disagrees with actual EXSR/CALL statements.
+     If present, use it as documented intent and navigation evidence
+     (tier 3 evidence per `../../docs/code-as-ground-truth.md`) and render
+     the `Visual Overview` as a normalized fenced `text` hierarchy using
+     `|--` branches. Preserve useful author labels, but reconcile the tree
+     against actual EXSR/CALL statements before presenting it as the program
+     call map. The header is **not authoritative** when it disagrees with
+     actual EXSR/CALL statements.
    - **Independently derive a program call map from code** by scanning
      for EXSR / CALLP / CALL / PERFORM / CALLPRC statements and
      BEGSR-ENDSR / BEGPR-ENDPR / paragraph definitions.
@@ -440,7 +446,9 @@ to the orchestrator.
      - If header exists but code differs → create TBD (comment drift, dead code, or missing subroutine)
      - If no header exists → use code-derived graph, tag `confirmed_from_code` (from EXSR/CALL/PERFORM statements)
    - Produce the required views (see `references/output-contract.md`):
-     - **Visual overview** (RDi-style orientation graph; compact by design)
+     - **Visual overview** (RDi-style fenced `text` hierarchy using
+       `|--` branches; compact by design but detailed enough to orient
+       SMEs; not Mermaid)
      - **Node inventory** (mainline, internal routines, procedures, external programs, APIs, queues, services)
      - **Call Evidence** (caller, callee, call type, condition, source
        lines, evidence source, and resolution status)
@@ -727,7 +735,7 @@ analysis describes what the code actually does.
 The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before approval, SME must validate:
 
 - [ ] Entry points are correct and complete (no missing callable subroutines)
-- [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
+- [ ] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Routine Logic Details explain every load-bearing routine/subroutine/procedure, including field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence
 - [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
@@ -803,3 +811,7 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Added top-of-document `Exception Handling` immediately after Validation Logic
   - Added top-of-document `Message Inventory` immediately after Exception Handling
   - Requires exception paths and every observed message/code/literal to be reviewable before Metadata while still linking back to detailed closure evidence
+- v0.2.8 (2026-06-05): Program Call Map visual format tightening
+  - Required `Visual Overview` to remain a compact fenced `text` ASCII hierarchy
+  - Standardized the tree shape around `PROGRAM mainline` plus `|--` branch connectors
+  - Requires source flow headers to be reconciled against code-derived Call Evidence before use as the visual map

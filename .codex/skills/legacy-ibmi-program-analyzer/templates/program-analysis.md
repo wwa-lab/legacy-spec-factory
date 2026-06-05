@@ -200,13 +200,13 @@ a business-process diagram.
 
 Evidence basis: source-level flow header + derived call analysis | derived call analysis only | header_only
 
-```mermaid
-flowchart LR
-  MAIN["[PROGRAM] mainline"]
-  MAIN --> SR100["SR100"]
-  MAIN --> SR200["SR200"]
-  SR200 --> SR980["SR980"]
-  SR980 --> EXT1["[EXTERNAL_PROGRAM]"]
+```text
+[PROGRAM] mainline
+|-- SR100 [purpose / role]
+|-- SR200 [purpose / role]
+|   |-- SR210 [nested routine / helper]
+|   |-- [EXTERNAL_PROGRAM] [external boundary / target]
+|-- SR980 return / termination path
 ```
 
 ### Node Inventory
@@ -594,7 +594,7 @@ Before approval, SME must validate:
 - [ ] Routine Logic Details explain each load-bearing subroutine/procedure/mainline segment, including field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
 - [ ] Routine Logic Details include outcome reverse traces from material message/status/error/return outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
 - [ ] No whole-program business summary exceeds the documented coverage
-- [ ] Program Call Map keeps a compact Visual Overview and a traceable Call Evidence table
+- [ ] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Calculation Logic is front-loaded immediately after the title, covers material whole-program calculations/assignments, and links every row to supporting routine-level or ledger evidence
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
