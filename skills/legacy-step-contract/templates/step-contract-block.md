@@ -125,6 +125,7 @@ human_readable_view:
 | Forbidden tools not used |  |  |
 | ID minting policy respected |  |  |
 | Non-outputs absent |  |  |
+| Portable links only (`scripts/check-portable-links.py <artifact-dir>`) |  |  |
 
 If any check above is `no`, status is `blocked`. If redaction is safe, the
 validator may still collect advisory semantic and SME-readiness findings, but

@@ -155,6 +155,19 @@ lacks description, source, carrier, trigger, or closure, or write "None."]
   - [EV-[SLUG]-[NNN] or source-range/local-reference for standalone exploratory analysis]
 - **Status:** draft_exploratory | draft | needs_sme_review | blocked_pending_source | approved | approved_with_non_blocking_tbd | rejected
 
+Source reference rule:
+
+- Do not use `file://`, `vscode://`, `command:`, `javascript:`, or
+  `vscode-resource.vscode-cdn.net` links for source evidence. They are
+  runtime-specific and often open incorrectly from VSCode previews or exported
+  HTML.
+- Prefer repo-relative Markdown links when the source file is inside the
+  artifact package, for example `[CU101A.RPGLE](source/CU101A.RPGLE)`, plus
+  explicit line ranges in the evidence column.
+- If the source is outside the package or not safe to link, use plain text such
+  as `CU101A.RPGLE lines 120-148` or an `EV-*` reference instead of a local
+  filesystem URL.
+
 ## Analysis Coverage & Scope
 
 Purpose: state how much source was available, how the analysis was scoped, and

@@ -58,6 +58,34 @@ hello world
         self.assertIn('<a href="https://example.com">Open</a>', html)
         self.assertIn('<pre><code class="language-text">hello world', html)
 
+    def test_render_markdown_does_not_emit_vscode_or_file_resource_links(self) -> None:
+        import importlib.util
+        import sys
+
+        spec = importlib.util.spec_from_file_location(
+            "render_stakeholder_html", CANONICAL_SCRIPT_PATH
+        )
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        html = module.render_markdown(
+            """# Evidence Links
+
+| Source Evidence | Notes |
+| --- | --- |
+| [CU101A.RPGLE](file:///C:/Users/demo/CU101A.RPGLE) | local file |
+| [VSCode Internal](https://file+.vscode-resource.vscode-cdn.net/c%3A/Users/demo/CU101A.RPGLE) | webview resource |
+""",
+            source_name="evidence.md",
+        )
+
+        self.assertNotIn('href="file://', html)
+        self.assertNotIn("vscode-resource.vscode-cdn.net", html)
+        self.assertIn("<code>CU101A.RPGLE</code>", html)
+        self.assertIn("local source reference", html)
+
     def test_cli_renders_directory_and_index(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
