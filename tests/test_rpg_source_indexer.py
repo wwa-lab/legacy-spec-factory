@@ -49,6 +49,30 @@ END-PROC;
 
 
 class RpgSourceIndexerTests(unittest.TestCase):
+    def test_large_program_guidance_documents_windows_python_launcher(self) -> None:
+        skill_text = (
+            REPO_ROOT / "skills" / "legacy-ibmi-program-analyzer" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        large_program_text = (
+            REPO_ROOT
+            / "skills"
+            / "legacy-ibmi-program-analyzer"
+            / "references"
+            / "large-program-analysis.md"
+        ).read_text(encoding="utf-8")
+        output_contract_text = (
+            REPO_ROOT
+            / "skills"
+            / "legacy-ibmi-program-analyzer"
+            / "references"
+            / "output-contract.md"
+        ).read_text(encoding="utf-8")
+
+        for text in (skill_text, large_program_text, output_contract_text):
+            self.assertIn("py -3", text)
+            self.assertIn("scripts\\index-rpg-source.py", text)
+            self.assertIn("python3 scripts/index-rpg-source.py", text)
+
     def test_analyze_source_extracts_structure_without_business_summary(self) -> None:
         indexer = load_indexer()
 

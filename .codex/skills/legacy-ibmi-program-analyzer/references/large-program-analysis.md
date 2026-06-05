@@ -63,11 +63,24 @@ The source index is a compact inventory, not a business interpretation.
 When local file access is available, build the first-pass index with the
 canonical helper before asking an LLM to synthesize behavior:
 
+Windows:
+
+```powershell
+py -3 scripts\index-rpg-source.py path\to\PROGRAM.rpgle `
+  --program PROGRAM `
+  --out-dir path\to\PROGRAM-analysis
+```
+
+macOS/Linux:
+
 ```bash
 python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --program PROGRAM \
   --out-dir path/to/PROGRAM-analysis
 ```
+
+Do not configure a Python environment or install packages for this helper. If
+the platform launcher is unavailable, stop and report the terminal error.
 
 The helper writes:
 

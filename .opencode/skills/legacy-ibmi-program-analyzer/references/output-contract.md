@@ -276,8 +276,11 @@ complete understanding. Align terminology with
 - Count source lines, routine definitions, external calls, and object
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
-  helper:
-  `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`.
+  helper. Use the platform's existing Python launcher only:
+  - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  Do not configure a Python environment or install packages. If neither
+  platform launcher is available, stop and report the terminal error.
   Use its `source-index.yaml`, `routine-index.md`,
   `all-routine-coverage-ledger.md`, and `deep-read-plan.md` as seeds for this
   section and for Routine Cards / Deep Read Windows.
