@@ -1,16 +1,75 @@
 # Flow Analysis: [Business Event Name] (FLOW-[SLUG]-[NNN])
 
+## Calculation Logic
+
+Purpose: SME first-read summary of material cross-program calculations,
+assignments, and payload derivations that affect the flow outcome.
+
+| Flow Calculation / Assignment | Producing Node(s) | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Flow Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [amount / status / key / payload / return-value calculation] | [NODE-* / program] | [field / response DS / file field / call parameter] | [program fields, parameters, constants, file carriers] | [always / branch / error path] | [outbound response, persisted state, skipped node, downstream call parameter] | [RLOG-* / DATA-* / LINEAGE-* / PERSIST-* / TBD-*] | confirmed / inferred / unresolved |
+
+**Calculation logic unresolved:** [None, or concrete missing program detail /
+source sidecar / SME question.]
+
+---
+
+## Validation Logic
+
+Purpose: SME first-read summary of cross-program validation, response status,
+return-code, branch-decision, and generic-handler outcomes.
+
+| Message / Status / Outcome | Description | Producing Node | Trigger Chain | Carrier / Destination | Flow Effect | Related Message / Exception | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [message ID / status / response code / return code] | [description or `unresolved - message description not available`] | [NODE-* / program] | [source-backed trigger chain] | [response field / return parameter / message queue / job log] | [approve / decline / abort / skip / continue / rollback] | [MSG-* / EXCHAIN-* / TBD-*] | confirmed / inferred / unresolved |
+
+**Validation logic unresolved:** [None, or concrete missing trigger / carrier /
+description / program detail.]
+
+---
+
+## Exception Handling
+
+Purpose: SME first-read summary of how local exceptions become flow-level
+outcomes.
+
+| Exception / Error Path | Origin Node | Detection Mechanism | Fields / Messages Set | Handling Action | Flow-Level Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [business / parameter / file I/O / SQL / external call / generic handler] | [NODE-* / program] | [return code / MONITOR / ON-ERROR / status check / runtime evidence] | [status, message, flag, log text] | return / rollback / skip / continue / abort / log | [final flow outcome or downstream effect] | [RLOG-* / MSG-* / EXCHAIN-* / TBD-*] | confirmed / inferred / unresolved |
+
+**Exception handling unresolved:** [None, or concrete missing propagation /
+rollback / handling action / SME question.]
+
+---
+
+## Message Inventory
+
+Purpose: compact flow-level summary of message/code/literal meanings. Detailed
+per-program occurrences remain in each program's `message-inventory.md` /
+`message-inventory.yaml`.
+
+| Message / Code / Literal | Short Description | Producing Node(s) | Occurrences | Flow Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| [CPFxxxx / UCCxxxx / literal / status value] | [description or `unresolved - message description not available`] | [NODE-* list] | [count] | [flow outcome affected] | [MSG-* refs] | confirmed / inferred / unresolved |
+
+**Message inventory unresolved:** [None, or concrete missing description /
+source / carrier / trigger.]
+
+---
+
 ## Metadata
 
 - **Flow ID:** FLOW-[SLUG]-[NNN]
 - **Business Event Name:** [SME-confirmed name]
+- **Analysis Intent:** standalone_exploratory | chain_ready
+- **Flow Scan Mode:** orchestrated | assemble_existing
 - **Trigger Model:** batch job | menu | subfile | F-key | DB trigger | scheduler | API/remote
   - (If scheduler + SBMJOB: use "Scheduler (submitted via SBMJOB)", not "Scheduler → Batch Job")
 - **Module:** MODULE-[SLUG]
 - **Entry Node:** NODE-[SLUG]-01 (program [NAME] / OBJ-[SLUG]-[NNN])
 - **Exit Node(s):** NODE-[SLUG]-[NN] ...
 - **Runtime Model:** synchronous / asynchronous, real-time / batch, SLA
-- **Status:** draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme
+- **Status:** draft_exploratory | draft | needs_sme_review | approved | approved_with_non_blocking_tbd | blocked_pending_source | blocked_pending_sme
 
 ---
 
@@ -74,11 +133,19 @@ NODE-[SLUG]-02 ([PROGRAM])  ── [one-line role]
 
 ## Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | `program-analysis-OBJ-[SLUG]-[NNN].md` | mode=<standard/segmented/large_program>; readiness=<approved/warning/blocked>; routines=<deep_read/indexed_only/blocked> | none / TBD-[SLUG]-[NNN] [routine indexed_only with state impact; route to program analyzer unless named SME waiver recorded] | [notes] |
+**Flow scan mode:** orchestrated | assemble_existing
 
-**Missing program analyses:** none | TBD-[SLUG]-[NNN] for each
+| Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routines=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; human=`program-analysis-OBJ-[SLUG]-[NNN].md` | mode=<standard/segmented/large_program>; readiness=<approved/warning/blocked>; routines=<deep_read/indexed_only/blocked> | none / TBD-[SLUG]-[NNN] [missing_program_artifact or routine indexed_only with state impact; route only affected program to program analyzer unless named SME waiver recorded] | [notes] |
+
+**Missing program artifacts:** none | TBD-[SLUG]-[NNN] for each
+
+**Aggregation rule:** prefer `program-analysis-summary.yaml`,
+`source-index.yaml`, `routine-logic-details.yaml`, and
+`message-inventory.yaml`. Do not concatenate multiple full
+`program-analysis.md` files; open human-readable Markdown only for targeted
+clarification.
 
 ---
 

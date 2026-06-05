@@ -95,19 +95,22 @@ effect could not be traced, or write "None."]
 
 ## Message Inventory
 
-Purpose: front-load every message ID, status value, return code, response
-literal, SQLSTATE, CPF/MCH/RNX/CPD message, operator message, or shop-local
-message token observed in the program. This gives IT SMEs a single first-read
-place to review what each message means and where it comes from.
+Purpose: front-load a compact first-read summary of every observed message ID,
+status value, return code, response literal, SQLSTATE, CPF/MCH/RNX/CPD message,
+operator message, or shop-local message token. Detailed per-occurrence evidence
+belongs in `message-inventory.md` / `message-inventory.yaml` for segmented,
+large, or message-dense programs.
 
-| Message / Code / Literal | Message Description | Message Source | Emitted / Set By | Trigger / Handler | Carrier / Destination | Related Validation / Exception Row | Evidence Status |
+| Message / Code / Literal | Short Description | Type | Occurrences | Primary Routine(s) | First Seen / Set By | Trigger / Handler Summary | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[CPFxxxx / UCCxxxx / literal / response 00 / status value / operator text]` | [specific description from message file, approved reference pack, source literal/comment, runtime evidence, vendor reference, or SME note; otherwise `unresolved - message description not available`] | message file / reference pack: `<pack_id>/<file>#<row>` / source literal / source comment / runtime trace / vendor reference / SME note / unresolved | [assignment, SNDPGMMSG, DSPLY, EXFMT message field, return literal, SQL status, MONMSG/ON-ERROR] | [condition or handler that produces/handles it] | return parameter / message field / display / spool / data queue / job log / exception log / caller status | [Validation Logic row / Exception Handling row / TBD-*] | confirmed / inferred / unresolved |
+| `[CPFxxxx / UCCxxxx / literal / response 00 / status value / operator text]` | [specific short description from message file, approved reference pack, source literal/comment, runtime evidence, vendor reference, or SME note; otherwise `unresolved - message description not available`] | message / response_status / return_code / SQLSTATE / operator_message / generic_handler / unresolved | [count] | [routine list] | [line / assignment / handler] | [compact condition or handler summary] | [MSG-[PROGRAM]-NNN or `message-inventory.md#...`] |
 
 Message inventory rules:
 
-- Create one row for each explicit message/code/literal. Do not group message
-  families or prefixes into a single row.
+- Create one summary row for each explicit message/code/literal. Do not group
+  message families or prefixes into a single row.
+- If the same token appears multiple times, summarize it once with occurrence
+  count and link to the detailed sidecar row.
 - Preserve the exact code or literal as seen in source.
 - If message text or business meaning is unavailable, write
   `unresolved - message description not available` and create an Open Item.
@@ -116,6 +119,9 @@ Message inventory rules:
   is not observed in source, runtime, or SME notes.
 - Cross-reference the related Validation Logic and Exception Handling rows so
   reviewers can trace message meaning to trigger and closure.
+- If there are more than 10 rows, or the program is segmented / large, keep this
+  section compact and store full details in `message-inventory.md` and
+  `message-inventory.yaml`.
 
 **Message inventory unresolved:** [state whether any observed message/code
 lacks description, source, carrier, trigger, or closure, or write "None."]
@@ -257,9 +263,27 @@ coverage value.
 ## Routine Logic Details
 
 Purpose: explain the internal logic of each load-bearing subroutine, procedure,
-paragraph, or mainline segment. This section must not collapse field
-calculations into generic labels such as "validation logic" or "amount
-calculation".
+paragraph, or mainline segment. For routine-dense programs, keep this main
+section as a summary and move full semantic detail into
+`routine-logic-details.md`, `routine-logic-details.yaml`, and, when needed,
+`routine-logic-details/part-*.md`.
+
+| Routine | Role | Source Lines | Coverage | Deep Read Status | State Impact | Detail |
+| --- | --- | --- | --- | --- | --- | --- |
+| [MAIN / SR_NAME / PROCEDURE] | entry dispatch / state-changing routine / validation-message routine / external boundary / indexed utility | lines [XX-YY] | indexed_only / deep_read / blocked | pending / completed / blocked | read-only / creates / updates / deletes / external handoff / unknown | RLOG-[PROGRAM]-NNN |
+
+Routine detail placement rules:
+
+- `routine_count <= 25`: full Routine Logic Details may appear below in the
+  main analysis.
+- `routine_count > 25`: keep the main analysis to the summary table and place
+  full details in `routine-logic-details.md` and `routine-logic-details.yaml`.
+- `routine_count > 80` or source lines > 10,000: split full human-authored
+  semantic detail into `routine-logic-details/part-*.md` files by
+  mainline/dispatch, state-changing routines, validation/message routines,
+  external boundaries, and indexed utilities.
+- This section must not collapse field calculations into generic labels such as
+  "validation logic" or "amount calculation".
 
 ### `[ROUTINE_OR_PROCEDURE_NAME]`
 
@@ -591,8 +615,9 @@ Before approval, SME must validate:
 - [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
-- [ ] Routine Logic Details explain each load-bearing subroutine/procedure/mainline segment, including field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
-- [ ] Routine Logic Details include outcome reverse traces from material message/status/error/return outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
+- [ ] Routine Logic Details summarize each load-bearing subroutine/procedure/mainline segment in the main analysis and route routine-dense detail to `routine-logic-details.md` / `routine-logic-details.yaml` with stable `RLOG-*` IDs
+- [ ] Routine Logic Details or sidecar detail explain field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence
+- [ ] Routine Logic Details or sidecar detail include outcome reverse traces from material message/status/error/return outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
 - [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
@@ -606,7 +631,7 @@ Before approval, SME must validate:
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
-- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one row per explicit message/code/literal with description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal, links message-dense details to `message-inventory.md` / `message-inventory.yaml`, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status in the summary or sidecar
 - [ ] Reference-pack lookups, if used, cite pack ID/version/file/row and do not override source-backed behavior
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable; long lists use intentional line breaks

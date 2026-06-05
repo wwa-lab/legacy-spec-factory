@@ -43,10 +43,34 @@ cross-program/cross-boundary call map. It is not a statement-level
 flowchart. It should preserve the transaction's program and external
 dependency structure while keeping full call details in tables.
 
-This skill does **not** re-analyze individual programs. Every program in
-the flow must already have an approved
-`program-analysis-<OBJ-ID>.md`; if any is missing, route back to
-`legacy-ibmi-program-analyzer`.
+This skill supports two flow assembly modes:
+
+- **`orchestrated`** — start from a trigger / entry program, discover the
+  involved programs, run or route missing per-program analysis first, then
+  assemble the flow from the generated compact artifacts.
+- **`assemble_existing`** — user provides existing per-program analysis
+  directories, and the flow analyzer assembles them into one flow, filling only
+  missing artifacts when possible.
+
+This skill does **not** re-analyze individual program semantics inline. Every
+program in the flow must have approved program analysis evidence, preferably
+including `program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, and `message-inventory.yaml`. If required
+program artifacts are missing, route only that program back to
+`legacy-ibmi-program-analyzer` instead of concatenating full Markdown analyses
+or restarting the whole flow.
+
+This skill also supports two analysis intents:
+
+- **`standalone_exploratory`** — default. Use for quick SME validation, partial
+  flow scans, or assembling existing program artifacts before the chain is fully
+  approved. Missing inventory approval, missing sidecars, or incomplete
+  program approval become downstream-readiness gaps / TBDs, not immediate
+  blockers, unless the trigger is ambiguous or the requested flow cannot be
+  scoped to one business transaction.
+- **`chain_ready`** — strict downstream mode. Requires approved inventory,
+  approved program analyses, required compact sidecars, coverage gates, and
+  trigger clarity before the flow can feed module/BRD/spec work.
 
 This skill does **not** infer business rules. It captures the *structure*
 of the transaction so that downstream `legacy-spec-writer` (via
@@ -57,6 +81,8 @@ involvement.
 
 Accept:
 
+- **Analysis intent** — `standalone_exploratory` by default, or `chain_ready`
+  when the user explicitly asks for downstream-ready output.
 - **Flow definition** — the entry point of the chain, declared as one of
   seven trigger types (see `references/trigger-models.md`):
   - batch job (CL + SBMJOB or direct CALL)
@@ -66,13 +92,19 @@ Accept:
   - DB trigger (file trigger program)
   - scheduler (WRKJOBSCDE entry)
   - API / remote (remote PGM call, MQ message, HTTP, IFS drop)
-- **Approved program analyses** for every program in the chain
+- **Approved program analyses** for every program in the chain. Preferred
+  inputs are compact artifacts from `legacy-ibmi-program-analyzer`:
+  `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, `message-inventory.yaml`, and the human review
+  `program-analysis-<OBJ-ID>.md` / `program-analysis.md` when needed.
 - **Approved inventory** with `relationships` populated for the involved objects
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
 
 Each upstream program-analysis should expose the program-chain readiness
-sections from `legacy-ibmi-program-analyzer` v0.2.5 or later:
+sections and sidecars from `legacy-ibmi-program-analyzer` v0.2.5 or later:
+`program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`,
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
 `Routine Logic Details` with conditioned calculation blocks, routine-local
 field lineage / carriers, and routine-local exception closure,
@@ -86,13 +118,23 @@ each missing v0.2.4 detail.
 
 Stop and require clarification if:
 
-- Any program in the chain lacks an approved `program-analysis-<OBJ-ID>.md`
-  → route to `legacy-ibmi-program-analyzer`
-- A required call edge, data flow, or error path depends on an upstream
-  program routine marked `blocked` or `indexed_only` with business state
-  impact → route back to `legacy-ibmi-program-analyzer`
-- Inventory `sme_review.decision` is `blocked` or `relationships` are
-  incomplete → route to `legacy-ibmi-inventory`
+- In `orchestrated` mode, the trigger / entry point is missing or ambiguous.
+- In `assemble_existing` mode, the user-provided program set does not describe
+  one flow or lacks an entry / ordering hint.
+- In `chain_ready`, a required program in the chain lacks approved program
+  analysis artifacts → route only the missing program to
+  `legacy-ibmi-program-analyzer`. In `standalone_exploratory`, record
+  `missing_program_artifact` and continue with a quick-validation draft when
+  enough compact evidence exists.
+- In `chain_ready`, a required call edge, data flow, or error path depends on
+  an upstream program routine marked `blocked` or `indexed_only` with business
+  state impact → route back to `legacy-ibmi-program-analyzer`. In
+  `standalone_exploratory`, mark the affected flow claim unresolved and record
+  a downstream-readiness gap.
+- In `chain_ready`, inventory `sme_review.decision` is `blocked` or
+  `relationships` are incomplete → route to `legacy-ibmi-inventory`. In
+  `standalone_exploratory`, record inventory linkage gaps and keep the artifact
+  `draft_exploratory`.
 - Trigger model cannot be identified from the entry point → require SME
   clarification (do not guess)
 - Flow appears to span multiple business modules → narrow scope; one flow
@@ -138,29 +180,50 @@ field-level rules. The summary below is normative for this skill.
 
 ### Input
 
-- **Required**: flow definition (entry point + one of seven trigger
-  models); approved `program-analysis-<OBJ-ID>.md` for every program in the
-  chain; approved `01_inventory/inventory.yaml` with `relationships`
-  populated for the involved objects.
+- **Required**: `analysis_intent` set to `standalone_exploratory` by default
+  or `chain_ready` when downstream-ready handoff is requested; `flow_scan_mode`
+  set to `orchestrated` or `assemble_existing`; and enough program evidence to
+  identify at least one entry node and one flow path.
+- **Required for `chain_ready`**: approved `01_inventory/inventory.yaml` with
+  `relationships` populated for the involved objects; approved program
+  analysis evidence for every program in the chain; required compact sidecars;
+  and coverage gates satisfied.
+- **Required for `orchestrated`**: flow definition (entry point + one of seven
+  trigger models). The analyzer may discover the program set from inventory
+  relationships and program call summaries, but any missing per-program
+  artifact must be routed back to `legacy-ibmi-program-analyzer`.
+- **Required for `assemble_existing`**: user-provided program analysis
+  directories or artifact list, preferably including
+  `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, and `message-inventory.yaml` for each program.
+  Missing sidecars should be filled for only the affected program when source is
+  available; otherwise record `TBD: missing_program_artifact`.
 - **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
   `WRKJOBSCDE` export (scheduler triggers); trigger-program registration
   (DB triggers); SME notes on BAU rhythm and known error scenarios.
 - **Input readiness scoring**:
-  - `0-5 blocked`: approved inventory missing, required program analyses
-    missing, call-chain root unresolved, trigger model unidentified, or
-    evidence authorization unresolved.
-  - `6 minimum_pass`: root object, approved inventory, and the program
-    analyses needed for the requested chain are present.
+  - `0-5 blocked`: trigger model / entry unresolved, provided programs cannot
+    be scoped to one business transaction, source authorization unresolved, or
+    a `chain_ready` request is missing approved inventory / required program
+    analyses.
+  - `6 minimum_pass`: enough compact evidence exists to produce a
+    `standalone_exploratory` quick-validation flow draft. Missing approvals,
+    inventory linkage, or sidecars are recorded as downstream-readiness gaps.
   - `7-8 usable`: scheduler/job notes, menu/display/report definitions, and
     object dependencies are available for most chain edges.
   - `9-10 strong`: runtime logs, screen/report samples, SME notes on triggers
     and manual workarounds, and known exception cases are also supplied.
   - Missing runtime samples does not block structural flow analysis; it leaves
     runtime ordering and trigger confidence lower.
-- **Readiness checks**: Inventory Completeness Gate passing; every node
-  in the chain has an approved program-analysis; trigger model identified
-  unambiguously; the flow represents one business transaction.
-- **Stop conditions**: any node missing an approved program-analysis;
+- **Readiness checks**: trigger model identified unambiguously for
+  `orchestrated`; the flow represents one business transaction; every node
+  has approved program-analysis evidence or an explicit
+  `missing_program_artifact` TBD. For `chain_ready`, Inventory Completeness
+  Gate must pass and no load-bearing program artifacts may be missing.
+- **Stop conditions**: trigger / entry ambiguity; user-provided program set
+  spans multiple business transactions; any required `chain_ready` node missing
+  approved program-analysis evidence needed for flow claims and not repairable
+  in the current run;
   a required call edge, data flow, or error path depends on an upstream
   routine marked `blocked` or `indexed_only` with business state impact;
   inventory `sme_review.decision` is `blocked` or relationships are
@@ -169,7 +232,7 @@ field-level rules. The summary below is normative for this skill.
 
 ### Execution
 
-- **Procedure**: see the Workflow section below (11 ordered steps).
+- **Procedure**: see the Workflow section below (12 ordered steps).
 - **Allowed inference**: assembling cross-program call edges from upstream
   `Call Evidence` and `External Calls` rows; classifying call types (CALL /
   CALLP / CALLPRC / SBMJOB / remote); deriving branch destinations from
@@ -188,17 +251,25 @@ field-level rules. The summary below is normative for this skill.
   file/field updates absent from upstream mutation matrices; exception
   propagation not backed by upstream Validation Logic / Exception Closure
   Ledger rows; business rules (these are seeds, never facts).
-- **TBD handling**: missing program-analysis → `TBD: pending_source`
-  routing to `legacy-ibmi-program-analyzer`; ambiguous trigger →
+- **TBD handling**: missing program-analysis or sidecar →
+  `TBD: missing_program_artifact` routing only the affected program to
+  `legacy-ibmi-program-analyzer`; ambiguous trigger →
   `TBD: pending_sme_judgment`; unnamed business event → stop and request
-  the name from SME (do not autogenerate from program names).
-- **Coverage propagation**: consume each upstream program's Analysis
-  Coverage & Scope, Routine Cards, Routine Logic Details, front-loaded
-  Validation Logic, Deep Read Windows, Call Evidence, Logic Decomposition
-  Ledger, Key File & Field Logic, File I/O Purpose, Field Mutation Matrix,
-  Exception Closure Ledger, Routine /
-  Window Data Flow, Redundancy Candidate Notes, and Open Items / Limitations
-  before using program-level evidence in a flow. If the requested flow relies on a
+  the name from SME (do not autogenerate from program names). In
+  `standalone_exploratory`, unresolved artifacts become downstream-readiness
+  gaps unless they prevent identifying the flow itself.
+- **Coverage propagation**: consume each upstream program's compact artifacts
+  first: `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, and `message-inventory.yaml`. Use full
+  `program-analysis.md` / `program-analysis-<OBJ-ID>.md` only for targeted
+  clarification, not as the primary flow aggregation input. The compact
+  artifacts must expose Analysis Coverage & Scope, Routine Cards / routine
+  summary, Routine Logic Details sidecar status, front-loaded Validation Logic
+  references, Deep Read Windows, Call Evidence, Logic Decomposition Ledger,
+  Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Exception
+  Closure Ledger, Routine / Window Data Flow, Redundancy Candidate Notes, and
+  Open Items / Limitations before using program-level evidence in a flow. If
+  the requested flow relies on a
   routine that was only `indexed_only` and that routine changes state,
   performs external handoff, handles commit/rollback, controls error
   outcome, supplies critical field lineage, or mutates persisted fields,
@@ -208,22 +279,25 @@ field-level rules. The summary below is normative for this skill.
 ### Output
 
 - **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
-- **Required sections**: trigger model & entry point, transaction call
-  map, nodes, edges, common dependencies, cross-program data flow, flow
-  replay path, cross-program field lineage, flow persistence matrix,
-  branch points, UI surfaces (or `N/A — non-interactive`), error
-  propagation & commit boundaries, exception propagation chain,
-  capability seeds, SME review checklist.
+- **Required sections**: front-loaded Calculation Logic, Validation Logic,
+  Exception Handling, Message Inventory, metadata, trigger model & entry point,
+  transaction call map, nodes, edges, common dependencies, cross-program data
+  flow, flow replay path, cross-program field lineage, flow persistence matrix,
+  branch points, UI surfaces (or `N/A — non-interactive`), error propagation &
+  commit boundaries, exception propagation chain, capability seeds, SME review
+  checklist.
 - **Required IDs**: mints `FLOW-*`, `NODE-*`, `EDGE-*`, `DATA-*`,
   `REPLAY-*`, `LINEAGE-*`, `PERSIST-*`, `EXCHAIN-*`, `SEED-*`,
   `TBD-*`; reuses `OBJ-*`, `EV-*`, and program-level `BEH-*` from
   upstream. Flow analysis does not mint `BR-*`; branch points are
   represented by `NODE-*` / `EDGE-*` entries and capability questions by
   `SEED-*`.
-- **Handoff status**: `status: draft` → `needs_sme_review` →
-  `approved` or `approved_with_non_blocking_tbd`.
+- **Handoff status**: `status: draft_exploratory` for standalone quick
+  validation; `status: draft` → `needs_sme_review` → `approved` or
+  `approved_with_non_blocking_tbd` for chain-ready flow work.
   `blocked_pending_source` and `blocked_pending_sme` halt
-  module-analyzer.
+  module-analyzer. `draft_exploratory` is not eligible for module/BRD/spec
+  handoff until rerun or promoted as `chain_ready`.
 
 ### Validation
 
@@ -251,12 +325,13 @@ field-level rules. The summary below is normative for this skill.
   are reasonable questions. Required when a cross-program rule emerges
   or when the flow touches money, inventory, compliance, or customer
   status.
-- **Blocking conditions**: any node lacks an approved program-analysis;
-  any edge has no evidence; trigger model unresolved; business event
-  name unnamed by SME; ambiguous module boundary; required flow evidence
-  depends on `blocked` coverage or `indexed_only` state-impacting
-  routines without a named SME waiver; SME absence when the flow's risk
-  class requires SME.
+- **Blocking conditions**: trigger model unresolved; business event name
+  unnamed by SME; ambiguous module boundary. For `chain_ready`, also block when
+  any node lacks approved program-analysis evidence, any edge has no evidence,
+  required flow evidence depends on `blocked` coverage or `indexed_only`
+  state-impacting routines without a named SME waiver, or SME absence conflicts
+  with the flow's risk class. For `standalone_exploratory`, these become
+  downstream-readiness gaps unless they prevent identifying the flow itself.
 
 Emit a Step Validation Report (see
 `../legacy-step-contract/templates/step-validation-report.md`) with
@@ -265,9 +340,32 @@ to the orchestrator.
 
 ## Workflow
 
-1. **Identify Trigger Model & Entry Point**
+1. **Select Analysis Intent & Flow Scan Mode**
+   - Default `analysis_intent` to `standalone_exploratory` unless the user asks
+     for approved/downstream-ready/chain-ready output.
+   - Use `analysis_intent: chain_ready` only when the flow must feed module,
+     BRD, spec, or formal downstream handoff.
+   - Use `flow_scan_mode: orchestrated` when the user provides a trigger /
+     entry program and wants the skill to discover, index, and assemble the
+     whole flow.
+   - Use `flow_scan_mode: assemble_existing` when the user provides several
+     existing program analysis directories and asks to combine them into one
+     flow.
+   - In both modes, flow aggregation must prefer compact artifacts:
+     `program-analysis-summary.yaml`, `source-index.yaml`,
+     `routine-logic-details.yaml`, and `message-inventory.yaml`.
+   - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
+     files across programs. Open full Markdown only for targeted human-readable
+     clarification when compact artifacts are insufficient.
+   - In `standalone_exploratory`, continue with warning rows when approvals,
+     inventory linkage, or sidecars are missing; in `chain_ready`, enforce the
+     blocking gates.
+
+2. **Identify Trigger Model & Entry Point**
    - Determine which of the seven trigger models applies (see
      `references/trigger-models.md`). If unsure, ask the SME — do not guess.
+     In `assemble_existing` mode, accept the user's stated entry/order hint; if
+     it is missing or contradictory, stop for SME clarification.
    - Document the trigger object:
      - batch job → CL program + direct CALL from another program or operator
      - menu → `*MENU` object name + option number
@@ -283,12 +381,16 @@ to the orchestrator.
    - Capture the **business event name** the SME uses for this flow
      (e.g., "Customer authorization request", not "RPG1 call").
 
-2. **Enumerate Nodes (Programs in the Chain)**
+3. **Enumerate Nodes (Programs in the Chain)**
    - List every program the flow touches, in call order.
    - For each node:
      - assign `NODE-<SLUG>-<NNN>` (sequence-numbered)
      - reference the program's `OBJ-*` (from inventory) and approved
-       `program-analysis-<OBJ-ID>.md`
+       program-analysis artifact set
+     - record artifact availability:
+       `program-analysis-summary.yaml`, `source-index.yaml`,
+       `routine-logic-details.yaml`, `message-inventory.yaml`, and optional
+       human-readable `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
        worker / data-access / reporter / exit)
      - carry forward the program's Analysis Coverage & Scope, Routine
@@ -299,14 +401,22 @@ to the orchestrator.
        exchange, branch, error path, or commit boundary depends on a
        routine that is `blocked` or is `indexed_only` with business state
        impact
-   - If a node has no approved `program-analysis`, **stop** and create
-     `TBD-<SLUG>-<NNN>: pending_source` routing back to
-     `legacy-ibmi-program-analyzer`.
+   - If a node has no approved program-analysis evidence, create
+     `TBD-<SLUG>-<NNN>: missing_program_artifact` routing only that program
+     back to `legacy-ibmi-program-analyzer`. In `chain_ready`, stop; in
+     `standalone_exploratory`, continue only with claims supported by available
+     compact evidence.
+   - If a node has an approved human-readable analysis but lacks compact
+     sidecars, fill only the missing sidecars when local source is available;
+     otherwise create `TBD-<SLUG>-<NNN>: missing_program_artifact` and avoid
+     using that program for flow claims that require the missing sidecar.
    - If a node's required state-impacting routine is only `indexed_only`,
-     **stop** until `legacy-ibmi-program-analyzer` deep-reads it or a
-     named SME waiver is recorded in evidence/review/sign-off metadata.
+     stop in `chain_ready` until `legacy-ibmi-program-analyzer` deep-reads it
+     or a named SME waiver is recorded in evidence/review/sign-off metadata. In
+     `standalone_exploratory`, mark the affected flow claim unresolved and keep
+     it out of downstream-ready conclusions.
 
-3. **Trace Edges (Calls Between Nodes)**
+4. **Trace Edges (Calls Between Nodes)**
    - For every call between two nodes, document an edge:
      - `EDGE-<SLUG>-<NNN>: NODE-A → NODE-B`
      - Call type (CALL, CALLP, CALLPRC, EXSR-not-applicable-cross-program,
@@ -321,7 +431,7 @@ to the orchestrator.
      cross-program and cross-boundary structure; detailed call conditions
      remain in the edge table.
 
-4. **Classify Common Dependencies**
+5. **Classify Common Dependencies**
    - If multiple nodes call the same common program, service program, API,
      data queue, message queue, or wrapper, keep every inbound call in the
      edge table and summarize the target in Common Dependencies.
@@ -336,7 +446,7 @@ to the orchestrator.
    - Do not infer a Java service boundary from shared usage alone. That is
      a modernization decision for module/spec stages with SME review.
 
-5. **Cross-Program Data Flow**
+6. **Cross-Program Data Flow**
    - For each edge, document what data passes (see
      `references/data-flow-patterns.md`):
      - parameters passed in the CALL
@@ -364,7 +474,7 @@ to the orchestrator.
    - Assign `DATA-<SLUG>-<NNN>` for each distinct data exchange.
    - Tag evidence; cross-reference to source line numbers via EV-\*.
 
-6. **Build Flow Replay Path, Field Lineage & Persistence Matrix**
+7. **Build Flow Replay Path, Field Lineage & Persistence Matrix**
    - Build a **Flow Replay Path** from trigger to terminal outcome:
      trigger, entry parameters, node execution, data handoff, key
      decisions, persisted mutations, commit/rollback/output, and final
@@ -397,7 +507,7 @@ to the orchestrator.
      `N/A — read-only flow` and cite the upstream analyses proving no
      persisted mutations.
 
-7. **Branch Points & Decision Nodes**
+8. **Branch Points & Decision Nodes**
    - Identify points where the flow forks (subfile option, F-key,
      conditional CALL, trigger event).
    - For each branch point:
@@ -405,7 +515,7 @@ to the orchestrator.
      - the alternatives and which target node each leads to
      - whether unhandled options/keys exist (silently dropped vs. error)
 
-8. **UI Surfaces (interactive flows only)**
+9. **UI Surfaces (interactive flows only)**
    - List every DSPF / PRTF / MENU the user sees during the flow.
    - For each:
      - object name + `OBJ-*`
@@ -416,7 +526,7 @@ to the orchestrator.
    - For non-interactive flows (batch, trigger, scheduler, API), this
      section may be `N/A — non-interactive flow`.
 
-9. **Error Propagation & Exception Chain**
+10. **Error Propagation & Exception Chain**
    - For each node, summarise (from its `program-analysis` Error Handling
      section) what happens when each error condition occurs.
    - Trace propagation: does the error abort the whole flow, roll back to
@@ -434,7 +544,7 @@ to the orchestrator.
      error would crash the entire flow without recovery (create TBD).
    - See `references/error-propagation.md`.
 
-10. **Business Capability Seeds**
+11. **Business Capability Seeds**
    - Extract `SEED-*` candidates (business rule seeds) that this flow
      plausibly enforces — **without inventing rules**.
    - Each seed is a *question* for SME review (e.g., "Does the rule
@@ -452,16 +562,24 @@ to the orchestrator.
      represented by `NODE-*` / `EDGE-*` entries; capability seeds use
      `SEED-*` IDs.
 
-11. **Prepare for SME Review**
+12. **Prepare for SME Review**
    - Consolidate all TBDs grouped by blocking status (`pending_source` /
-     `pending_sme_judgment` / `non_blocking`).
-   - **If any blocking TBDs exist:**
+     `missing_program_artifact` / `pending_sme_judgment` / `non_blocking`).
+   - **If `analysis_intent: standalone_exploratory`:**
+     - Mark flow as `draft_exploratory`.
+     - Complete the quick-validation artifact with all visible Calculation
+       Logic, Validation Logic, Exception Handling, Message Inventory, Nodes,
+       Edges, and gaps.
+     - Record missing approvals, inventory linkage, sidecars, and indexed-only
+       state-impacting routines as downstream-readiness gaps.
+     - Do not route to module-analyzer until rerun/promoted as `chain_ready`.
+   - **If `analysis_intent: chain_ready` and any blocking TBDs exist:**
      - Mark flow as `blocked_pending_source` (missing program-analysis, missing DSPF, etc.)
        or `blocked_pending_sme` (ambiguous trigger, unclear error handling, missing business context)
      - Do not complete the full required analysis; provide partial flow stub
      - Route to `legacy-ibmi-program-analyzer` or SME assignment process
      - Do not proceed to module-analyzer
-   - **If no blocking TBDs:**
+   - **If `analysis_intent: chain_ready` and no blocking TBDs exist:**
      - Confirm every node's `program-analysis` is approved.
      - Generate the flow review checklist (see `templates/trigger-checklist.md`).
      - Mark flow as `draft` and route to SME.
