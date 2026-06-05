@@ -287,10 +287,13 @@ complete understanding. Align terminology with
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
-  Do not configure a Python environment or install packages. If neither
-  platform launcher is available, stop and report the terminal error.
+  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  Do not configure PATH, install Python, or create a virtual environment.
+  Apply the same launcher order to all temporary consistency checks, YAML
+  readability checks, Markdown sanity checks, and one-off helper scripts in
+  this skill.
   Use its `source-index.yaml`, `program-analysis-summary.yaml`,
   `routine-index.md`, `all-routine-coverage-ledger.md`,
   `deep-read-plan.md`, `routine-logic-details.md`,

@@ -75,6 +75,9 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("program-analysis-summary.yaml", text)
             self.assertIn("routine-logic-details.md", text)
             self.assertIn("routine-logic-details.yaml", text)
+            self.assertIn("temporary consistency checks", text)
+            self.assertIn("YAML", text)
+            self.assertIn("readability checks", text)
 
     def test_analyze_source_extracts_structure_without_business_summary(self) -> None:
         indexer = load_indexer()

@@ -79,8 +79,12 @@ python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --out-dir path/to/PROGRAM-analysis
 ```
 
-Do not configure a Python environment or install packages for this helper. If
-the platform launcher is unavailable, stop and report the terminal error.
+Windows launcher order: try `py -3` first, fall back to `python` if unavailable.
+macOS/Linux: use `python3`. If all launchers fail, stop and report:
+**"Python runtime unavailable"**. Do not configure PATH, install Python,
+or create a virtual environment. Apply the same launcher order to all
+temporary consistency checks, YAML readability checks, Markdown sanity checks,
+and one-off helper scripts in this skill.
 
 The helper writes:
 

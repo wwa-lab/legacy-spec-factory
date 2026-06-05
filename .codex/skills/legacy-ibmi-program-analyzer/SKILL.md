@@ -96,9 +96,14 @@ Use:
 - `references/output-contract.md` for field definitions and evidence tagging
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
-  local file access is available; root wrapper examples:
-  - Windows: `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  local file access is available:
+  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`, fall back to `python` if `py -3` is unavailable
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  Do not configure PATH, install Python, or create a virtual environment.
+  Apply the same launcher order to all temporary consistency checks, YAML
+  readability checks, Markdown sanity checks, and one-off helper scripts run
+  during this skill.
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
 - `references/evidence-tagging.md` for evidence strength levels and tagging methodology
@@ -174,9 +179,14 @@ field-level rules. The summary below is normative for this skill.
   `all-routine-coverage-ledger.md`, `deep-read-plan.md`,
   `routine-logic-details.md`, `routine-logic-details.yaml`,
   `message-inventory.md`, and `message-inventory.yaml` for compact sidecar
-  review. Use the platform's existing Python launcher only: Windows should
-  prefer `py -3`; macOS/Linux should prefer `python3`. Do not configure a
-  Python environment or install packages for this helper. These are
+  review. Windows: try `py -3`, fall back to `python`; macOS/Linux: use
+  `python3`. If all launchers fail, stop and report:
+  **"Python runtime unavailable"**. Do not configure PATH, install
+  Python, or create a virtual environment.
+  Apply the same launcher order to temporary consistency checks, YAML
+  readability checks, Markdown sanity checks, and one-off helper scripts run
+  during this skill.
+  These are
   pre-analysis structure artifacts, not the final program analysis. Do not
   produce whole-program business narrative until the source index, routine
   cards, Program Call Map, Data Touch Map, and coverage ledger exist.
@@ -269,10 +279,12 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
      - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
-     Do not configure a Python environment or install packages. If neither
-     platform launcher is available, stop and report the terminal error.
+     If all launchers fail, stop and report: **"Python runtime unavailable"**.
+     Do not configure PATH, install Python, or create a virtual environment.
+     Use the same launcher order for all temporary consistency checks, YAML
+     readability checks, Markdown sanity checks, and one-off helper scripts.
    - Use `source-index.yaml`, `program-analysis-summary.yaml`,
      `routine-index.md`, `all-routine-coverage-ledger.md`,
      `deep-read-plan.md`, `routine-logic-details.md`,
