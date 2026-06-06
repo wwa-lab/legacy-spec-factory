@@ -11,12 +11,13 @@ context is available, preserve it in `module-overview.md` and the BRD crosswalk
 with source eligibility.
 
 Do not concatenate full flow or program Markdown to build module views. Use
-approved flow rows and compact child program artifacts first:
+approved flow rows and core compact child program artifacts first:
 `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-logic-details.yaml`, `message-inventory.yaml`,
-`file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-`sql-inventory.yaml`. Human-readable Markdown is for targeted clarification
-only.
+`routine-logic-details.yaml`, and `message-inventory.yaml`. Optional sidecars
+(`file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+`sql-inventory.yaml`) are required only when triggered by program tier or when
+module claims need file I/O, persisted mutation, or SQL evidence.
+Human-readable Markdown is for targeted clarification only.
 
 ## File Structure
 
@@ -70,7 +71,7 @@ Flow, and Data Flow.]
 ## Flow Artifact Set
 | Flow ID | Flow Analysis | Program Summary | Source Index | Routine Logic | Message Inventory | File I/O | Mutation Matrix | SQL Inventory | Gap / Waiver |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FLOW-AUTH-001 | `flow-FLOW-AUTH-001.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present | `field-mutation-matrix.yaml` present | `sql-inventory.yaml` present / not_applicable | none / TBD-* |
+| FLOW-AUTH-001 | `flow-FLOW-AUTH-001.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed | `field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed | `sql-inventory.yaml` present / not_applicable / missing_when_needed | none / TBD-* |
 
 ## Module Persistence & Critical Field Summary
 | Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |

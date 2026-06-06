@@ -763,6 +763,142 @@ def analysis_mode(line_count: int, routine_count: int, external_count: int, obje
     return "standard", "source is below large-program thresholds"
 
 
+def program_size_tier(
+    *,
+    line_count: int,
+    routine_count: int,
+    external_count: int,
+    object_count: int,
+    file_operation_count: int,
+    field_mutation_count: int,
+    sql_statement_count: int,
+    unique_message_count: int,
+    recommended_deep_read_count: int,
+) -> dict[str, Any]:
+    """Return the SME-facing output tier without changing legacy analysis_mode."""
+    if line_count > 10000:
+        return {
+            "tier": "large_extreme_program",
+            "reason": "source length exceeds 10,000 lines",
+            "default_output_profile": "full_index_and_batched_deep_read",
+        }
+    if routine_count > 25:
+        return {
+            "tier": "large_extreme_program",
+            "reason": "routine count exceeds 25",
+            "default_output_profile": "full_index_and_batched_deep_read",
+        }
+    if external_count > 20:
+        return {
+            "tier": "large_extreme_program",
+            "reason": "external call count exceeds 20",
+            "default_output_profile": "full_index_and_batched_deep_read",
+        }
+    if object_count > 25:
+        return {
+            "tier": "large_extreme_program",
+            "reason": "object dependency count exceeds 25",
+            "default_output_profile": "full_index_and_batched_deep_read",
+        }
+
+    complex_reasons: list[str] = []
+    if line_count > 3000:
+        complex_reasons.append("source length exceeds normal-program comfort threshold")
+    if routine_count > 10:
+        complex_reasons.append("routine count exceeds normal-program comfort threshold")
+    if external_count > 8:
+        complex_reasons.append("external call count exceeds normal-program comfort threshold")
+    if object_count > 10:
+        complex_reasons.append("object dependency count exceeds normal-program comfort threshold")
+    if file_operation_count > 20:
+        complex_reasons.append("file I/O operation count is dense")
+    if field_mutation_count > 20:
+        complex_reasons.append("field mutation count is dense")
+    if sql_statement_count > 10:
+        complex_reasons.append("embedded SQL statement count is dense")
+    if unique_message_count > 10:
+        complex_reasons.append("message/status inventory is dense")
+    if recommended_deep_read_count > 5:
+        complex_reasons.append("recommended deep-read windows exceed one five-routine batch")
+
+    if complex_reasons:
+        return {
+            "tier": "complex_normal_program",
+            "reason": "; ".join(complex_reasons),
+            "default_output_profile": "light_review_plus_triggered_sidecars",
+        }
+
+    return {
+        "tier": "normal_program",
+        "reason": "normal-size program; default to lightweight SME review",
+        "default_output_profile": "lightweight_program_review",
+    }
+
+
+def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    counts = index["counts"]
+    analysis_tier = index["program_size_tier"]
+    full = analysis_tier == "large_extreme_program"
+    complex_normal = analysis_tier == "complex_normal_program"
+    return {
+        "deep_read_plan": {
+            "write": full or complex_normal or counts["recommended_deep_read_windows"] > 5,
+            "reason": (
+                "large/complex tier or more than one five-routine batch"
+                if full or complex_normal or counts["recommended_deep_read_windows"] > 5
+                else "not needed for lightweight normal review"
+            ),
+        },
+        "coverage_ledger": {
+            "write": full or complex_normal or counts["recommended_deep_read_windows"] > 5,
+            "reason": (
+                "large/complex tier or batched routine coverage required"
+                if full or complex_normal or counts["recommended_deep_read_windows"] > 5
+                else "not needed for lightweight normal review"
+            ),
+        },
+        "file_io_inventory": {
+            "write": full or counts["file_operations"] > 10 or any(
+                operation["operation"] in {"WRITE", "UPDATE", "DELETE", "COMMIT", "ROLLBACK"}
+                for operation in index["file_operations"]
+            ),
+            "reason": (
+                "dense or state-changing file I/O observed"
+                if counts["file_operations"] > 10
+                or any(
+                    operation["operation"] in {"WRITE", "UPDATE", "DELETE", "COMMIT", "ROLLBACK"}
+                    for operation in index["file_operations"]
+                )
+                else "file I/O can remain summarized in program-analysis.md"
+            ),
+        },
+        "field_mutation_matrix": {
+            "write": full or counts["field_mutations"] > 0,
+            "reason": (
+                "persisted native or SQL mutation evidence observed"
+                if counts["field_mutations"] > 0
+                else "no persisted mutation detail observed"
+            ),
+        },
+        "sql_inventory": {
+            "write": full or counts["sql_statements"] > 0,
+            "reason": (
+                "embedded SQL / SQLRPGLE evidence observed"
+                if counts["sql_statements"] > 0
+                else "no embedded SQL observed"
+            ),
+        },
+        "message_inventory_markdown": {
+            "write": full or counts["unique_messages"] > 10,
+            "reason": (
+                "message inventory is dense"
+                if counts["unique_messages"] > 10
+                else "message-inventory.yaml is enough for lightweight review"
+            ),
+        },
+    }
+
+
 def analyze_source(lines: list[str], program_name: str, source_path: Path | None = None) -> dict[str, Any]:
     statements = build_statements(lines)
     routines: dict[str, dict[str, Any]] = {
@@ -1050,12 +1186,6 @@ def analyze_source(lines: list[str], program_name: str, source_path: Path | None
     file_io_inventory = build_file_io_inventory(file_operations, program_name)
     field_mutation_inventory = build_field_mutation_inventory(file_operations, sql_inventory, program_name)
     program_profile = detect_program_profile(lines, source_path, statements, declarations)
-    mode, reason = analysis_mode(
-        len(lines),
-        len(routines),
-        len(external_calls),
-        len(object_names),
-    )
     message_inventory = build_message_inventory(messages, program_name)
     deep_read_windows = [
         {
@@ -1069,6 +1199,23 @@ def analyze_source(lines: list[str], program_name: str, source_path: Path | None
         for index, routine in enumerate(routines.values(), start=1)
         if routine["recommended_deep_read"]
     ]
+    mode, reason = analysis_mode(
+        len(lines),
+        len(routines),
+        len(external_calls),
+        len(object_names),
+    )
+    size_tier = program_size_tier(
+        line_count=len(lines),
+        routine_count=len(routines),
+        external_count=len(external_calls),
+        object_count=len(object_names),
+        file_operation_count=len(file_operations),
+        field_mutation_count=len(field_mutation_inventory["details"]),
+        sql_statement_count=len(sql_inventory["details"]),
+        unique_message_count=len(message_inventory["summary"]),
+        recommended_deep_read_count=len(deep_read_windows),
+    )
 
     source_index = {
         "schema_version": "0.1",
@@ -1080,6 +1227,9 @@ def analyze_source(lines: list[str], program_name: str, source_path: Path | None
         },
         "analysis_mode": mode,
         "mode_reason": reason,
+        "program_size_tier": size_tier["tier"],
+        "tier_reason": size_tier["reason"],
+        "default_output_profile": size_tier["default_output_profile"],
         "counts": {
             "routines": len(routines),
             "external_calls": len(external_calls),
@@ -1115,6 +1265,7 @@ def analyze_source(lines: list[str], program_name: str, source_path: Path | None
             "business summary and does not make downstream-ready claims."
         ),
     }
+    source_index["optional_sidecar_triggers"] = optional_sidecar_triggers(source_index)
     source_index["routine_logic_inventory"] = build_routine_logic_inventory(source_index)
     return source_index
 
@@ -1687,6 +1838,9 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
         "source": index["source"],
         "analysis_mode": index["analysis_mode"],
         "mode_reason": index["mode_reason"],
+        "program_size_tier": index["program_size_tier"],
+        "tier_reason": index["tier_reason"],
+        "default_output_profile": index["default_output_profile"],
         "counts": index["counts"],
         "program_profile": index["program_profile"],
         "routine_summary": index["routine_logic_inventory"]["summary"],
@@ -1697,25 +1851,91 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
         "external_calls": index["external_calls"],
         "declared_files": index["declared_files"],
         "deep_read_windows": index["deep_read_windows"],
+        "optional_sidecar_triggers": index["optional_sidecar_triggers"],
         "sidecars": {
-            "source_index": "source-index.yaml",
-            "routine_index": "routine-index.md",
-            "coverage_ledger": "all-routine-coverage-ledger.md",
-            "deep_read_plan": "deep-read-plan.md",
-            "routine_logic_details": "routine-logic-details.md",
-            "routine_logic_details_yaml": "routine-logic-details.yaml",
-            "message_inventory": "message-inventory.md",
-            "message_inventory_yaml": "message-inventory.yaml",
-            "file_io_inventory": "file-io-inventory.md",
-            "file_io_inventory_yaml": "file-io-inventory.yaml",
-            "field_mutation_matrix": "field-mutation-matrix.md",
-            "field_mutation_matrix_yaml": "field-mutation-matrix.yaml",
-            "sql_inventory": "sql-inventory.md",
-            "sql_inventory_yaml": "sql-inventory.yaml",
+            "source_index": {"path": "source-index.yaml", "status": "present"},
+            "routine_index": {"path": "routine-index.md", "status": "present"},
+            "routine_logic_details": {"path": "routine-logic-details.md", "status": "present"},
+            "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": "present"},
+            "message_inventory_yaml": {"path": "message-inventory.yaml", "status": "present"},
+            "message_inventory": {
+                "path": "message-inventory.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["message_inventory_markdown"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "coverage_ledger": {
+                "path": "all-routine-coverage-ledger.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["coverage_ledger"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "deep_read_plan": {
+                "path": "deep-read-plan.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["deep_read_plan"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "file_io_inventory": {
+                "path": "file-io-inventory.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["file_io_inventory"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "file_io_inventory_yaml": {
+                "path": "file-io-inventory.yaml",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["file_io_inventory"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "field_mutation_matrix": {
+                "path": "field-mutation-matrix.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["field_mutation_matrix"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "field_mutation_matrix_yaml": {
+                "path": "field-mutation-matrix.yaml",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["field_mutation_matrix"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "sql_inventory": {
+                "path": "sql-inventory.md",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["sql_inventory"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
+            "sql_inventory_yaml": {
+                "path": "sql-inventory.yaml",
+                "status": (
+                    "optional_triggered"
+                    if index["optional_sidecar_triggers"]["sql_inventory"]["write"]
+                    else "not_written_by_default"
+                ),
+            },
         },
         "contract_note": (
-            "Flow-level analysis should prefer this compact summary and sidecar "
-            "YAML files instead of concatenating large program-analysis Markdown."
+            "Flow-level analysis should prefer this compact summary and present "
+            "sidecar YAML files instead of concatenating large program-analysis "
+            "Markdown. Optional sidecars can be generated on demand when their "
+            "trigger is true or downstream evidence needs them."
         ),
     }
     return to_yaml(payload) + "\n"
@@ -1727,19 +1947,38 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
         (out_dir / "source-index.yaml", to_yaml(index) + "\n"),
         (out_dir / "program-analysis-summary.yaml", render_program_analysis_summary_yaml(index)),
         (out_dir / "routine-index.md", render_routine_index(index)),
-        (out_dir / "all-routine-coverage-ledger.md", render_coverage_ledger(index)),
-        (out_dir / "deep-read-plan.md", render_deep_read_plan(index)),
         (out_dir / "routine-logic-details.md", render_routine_logic_details(index)),
         (out_dir / "routine-logic-details.yaml", render_routine_logic_details_yaml(index)),
-        (out_dir / "message-inventory.md", render_message_inventory(index)),
         (out_dir / "message-inventory.yaml", render_message_inventory_yaml(index)),
-        (out_dir / "file-io-inventory.md", render_file_io_inventory(index)),
-        (out_dir / "file-io-inventory.yaml", render_file_io_inventory_yaml(index)),
-        (out_dir / "field-mutation-matrix.md", render_field_mutation_inventory(index)),
-        (out_dir / "field-mutation-matrix.yaml", render_field_mutation_inventory_yaml(index)),
-        (out_dir / "sql-inventory.md", render_sql_inventory(index)),
-        (out_dir / "sql-inventory.yaml", render_sql_inventory_yaml(index)),
     ]
+    triggers = index["optional_sidecar_triggers"]
+    if triggers["coverage_ledger"]["write"]:
+        files.append((out_dir / "all-routine-coverage-ledger.md", render_coverage_ledger(index)))
+    if triggers["deep_read_plan"]["write"]:
+        files.append((out_dir / "deep-read-plan.md", render_deep_read_plan(index)))
+    if triggers["message_inventory_markdown"]["write"]:
+        files.append((out_dir / "message-inventory.md", render_message_inventory(index)))
+    if triggers["file_io_inventory"]["write"]:
+        files.extend(
+            [
+                (out_dir / "file-io-inventory.md", render_file_io_inventory(index)),
+                (out_dir / "file-io-inventory.yaml", render_file_io_inventory_yaml(index)),
+            ]
+        )
+    if triggers["field_mutation_matrix"]["write"]:
+        files.extend(
+            [
+                (out_dir / "field-mutation-matrix.md", render_field_mutation_inventory(index)),
+                (out_dir / "field-mutation-matrix.yaml", render_field_mutation_inventory_yaml(index)),
+            ]
+        )
+    if triggers["sql_inventory"]["write"]:
+        files.extend(
+            [
+                (out_dir / "sql-inventory.md", render_sql_inventory(index)),
+                (out_dir / "sql-inventory.yaml", render_sql_inventory_yaml(index)),
+            ]
+        )
     written: list[Path] = []
     for path, content in files:
         path.write_text(content, encoding="utf-8")
@@ -1749,7 +1988,7 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build source-index artifacts for RPG/RPGLE large-program analysis."
+        description="Build source-index artifacts for RPG/RPGLE program analysis."
     )
     parser.add_argument("source", type=Path, help="RPG/RPGLE source member text file")
     parser.add_argument("--program", help="Program/member name; defaults to source stem")

@@ -185,6 +185,12 @@ which claims are fully supported versus indexed-only.
 | --- | --- | --- | --- | --- | --- |
 | [N lines] | standard / segmented / large-program | [why this mode was selected] | yes / no | yes / no | yes / limited / no |
 
+### Program Size Tier
+
+| Program Size Tier | Tier Reason | Default Output Profile | Optional Sidecars Triggered |
+| --- | --- | --- | --- |
+| normal_program / complex_normal_program / large_extreme_program | [normal-size default / density reason / large threshold] | lightweight_program_review / light_review_plus_triggered_sidecars / full_index_and_batched_deep_read | [none / list triggered sidecars] |
+
 ### Coverage Ledger
 
 | Routines Found | Routines Deep-Read | Routines Indexed Only | External Edges Resolved | Data Touches Resolved | Blocking Gaps | Non-Blocking Gaps |
@@ -201,11 +207,13 @@ which claims are fully supported versus indexed-only.
 
 | Sidecar | Use In Review | Status |
 | --- | --- | --- |
-| `message-inventory.md` / `message-inventory.yaml` | Message/code/literal occurrence detail behind the front-loaded Message Inventory | present / not needed / pending |
+| `message-inventory.yaml` | Message/code/literal occurrence detail behind the front-loaded Message Inventory | present / pending |
+| `message-inventory.md` | Dense reviewer-readable message detail when more than 10 unique messages/status/codes appear | present / optional_triggered / not_written_by_default / pending |
 | `routine-logic-details.md` / `routine-logic-details.yaml` | Routine detail behind Routine Logic Details summary rows | present / not needed / pending |
-| `file-io-inventory.md` / `file-io-inventory.yaml` | Dense native file operation evidence behind File I/O summary rows | present / not needed / pending |
-| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Native and SQL persisted mutation detail behind Calculation Logic and File I/O rows | present / not needed / pending |
-| `sql-inventory.md` / `sql-inventory.yaml` | SQLRPGLE/free-format embedded SQL statements, host variables, and status checks | present / not needed / pending |
+| `all-routine-coverage-ledger.md` / `deep-read-plan.md` | Batched deep-read planning when more than five windows or complex/large tier needs it | present / optional_triggered / not_written_by_default / pending |
+| `file-io-inventory.md` / `file-io-inventory.yaml` | Dense or state-changing native file operation evidence behind File I/O summary rows | present / optional_triggered / not_written_by_default / pending |
+| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Native and SQL persisted mutation detail behind Calculation Logic and File I/O rows | present / optional_triggered / not_written_by_default / pending |
+| `sql-inventory.md` / `sql-inventory.yaml` | SQLRPGLE/free-format embedded SQL statements, host variables, and status checks | present / optional_triggered / not_written_by_default / pending |
 
 ## Program Call Map
 
@@ -627,7 +635,7 @@ or persisted field lineage.
 Before approval, SME must validate:
 
 - [ ] External entry points and callable procedures are correct and complete
-- [ ] Analysis Coverage & Scope honestly states whether this was standard, segmented, or large-program mode
+- [ ] Analysis Coverage & Scope honestly states `program_size_tier`, compatibility analysis mode, default output profile, and optional sidecar triggers
 - [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
@@ -643,7 +651,7 @@ Before approval, SME must validate:
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes why each file is accessed
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
+- [ ] Normal programs stay lightweight; dense or state-changing I/O/SQL/mutation detail is routed to triggered sidecars (`file-io-inventory.*`, `field-mutation-matrix.*`, `sql-inventory.*`) instead of bloating the main review
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence

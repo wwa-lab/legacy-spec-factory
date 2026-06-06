@@ -248,10 +248,10 @@ message sidecars rather than expanding every occurrence in the main analysis.
 
 ## Analysis Coverage & Scope Section
 
-This section is mandatory for every program. It records analysis mode,
-coverage limits, and known gaps so partial analysis cannot masquerade as
-complete understanding. Align terminology with
-`references/large-program-analysis.md`.
+This section is mandatory for every program. It records SME-facing program
+size tier, compatibility analysis mode, coverage limits, optional sidecar
+triggers, and known gaps so partial analysis cannot masquerade as complete
+understanding. Align terminology with `references/large-program-analysis.md`.
 
 ```markdown
 ## Analysis Coverage & Scope
@@ -262,8 +262,11 @@ complete understanding. Align terminology with
 - **Routine Count:** 42
 - **External Call Count:** 27
 - **Object Dependency Count:** 31
+- **Program Size Tier:** normal_program | complex_normal_program | large_extreme_program
+- **Tier Reason:** normal-size program; default to lightweight SME review
 - **Analysis Mode:** standard | segmented | large_program
-- **Strategy:** structure index first, then routine cards, call/data maps, deep-read windows, and synthesis
+- **Default Output Profile:** lightweight_program_review | light_review_plus_triggered_sidecars | full_index_and_batched_deep_read
+- **Strategy:** normal programs get concise SME review plus core artifacts; complex/large programs add triggered sidecars and batched deep-read only when needed
 
 ### Coverage Ledger
 
@@ -300,26 +303,40 @@ complete understanding. Align terminology with
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts in
   this skill.
-  Use its `source-index.yaml`, `program-analysis-summary.yaml`,
-  `routine-index.md`, `all-routine-coverage-ledger.md`,
-  `deep-read-plan.md`, `routine-logic-details.md`,
-  `routine-logic-details.yaml`, `message-inventory.md`,
-  `message-inventory.yaml`, `file-io-inventory.md`,
-  `file-io-inventory.yaml`, `field-mutation-matrix.md`,
-  `field-mutation-matrix.yaml`, `sql-inventory.md`, and
-  `sql-inventory.yaml` as seeds for this section, Routine Cards,
-  Deep Read Windows, routine detail review, message review, file I/O / SQL
-  review, and downstream flow/module aggregation.
-- Select one mode: `standard`, `segmented`, or `large_program`.
-- Use `segmented` or `large_program` when the source cannot safely fit
-  with evidence windows, or when call/data density requires
-  structure-first analysis.
+  Use its core artifacts (`source-index.yaml`,
+  `program-analysis-summary.yaml`, `routine-index.md`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`, and
+  `message-inventory.yaml`) as the default seeds for normal programs. Use
+  optional sidecars (`all-routine-coverage-ledger.md`, `deep-read-plan.md`,
+  `message-inventory.md`, `file-io-inventory.md` /
+  `file-io-inventory.yaml`, `field-mutation-matrix.md` /
+  `field-mutation-matrix.yaml`, and `sql-inventory.md` /
+  `sql-inventory.yaml`) only when `optional_sidecar_triggers` marks them
+  needed or downstream flow/module evidence needs require them.
+- Select both a compatibility mode (`standard`, `segmented`, or
+  `large_program`) and SME-facing tier (`normal_program`,
+  `complex_normal_program`, or `large_extreme_program`).
+- Use `normal_program` as the default for ordinary programs under 10,000
+  lines. Use `complex_normal_program` when density, not total line count,
+  requires extra sidecars. Use `large_extreme_program` only when large-program
+  thresholds or context safety require full indexing and batched deep-read.
 - Keep the coverage ledger current as routine cards, Program Call Map,
   Data Touch Map, and deep-read windows are produced.
 - Do not claim complete understanding until coverage supports it.
 - Routine coverage values are only `indexed_only`, `deep_read`, and
   `blocked`. SME confirmation belongs in evidence or review fields, not
   in the coverage field.
+
+### Optional Sidecar Trigger Summary
+
+| Sidecar | Status | Trigger / Reason |
+| --- | --- | --- |
+| `all-routine-coverage-ledger.md` | present / optional_triggered / not_written_by_default | [batched deep-read needed or complex/large tier] |
+| `deep-read-plan.md` | present / optional_triggered / not_written_by_default | [more than five windows, complex tier, or large tier] |
+| `message-inventory.md` | present / optional_triggered / not_written_by_default | [more than 10 unique messages/status/codes] |
+| `file-io-inventory.md` / `file-io-inventory.yaml` | present / optional_triggered / not_written_by_default | [dense or state-changing file I/O] |
+| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | present / optional_triggered / not_written_by_default | [persisted native/SQL mutation evidence] |
+| `sql-inventory.md` / `sql-inventory.yaml` | present / optional_triggered / not_written_by_default | [embedded SQL / SQLRPGLE evidence] |
 
 ---
 

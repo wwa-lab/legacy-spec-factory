@@ -1,15 +1,20 @@
-# Large Program Analysis
+# Program Size Tiering And Large Program Analysis
 
-This reference defines how `legacy-ibmi-program-analyzer` handles large IBM i
-programs when the full source cannot safely fit in model context.
+This reference defines how `legacy-ibmi-program-analyzer` classifies ordinary,
+complex, and extreme IBM i programs. Most field programs are below 10,000 lines
+and should follow the normal path. Large-program handling is the safety rail
+for the minority of programs that are too large or too dense to understand in
+one pass.
 
 For a human-oriented explanation of the same strategy, see
 `../../../docs/large-rpg-analysis-strategy.md`.
 
 ## Core Idea
 
-Treat a 20k-30k+ line RPG program as an evidence-driven program-understanding
-problem, not as a large-text summarization problem.
+Treat normal programs as concise SME review problems, complex normal programs
+as targeted-evidence problems, and 20k-30k+ line RPG programs as
+evidence-driven program-understanding problems, not large-text summarization
+problems.
 
 The analyzer must first turn the source into a compact, auditable structure:
 source index, Program Call Map, Logic Decomposition Ledger, Data Touch Map,
@@ -19,6 +24,57 @@ Only then may it synthesize behavior.
 The goal is not to "read every line into context." The goal is to preserve the
 program's call topology, state changes, data movement, evidence, and known gaps
 so downstream flow/module/spec work can decide what is safe to use.
+
+## Program Size Tiers
+
+Use three SME-facing tiers:
+
+| Tier | When to use | Default output profile |
+| --- | --- | --- |
+| `normal_program` | Under 10,000 lines with no density trigger; recommended deep-read windows fit in one five-routine batch. | Lightweight `program-analysis.md` plus core machine-readable artifacts. |
+| `complex_normal_program` | Under large thresholds but dense in routines, file I/O, messages, SQL, field mutations, external calls, object dependencies, or recommended deep-read windows. | Lightweight SME review plus only triggered sidecars. |
+| `large_extreme_program` | Above large thresholds or cannot fit safely with evidence windows. | Full index, full sidecar set, coverage ledger, deep-read plan, and optional automatic five-routine loop. |
+
+### Normal Program Defaults
+
+For `normal_program`, produce a concise SME-first review. Core artifacts are:
+
+- `program-analysis.md`
+- `program-analysis-summary.yaml`
+- `source-index.yaml`
+- `routine-index.md`
+- `routine-logic-details.md`
+- `routine-logic-details.yaml`
+- `message-inventory.yaml`
+
+Do not generate dense file I/O, mutation, SQL, message Markdown, coverage, or
+deep-read planning sidecars by default. Generate them only when a trigger is
+true or downstream flow/module analysis explicitly needs the extra evidence.
+
+### Complex Normal Triggers
+
+Use `complex_normal_program` when any of these are true:
+
+- source length is greater than 3,000 lines but not greater than 10,000 lines
+- routine count is greater than 10 but not greater than 25
+- recommended deep-read windows exceed one five-routine batch
+- external call count is greater than 8 but not greater than 20
+- object dependency count is greater than 10 but not greater than 25
+- file I/O operation count is dense, or state-changing I/O requires a sidecar
+- unique message/status/code count is greater than 10
+- embedded SQL statement count is dense
+- field mutation/calculation chains are too dense for the main document
+
+Optional sidecars are triggered independently:
+
+| Sidecar | Trigger |
+| --- | --- |
+| `deep-read-plan.md` | More than one five-routine batch is needed, or tier is complex/large. |
+| `all-routine-coverage-ledger.md` | More than one five-routine batch is needed, or tier is complex/large. |
+| `message-inventory.md` | More than 10 unique message/status/code rows, or large tier. |
+| `file-io-inventory.md` / `file-io-inventory.yaml` | More than 10 file operations, state-changing file I/O, commit, rollback, or large tier. |
+| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Persisted native/SQL mutation evidence is observed, or large tier. |
+| `sql-inventory.md` / `sql-inventory.yaml` | Embedded SQL / SQLRPGLE evidence is observed, or large tier. |
 
 ## When To Use Large-Program Mode
 
@@ -31,10 +87,10 @@ Use large-program mode when any of these are true:
 - the analyzer cannot keep the full program, call graph, and evidence windows in
   context together
 
-Use segmented mode for medium programs when the program is smaller than these
-thresholds but still has dense call/data dependencies. Segmented mode is a
-structure-first mode for medium-sized or dense programs where the full source
-may fit, but safe analysis still requires routine/call/data segmentation.
+Use `complex_normal_program` for medium programs when the program is smaller
+than these thresholds but still has dense call/data dependencies. Its
+compatibility `analysis_mode` may remain `segmented`, but the SME-facing output
+should still stay lightweight unless a sidecar trigger requires expansion.
 
 ## Operating Rule
 
@@ -86,19 +142,27 @@ or create a virtual environment. Apply the same launcher order to all
 temporary consistency checks, YAML readability checks, Markdown sanity checks,
 and one-off helper scripts in this skill.
 
-The helper writes:
+The helper writes core artifacts for every tier and optional sidecars only
+when their triggers are true. Large/extreme programs write the full set.
+
+Core artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
 | `source-index.yaml` | Machine-readable structure inventory: program profile, free-format statements, declarations, assignments, routines, calls, declared files, file operations, SQL, messages, recommended deep-read windows, and mode selection. |
 | `program-analysis-summary.yaml` | Compact machine-readable program summary for flow/module analyzers; prefer this over concatenating large Markdown analyses. |
 | `routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
-| `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
-| `deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
 | `routine-logic-details.md` | Reviewer-readable sidecar seed for routine-level detail IDs, line ranges, call/data evidence, deep-read priority, and pending semantic detail. |
 | `routine-logic-details.yaml` | Machine-readable routine logic inventory for downstream flow/module/spec consumers and later semantic enrichment. |
-| `message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
 | `message-inventory.yaml` | Machine-readable detailed message inventory for downstream flow/module/spec consumers and reference-pack enrichment. |
+
+Optional artifacts:
+
+| Artifact | Purpose |
+| --- | --- |
+| `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
+| `deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
+| `message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
 | `file-io-inventory.md` | Reviewer-readable detailed sidecar for every observed native file operation, screen/report boundary, and transaction boundary. |
 | `file-io-inventory.yaml` | Machine-readable file I/O inventory for downstream flow/module/spec consumers. |
 | `field-mutation-matrix.md` | Reviewer-readable mutation sidecar for native WRITE/UPDATE/DELETE and embedded SQL DML. |

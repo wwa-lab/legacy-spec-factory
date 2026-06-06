@@ -84,6 +84,10 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("field-mutation-matrix.yaml", text)
             self.assertIn("sql-inventory.md", text)
             self.assertIn("sql-inventory.yaml", text)
+            self.assertIn("normal_program", text)
+            self.assertIn("complex_normal_program", text)
+            self.assertIn("large_extreme_program", text)
+            self.assertIn("optional", text)
 
     def test_analyze_source_extracts_structure_without_business_summary(self) -> None:
         indexer = load_indexer()
@@ -112,11 +116,71 @@ class RpgSourceIndexerTests(unittest.TestCase):
             source_index["routine_logic_inventory"]["summary"][0]["semantic_status"],
             "pending_deep_read",
         )
+        self.assertEqual(source_index["program_size_tier"], "normal_program")
+        self.assertEqual(source_index["default_output_profile"], "lightweight_program_review")
+        self.assertIn("optional_sidecar_triggers", source_index)
 
         sr100 = next(routine for routine in source_index["routines"] if routine["name"] == "SR100")
         self.assertEqual(sr100["coverage"], "indexed_only")
         self.assertTrue(sr100["recommended_deep_read"])
         self.assertIn("state-changing file operation", sr100["deep_read_reasons"])
+
+    def test_cli_keeps_simple_normal_program_lightweight(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+C                   SETON                                        LR
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "SIMPLE.RPGLE"
+            output_dir = temp_path / "out"
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "SIMPLE",
+                    "--out-dir",
+                    str(output_dir),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertIn("source-index.yaml", result.stdout)
+            expected_present = {
+                "source-index.yaml",
+                "program-analysis-summary.yaml",
+                "routine-index.md",
+                "routine-logic-details.md",
+                "routine-logic-details.yaml",
+                "message-inventory.yaml",
+            }
+            expected_absent = {
+                "all-routine-coverage-ledger.md",
+                "deep-read-plan.md",
+                "message-inventory.md",
+                "file-io-inventory.md",
+                "file-io-inventory.yaml",
+                "field-mutation-matrix.md",
+                "field-mutation-matrix.yaml",
+                "sql-inventory.md",
+                "sql-inventory.yaml",
+            }
+            for artifact in expected_present:
+                self.assertTrue((output_dir / artifact).exists(), artifact)
+            for artifact in expected_absent:
+                self.assertFalse((output_dir / artifact).exists(), artifact)
+
+            source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
+            summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
+            self.assertIn("program_size_tier: normal_program", source_index)
+            self.assertIn("default_output_profile: lightweight_program_review", summary)
+            self.assertIn("not_written_by_default", summary)
 
     def test_fixed_format_begsr_uses_factor_before_opcode_with_source_prefix(self) -> None:
         indexer = load_indexer()

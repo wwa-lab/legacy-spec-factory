@@ -281,7 +281,7 @@ Flow scan mode: `orchestrated` | `assemble_existing`
 
 | Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routines=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; file_io=`file-io-inventory.yaml`; mutations=`field-mutation-matrix.yaml`; sql=`sql-inventory.yaml`; human=`program-analysis-OBJ-AUTH-ONUS-001.md` | mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
+| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routines=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; file_io=`file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed; mutations=`field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed; sql=`sql-inventory.yaml` present / not_applicable / missing_when_needed; human=`program-analysis-OBJ-AUTH-ONUS-001.md` | tier=normal_program; mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
 | NODE-ONUS-AUTH-02 | CU110A (OBJ-AUTH-ONUS-002) | Credit orchestrator | summary=present; source=present; routines=present; messages=missing; file_io=present; mutations=present; sql=not_applicable | mode=segmented; readiness=warning; routines=indexed_only technical utility | TBD-ONUS-AUTH-021: missing_program_artifact message sidecar; non-blocking utility routine coverage gap | Calls credit-check sub-flow |
 | NODE-ONUS-AUTH-03 | CU111S (OBJ-AUTH-ONUS-003) | Data access (SQLRPG) | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=present | mode=large_program; readiness=blocked; routines=indexed_only state-impacting routine | TBD-ONUS-AUTH-022: credit update routine not deep-read; route to program analyzer unless named SME waiver recorded | DB2 cursor over credit-history |
 | ... | ... | ... | ... | ... | ... | ... |
@@ -301,17 +301,19 @@ Flow scan mode: `orchestrated` | `assemble_existing`
   entry trigger and discovers/analyzes the program set. Set it to
   `assemble_existing` when the user provides existing per-program analysis
   directories to combine.
-- Every Node must have approved program analysis evidence. Preferred node
-  inputs are `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-logic-details.yaml`, `message-inventory.yaml`,
-  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-  `sql-inventory.yaml`, with
+- Every Node must have approved program analysis evidence. Core node inputs are
+  `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, and `message-inventory.yaml`, with
   `program-analysis-<OBJ-ID>.md` used for human-readable confirmation when
   needed.
-- If a node lacks required compact artifacts, create a
-  `missing_program_artifact` TBD. Fill only the missing program artifact when
-  source is available; do not concatenate complete program-analysis Markdown
-  files as a workaround.
+- `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+  `sql-inventory.yaml` are optional for normal programs unless the program
+  summary marks them triggered or the flow claim needs I/O, mutation, or SQL
+  evidence.
+- If a node lacks required core artifacts or claim-specific optional artifacts,
+  create a `missing_program_artifact` TBD. Fill only the missing program
+  artifact when source is available; do not concatenate complete
+  program-analysis Markdown files as a workaround.
 - `Coverage Status` must use the structured format
   `mode=<standard|segmented|large_program>; readiness=<approved|warning|blocked>; routines=<deep_read|indexed_only|blocked plus short qualifier>`.
   SME waivers are recorded in `Blocking Coverage Gaps` or review notes,

@@ -95,14 +95,16 @@ Accept:
     can support module-level replay, lineage, persistence, or exception
     claims.
 - **Approved program analyses** for every program referenced by those flows
-  - For code-backed runs, prefer program-analyzer v0.2.8 or later compact
+  - For code-backed runs, prefer program-analyzer v0.2.8 or later core
     artifacts: `program-analysis-summary.yaml`, `source-index.yaml`,
-    `routine-logic-details.yaml`, `message-inventory.yaml`,
-    `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-    `sql-inventory.yaml`. Use these sidecars to preserve field calculations,
-    handoffs, skipped work, rollback, message meanings, SQLRPGLE evidence, and
-    visible error outcomes when flow evidence references the underlying
-    program-level detail.
+    `routine-logic-details.yaml`, and `message-inventory.yaml`. Optional
+    sidecars (`file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+    `sql-inventory.yaml`) are required only when triggered by the program tier
+    or when module claims need file I/O, persisted mutation, or SQLRPGLE
+    evidence. Use available sidecars to preserve field calculations, handoffs,
+    skipped work, rollback, message meanings, SQLRPGLE evidence, and visible
+    error outcomes when flow evidence references the underlying program-level
+    detail.
 - **Approved inventory** with module scope confirmed
 - **BAU notes from SME** — operational rhythm, manual processes,
   exception handling, business context not in code
@@ -210,12 +212,13 @@ field-level rules. The summary below is normative for this skill.
 - **Required for standard code-backed runs**: module definition (slug +
   business name + scope statement + list of in-scope flows); approved
   `01_inventory/inventory.yaml` plus `01_inventory/object-map.md`; approved
-  `flow-<FLOW-SLUG>.md` for every in-scope flow; compact program artifacts
+  `flow-<FLOW-SLUG>.md` for every in-scope flow; core compact program artifacts
   for every program referenced by confirmed flows (`program-analysis-summary.yaml`,
   `source-index.yaml`, `routine-logic-details.yaml`,
-  `message-inventory.yaml`, `file-io-inventory.yaml`,
-  `field-mutation-matrix.yaml`, `sql-inventory.yaml`); BAU notes from SME
-  covering operational rhythm and manual procedures.
+  `message-inventory.yaml`); optional compact program sidecars
+  (`file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+  `sql-inventory.yaml`) when triggered or needed by module claims; BAU notes
+  from SME covering operational rhythm and manual procedures.
 - **Required for explicit context-only drafts**: ready
   `00_context_packages/<MODULE-SLUG>/context-index.yaml` from
   `legacy-module-context-intake`; named owner risk acceptance that

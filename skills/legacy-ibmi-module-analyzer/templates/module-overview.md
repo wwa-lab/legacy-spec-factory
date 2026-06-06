@@ -41,12 +41,14 @@ handling, and final outcome.
 ## Flow Artifact Set
 
 Do not concatenate full flow or program Markdown to satisfy this table. Use
-approved flow rows and compact program artifacts first; open human-readable
-Markdown only for targeted clarification.
+approved flow rows and core compact program artifacts first; open
+human-readable Markdown only for targeted clarification. Optional program
+sidecars are required only when triggered by program tier or needed by module
+claims.
 
 | Flow ID | Flow Analysis | Program Summary | Source Index | Routine Logic | Message Inventory | File I/O | Mutation Matrix | SQL Inventory | Gap / Waiver |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FLOW-[SLUG]-001 | `flow-[SLUG].md` | `program-analysis-summary.yaml` present / missing | `source-index.yaml` present / missing | `routine-logic-details.yaml` present / missing | `message-inventory.yaml` present / missing | `file-io-inventory.yaml` present / missing | `field-mutation-matrix.yaml` present / missing | `sql-inventory.yaml` present / not_applicable / missing | none / TBD-[SLUG]-[NNN] |
+| FLOW-[SLUG]-001 | `flow-[SLUG].md` | `program-analysis-summary.yaml` present / missing | `source-index.yaml` present / missing | `routine-logic-details.yaml` present / missing | `message-inventory.yaml` present / missing | `file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed | `field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed | `sql-inventory.yaml` present / not_applicable / missing_when_needed | none / TBD-[SLUG]-[NNN] |
 
 ## Module Persistence & Critical Field Summary
 | Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |

@@ -169,30 +169,40 @@ field-level rules. The summary below is normative for this skill.
 ### Execution
 
 - **Procedure**: see the Workflow section below (11 ordered steps).
-- **Large-program mode**: when source is greater than 10,000 lines,
-  contains more than 25 routines, contains more than 20 external calls,
-  or cannot safely fit in context with evidence windows, use
-  `references/large-program-analysis.md`. When the source file is accessible
-  on disk, first run `scripts/index_rpg_source.py` (or the root
-  `scripts/index-rpg-source.py` wrapper) to produce `source-index.yaml`,
-  `program-analysis-summary.yaml`, `routine-index.md`,
-  `all-routine-coverage-ledger.md`, `deep-read-plan.md`,
-  `routine-logic-details.md`, `routine-logic-details.yaml`,
-  `message-inventory.md`, `message-inventory.yaml`,
-  `file-io-inventory.md`, `file-io-inventory.yaml`,
-  `field-mutation-matrix.md`, `field-mutation-matrix.yaml`,
-  `sql-inventory.md`, and `sql-inventory.yaml` for compact sidecar
-  review. Windows: try `py -3`, fall back to `python`; macOS/Linux: use
+- **Program-size tiers**: default to the normal-program path. Most field
+  programs are under 10,000 lines and should not inherit large-program
+  ceremony unless density requires it. Use three SME-facing tiers:
+  - `normal_program`: fewer than 10,000 lines and no density trigger. Produce
+    lightweight SME review plus core artifacts:
+    `program-analysis.md`, `program-analysis-summary.yaml`,
+    `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
+    `routine-logic-details.yaml`, and `message-inventory.yaml`.
+  - `complex_normal_program`: under large thresholds but dense enough to need
+    extra evidence surfaces, for example more than 10 routines, more than 5
+    recommended deep-read windows, dense file I/O, dense messages, dense SQL,
+    many external calls, or field mutation chains. Produce the lightweight
+    review plus only triggered sidecars such as `deep-read-plan.md`,
+    `all-routine-coverage-ledger.md`, `message-inventory.md`,
+    `file-io-inventory.md` / `file-io-inventory.yaml`,
+    `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, or
+    `sql-inventory.md` / `sql-inventory.yaml`.
+  - `large_extreme_program`: source greater than 10,000 lines, more than 25
+    routines, more than 20 external calls, more than 25 object dependencies, or
+    cannot safely fit in context with evidence windows. Use
+    `references/large-program-analysis.md`, build the full sidecar set, and
+    deep-read in batches of at most five routines/windows.
+- When the source file is accessible on disk, first run
+  `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
+  wrapper) to classify the program tier and produce the appropriate artifact
+  set. Windows: try `py -3`, fall back to `python`; macOS/Linux: use
   `python3`. If all launchers fail, stop and report:
-  **"Python runtime unavailable"**. Do not configure PATH, install
-  Python, or create a virtual environment.
-  Apply the same launcher order to temporary consistency checks, YAML
-  readability checks, Markdown sanity checks, and one-off helper scripts run
-  during this skill.
-  These are
-  pre-analysis structure artifacts, not the final program analysis. Do not
-  produce whole-program business narrative until the source index, routine
-  cards, Program Call Map, Data Touch Map, and coverage ledger exist.
+  **"Python runtime unavailable"**. Do not configure PATH, install Python, or
+  create a virtual environment. Apply the same launcher order to temporary
+  consistency checks, YAML readability checks, Markdown sanity checks, and
+  one-off helper scripts run during this skill. These are pre-analysis
+  structure artifacts, not the final program analysis. Do not produce
+  whole-program business narrative until the source index, SME-first sections,
+  and any needed coverage evidence exist.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
   calculations and branch logic from source statements; file I/O from
   F-spec and I/O statements; field lineage from visible assignments,
@@ -289,21 +299,26 @@ to the orchestrator.
      Use the same launcher order for all temporary consistency checks, YAML
      readability checks, Markdown sanity checks, and one-off helper scripts.
    - Use `source-index.yaml`, `program-analysis-summary.yaml`,
-     `routine-index.md`, `all-routine-coverage-ledger.md`,
-     `deep-read-plan.md`, `routine-logic-details.md`,
-     `routine-logic-details.yaml`, `message-inventory.md`,
-     `message-inventory.yaml`, `file-io-inventory.md`,
-     `file-io-inventory.yaml`, `field-mutation-matrix.md`,
-     `field-mutation-matrix.yaml`, `sql-inventory.md`, and
-     `sql-inventory.yaml` as the deterministic pre-analysis index
+     `routine-index.md`, `routine-logic-details.md`,
+     `routine-logic-details.yaml`, and `message-inventory.yaml` as the normal
+     deterministic pre-analysis index. Add `all-routine-coverage-ledger.md`,
+     `deep-read-plan.md`, `message-inventory.md`,
+     `file-io-inventory.md` / `file-io-inventory.yaml`,
+     `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and
+     `sql-inventory.md` / `sql-inventory.yaml` only when the generated
+     `optional_sidecar_triggers` or downstream evidence needs require them.
    - For SQLRPGLE and free-format RPGLE, use statement-level indexing for
      `DCL-PI`, `DCL-PR`, `DCL-DS`, `DCL-S`, `DCL-PROC`, procedure calls,
      assignments, `EXEC SQL` blocks, host variables, `SQLCODE`, and
      `SQLSTATE`. Do not split multi-line SQL statements or free-format
      calculation chains into fixed line chunks.
-   - Select analysis mode: `standard`, `segmented`, or `large_program`
-   - For `segmented` or `large_program`, build the structure index before
-     any business summary prose
+   - Select both compatibility `analysis_mode`
+     (`standard`, `segmented`, or `large_program`) and SME-facing
+     `program_size_tier` (`normal_program`, `complex_normal_program`, or
+     `large_extreme_program`).
+   - For `normal_program`, keep `program-analysis.md` concise and SME-first.
+     For `complex_normal_program` or `large_extreme_program`, build the needed
+     structure/sidecar evidence before business summary prose.
    - Create Analysis Coverage & Scope and initialize the coverage ledger
    - Prevent claims of complete understanding until coverage supports
      them with indexed routines, deep-read windows, resolved call/data

@@ -14,7 +14,9 @@ LLM turn may read at most five routines.
 - 看多个 flow 是否能组成一个可交付业务模块，就跑
   `legacy-ibmi-module-analyzer`。
 - 内部 LLM 一次最多读 5 个 routine，所以必须先建 `source-index.yaml`
-  和 compact sidecars，再按优先级分批 deep read。
+  并判断 `normal_program` / `complex_normal_program` /
+  `large_extreme_program`。普通程序默认轻量产出；只有复杂或极限场景才加
+  sidecars 和分批 deep read。
 - flow 和 module 不重新吞源码，也不拼多个完整 Markdown；它们只消费
   program/flow 的 compact artifacts。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
@@ -24,14 +26,15 @@ LLM turn may read at most five routines.
 ## One-Sentence Rule
 
 Do not ask the LLM to understand a whole IBM i system at once. Build a source
-index first, deep-read at most five routines per turn, and let flow/module
-analysis consume compact artifacts instead of full source or full Markdown.
+index first, classify the program tier, keep normal programs lightweight, and
+deep-read at most five routines per turn only when density or downstream
+evidence needs require it.
 
 ## When To Use Each Skill
 
 | Scenario | Use | SME question it answers | Main review surface |
 | --- | --- | --- | --- |
-| One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus compact sidecars |
+| One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus core artifacts; optional sidecars only when triggered |
 | One transaction spans programs | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
 | Multiple flows form a module | `legacy-ibmi-module-analyzer` | Is this business module covered enough for BRD/spec handoff? | `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md` |
 
@@ -43,19 +46,30 @@ level when the actual question is about one program or one transaction.
 1. Read no more than five routine bodies in one LLM turn.
 2. Never paste a full large RPGLE / SQLRPGLE source member into a prompt.
 3. Never concatenate multiple full `program-analysis.md` or `flow.md` files.
-4. Use compact artifacts first:
+4. Use core compact artifacts first:
    - `program-analysis-summary.yaml`
    - `source-index.yaml`
    - `routine-logic-details.yaml`
    - `message-inventory.yaml`
-   - `file-io-inventory.yaml`
-   - `field-mutation-matrix.yaml`
-   - `sql-inventory.yaml`
-5. Open human-readable Markdown only for targeted SME clarification.
-6. Treat `indexed_only` as structure evidence, not confirmed behavior.
-7. Treat `deep_read` as the minimum evidence level for strong logic claims.
-8. If a flow or module needs a routine that is still `indexed_only`, route
+5. Add optional sidecars only when triggered:
+   - `deep-read-plan.md` and `all-routine-coverage-ledger.md` when more than
+     one five-routine batch is needed.
+   - `file-io-inventory.yaml` when file I/O is dense or state-changing.
+   - `field-mutation-matrix.yaml` when persisted field mutations are observed.
+   - `sql-inventory.yaml` when embedded SQL / SQLRPGLE evidence is observed.
+6. Open human-readable Markdown only for targeted SME clarification.
+7. Treat `indexed_only` as structure evidence, not confirmed behavior.
+8. Treat `deep_read` as the minimum evidence level for strong logic claims.
+9. If a flow or module needs a routine that is still `indexed_only`, route
    back to program analysis for the next five-routine batch.
+
+## Program Tier Rules
+
+| Tier | Default use | Output behavior |
+| --- | --- | --- |
+| `normal_program` | Most programs under 10,000 lines with no density trigger. | Concise `program-analysis.md` plus core artifacts only. |
+| `complex_normal_program` | Under 10,000 lines but dense in routines, file I/O, SQL, messages, mutations, external calls, or more than one five-routine batch. | Same SME-first review plus only triggered sidecars. |
+| `large_extreme_program` | Over 10,000 lines, more than 25 routines, more than 20 external calls, more than 25 object dependencies, or unsafe to fit in context. | Full source index, all sidecars, coverage ledger, deep-read plan, and optional automatic loop. |
 
 ## SME Review Priorities
 
@@ -136,20 +150,25 @@ SME 这次关心的问题:
 
 ### Step 1: Program Index Preflight
 
-Run this before any deep program review, especially for large RPGLE,
-SQLRPGLE, or free-format source.
+Run this before any deep program review. For most programs, this should simply
+classify the program as `normal_program` and prepare a lightweight SME review.
+For dense or large programs, it triggers only the extra sidecars that are
+needed.
 
-Expected output:
+Core output for every tier:
 
 - `source-index.yaml`
 - `program-analysis-summary.yaml`
 - `routine-index.md`
-- `deep-read-plan.md`
-- `all-routine-coverage-ledger.md`
 - `routine-logic-details.md`
 - `routine-logic-details.yaml`
-- `message-inventory.md`
 - `message-inventory.yaml`
+
+Optional output when triggered:
+
+- `deep-read-plan.md`
+- `all-routine-coverage-ledger.md`
+- `message-inventory.md`
 - `file-io-inventory.md`
 - `file-io-inventory.yaml`
 - `field-mutation-matrix.md`
@@ -170,21 +189,26 @@ Intent: <standalone_exploratory | chain_ready>
 
 Token constraint:
 - Do not deep-read more than 5 routines in this turn.
-- First build deterministic indexes and compact sidecars.
-- If the source is large or free-format SQLRPGLE, still index routines,
-  file I/O, SQL, field mutations, messages, and external calls.
+- First build deterministic indexes and classify the program tier:
+  normal_program, complex_normal_program, or large_extreme_program.
+- Default to normal_program lightweight output when no density trigger appears.
+- If the source is SQLRPGLE/free-format, still index SQL statements, host
+  variables, SQLCODE/SQLSTATE, routines, file I/O, field mutations, messages,
+  and external calls. Generate SQL sidecar only when embedded SQL is present.
 
-Output required:
+Core output required:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- deep-read-plan.md
-- all-routine-coverage-ledger.md
 - routine-logic-details.yaml
 - message-inventory.yaml
-- file-io-inventory.yaml
-- field-mutation-matrix.yaml
-- sql-inventory.yaml
+
+Optional sidecars:
+- deep-read-plan.md and all-routine-coverage-ledger.md only when more than one
+  five-routine batch is needed, or tier is complex/large.
+- file-io-inventory.yaml only when file I/O is dense or state-changing.
+- field-mutation-matrix.yaml only when persisted field mutations are observed.
+- sql-inventory.yaml only when embedded SQL / SQLRPGLE evidence is observed.
 
 Do not produce a confident whole-program business narrative until coverage is
 visible.
@@ -203,21 +227,29 @@ Intent: <standalone_exploratory | chain_ready>
 
 Token 限制:
 - 本轮不要 deep-read 超过 5 个 routine。
-- 先建立确定性的 source index 和 compact sidecars。
-- 如果 source 很大，或者是 free-format SQLRPGLE，也要正确索引
-  routines、file I/O、SQL、field mutations、messages、external calls。
+- 先建立确定性的 source index，并判断 program tier:
+  normal_program、complex_normal_program、large_extreme_program。
+- 没有密集度触发时，默认走 normal_program 轻量产出。
+- 如果是 SQLRPGLE / free-format，也要正确索引 SQL statements、host
+  variables、SQLCODE / SQLSTATE、routines、file I/O、field mutations、
+  messages、external calls。有 embedded SQL 时才触发 SQL sidecar。
 
-必须产出:
+核心产出:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- deep-read-plan.md
-- all-routine-coverage-ledger.md
 - routine-logic-details.yaml
 - message-inventory.yaml
-- file-io-inventory.yaml
-- field-mutation-matrix.yaml
-- sql-inventory.yaml
+
+按需触发的 sidecars:
+- deep-read-plan.md / all-routine-coverage-ledger.md:
+  只有超过一轮 5 个 routine/window，或 tier 是 complex/large 时才需要。
+- file-io-inventory.yaml:
+  只有 file I/O 密集，或有 write/update/delete/commit/rollback 时才需要。
+- field-mutation-matrix.yaml:
+  只有读到 persisted field mutation 时才需要。
+- sql-inventory.yaml:
+  只有存在 embedded SQL / SQLRPGLE evidence 时才需要。
 
 在 coverage 可见之前，不要生成看起来很确定的 whole-program business
 narrative。
@@ -239,9 +271,9 @@ Use existing artifacts:
 - all-routine-coverage-ledger.md: <path>
 - routine-logic-details.yaml: <path>
 - message-inventory.yaml: <path>
-- file-io-inventory.yaml: <path>
-- field-mutation-matrix.yaml: <path>
-- sql-inventory.yaml: <path>
+- file-io-inventory.yaml: <path if triggered>
+- field-mutation-matrix.yaml: <path if triggered>
+- sql-inventory.yaml: <path if triggered>
 
 Token constraint:
 - Analyze at most 5 routine bodies in this turn.
@@ -273,9 +305,9 @@ Program: <PROGRAM_NAME>
 - all-routine-coverage-ledger.md: <路径>
 - routine-logic-details.yaml: <路径>
 - message-inventory.yaml: <路径>
-- file-io-inventory.yaml: <路径>
-- field-mutation-matrix.yaml: <路径>
-- sql-inventory.yaml: <路径>
+- file-io-inventory.yaml: <路径，如果已触发>
+- field-mutation-matrix.yaml: <路径，如果已触发>
+- sql-inventory.yaml: <路径，如果已触发>
 
 Token 限制:
 - 本轮最多分析 5 个 routine body。
@@ -517,9 +549,9 @@ Use compact artifacts first:
 - program-analysis-summary.yaml
 - routine-logic-details.yaml
 - message-inventory.yaml
-- file-io-inventory.yaml
-- field-mutation-matrix.yaml
-- sql-inventory.yaml
+- file-io-inventory.yaml, if triggered
+- field-mutation-matrix.yaml, if triggered
+- sql-inventory.yaml, if triggered
 
 Do not include long source excerpts.
 Do not treat indexed_only routines as confirmed logic.
@@ -546,9 +578,9 @@ Program: <PROGRAM_NAME>
 - program-analysis-summary.yaml
 - routine-logic-details.yaml
 - message-inventory.yaml
-- file-io-inventory.yaml
-- field-mutation-matrix.yaml
-- sql-inventory.yaml
+- file-io-inventory.yaml，如果已触发
+- field-mutation-matrix.yaml，如果已触发
+- sql-inventory.yaml，如果已触发
 
 不要包含大段 source 摘录。
 不要把 indexed_only routines 当成 confirmed logic。
@@ -580,7 +612,9 @@ Trigger model: <batch job | menu | subfile | F-key | DB trigger | scheduler | AP
 Entry point: <program/menu/job/API>
 Intent: <standalone_exploratory | chain_ready>
 
-Use compact program artifacts only:
+Use present compact program artifacts only. For normal programs, the core
+artifacts may be enough; optional sidecars are required only when triggered or
+when the flow claim needs them:
 <list program artifact directories>
 
 Token constraint:
@@ -610,7 +644,9 @@ Trigger model: <batch job | menu | subfile | F-key | DB trigger | scheduler | AP
 Entry point: <program/menu/job/API>
 Intent: <standalone_exploratory | chain_ready>
 
-只使用 compact program artifacts:
+只使用已经存在的 compact program artifacts。对于 normal program，核心
+artifacts 通常就够；optional sidecars 只有被触发，或 flow claim 需要时才
+必须提供:
 <program artifact directories 列表>
 
 Token 限制:
@@ -690,7 +726,9 @@ Scope statement: <scope>
 In-scope flows:
 <flow artifact paths>
 
-Use flow artifacts and compact program sidecars first.
+Use flow artifacts and present compact program artifacts first. Optional
+program sidecars are required only when triggered or when module evidence needs
+them.
 Do not concatenate full flow Markdown or full program-analysis Markdown.
 
 Token constraint:
@@ -723,7 +761,8 @@ Scope statement: <scope>
 In-scope flows:
 <flow artifact paths>
 
-优先使用 flow artifacts 和 compact program sidecars。
+优先使用 flow artifacts 和已经存在的 compact program artifacts。optional
+program sidecars 只有被触发，或 module evidence 需要时才必须提供。
 不要拼接完整 flow Markdown，也不要拼接完整 program-analysis Markdown。
 
 Token 限制:
@@ -828,7 +867,8 @@ program source.
 
 Run:
 
-1. Program sidecars for each involved program.
+1. Core program artifacts for each involved program, plus triggered sidecars
+   only when a flow claim needs them.
 2. Flow assembly.
 3. Flow repair batches only for missing critical routines.
 
@@ -862,7 +902,8 @@ Goal: make the process repeatable.
 
 Add team rules:
 
-- Every program run starts with source index and compact sidecars.
+- Every program run starts with source index and tier classification. Normal
+  programs stay lightweight; complex/large programs add triggered sidecars.
 - Every LLM turn has a five-routine maximum.
 - Every flow claim must cite compact program artifacts or a named SME waiver.
 - Every module claim must cite flow artifacts, compact program artifacts, or a
