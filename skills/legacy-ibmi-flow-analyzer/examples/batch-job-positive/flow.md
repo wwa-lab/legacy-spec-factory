@@ -73,12 +73,12 @@ NODE-04 (RECONSQL) ── SQLRPG: cross-checks GLPOSTPF against ledger via embed
 
 ## Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
+| Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-NIGHTLY-RECON-01 | RECONCL (OBJ-CARD-AUTH-101) | orchestrator (CL) | program-analysis-OBJ-CARD-AUTH-101.md | mode=standard; readiness=approved; routines=deep_read | none | Sets up env, manages overall job |
-| NODE-NIGHTLY-RECON-02 | RECON01R (OBJ-CARD-AUTH-102) | worker | program-analysis-OBJ-CARD-AUTH-102.md | mode=segmented; readiness=approved; routines=deep_read | none | Heaviest worker; per-row validation & GL prep |
-| NODE-NIGHTLY-RECON-03 | RECON02R (OBJ-CARD-AUTH-103) | reporter | program-analysis-OBJ-CARD-AUTH-103.md | mode=standard; readiness=approved; routines=deep_read | none | Spool generation only; no data mutation |
-| NODE-NIGHTLY-RECON-04 | RECONSQL (OBJ-CARD-AUTH-104) | data-access (SQLRPG) | program-analysis-OBJ-CARD-AUTH-104.md | mode=standard; readiness=approved; routines=deep_read | none | Final cross-check; embedded SQL over GL |
+| NODE-NIGHTLY-RECON-01 | RECONCL (OBJ-CARD-AUTH-101) | orchestrator (CL) | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CARD-AUTH-101.md | mode=standard; readiness=approved; routines=deep_read | none | Sets up env, manages overall job |
+| NODE-NIGHTLY-RECON-02 | RECON01R (OBJ-CARD-AUTH-102) | worker | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CARD-AUTH-102.md | mode=segmented; readiness=approved; routines=deep_read | none | Heaviest worker; per-row validation & GL prep |
+| NODE-NIGHTLY-RECON-03 | RECON02R (OBJ-CARD-AUTH-103) | reporter | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CARD-AUTH-103.md | mode=standard; readiness=approved; routines=deep_read | none | Spool generation only; no data mutation |
+| NODE-NIGHTLY-RECON-04 | RECONSQL (OBJ-CARD-AUTH-104) | data-access (SQLRPG) | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=present; human=program-analysis-OBJ-CARD-AUTH-104.md | mode=standard; readiness=approved; routines=deep_read | none | Final cross-check; embedded SQL over GL |
 
 **Missing program analyses:** none — all four approved.
 

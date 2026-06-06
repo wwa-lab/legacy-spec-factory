@@ -38,6 +38,16 @@ Use this section to show whether the module can be replayed end-to-end from
 business trigger through program chain, field movement, persistence, exception
 handling, and final outcome.
 
+## Flow Artifact Set
+
+Do not concatenate full flow or program Markdown to satisfy this table. Use
+approved flow rows and compact program artifacts first; open human-readable
+Markdown only for targeted clarification.
+
+| Flow ID | Flow Analysis | Program Summary | Source Index | Routine Logic | Message Inventory | File I/O | Mutation Matrix | SQL Inventory | Gap / Waiver |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| FLOW-[SLUG]-001 | `flow-[SLUG].md` | `program-analysis-summary.yaml` present / missing | `source-index.yaml` present / missing | `routine-logic-details.yaml` present / missing | `message-inventory.yaml` present / missing | `file-io-inventory.yaml` present / missing | `field-mutation-matrix.yaml` present / missing | `sql-inventory.yaml` present / not_applicable / missing | none / TBD-[SLUG]-[NNN] |
+
 ## Module Persistence & Critical Field Summary
 | Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |
 | --- | --- | --- | --- | --- |
@@ -81,8 +91,11 @@ content; partial or missing required areas must carry a `TBD-*`.
 - [ ] Program Flow is at least `approved_with_non_blocking_tbd`
 - [ ] Data Flow is at least `approved_with_non_blocking_tbd`
 - [ ] For `code_backed` mode, `01_inventory/object-map.md`, in-scope
-      `program-analysis.md`, and in-scope `flow-*.md` artifacts are present
-      and approved
+      `flow-*.md` artifacts and compact program artifacts are present and
+      approved: `program-analysis-summary.yaml`, `source-index.yaml`,
+      `routine-logic-details.yaml`, `message-inventory.yaml`,
+      `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+      `sql-inventory.yaml`
 - [ ] For `context_only` mode, missing object-map / program / flow artifacts
       are carried as `TBD-*` blockers and the module is not approved for a
       standard BRD/spec path

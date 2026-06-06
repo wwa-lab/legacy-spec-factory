@@ -90,7 +90,7 @@ The helper writes:
 
 | Artifact | Purpose |
 | --- | --- |
-| `source-index.yaml` | Machine-readable structure inventory: routines, calls, declared files, file operations, messages, message inventory summary, recommended deep-read windows, and mode selection. |
+| `source-index.yaml` | Machine-readable structure inventory: program profile, free-format statements, declarations, assignments, routines, calls, declared files, file operations, SQL, messages, recommended deep-read windows, and mode selection. |
 | `program-analysis-summary.yaml` | Compact machine-readable program summary for flow/module analyzers; prefer this over concatenating large Markdown analyses. |
 | `routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
 | `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
@@ -99,6 +99,12 @@ The helper writes:
 | `routine-logic-details.yaml` | Machine-readable routine logic inventory for downstream flow/module/spec consumers and later semantic enrichment. |
 | `message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
 | `message-inventory.yaml` | Machine-readable detailed message inventory for downstream flow/module/spec consumers and reference-pack enrichment. |
+| `file-io-inventory.md` | Reviewer-readable detailed sidecar for every observed native file operation, screen/report boundary, and transaction boundary. |
+| `file-io-inventory.yaml` | Machine-readable file I/O inventory for downstream flow/module/spec consumers. |
+| `field-mutation-matrix.md` | Reviewer-readable mutation sidecar for native WRITE/UPDATE/DELETE and embedded SQL DML. |
+| `field-mutation-matrix.yaml` | Machine-readable field mutation matrix for downstream flow/module/spec consumers. |
+| `sql-inventory.md` | Reviewer-readable embedded SQL sidecar for SQLRPGLE/free-format statements, host variables, table/view targets, and status-handling seeds. |
+| `sql-inventory.yaml` | Machine-readable embedded SQL inventory for downstream flow/module/spec consumers. |
 
 These files are allowed intermediate artifacts. They do not replace
 `program-analysis.md`, and they must not be treated as business conclusions.
@@ -111,9 +117,14 @@ Capture:
 - mainline range
 - `BEGSR` / `ENDSR` subroutines
 - procedures and prototype definitions
+- SQLRPGLE / free-format declarations: `DCL-PI`, `DCL-PR`, `DCL-DS`,
+  `DCL-S`, and `DCL-PROC`
+- free-format statement spans, procedure calls, and assignments
 - `EXSR`, `CALL`, `CALLP`, `CALLPRC`, `PERFORM`, and CL `CALLSUBR` sites
 - file operations: `CHAIN`, `SETLL`, `READE`, `READ`, `WRITE`, `UPDATE`,
   `DELETE`
+- embedded SQL / SQLRPGLE: `EXEC SQL` statements, cursor statements, DML,
+  host variables, table/view targets, `SQLCODE`, and `SQLSTATE`
 - assignments immediately before `WRITE`, `UPDATE`, `DELETE`, or SQL DML so
   persisted field mutations can be reconstructed
 - display/report operations: `EXFMT`, `WRITE` to DSPF/PRTF, printer overflow
@@ -141,11 +152,21 @@ lines, split human-authored semantic detail into
 routines, validation/message routines, external boundaries, and indexed
 utilities.
 
+For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
+Logic` inside `program-analysis.md` as SME-readable summaries. Store complete
+operation detail in `file-io-inventory.md` / `file-io-inventory.yaml`,
+persisted native and SQL mutations in `field-mutation-matrix.md` /
+`field-mutation-matrix.yaml`, and embedded SQL detail in `sql-inventory.md` /
+`sql-inventory.yaml`. Link main analysis rows to stable `FIO-*`, `MUT-*`, and
+`SQL-*` detail IDs instead of expanding every operation or host variable inline.
+
 Downstream flow/module analyzers must prefer `program-analysis-summary.yaml`,
 `source-index.yaml`, `routine-logic-details.yaml`, and
-`message-inventory.yaml` when aggregating multiple programs. They should not
-concatenate multiple full `program-analysis.md` files; human-readable Markdown
-is for targeted clarification only.
+`message-inventory.yaml`, `file-io-inventory.yaml`,
+`field-mutation-matrix.yaml`, and `sql-inventory.yaml` when aggregating
+multiple programs. They should not concatenate multiple full
+`program-analysis.md` files; human-readable Markdown is for targeted
+clarification only.
 
 ## Routine Card
 
@@ -216,4 +237,6 @@ chunk independently. Fixed chunks destroy call relationships, state transitions,
 and cross-routine data flow.
 
 If chunking is required, chunk by semantic unit: mainline segment, routine,
-procedure, copybook, object cluster, or call/data-flow path.
+procedure, copybook, object cluster, SQL statement/cursor scope, or
+call/data-flow path. A multi-line free-format calculation or SQL statement must
+stay in one semantic window.

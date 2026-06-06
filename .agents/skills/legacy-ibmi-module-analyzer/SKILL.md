@@ -40,6 +40,9 @@ and Data Flow.
 This skill is the **last platform-specific layer** before `legacy-brd-writer`
 and the BRD Review Gate. It does not re-analyze flows or programs; it
 aggregates and validates what flow-analyzer and program-analyzer produced.
+Do not concatenate full flow or program Markdown to assemble a module. Use
+approved flow rows and compact program artifacts first, then open
+human-readable Markdown only for targeted clarification.
 For the standard BRD/spec path, those code-backed inputs are required: a
 module-first context package can seed the synthesis, but it cannot by itself
 make Program Flow, Data Flow, or the downstream BRD `confirmed_from_code`.
@@ -82,21 +85,22 @@ Accept:
 - **Approved flow analyses** for every flow in scope
   (`flow-<FLOW-SLUG>.md`)
   - For code-backed runs, each approved flow should be
-    `legacy-ibmi-flow-analyzer` v0.2.2 or later, or otherwise expose the
+    `legacy-ibmi-flow-analyzer` v0.2.3 or later, or otherwise expose the
     equivalent `Flow Replay Path`, `Cross-Program Field Lineage`,
-    `Flow Persistence Matrix` with File I/O Purpose, edge Evidence Source /
-    Resolution, and `Exception Propagation Chain` with Validation Logic /
-    routine-local exception closure carry-forward sections.
+    `Flow Persistence Matrix`, node artifact availability for compact
+    program sidecars, edge Evidence Source / Resolution, and `Exception
+    Propagation Chain` with Validation Logic / routine-local exception closure
+    carry-forward sections.
     Older flow artifacts require refresh or a named SME waiver before they
     can support module-level replay, lineage, persistence, or exception
     claims.
 - **Approved program analyses** for every program referenced by those flows
-  - For code-backed runs, prefer program-analyzer v0.2.7 or later where
-    Routine Logic Details include conditioned calculation blocks,
-    routine-local field lineage / carriers, and routine-local exception
-    closure, with front-loaded Calculation Logic, Validation Logic, Exception
-    Handling, and Message Inventory. Use these rows to preserve field
-    calculations, handoffs, skipped work, rollback, message meanings, and
+  - For code-backed runs, prefer program-analyzer v0.2.8 or later compact
+    artifacts: `program-analysis-summary.yaml`, `source-index.yaml`,
+    `routine-logic-details.yaml`, `message-inventory.yaml`,
+    `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+    `sql-inventory.yaml`. Use these sidecars to preserve field calculations,
+    handoffs, skipped work, rollback, message meanings, SQLRPGLE evidence, and
     visible error outcomes when flow evidence references the underlying
     program-level detail.
 - **Approved inventory** with module scope confirmed
@@ -134,7 +138,7 @@ Stop and require clarification if:
 - The requested output is a standard code-backed BRD/spec input but in-scope
   flow analyses do not expose replay, field-lineage, persistence, edge
   Evidence Source / Resolution, and exception-chain coverage, and no named
-  SME waiver exists → route back to `legacy-ibmi-flow-analyzer` for v0.2.2
+  SME waiver exists → route back to `legacy-ibmi-flow-analyzer` for v0.2.3
   refresh
 - A trigger is `required: true` but the corresponding artifact is missing
   → route to the triggered skill (`legacy-ibmi-screen-report-analyzer`
@@ -206,9 +210,12 @@ field-level rules. The summary below is normative for this skill.
 - **Required for standard code-backed runs**: module definition (slug +
   business name + scope statement + list of in-scope flows); approved
   `01_inventory/inventory.yaml` plus `01_inventory/object-map.md`; approved
-  `program-analysis-<OBJ-ID>.md` for every program referenced by confirmed
-  flows; approved `flow-<FLOW-SLUG>.md` for every in-scope flow; BAU notes
-  from SME covering operational rhythm and manual procedures.
+  `flow-<FLOW-SLUG>.md` for every in-scope flow; compact program artifacts
+  for every program referenced by confirmed flows (`program-analysis-summary.yaml`,
+  `source-index.yaml`, `routine-logic-details.yaml`,
+  `message-inventory.yaml`, `file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`, `sql-inventory.yaml`); BAU notes from SME
+  covering operational rhythm and manual procedures.
 - **Required for explicit context-only drafts**: ready
   `00_context_packages/<MODULE-SLUG>/context-index.yaml` from
   `legacy-module-context-intake`; named owner risk acceptance that
@@ -230,16 +237,17 @@ field-level rules. The summary below is normative for this skill.
     data lineage, and known TBD ledgers are supplied.
   - `9-10 strong`: SME edge cases, exception examples, sample transactions,
     regulatory context, modernization decision context, and flow-analyzer
-    v0.2.1 replay / field-lineage / persistence / edge-resolution /
-    exception-chain sections
+    v0.2.3 replay / field-lineage / persistence / edge-resolution /
+    exception-chain sections plus compact program sidecars
     are also supplied.
   - Missing architecture diagrams or regulatory references does not block the
     module analysis unless the module scope specifically depends on them.
 - **Readiness checks**: for code-backed runs, every in-scope flow is
   `approved` or `approved_with_non_blocking_tbd`, every referenced program
-  analysis is approved, inventory/object map is approved, and each in-scope
-  flow exposes replay, lineage, persistence, and exception-chain coverage
-  (or a named waiver); for context-only drafts, the context package status is
+  analysis and compact sidecar set is approved/present, inventory/object map
+  is approved, and each in-scope flow exposes replay, lineage, persistence,
+  node artifact availability, and exception-chain coverage (or a named waiver);
+  for context-only drafts, the context package status is
   `ready_for_module_analysis` / `ready_with_warnings` and the output is
   explicitly non-approved; SME has confirmed the module's business name and
   boundary.
@@ -271,7 +279,8 @@ field-level rules. The summary below is normative for this skill.
   → `TBD: pending_sme_judgment`; incomplete data lifecycle →
   `TBD: pending_sme` (archive/purge ownership); missing replay, field-lineage,
   persistence, or exception-chain coverage in older flow artifacts →
-  `TBD: pending_source` unless waived by named SME.
+  `TBD: pending_source` unless waived by named SME; missing compact program
+  sidecars → `TBD: pending_source` routed to `legacy-ibmi-program-analyzer`.
 
 ### Output
 
@@ -297,7 +306,7 @@ field-level rules. The summary below is normative for this skill.
 - **Handoff status**: each view independently `draft` → `in_review` →
   `approved` or `approved_with_non_blocking_tbd`. For standard BRD/spec work,
   module approval requires the Code-Backed Analysis Gate: approved
-  inventory/object map, program analyses, and flow analyses. A context-only
+  inventory/object map, flow analyses, and compact program artifacts. A context-only
   module may be reviewed as draft material, but it must remain `draft` or
   `needs_sme_review` for BRD approval until the missing code-backed artifacts
   are supplied.
@@ -358,17 +367,23 @@ to the orchestrator.
    - List in-scope flows; check every one has an approved analysis.
    - For code-backed runs, confirm each in-scope flow exposes `Flow Replay
      Path`, `Cross-Program Field Lineage`, `Flow Persistence Matrix`, edge
-     Evidence Source / Resolution, and `Exception Propagation Chain`, or record
-     a named SME waiver and `TBD-*`.
+     Evidence Source / Resolution, node artifact availability for
+     `program-analysis-summary.yaml`, `source-index.yaml`,
+     `routine-logic-details.yaml`, `message-inventory.yaml`,
+     `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+     `sql-inventory.yaml`, and `Exception Propagation Chain`, or record a
+     named SME waiver and `TBD-*`.
    - Confirm no in-scope flow actually belongs to a different module.
    - Assign `MODULE-<SLUG>-001`.
 
 2. **Aggregate Programs, Objects, and Context**
    - List every program touched by any flow in scope.
-   - List every object and key field touched from each program's Object
-     Dependencies, Key File & Field Logic, File I/O Purpose, and Field Mutation
-     Matrix. Preserve source identifiers plus business meanings for critical
-     fields.
+   - List every object and key field touched from each flow's node artifact set
+     and each program's compact sidecars: `program-analysis-summary.yaml`,
+     `source-index.yaml`, `routine-logic-details.yaml`,
+     `message-inventory.yaml`, `file-io-inventory.yaml`,
+     `field-mutation-matrix.yaml`, and `sql-inventory.yaml`. Preserve source
+     identifiers plus business meanings for critical fields.
    - Cross-check against `01_inventory/inventory.yaml`; create
      `pending_source` TBDs for gaps.
    - If business operation, channel, interface, SLA, security, or BAU context
@@ -381,7 +396,9 @@ to the orchestrator.
    - Use the Program Flow section in `references/output-contract.md` and the
      aggregation rules in `references/synthesis-rules.md`.
    - **Primary source: all approved `flow-<FLOW-SLUG>.md` documents and their
-     approved child program analyses.**
+     approved child compact program artifacts.** Do not concatenate full
+     program analyses or flow analyses; use full Markdown only for targeted
+     clarification when compact rows are insufficient.
    - Aggregate per-flow summaries; identify cross-flow dependencies and shared
      sub-programs.
    - Add a Replay Coverage Summary that lists each in-scope flow's `REPLAY-*`
@@ -399,9 +416,11 @@ to the orchestrator.
      aggregation rules in `references/synthesis-rules.md`.
    - **Primary source: every flow's Cross-Program Data Flow,
      Cross-Program Field Lineage, Flow Persistence Matrix, and Exception
-     Propagation Chain sections, backed by every program's Data Touch Map,
-     Object Dependencies, File I/O Purpose, Field Mutation Matrix, Key File &
-     Field Logic, and Validation Logic.**
+     Propagation Chain sections, backed by every program's
+     `program-analysis-summary.yaml`, `source-index.yaml`,
+     `routine-logic-details.yaml`, `message-inventory.yaml`,
+     `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+     `sql-inventory.yaml`.**
    - Compute data lifecycle per object (created / updated / read /
      archived / purged) by walking flows.
    - Compute coupling score (number of flows touching each object).
@@ -543,6 +562,9 @@ code-derived flow / program analyses).
 - **Module-level replay paths, field lineage, persistence lifecycles, or
   exception recovery** not present in approved flow/program artifacts or named
   SME notes
+- **File I/O, mutation, or SQL behavior** not present in approved
+  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, `sql-inventory.yaml`,
+  flow `PERSIST-*` / `LINEAGE-*` / `EXCHAIN-*` rows, or named SME notes
 - **Business rules** — only seeds (questions); the BRD writer reviews them in
   business language, and the spec-writer later resolves formal rule promotion
   with SME approval
@@ -600,6 +622,18 @@ Canonical source: `skills/legacy-ibmi-module-analyzer/SKILL.md`
 Synced via `scripts/sync-skills.sh` to all four runtime adapters.
 
 ## Version History
+
+- v0.2.5 (2026-06-06): Compact flow/program sidecar aggregation alignment
+  - Required module analysis to consume flow-analyzer v0.2.3 node artifact
+    availability and compact child program artifacts before full Markdown
+  - Added module-level Flow Artifact Set tracking for
+    `program-analysis-summary.yaml`, `source-index.yaml`,
+    `routine-logic-details.yaml`, `message-inventory.yaml`,
+    `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+    `sql-inventory.yaml`
+  - Routed missing compact program sidecars back to
+    `legacy-ibmi-program-analyzer` instead of allowing module synthesis to
+    infer from concatenated documents
 
 - v0.2.4 (2026-06-04): Removed default Operation Flow and System Flow outputs.
   Module analysis now produces `module-overview.md`, `03-program-flow.md`,

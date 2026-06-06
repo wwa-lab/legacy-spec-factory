@@ -78,6 +78,12 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("temporary consistency checks", text)
             self.assertIn("YAML", text)
             self.assertIn("readability checks", text)
+            self.assertIn("file-io-inventory.md", text)
+            self.assertIn("file-io-inventory.yaml", text)
+            self.assertIn("field-mutation-matrix.md", text)
+            self.assertIn("field-mutation-matrix.yaml", text)
+            self.assertIn("sql-inventory.md", text)
+            self.assertIn("sql-inventory.yaml", text)
 
     def test_analyze_source_extracts_structure_without_business_summary(self) -> None:
         indexer = load_indexer()
@@ -245,6 +251,82 @@ class RpgSourceIndexerTests(unittest.TestCase):
         self.assertEqual(by_message["UCC1852"]["detail_ref"], "MSG-CU106-001")
         self.assertEqual(by_message["CPF9898"]["detail_ref"], "MSG-CU106-002")
 
+    def test_sqlrpgle_free_format_profile_sql_and_assignment_indexing(self) -> None:
+        indexer = load_indexer()
+
+        source_index = indexer.analyze_source(
+            [
+                "**free",
+                "ctl-opt dftactgrp(*no);",
+                "dcl-pi *n;",
+                "  request likeds(RequestDs) const;",
+                "  response likeds(ResponseDs);",
+                "end-pi;",
+                "dcl-proc HandleRequest;",
+                "  exec sql",
+                "    select status, balance",
+                "      into :CustStatus, :Balance",
+                "      from CUSTMAST",
+                "      where CUSTNO = :Request.CustNo;",
+                "  if SQLCODE <> 0;",
+                "     Response.Code = 'NF';",
+                "     Response.Message = 'Customer not found';",
+                "     return;",
+                "  endif;",
+                "  ApprovedAmt = Balance - Request.Amount;",
+                "  exec sql",
+                "     update CUSTMAST",
+                "        set LAST_AUTH_AMT = :ApprovedAmt",
+                "      where CUSTNO = :Request.CustNo;",
+                "  if SQLSTATE <> '00000';",
+                "     Response.Code = 'ER';",
+                "  else;",
+                "     BuildResponse(Request: Response);",
+                "  endif;",
+                "end-proc;",
+            ],
+            program_name="APIORD",
+            source_path=Path("fixtures/APIORD.SQLRPGLE"),
+        )
+
+        self.assertEqual(source_index["program_profile"]["program_type"], "SQLRPGLE")
+        self.assertEqual(source_index["program_profile"]["syntax_mode"], "free_format")
+        self.assertIn(
+            source_index["program_profile"]["interface_profile"],
+            {"api_remote", "callable_program"},
+        )
+        self.assertEqual(source_index["counts"]["sql_statements"], 2)
+        self.assertGreaterEqual(source_index["counts"]["free_format_assignments"], 3)
+
+        sql_details = source_index["sql_inventory"]["details"]
+        self.assertEqual({detail["statement_type"] for detail in sql_details}, {"SELECT", "UPDATE"})
+        self.assertIn("CUSTMAST", {detail["table_or_view"] for detail in sql_details})
+        host_variables = {
+            host_var
+            for detail in sql_details
+            for host_var in detail["host_variables"]
+        }
+        self.assertIn(":CUSTSTATUS", host_variables)
+        self.assertIn(":APPROVEDAMT", host_variables)
+
+        assignment_targets = {assignment["target"] for assignment in source_index["assignments"]}
+        self.assertIn("RESPONSE.CODE", assignment_targets)
+        self.assertIn("APPROVEDAMT", assignment_targets)
+
+        by_message = {
+            item["message"]: item
+            for item in source_index["message_inventory"]["summary"]
+        }
+        self.assertIn("SQLCODE", by_message)
+        self.assertIn("SQLSTATE", by_message)
+
+        routine = next(r for r in source_index["routines"] if r["name"] == "HANDLEREQUEST")
+        self.assertIn("sql data access", routine["deep_read_reasons"])
+        self.assertIn("outcome/status carrier assignment", routine["deep_read_reasons"])
+
+        mutation_summary = source_index["field_mutation_inventory"]["summary"]
+        self.assertIn("CUSTMAST", {item["object"] for item in mutation_summary})
+
     def test_cli_writes_large_program_artifacts(self) -> None:
         large_source = SAMPLE_RPG + "\n".join("* filler" for _ in range(10000))
 
@@ -281,6 +363,12 @@ class RpgSourceIndexerTests(unittest.TestCase):
                 "routine-logic-details.yaml",
                 "message-inventory.md",
                 "message-inventory.yaml",
+                "file-io-inventory.md",
+                "file-io-inventory.yaml",
+                "field-mutation-matrix.md",
+                "field-mutation-matrix.yaml",
+                "sql-inventory.md",
+                "sql-inventory.yaml",
             ):
                 self.assertTrue((output_dir / name).exists(), name)
 
@@ -312,6 +400,17 @@ class RpgSourceIndexerTests(unittest.TestCase):
             message_inventory_yaml = (output_dir / "message-inventory.yaml").read_text(encoding="utf-8")
             self.assertIn("message_inventory:", message_inventory_yaml)
             self.assertIn("message: UCC1852", message_inventory_yaml)
+
+            file_io_inventory_yaml = (output_dir / "file-io-inventory.yaml").read_text(encoding="utf-8")
+            self.assertIn("file_io_inventory:", file_io_inventory_yaml)
+            self.assertIn("object: CUSTPF", file_io_inventory_yaml)
+
+            mutation_yaml = (output_dir / "field-mutation-matrix.yaml").read_text(encoding="utf-8")
+            self.assertIn("field_mutation_inventory:", mutation_yaml)
+            self.assertIn("operation: UPDATE", mutation_yaml)
+
+            sql_inventory_yaml = (output_dir / "sql-inventory.yaml").read_text(encoding="utf-8")
+            self.assertIn("sql_inventory:", sql_inventory_yaml)
 
 
 if __name__ == "__main__":

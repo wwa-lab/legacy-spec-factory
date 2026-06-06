@@ -35,6 +35,12 @@ Each program analysis follows this markdown structure:
 ## Review Checklist
 ```
 
+The review layout is intentionally SME-first: `Calculation Logic`,
+`Validation Logic`, `Exception Handling`, and `Message Inventory` stay
+front-loaded even for large programs. Dense routine, message, file I/O,
+mutation, and embedded SQL evidence must be summarized in the main document and
+linked to sidecars rather than expanded until the document becomes unreadable.
+
 ---
 
 ## Calculation Logic Section
@@ -297,10 +303,13 @@ complete understanding. Align terminology with
   Use its `source-index.yaml`, `program-analysis-summary.yaml`,
   `routine-index.md`, `all-routine-coverage-ledger.md`,
   `deep-read-plan.md`, `routine-logic-details.md`,
-  `routine-logic-details.yaml`, `message-inventory.md`, and
-  `message-inventory.yaml` as seeds for this section, Routine Cards,
-  Deep Read Windows, routine detail review, message review, and downstream
-  flow/module aggregation.
+  `routine-logic-details.yaml`, `message-inventory.md`,
+  `message-inventory.yaml`, `file-io-inventory.md`,
+  `file-io-inventory.yaml`, `field-mutation-matrix.md`,
+  `field-mutation-matrix.yaml`, `sql-inventory.md`, and
+  `sql-inventory.yaml` as seeds for this section, Routine Cards,
+  Deep Read Windows, routine detail review, message review, file I/O / SQL
+  review, and downstream flow/module aggregation.
 - Select one mode: `standard`, `segmented`, or `large_program`.
 - Use `segmented` or `large_program` when the source cannot safely fit
   with evidence windows, or when call/data density requires
@@ -1238,6 +1247,14 @@ Use one or more of these role labels:
     literals, source fields, expressions, copied aliases, and calculated values
   - Pre-mutation checks (`%FOUND`, indicators, validation flags) and
     post-mutation checks (`%ERROR`, `SQLCODE`, `SQLSTATE`, return codes)
+- For file-I/O-dense or SQLRPGLE programs, keep this main section as a compact
+  SME-readable summary. Full observed native I/O operations belong in
+  `file-io-inventory.md` / `file-io-inventory.yaml`; persisted native and SQL
+  mutations belong in `field-mutation-matrix.md` /
+  `field-mutation-matrix.yaml`; embedded SQL statement details belong in
+  `sql-inventory.md` / `sql-inventory.yaml`. Main rows should link to stable
+  `FIO-*`, `MUT-*`, or `SQL-*` detail IDs when detail would otherwise overflow
+  the program analysis.
 - Reference file definitions from inventory (EV-*) and DDS / SQL schema where available
 - Tag evidence as `confirmed_from_code` or `needs_sme_review`
 - Create TBD for missing DDS, unclear key fields, unknown record formats,
@@ -1462,7 +1479,7 @@ Before approval, SME must validate:
 - [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes file access behavior
 - [ ] Reference-pack lookups, if used, cite pack ID/version/file/row and do not override source-backed behavior
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence

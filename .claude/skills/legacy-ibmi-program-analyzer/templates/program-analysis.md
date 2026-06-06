@@ -197,6 +197,16 @@ which claims are fully supported versus indexed-only.
 | --- | --- | --- | --- | --- | --- |
 | [N] | [N] | [N] | [N] | [N] | [N] |
 
+### Sidecar Indexes
+
+| Sidecar | Use In Review | Status |
+| --- | --- | --- |
+| `message-inventory.md` / `message-inventory.yaml` | Message/code/literal occurrence detail behind the front-loaded Message Inventory | present / not needed / pending |
+| `routine-logic-details.md` / `routine-logic-details.yaml` | Routine detail behind Routine Logic Details summary rows | present / not needed / pending |
+| `file-io-inventory.md` / `file-io-inventory.yaml` | Dense native file operation evidence behind File I/O summary rows | present / not needed / pending |
+| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Native and SQL persisted mutation detail behind Calculation Logic and File I/O rows | present / not needed / pending |
+| `sql-inventory.md` / `sql-inventory.yaml` | SQLRPGLE/free-format embedded SQL statements, host variables, and status checks | present / not needed / pending |
+
 ## Program Call Map
 
 Purpose: RDi-style structural view of the program. This is a call map, not
@@ -497,17 +507,22 @@ evidence-backed sections above.
 
 ## File I/O
 
+For file-I/O-dense or SQLRPGLE programs, keep this section as a compact
+SME-readable summary. Link to `file-io-inventory.md`,
+`field-mutation-matrix.md`, and `sql-inventory.md` detail IDs instead of
+expanding every operation, assignment, or host variable inline.
+
 ### File Access Summary
 
-| File | Record Format | Type | Operations | Key Fields | Purpose | Read / Mutation Conditions | Indicators / Status Checks | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[FILE_NAME]` | `[FORMAT]` | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | `[KEY_FIELD]` (business meaning; `standard_field_id` if known)<br>`[KEY_FIELD]` (business meaning) | Validate / read / detect / write / send / log [specific file access behavior]. | [IF/loop/SELECT context] | [*INxx / %FOUND / %ERROR / SQLCODE / SQLSTATE] | [EV-* or reference pack row for meaning] |
+| File | Record Format | Type | Operations | Key Fields | Purpose | Read / Mutation Conditions | Indicators / Status Checks | Detail | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `[FILE_NAME]` | `[FORMAT]` | PF / LF / DSPF / PRTF | SETLL, READE, CHAIN, WRITE, UPDATE, DELETE | `[KEY_FIELD]` (business meaning; `standard_field_id` if known)<br>`[KEY_FIELD]` (business meaning) | Validate / read / detect / write / send / log [specific file access behavior]. | [IF/loop/SELECT context] | [*INxx / %FOUND / %ERROR / SQLCODE / SQLSTATE] | FIO-[PROGRAM]-NNN / SQL-[PROGRAM]-NNN | [EV-* or reference pack row for meaning] |
 
 ### Field Mutation Matrix
 
-| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `[FILE_NAME]` | WRITE / UPDATE / DELETE / EXEC SQL | `[SRxxx]` lines [XX-YY] | `[KEY_FIELD]` (business meaning; `standard_field_id` if known) and condition | `[FIELD_NAME]` (business meaning; `standard_field_id` if known) or record delete | literal / source field / calculation / moved value | [EV-* assignment lines] | [handler, message ID, return code, or unhandled] |
+| File | Operation | Routine / Lines | Access Key / Record Condition | Field Mutated / Persisted | Source Value / Expression | Assignment Evidence | Error / Rollback Handling | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `[FILE_NAME]` | WRITE / UPDATE / DELETE / EXEC SQL | `[SRxxx]` lines [XX-YY] | `[KEY_FIELD]` (business meaning; `standard_field_id` if known) and condition | `[FIELD_NAME]` (business meaning; `standard_field_id` if known) or record delete | literal / source field / calculation / moved value | [EV-* assignment lines] | [handler, message ID, return code, or unhandled] | MUT-[PROGRAM]-NNN |
 
 **Operation details:**
 
@@ -627,7 +642,7 @@ Before approval, SME must validate:
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes why each file is accessed
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence

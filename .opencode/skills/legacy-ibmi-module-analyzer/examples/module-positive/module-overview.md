@@ -48,6 +48,14 @@
 | FLOW-MANUAL-AUTH-001 | complete (`REPLAY-MANUAL-AUTH-001`) | complete (no unresolved dynamic edges) | complete (`LINEAGE-MANUAL-AUTH-001`) | complete (`PERSIST-MANUAL-AUTH-001`) | complete (`EXCHAIN-MANUAL-AUTH-001`) | none |
 | FLOW-NIGHTLY-RECON-001 | complete (`REPLAY-NIGHTLY-RECON-001`) | complete (scheduler + CALL edges resolved) | complete (`LINEAGE-NIGHTLY-RECON-001`) | complete (`PERSIST-NIGHTLY-RECON-001`) | partial (`EXCHAIN-NIGHTLY-RECON-001`, threshold owner TBD) | TBD-CARD-AUTH-002 |
 
+## Flow Artifact Set
+
+| Flow ID | Flow Analysis | Program Summary | Source Index | Routine Logic | Message Inventory | File I/O | Mutation Matrix | SQL Inventory | Gap / Waiver |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| FLOW-ONUS-AUTH-001 | `flow-ONUS-AUTH.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present | `field-mutation-matrix.yaml` present | `sql-inventory.yaml` present / not_applicable by node | none |
+| FLOW-MANUAL-AUTH-001 | `flow-MANUAL-AUTH.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present | `field-mutation-matrix.yaml` present | `sql-inventory.yaml` not_applicable | none |
+| FLOW-NIGHTLY-RECON-001 | `flow-NIGHTLY-RECON.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present | `field-mutation-matrix.yaml` present | `sql-inventory.yaml` present for RECONSQL | none |
+
 ## Module Persistence & Critical Field Summary
 
 | Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |

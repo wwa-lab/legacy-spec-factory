@@ -24,6 +24,9 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
             self.assertIn("source-index.yaml", text)
             self.assertIn("routine-logic-details.yaml", text)
             self.assertIn("message-inventory.yaml", text)
+            self.assertIn("file-io-inventory.yaml", text)
+            self.assertIn("field-mutation-matrix.yaml", text)
+            self.assertIn("sql-inventory.yaml", text)
 
         self.assertIn("Do not concatenate", skill_text)
         self.assertIn("Do not concatenate", template_text)
@@ -38,6 +41,9 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
         self.assertIn("program-analysis-summary.yaml", large_program_text)
         self.assertIn("routine-logic-details.yaml", large_program_text)
         self.assertIn("message-inventory.yaml", large_program_text)
+        self.assertIn("file-io-inventory.yaml", large_program_text)
+        self.assertIn("field-mutation-matrix.yaml", large_program_text)
+        self.assertIn("sql-inventory.yaml", large_program_text)
         self.assertIn("should not", large_program_text)
         self.assertIn("concatenate", large_program_text)
 

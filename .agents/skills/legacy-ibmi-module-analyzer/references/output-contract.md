@@ -10,6 +10,14 @@ stronger SME or architecture evidence than code-backed runs provide. When such
 context is available, preserve it in `module-overview.md` and the BRD crosswalk
 with source eligibility.
 
+Do not concatenate full flow or program Markdown to build module views. Use
+approved flow rows and compact child program artifacts first:
+`program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`,
+`file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+`sql-inventory.yaml`. Human-readable Markdown is for targeted clarification
+only.
+
 ## File Structure
 
 ```text
@@ -59,6 +67,11 @@ Flow, and Data Flow.]
 | --- | --- | --- | --- | --- | --- | --- |
 | FLOW-AUTH-001 | complete (`REPLAY-AUTH-001`) | complete | partial (`LINEAGE-AUTH-001`) | complete (`PERSIST-AUTH-001`) | complete (`EXCHAIN-AUTH-001`) | TBD-* or none |
 
+## Flow Artifact Set
+| Flow ID | Flow Analysis | Program Summary | Source Index | Routine Logic | Message Inventory | File I/O | Mutation Matrix | SQL Inventory | Gap / Waiver |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| FLOW-AUTH-001 | `flow-FLOW-AUTH-001.md` | `program-analysis-summary.yaml` present | `source-index.yaml` present | `routine-logic-details.yaml` present | `message-inventory.yaml` present | `file-io-inventory.yaml` present | `field-mutation-matrix.yaml` present | `sql-inventory.yaml` present / not_applicable | none / TBD-* |
+
 ## Module Persistence & Critical Field Summary
 | Data / Field / Outcome | Source Flows | Persistence / Output With Purpose | Downstream Consumer | Risk / TBD |
 | --- | --- | --- | --- | --- |
@@ -104,8 +117,11 @@ Flow, and Data Flow.]
 - [ ] Program Flow is at least `approved_with_non_blocking_tbd`
 - [ ] Data Flow is at least `approved_with_non_blocking_tbd`
 - [ ] For `code_backed` mode, `01_inventory/object-map.md`, in-scope
-      `program-analysis.md`, and in-scope `flow-*.md` artifacts are present
-      and approved
+      `flow-*.md` artifacts and compact program artifacts are present and
+      approved: `program-analysis-summary.yaml`, `source-index.yaml`,
+      `routine-logic-details.yaml`, `message-inventory.yaml`,
+      `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+      `sql-inventory.yaml`
 - [ ] Replay / field-lineage / persistence / exception-chain coverage is
       summarized for every in-scope flow, or named TBD / waiver recorded
 - [ ] BRD sections 1-9 have crosswalk coverage or named carry-forward TBDs
@@ -144,6 +160,11 @@ flowchart TD
 ## Replay Coverage Summary
 | Flow ID | Replay Paths Covered | Key Decision / Exception Paths | Persisted Outcomes | Missing Replay / Lineage / Persistence Gaps |
 | --- | --- | --- | --- | --- |
+
+## Compact Artifact Consumption
+| Flow ID | Source Artifacts Used | Human Markdown Use |
+| --- | --- | --- |
+| FLOW-AUTH-001 | `flow-*.md` rows + `program-analysis-summary.yaml`, `source-index.yaml`, `routine-logic-details.yaml`, `message-inventory.yaml`, `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, `sql-inventory.yaml` | targeted clarification only; do not concatenate |
 
 ## Cross-Flow Dependencies
 | From Flow | To Flow | Mechanism | Reason | Evidence |
@@ -197,6 +218,10 @@ flowchart LR
 ## Module Persistence Matrix
 | Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Purpose / Operation Summary | Commit / Retry / Recovery Notes | Evidence |
 | --- | --- | --- | --- | --- | --- |
+
+Persistence rows must preserve links to flow `PERSIST-*` rows and the compact
+program sidecars that support them, especially `field-mutation-matrix.yaml`,
+`file-io-inventory.yaml`, and `sql-inventory.yaml` for SQLRPGLE programs.
 
 ## Critical Field Lineage Across Module
 | Critical Field / Business Data | Source Flows (`LINEAGE-*`) | Carriers | Persisted / Output Locations | Consumers | TBD / Risk |

@@ -178,7 +178,10 @@ field-level rules. The summary below is normative for this skill.
   `program-analysis-summary.yaml`, `routine-index.md`,
   `all-routine-coverage-ledger.md`, `deep-read-plan.md`,
   `routine-logic-details.md`, `routine-logic-details.yaml`,
-  `message-inventory.md`, and `message-inventory.yaml` for compact sidecar
+  `message-inventory.md`, `message-inventory.yaml`,
+  `file-io-inventory.md`, `file-io-inventory.yaml`,
+  `field-mutation-matrix.md`, `field-mutation-matrix.yaml`,
+  `sql-inventory.md`, and `sql-inventory.yaml` for compact sidecar
   review. Windows: try `py -3`, fall back to `python`; macOS/Linux: use
   `python3`. If all launchers fail, stop and report:
   **"Python runtime unavailable"**. Do not configure PATH, install
@@ -288,8 +291,16 @@ to the orchestrator.
    - Use `source-index.yaml`, `program-analysis-summary.yaml`,
      `routine-index.md`, `all-routine-coverage-ledger.md`,
      `deep-read-plan.md`, `routine-logic-details.md`,
-     `routine-logic-details.yaml`, `message-inventory.md`, and
-     `message-inventory.yaml` as the deterministic pre-analysis index
+     `routine-logic-details.yaml`, `message-inventory.md`,
+     `message-inventory.yaml`, `file-io-inventory.md`,
+     `file-io-inventory.yaml`, `field-mutation-matrix.md`,
+     `field-mutation-matrix.yaml`, `sql-inventory.md`, and
+     `sql-inventory.yaml` as the deterministic pre-analysis index
+   - For SQLRPGLE and free-format RPGLE, use statement-level indexing for
+     `DCL-PI`, `DCL-PR`, `DCL-DS`, `DCL-S`, `DCL-PROC`, procedure calls,
+     assignments, `EXEC SQL` blocks, host variables, `SQLCODE`, and
+     `SQLSTATE`. Do not split multi-line SQL statements or free-format
+     calculation chains into fixed line chunks.
    - Select analysis mode: `standard`, `segmented`, or `large_program`
    - For `segmented` or `large_program`, build the structure index before
      any business summary prose
@@ -574,6 +585,14 @@ to the orchestrator.
      - a File Access Summary purpose using an action verb that explains
        why the file is accessed; do not use Purpose as a substitute for
        field descriptions
+   - For file-I/O-dense or SQLRPGLE programs, keep the main `File I/O`
+     section as a SME-readable summary. Store complete observed I/O evidence
+     in `file-io-inventory.md` / `file-io-inventory.yaml`, persisted native
+     and SQL mutations in `field-mutation-matrix.md` /
+     `field-mutation-matrix.yaml`, and embedded SQL details in
+     `sql-inventory.md` / `sql-inventory.yaml`. Link main-table rows to
+     stable `FIO-*`, `MUT-*`, and `SQL-*` detail IDs instead of expanding
+     every operation inline.
    - Reference file definitions from inventory via evidence ID (EV-\*)
    - Tag evidence: `confirmed_from_code` (from file specifications or I/O statements)
    - Create TBD if DDS is missing, key field unclear, or SQL schema is not documented
@@ -779,7 +798,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] Key File & Field Logic preserves source identifiers with business meanings for key fields, aliases, work variables, calculations/conditions, and persisted fields
 - [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence

@@ -45,6 +45,12 @@ rows, SME questions, or `TBD-*` gaps.
 9. **BRD eligibility is stricter than module coverage.** A row can be useful
    for review while still being ineligible for BRD conclusions. Only
    code-backed or named SME-confirmed rows can mark BRD sections as covered.
+10. **Compact artifacts are the aggregation surface.** Do not concatenate full
+    flow or program Markdown. Use approved `flow-*.md` rows and compact
+    program sidecars first: `program-analysis-summary.yaml`,
+    `source-index.yaml`, `routine-logic-details.yaml`,
+    `message-inventory.yaml`, `file-io-inventory.yaml`,
+    `field-mutation-matrix.yaml`, and `sql-inventory.yaml`.
 
 ---
 
@@ -57,7 +63,11 @@ rows, SME questions, or `TBD-*` gaps.
 - Each flow's edge Evidence Source / Resolution rows
 - Each flow's Flow Persistence Matrix and Exception Propagation Chain where
   they affect final outcomes
-- Approved program analyses for every referenced program
+- Approved compact program artifacts for every referenced program:
+  `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-logic-details.yaml`, `message-inventory.yaml`,
+  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+  `sql-inventory.yaml`
 - Approved inventory and object map
 
 ### Required Rows
@@ -109,10 +119,10 @@ For each in-scope flow F:
 - Every flow's Exception Propagation Chain when exceptions affect data,
   durable outputs, rollback, retry, partial commit, or skipped writes
 - Every program's Data Touch Map and Object Dependencies sections
-- Program-analyzer field and routine evidence: Key File & Field Logic, File
-  I/O Purpose, Field Mutation Matrix, Validation Logic, Routine Logic Details,
-  conditioned calculation blocks, carrier/lineage rows, and routine-local
-  exception closure
+- Program-analyzer compact sidecars: `program-analysis-summary.yaml`,
+  `source-index.yaml`, `routine-logic-details.yaml`,
+  `message-inventory.yaml`, `file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`, and `sql-inventory.yaml`
 - Approved inventory and object map
 
 ### Required Rows
