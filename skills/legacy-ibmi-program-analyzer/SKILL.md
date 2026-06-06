@@ -487,7 +487,12 @@ to the orchestrator.
    - Produce the required views (see `references/output-contract.md`):
      - **Visual overview** (RDi-style fenced `text` hierarchy using
        `|--` branches; compact by design but detailed enough to orient
-       SMEs; not Mermaid)
+       SMEs; not Mermaid). For routine-dense programs, this view is not
+       expected to enumerate every routine, but it must state its display
+       coverage before the tree, for example:
+       `Visual coverage: main dispatch and high-impact branches only
+       (shows 22 of 124 routines); complete routine inventory is in
+       routine-index.md, Node Inventory, and Call Evidence.`
      - **Node inventory** (mainline, internal routines, procedures, external programs, APIs, queues, services)
      - **Call Evidence** (caller, callee, call type, condition, source
        lines, evidence source, and resolution status)

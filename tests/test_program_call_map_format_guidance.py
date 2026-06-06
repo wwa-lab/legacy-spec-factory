@@ -44,6 +44,10 @@ class ProgramCallMapFormatGuidanceTests(unittest.TestCase):
             contract_text,
         )
         self.assertIn("```text\n[PROGRAM] mainline\n|--", template_text)
+        self.assertIn("Visual coverage:", template_text)
+        self.assertIn("shows [N] of [TOTAL] routines", template_text)
+        self.assertIn("shows <N> of <TOTAL> routines", contract_text)
+        self.assertIn("routine-index.md, Node Inventory, and Call Evidence", contract_text)
         self.assertNotIn("```mermaid", template_text)
         self.assertIn("compact ASCII hierarchy Visual Overview", template_text)
         for example_text in example_texts:

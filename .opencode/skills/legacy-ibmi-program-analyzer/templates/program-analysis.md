@@ -215,6 +215,7 @@ a business-process diagram.
 ### Visual Overview
 
 Evidence basis: source-level flow header + derived call analysis | derived call analysis only | header_only
+Visual coverage: complete | main dispatch and high-impact branches only (shows [N] of [TOTAL] routines); complete routine inventory is in `routine-index.md`, Node Inventory, and Call Evidence.
 
 ```text
 [PROGRAM] mainline

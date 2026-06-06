@@ -390,6 +390,14 @@ CU101A mainline
   graph.
 - Prefer a compact hierarchy over a complete visual tangle. The full edge
   evidence table remains the source of truth.
+- For routine-dense programs, `Visual Overview` is allowed to show only the
+  main dispatch path, high-impact branches, hubs/common routines, external
+  boundaries, and lifecycle routines. It must not imply completeness unless
+  every routine is displayed.
+- When the displayed tree omits routines, add a coverage note immediately
+  before the fenced tree: `Visual coverage: main dispatch and high-impact
+  branches only (shows <N> of <TOTAL> routines); complete routine inventory is
+  in routine-index.md, Node Inventory, and Call Evidence.`
 - Include internal nodes (`EXSR`, procedure calls) and external boundary
   nodes (`CALL`, `CALLP`, API, data queue, message queue, service
   program) when they help a reader understand the program quickly.
