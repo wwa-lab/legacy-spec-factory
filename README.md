@@ -39,6 +39,9 @@ For lightweight day-to-day BRD delivery, see
 [`docs/daily-delivery-mode.md`](docs/daily-delivery-mode.md).
 For the chat-driven SME review experience, see
 [`docs/conversation-review-mode.md`](docs/conversation-review-mode.md).
+For SME use of the IBM i program / flow / module analyzers under token-limited
+LLM constraints, see
+[`docs/sme-ibmi-program-flow-module-guideline.md`](docs/sme-ibmi-program-flow-module-guideline.md).
 
 ## Current Operating Model
 
