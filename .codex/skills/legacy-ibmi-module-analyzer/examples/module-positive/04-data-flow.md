@@ -46,6 +46,10 @@ flowchart LR
 
 ## Module Persistence Matrix
 
+Persistence evidence uses flow `PERSIST-*` rows plus compact program sidecars:
+`field-mutation-matrix.yaml`, `file-io-inventory.yaml`, and
+`sql-inventory.yaml` for SQLRPGLE nodes.
+
 | Object / Field / Output | Producer Flows (`PERSIST-*`) | Consumer Flows / Systems | Operation Summary | Commit / Retry / Recovery Notes | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | TXNLOGPF.AUTH_STATUS | FLOW-ONUS-AUTH-001 (`PERSIST-ONUS-AUTH-001`), FLOW-MANUAL-AUTH-001 (`PERSIST-MANUAL-AUTH-001`) | FLOW-NIGHTLY-RECON-001 | append authorization result before external/menu response | failed write returns decline / validation error; no automatic retry observed | flow persistence matrices + TXNLOGWR program analysis |

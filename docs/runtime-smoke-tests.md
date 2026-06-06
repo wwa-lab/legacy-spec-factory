@@ -41,7 +41,7 @@ Before running the test, confirm:
 
 - [ ] `scripts/sync-skills.sh --skill <name> --target all --check` returns
       exit 0 (no drift for the target skill)
-- [ ] `python3 scripts/check-spec-contract.py` returns exit 0 (if the skill
+- [ ] `py -3 scripts/check-spec-contract.py` (macOS: `python3`) returns exit 0 (if the skill
       touches `spec.yaml` shape)
 - [ ] The canonical `SKILL.md` is the version being tested and matches the
       synced adapter copies
@@ -2230,7 +2230,7 @@ Pre-test checks:
 - canonical source exists at skills/legacy-ibmi-inventory/SKILL.md
 - scripts/sync-skills.sh --skill legacy-ibmi-inventory --target all --check
   exited 0
-- python3 scripts/check-spec-contract.py exited 0
+- py -3 scripts/check-spec-contract.py exited 0   # (macOS: python3)
 - docs/runtime-smoke-tests.md contains positive and negative prompts
 
 Runtime evidence:

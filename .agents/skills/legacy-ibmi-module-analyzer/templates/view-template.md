@@ -35,6 +35,16 @@ Diagram rules:
 
 ## [View-specific sections, per `references/output-contract.md`]
 
+## Compact Source Rule
+
+Do not concatenate full flow or program Markdown to populate this view. Prefer
+approved `flow-*.md` rows and compact program artifacts:
+`program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`,
+`file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+`sql-inventory.yaml`. Use full Markdown only for targeted clarification when a
+specific compact row points to it.
+
 For Program Flow: Flow Inventory / Replay Coverage Summary /
 Cross-Flow Dependencies / Shared Sub-Programs / Overall Call Topology
 

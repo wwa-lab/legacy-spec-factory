@@ -279,13 +279,16 @@ field or physical-field mapping is missing, create a `TBD-*`.
 
 Shared files and durable outputs must be summarized at flow level when they
 change transaction outcome or downstream behavior. Use upstream
-program-analysis File I/O Purpose and Field Mutation Matrix rows to identify:
+program-analysis sidecars to identify:
 
 - which node writes, updates, deletes, sends, or spools
 - which fields/payloads are persisted or skipped
 - which upstream `DATA-*` or `LINEAGE-*` row drives the mutation
 - when that state becomes durable or externally visible
 - what downstream node, flow, operator, or external system consumes it
+- `file-io-inventory.yaml` for native file operation context
+- `field-mutation-matrix.yaml` for native and SQL persisted mutations
+- `sql-inventory.yaml` for SQLRPGLE statement and host-variable context
 
 For read-only flows, state `N/A — read-only flow` only when the upstream
 program analyses confirm no durable file mutation, queue send, message,

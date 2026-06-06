@@ -38,3 +38,6 @@ evidence/**/*sensitive*
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Generated presentation / document artifacts
+outputs/

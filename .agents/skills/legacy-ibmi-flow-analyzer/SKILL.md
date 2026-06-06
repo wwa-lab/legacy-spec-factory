@@ -53,10 +53,14 @@ This skill supports two flow assembly modes:
   missing artifacts when possible.
 
 This skill does **not** re-analyze individual program semantics inline. Every
-program in the flow must have approved program analysis evidence, preferably
-including `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-logic-details.yaml`, and `message-inventory.yaml`. If required
-program artifacts are missing, route only that program back to
+program in the flow must have approved program analysis evidence. Core
+artifacts are `program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, and `message-inventory.yaml`; optional sidecars
+such as `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+`sql-inventory.yaml` are required only when program-analyzer triggers produced
+them or when the flow claim needs file I/O, persisted mutation, or SQL
+evidence. If required core artifacts or claim-specific optional artifacts are
+missing, route only that program back to
 `legacy-ibmi-program-analyzer` instead of concatenating full Markdown analyses
 or restarting the whole flow.
 
@@ -93,10 +97,14 @@ Accept:
   - scheduler (WRKJOBSCDE entry)
   - API / remote (remote PGM call, MQ message, HTTP, IFS drop)
 - **Approved program analyses** for every program in the chain. Preferred
-  inputs are compact artifacts from `legacy-ibmi-program-analyzer`:
+  core inputs are compact artifacts from `legacy-ibmi-program-analyzer`:
   `program-analysis-summary.yaml`, `source-index.yaml`,
   `routine-logic-details.yaml`, `message-inventory.yaml`, and the human review
   `program-analysis-<OBJ-ID>.md` / `program-analysis.md` when needed.
+  Optional sidecars (`file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`, `sql-inventory.yaml`) are required only when
+  present/triggered by the program tier or when the flow needs native file I/O,
+  persisted field mutation, or SQLRPGLE evidence.
 - **Approved inventory** with `relationships` populated for the involved objects
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
@@ -104,15 +112,18 @@ Accept:
 Each upstream program-analysis should expose the program-chain readiness
 sections and sidecars from `legacy-ibmi-program-analyzer` v0.2.5 or later:
 `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-logic-details.yaml`, `message-inventory.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`, plus triggered
+optional sidecars (`file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+`sql-inventory.yaml`),
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
 `Routine Logic Details` with conditioned calculation blocks, routine-local
 field lineage / carriers, and routine-local exception closure,
 `Key File & Field Logic` with source identifiers plus business meanings,
-`File I/O` Purpose plus Field Mutation Matrix, `External Calls` with
-dynamic-call resolution status, `Validation Logic`, `Exception Closure
-Ledger`, `Routine / Window Data Flow`, `Redundancy Candidate Notes`, and
-`Open Items / Limitations`. If an older approved program-analysis is used,
+`file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+`sql-inventory.yaml`, `External Calls` with dynamic-call resolution status,
+`Validation Logic`, `Exception Closure Ledger`, `Routine / Window Data Flow`,
+`Redundancy Candidate Notes`, and `Open Items / Limitations`. If an older
+approved program-analysis is used,
 the flow must either route back for refresh or record a named SME waiver for
 each missing v0.2.4 detail.
 
@@ -186,8 +197,9 @@ field-level rules. The summary below is normative for this skill.
   identify at least one entry node and one flow path.
 - **Required for `chain_ready`**: approved `01_inventory/inventory.yaml` with
   `relationships` populated for the involved objects; approved program
-  analysis evidence for every program in the chain; required compact sidecars;
-  and coverage gates satisfied.
+  analysis evidence for every program in the chain; required core compact
+  artifacts; triggered/claim-specific optional sidecars; and coverage gates
+  satisfied.
 - **Required for `orchestrated`**: flow definition (entry point + one of seven
   trigger models). The analyzer may discover the program set from inventory
   relationships and program call summaries, but any missing per-program
@@ -195,9 +207,11 @@ field-level rules. The summary below is normative for this skill.
 - **Required for `assemble_existing`**: user-provided program analysis
   directories or artifact list, preferably including
   `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-logic-details.yaml`, and `message-inventory.yaml` for each program.
-  Missing sidecars should be filled for only the affected program when source is
-  available; otherwise record `TBD: missing_program_artifact`.
+  `routine-logic-details.yaml`, and `message-inventory.yaml` for each program,
+  plus optional `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+  `sql-inventory.yaml` when present/triggered or needed by a flow claim.
+  Missing required artifacts should be filled for only the affected program
+  when source is available; otherwise record `TBD: missing_program_artifact`.
 - **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
   `WRKJOBSCDE` export (scheduler triggers); trigger-program registration
   (DB triggers); SME notes on BAU rhythm and known error scenarios.
@@ -260,15 +274,18 @@ field-level rules. The summary below is normative for this skill.
   gaps unless they prevent identifying the flow itself.
 - **Coverage propagation**: consume each upstream program's compact artifacts
   first: `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-logic-details.yaml`, and `message-inventory.yaml`. Use full
+  `routine-logic-details.yaml`, `message-inventory.yaml`,
+  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+  `sql-inventory.yaml`. Use full
   `program-analysis.md` / `program-analysis-<OBJ-ID>.md` only for targeted
   clarification, not as the primary flow aggregation input. The compact
   artifacts must expose Analysis Coverage & Scope, Routine Cards / routine
   summary, Routine Logic Details sidecar status, front-loaded Validation Logic
   references, Deep Read Windows, Call Evidence, Logic Decomposition Ledger,
-  Key File & Field Logic, File I/O Purpose, Field Mutation Matrix, Exception
-  Closure Ledger, Routine / Window Data Flow, Redundancy Candidate Notes, and
-  Open Items / Limitations before using program-level evidence in a flow. If
+  Key File & Field Logic, `file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`, `sql-inventory.yaml`, Exception Closure
+  Ledger, Routine / Window Data Flow, Redundancy Candidate Notes, and Open
+  Items / Limitations before using program-level evidence in a flow. If
   the requested flow relies on a
   routine that was only `indexed_only` and that routine changes state,
   performs external handoff, handles commit/rollback, controls error
@@ -308,7 +325,8 @@ field-level rules. The summary below is normative for this skill.
   of business meaning; every replay step maps to `NODE-*`, `EDGE-*`,
   `DATA-*`, `PERSIST-*`, or `EXCHAIN-*`; every field lineage is backed
   by upstream field lineage or visible carrier fields; every persistence
-  row is backed by an upstream field mutation matrix; every node carries
+  row is backed by upstream `field-mutation-matrix.yaml` and, for SQLRPGLE,
+  `sql-inventory.yaml`; every node carries
   upstream coverage state and any blocking coverage gaps; all required
   sections populated.
 - **AI semantic**: edges match upstream program-analyses (no invented
@@ -353,7 +371,9 @@ to the orchestrator.
      flow.
    - In both modes, flow aggregation must prefer compact artifacts:
      `program-analysis-summary.yaml`, `source-index.yaml`,
-     `routine-logic-details.yaml`, and `message-inventory.yaml`.
+     `routine-logic-details.yaml`, `message-inventory.yaml`,
+     `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+     `sql-inventory.yaml`.
    - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
      files across programs. Open full Markdown only for targeted human-readable
      clarification when compact artifacts are insufficient.
@@ -389,8 +409,10 @@ to the orchestrator.
        program-analysis artifact set
      - record artifact availability:
        `program-analysis-summary.yaml`, `source-index.yaml`,
-       `routine-logic-details.yaml`, `message-inventory.yaml`, and optional
-       human-readable `program-analysis-<OBJ-ID>.md`
+       `routine-logic-details.yaml`, `message-inventory.yaml`,
+       `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+       `sql-inventory.yaml`, and optional human-readable
+       `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
        worker / data-access / reporter / exit)
      - carry forward the program's Analysis Coverage & Scope, Routine
@@ -494,14 +516,16 @@ to the orchestrator.
      variable, output/persisted carrier, or lineage/mutation reference for a
      cross-program value.
    - Build the **Flow Persistence Matrix** by aggregating each
-     program-analysis File I/O Purpose and Field Mutation Matrix into transaction-level
-     outcomes:
+     program-analysis `file-io-inventory.yaml`,
+     `field-mutation-matrix.yaml`, and `sql-inventory.yaml` summary into
+     transaction-level outcomes:
      - node and routine that performs the mutation
      - file and field persisted, updated, deleted, or skipped
      - upstream field / parameter / carrier that drives it
      - downstream readers or consumers
      - commit / rollback / retry impact
-     - evidence and TBDs for missing DDS, mutation source, or rollback
+     - evidence and TBDs for missing DDS, mutation source, SQL host-variable
+       mapping, or rollback
        behavior
    - For read-only flows, explicitly mark the persistence matrix
      `N/A — read-only flow` and cite the upstream analyses proving no
@@ -647,8 +671,9 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 - **Cross-program field lineage** that cannot be stitched through
   upstream program-analysis lineage, source identifier + business meaning
   pairs, carrier fields, or SME-approved manual handoff
-- **Persistence outcomes** not present in upstream File I/O Purpose / Field
-  Mutation Matrix rows or SQL/file evidence
+- **Persistence outcomes** not present in upstream `file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`, `sql-inventory.yaml`, or SME-confirmed
+  durable-output evidence
 - **Exception chains** not present in upstream Validation Logic /
   Exception Closure Ledger rows, return-code checks, message IDs, or
   SME-confirmed operational recovery notes
@@ -725,6 +750,14 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.3 (2026-06-06): Program-analysis dense evidence sidecar consumption
+  alignment
+  - Required flow aggregation to prefer `file-io-inventory.yaml`,
+    `field-mutation-matrix.yaml`, and `sql-inventory.yaml` alongside the
+    existing compact program artifacts
+  - Updated node artifact availability, persistence matrix evidence, and
+    missing-artifact routing for File I/O dense and SQLRPGLE programs
 
 - v0.2.1 (2026-06-02): Program-analysis v0.2.1 consumption alignment
   - Required flow analysis to consume Call Evidence, File I/O Purpose,

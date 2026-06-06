@@ -78,7 +78,8 @@ score at 9.0.
 Run:
 
 ```bash
-python3 scripts/verify-skill-claims.py
+py -3 scripts/verify-skill-claims.py          # Windows
+python3 scripts/verify-skill-claims.py        # macOS/Linux
 ```
 
 The script checks that:

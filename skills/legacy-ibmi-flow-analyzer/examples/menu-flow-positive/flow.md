@@ -86,11 +86,11 @@ NODE-01 (CUSTINQ)   ── opens transaction detail subwindow (same DSPF, differ
 
 ## Nodes
 
-| Node ID | Program (OBJ-*) | Role | Program Analysis | Coverage Status | Blocking Coverage Gaps | Notes |
+| Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-CUST-INQUIRY-01 | CUSTINQ (OBJ-CUST-INQ-001) | orchestrator + UI | program-analysis-OBJ-CUST-INQ-001.md | mode=segmented; readiness=approved; routines=deep_read | none | Drives 3 DSPFs; calls lookup and history workers |
-| NODE-CUST-INQUIRY-02 | CUSTLKP (OBJ-CUST-INQ-002) | data-access | program-analysis-OBJ-CUST-INQ-002.md | mode=standard; readiness=approved; routines=deep_read | none | CHAIN on CUSTMSTR; pure lookup |
-| NODE-CUST-INQUIRY-03 | TXNHIST (OBJ-CUST-INQ-003) | data-access | program-analysis-OBJ-CUST-INQ-003.md | mode=standard; readiness=approved; routines=deep_read | none | READE on TXNLOGPF; populates subfile buffer |
+| NODE-CUST-INQUIRY-01 | CUSTINQ (OBJ-CUST-INQ-001) | orchestrator + UI | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CUST-INQ-001.md | mode=segmented; readiness=approved; routines=deep_read | none | Drives 3 DSPFs; calls lookup and history workers |
+| NODE-CUST-INQUIRY-02 | CUSTLKP (OBJ-CUST-INQ-002) | data-access | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CUST-INQ-002.md | mode=standard; readiness=approved; routines=deep_read | none | CHAIN on CUSTMSTR; pure lookup |
+| NODE-CUST-INQUIRY-03 | TXNHIST (OBJ-CUST-INQ-003) | data-access | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=not_applicable; human=program-analysis-OBJ-CUST-INQ-003.md | mode=standard; readiness=approved; routines=deep_read | none | READE on TXNLOGPF; populates subfile buffer |
 
 **Missing program analyses:** none.
 

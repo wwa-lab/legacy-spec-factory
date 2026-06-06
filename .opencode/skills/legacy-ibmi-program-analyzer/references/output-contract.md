@@ -35,6 +35,12 @@ Each program analysis follows this markdown structure:
 ## Review Checklist
 ```
 
+The review layout is intentionally SME-first: `Calculation Logic`,
+`Validation Logic`, `Exception Handling`, and `Message Inventory` stay
+front-loaded even for large programs. Dense routine, message, file I/O,
+mutation, and embedded SQL evidence must be summarized in the main document and
+linked to sidecars rather than expanded until the document becomes unreadable.
+
 ---
 
 ## Calculation Logic Section
@@ -242,10 +248,10 @@ message sidecars rather than expanding every occurrence in the main analysis.
 
 ## Analysis Coverage & Scope Section
 
-This section is mandatory for every program. It records analysis mode,
-coverage limits, and known gaps so partial analysis cannot masquerade as
-complete understanding. Align terminology with
-`references/large-program-analysis.md`.
+This section is mandatory for every program. It records SME-facing program
+size tier, compatibility analysis mode, coverage limits, optional sidecar
+triggers, and known gaps so partial analysis cannot masquerade as complete
+understanding. Align terminology with `references/large-program-analysis.md`.
 
 ```markdown
 ## Analysis Coverage & Scope
@@ -256,8 +262,11 @@ complete understanding. Align terminology with
 - **Routine Count:** 42
 - **External Call Count:** 27
 - **Object Dependency Count:** 31
+- **Program Size Tier:** normal_program | complex_normal_program | large_extreme_program
+- **Tier Reason:** normal-size program; default to lightweight SME review
 - **Analysis Mode:** standard | segmented | large_program
-- **Strategy:** structure index first, then routine cards, call/data maps, deep-read windows, and synthesis
+- **Default Output Profile:** lightweight_program_review | light_review_plus_triggered_sidecars | full_index_and_batched_deep_read
+- **Strategy:** normal programs get concise SME review plus core artifacts; complex/large programs add triggered sidecars and batched deep-read only when needed
 
 ### Coverage Ledger
 
@@ -287,27 +296,47 @@ complete understanding. Align terminology with
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows: `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
-  Do not configure a Python environment or install packages. If neither
-  platform launcher is available, stop and report the terminal error.
-  Use its `source-index.yaml`, `program-analysis-summary.yaml`,
-  `routine-index.md`, `all-routine-coverage-ledger.md`,
-  `deep-read-plan.md`, `routine-logic-details.md`,
-  `routine-logic-details.yaml`, `message-inventory.md`, and
-  `message-inventory.yaml` as seeds for this section, Routine Cards,
-  Deep Read Windows, routine detail review, message review, and downstream
-  flow/module aggregation.
-- Select one mode: `standard`, `segmented`, or `large_program`.
-- Use `segmented` or `large_program` when the source cannot safely fit
-  with evidence windows, or when call/data density requires
-  structure-first analysis.
+  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  Do not configure PATH, install Python, or create a virtual environment.
+  Apply the same launcher order to all temporary consistency checks, YAML
+  readability checks, Markdown sanity checks, and one-off helper scripts in
+  this skill.
+  Use its core artifacts (`source-index.yaml`,
+  `program-analysis-summary.yaml`, `routine-index.md`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`, and
+  `message-inventory.yaml`) as the default seeds for normal programs. Use
+  optional sidecars (`all-routine-coverage-ledger.md`, `deep-read-plan.md`,
+  `message-inventory.md`, `file-io-inventory.md` /
+  `file-io-inventory.yaml`, `field-mutation-matrix.md` /
+  `field-mutation-matrix.yaml`, and `sql-inventory.md` /
+  `sql-inventory.yaml`) only when `optional_sidecar_triggers` marks them
+  needed or downstream flow/module evidence needs require them.
+- Select both a compatibility mode (`standard`, `segmented`, or
+  `large_program`) and SME-facing tier (`normal_program`,
+  `complex_normal_program`, or `large_extreme_program`).
+- Use `normal_program` as the default for ordinary programs under 10,000
+  lines. Use `complex_normal_program` when density, not total line count,
+  requires extra sidecars. Use `large_extreme_program` only when large-program
+  thresholds or context safety require full indexing and batched deep-read.
 - Keep the coverage ledger current as routine cards, Program Call Map,
   Data Touch Map, and deep-read windows are produced.
 - Do not claim complete understanding until coverage supports it.
 - Routine coverage values are only `indexed_only`, `deep_read`, and
   `blocked`. SME confirmation belongs in evidence or review fields, not
   in the coverage field.
+
+### Optional Sidecar Trigger Summary
+
+| Sidecar | Status | Trigger / Reason |
+| --- | --- | --- |
+| `all-routine-coverage-ledger.md` | present / optional_triggered / not_written_by_default | [batched deep-read needed or complex/large tier] |
+| `deep-read-plan.md` | present / optional_triggered / not_written_by_default | [more than five windows, complex tier, or large tier] |
+| `message-inventory.md` | present / optional_triggered / not_written_by_default | [more than 10 unique messages/status/codes] |
+| `file-io-inventory.md` / `file-io-inventory.yaml` | present / optional_triggered / not_written_by_default | [dense or state-changing file I/O] |
+| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | present / optional_triggered / not_written_by_default | [persisted native/SQL mutation evidence] |
+| `sql-inventory.md` / `sql-inventory.yaml` | present / optional_triggered / not_written_by_default | [embedded SQL / SQLRPGLE evidence] |
 
 ---
 
@@ -378,6 +407,14 @@ CU101A mainline
   graph.
 - Prefer a compact hierarchy over a complete visual tangle. The full edge
   evidence table remains the source of truth.
+- For routine-dense programs, `Visual Overview` is allowed to show only the
+  main dispatch path, high-impact branches, hubs/common routines, external
+  boundaries, and lifecycle routines. It must not imply completeness unless
+  every routine is displayed.
+- When the displayed tree omits routines, add a coverage note immediately
+  before the fenced tree: `Visual coverage: main dispatch and high-impact
+  branches only (shows <N> of <TOTAL> routines); complete routine inventory is
+  in routine-index.md, Node Inventory, and Call Evidence.`
 - Include internal nodes (`EXSR`, procedure calls) and external boundary
   nodes (`CALL`, `CALLP`, API, data queue, message queue, service
   program) when they help a reader understand the program quickly.
@@ -1235,6 +1272,14 @@ Use one or more of these role labels:
     literals, source fields, expressions, copied aliases, and calculated values
   - Pre-mutation checks (`%FOUND`, indicators, validation flags) and
     post-mutation checks (`%ERROR`, `SQLCODE`, `SQLSTATE`, return codes)
+- For file-I/O-dense or SQLRPGLE programs, keep this main section as a compact
+  SME-readable summary. Full observed native I/O operations belong in
+  `file-io-inventory.md` / `file-io-inventory.yaml`; persisted native and SQL
+  mutations belong in `field-mutation-matrix.md` /
+  `field-mutation-matrix.yaml`; embedded SQL statement details belong in
+  `sql-inventory.md` / `sql-inventory.yaml`. Main rows should link to stable
+  `FIO-*`, `MUT-*`, or `SQL-*` detail IDs when detail would otherwise overflow
+  the program analysis.
 - Reference file definitions from inventory (EV-*) and DDS / SQL schema where available
 - Tag evidence as `confirmed_from_code` or `needs_sme_review`
 - Create TBD for missing DDS, unclear key fields, unknown record formats,
@@ -1459,7 +1504,7 @@ Before approval, SME must validate:
 - [ ] Key File & Field Logic preserves `FIELD_NAME` (business meaning) and `VARIABLE_NAME` (business meaning) [direction] for every resolvable key field or variable
 - [ ] File I/O Key Fields preserve source identifiers plus business meaning, and Purpose describes file access behavior
 - [ ] Reference-pack lookups, if used, cite pack ID/version/file/row and do not override source-backed behavior
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence

@@ -41,11 +41,13 @@ Cross-project files:
 ## Try the tooling
 
 ```bash
+# Windows: py -3   macOS/Linux: python3
+
 # Validate the state
-python3 scripts/check-workflow-state.py docs/EXAMPLE-tutorial/workflow-state.yaml
+py -3 scripts/check-workflow-state.py docs/EXAMPLE-tutorial/workflow-state.yaml
 
 # Re-render the STATUS snapshot
-python3 scripts/generate-status.py docs/EXAMPLE-tutorial/
+py -3 scripts/generate-status.py docs/EXAMPLE-tutorial/
 
 # Build the human review workspace
 python3 scripts/build-review-workspace.py docs/EXAMPLE-tutorial/
@@ -54,7 +56,7 @@ python3 scripts/build-review-workspace.py docs/EXAMPLE-tutorial/
 python3 scripts/check-review-workspace.py docs/EXAMPLE-tutorial/
 
 # List this project alongside any others
-python3 scripts/list-projects.py
+py -3 scripts/list-projects.py
 ```
 
 Open `docs/EXAMPLE-tutorial/08_review_workspace/index.html` directly in the

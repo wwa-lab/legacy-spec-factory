@@ -13,6 +13,11 @@
   - [X] Every module-critical `LINEAGE-*` and material `EXCHAIN-*` appears in Data Flow or carries a named TBD
   - [X] Every data object traces to an approved flow/program — all 8 objects traced
   - [X] Every flow touches at least one data object — confirmed
+  - [X] Flow Artifact Set is complete for all in-scope flows, including
+        `program-analysis-summary.yaml`, `source-index.yaml`,
+        `routine-logic-details.yaml`, `message-inventory.yaml`,
+        `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+        `sql-inventory.yaml` where applicable
 
 - [ ] No blocking TBDs remain — 3 blocking TBDs across views
 - [ ] Capability seeds list is complete and SME-confirmed
