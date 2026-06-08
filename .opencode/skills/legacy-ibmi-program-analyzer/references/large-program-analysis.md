@@ -216,6 +216,13 @@ lines, split human-authored semantic detail into
 routines, validation/message routines, external boundaries, and indexed
 utilities.
 
+Each part file must be SME-first. Put batch-scoped `## Calculation Logic` and
+`## Validation Logic` sections immediately after the part title, before
+per-routine detail. These sections summarize only the routines in that shard and
+link each row to the relevant `RLOG-*` detail, conditioned calculation block,
+outcome reverse trace, or TBD. Do not make SME reviewers scroll through routine
+subsections to find the batch's core calculations or validations.
+
 For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
 Logic` inside `program-analysis.md` as SME-readable summaries. Store complete
 operation detail in `file-io-inventory.md` / `file-io-inventory.yaml`,

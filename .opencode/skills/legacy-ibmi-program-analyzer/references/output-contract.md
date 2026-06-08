@@ -619,6 +619,13 @@ routine inline:
   must be split into `routine-logic-details/part-*.md` shard files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
+- Every `routine-logic-details/part-*.md` shard must be SME-first. Immediately
+  after the shard title, add batch-scoped `## Calculation Logic` and
+  `## Validation Logic` sections before the per-routine detail. These sections
+  summarize only the routines covered by that shard and link each row to the
+  relevant `RLOG-*` detail, conditioned block, outcome reverse trace, or TBD.
+  Do not bury material calculation or validation outcomes only inside routine
+  subsections.
 
 ```markdown
 ## Routine Logic Details
@@ -627,6 +634,28 @@ routine inline:
 | --- | --- | --- | --- | --- | --- | --- |
 | MAIN | entry dispatch | 1-3084 | deep_read | completed | control flow | RLOG-AUTH-001 |
 | SR120 | validation/message routine | 520-780 | deep_read | completed | response status | RLOG-AUTH-017 |
+
+### Sharded Part File Header
+
+Each `routine-logic-details/part-*.md` file must start with this structure:
+
+```markdown
+# Routine Logic Details: [PROGRAM] - [Part Name]
+
+## Calculation Logic
+
+| Logic / Calculation | Routine | Target Field / Variable | Source Operands | Guard / Condition | Output / Effect | Detail Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [batch-scoped material calculation] | [SRxxx] | [`FIELD`] | [`SOURCE`] | [always / IF / indicator / loop] | [persisted / returned / passed / message set] | RLOG-[PROGRAM]-NNN conditioned block / TBD | [EV-* / source lines] |
+
+## Validation Logic
+
+| Message / Status / Outcome | Routine | Trigger Chain | Carrier / Destination | Downstream Effect | Detail Link | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| [code/status/literal] | [SRxxx] | [guard -> calculation -> outcome] | [field / response / queue / message] | [return / skip / log / continue] | RLOG-[PROGRAM]-NNN outcome reverse trace / TBD | confirmed / inferred / unresolved |
+
+## Routine Details
+```
 
 ### SR120 ValidateExposure
 

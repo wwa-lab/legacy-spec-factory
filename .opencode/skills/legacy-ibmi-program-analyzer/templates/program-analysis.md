@@ -301,6 +301,9 @@ Routine detail placement rules:
   semantic detail into `routine-logic-details/part-*.md` files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
+- Each `routine-logic-details/part-*.md` file must start with batch-scoped
+  `## Calculation Logic` and `## Validation Logic` sections before per-routine
+  detail, so SME reviewers see the core logic for that batch first.
 - This section must not collapse field calculations into generic labels such as
   "validation logic" or "amount calculation".
 

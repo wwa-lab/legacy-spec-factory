@@ -397,6 +397,11 @@ to the orchestrator.
        semantic detail into `routine-logic-details/part-*.md` files by
        mainline/dispatch, state-changing routines, validation/message routines,
        external boundaries, and indexed utilities.
+       Each part file must be SME-first: immediately after the title, add
+       batch-scoped `## Calculation Logic` and `## Validation Logic` sections
+       summarizing the material calculations, assignments, validations,
+       message/status outcomes, and links to the routines in that part. Then
+       place the detailed routine sections below those summaries.
    - In Routine Logic Details, explain each routine's execution trigger,
      step-by-step logic, field calculations/assignments, branch outcomes,
      exits, and evidence. Do not summarize a routine as "validation logic" or
