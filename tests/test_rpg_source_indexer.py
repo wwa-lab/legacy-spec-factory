@@ -509,13 +509,16 @@ C                   SETON                                        LR
             self.assertIn("RLOG-CU106-001", routine_logic)
             self.assertIn("pending_deep_read", routine_logic)
             self.assertIn("batch-scoped `## Calculation Logic`", routine_logic)
-            self.assertIn("`## Validation Logic` before per-routine detail", routine_logic)
+            self.assertIn("`## Exception Handling`", routine_logic)
+            self.assertIn("`## Message Inventory` before per-routine detail", routine_logic)
+            self.assertIn("must list every exact message/status/literal", routine_logic)
 
             routine_logic_yaml = (output_dir / "routine-logic-details.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_logic_inventory:", routine_logic_yaml)
             self.assertIn("semantic_status: pending_deep_read", routine_logic_yaml)
             self.assertIn("part_file_front_matter:", routine_logic_yaml)
-            self.assertIn("Calculation Logic and Validation Logic sections", routine_logic_yaml)
+            self.assertIn("Exception Handling, and Message Inventory sections", routine_logic_yaml)
+            self.assertIn("Message Inventory must list every exact", routine_logic_yaml)
 
             program_summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_summary:", program_summary)

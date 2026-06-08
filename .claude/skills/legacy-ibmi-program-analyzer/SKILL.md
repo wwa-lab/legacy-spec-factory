@@ -398,10 +398,14 @@ to the orchestrator.
        mainline/dispatch, state-changing routines, validation/message routines,
        external boundaries, and indexed utilities.
        Each part file must be SME-first: immediately after the title, add
-       batch-scoped `## Calculation Logic` and `## Validation Logic` sections
+       batch-scoped `## Calculation Logic`, `## Validation Logic`,
+       `## Exception Handling`, and `## Message Inventory` sections
        summarizing the material calculations, assignments, validations,
-       message/status outcomes, and links to the routines in that part. Then
-       place the detailed routine sections below those summaries.
+       exception paths, message/status outcomes, and links to the routines in
+       that part. `Message Inventory` must include one row per exact message,
+       status value, return code, response literal, or operator text observed
+       in that batch; do not group messages into family summaries. Then place
+       the detailed routine sections below those summaries.
    - In Routine Logic Details, explain each routine's execution trigger,
      step-by-step logic, field calculations/assignments, branch outcomes,
      exits, and evidence. Do not summarize a routine as "validation logic" or

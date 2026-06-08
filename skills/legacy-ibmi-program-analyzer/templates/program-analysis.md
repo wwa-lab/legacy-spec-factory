@@ -302,8 +302,10 @@ Routine detail placement rules:
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
 - Each `routine-logic-details/part-*.md` file must start with batch-scoped
-  `## Calculation Logic` and `## Validation Logic` sections before per-routine
-  detail, so SME reviewers see the core logic for that batch first.
+  `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and
+  `## Message Inventory` sections before per-routine detail, so SME reviewers
+  see the core logic for that batch first. Message Inventory must list every
+  exact message/status/literal observed in the batch as its own row.
 - This section must not collapse field calculations into generic labels such as
   "validation logic" or "amount calculation".
 

@@ -620,12 +620,18 @@ routine inline:
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
 - Every `routine-logic-details/part-*.md` shard must be SME-first. Immediately
-  after the shard title, add batch-scoped `## Calculation Logic` and
-  `## Validation Logic` sections before the per-routine detail. These sections
-  summarize only the routines covered by that shard and link each row to the
-  relevant `RLOG-*` detail, conditioned block, outcome reverse trace, or TBD.
-  Do not bury material calculation or validation outcomes only inside routine
-  subsections.
+  after the shard title, add batch-scoped `## Calculation Logic`,
+  `## Validation Logic`, `## Exception Handling`, and `## Message Inventory`
+  sections before the per-routine detail. These sections summarize only the
+  routines covered by that shard and link each row to the relevant `RLOG-*`
+  detail, conditioned block, outcome reverse trace, exception closure, message
+  detail, or TBD. Do not bury material calculation, validation, exception, or
+  message outcomes only inside routine subsections.
+- In each shard, `Message Inventory` must include one row per exact message ID,
+  status value, return code, response literal, SQLSTATE, CPF/MCH/RNX/CPD
+  message, operator text, or shop-local token observed in that batch. Preserve
+  exact codes/literals and do not replace individual rows with grouped labels
+  such as "validation messages", "queue errors", or "generic status codes".
 
 ```markdown
 ## Routine Logic Details
@@ -653,6 +659,18 @@ Each `routine-logic-details/part-*.md` file must start with this structure:
 | Message / Status / Outcome | Routine | Trigger Chain | Carrier / Destination | Downstream Effect | Detail Link | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | [code/status/literal] | [SRxxx] | [guard -> calculation -> outcome] | [field / response / queue / message] | [return / skip / log / continue] | RLOG-[PROGRAM]-NNN outcome reverse trace / TBD | confirmed / inferred / unresolved |
+
+## Exception Handling
+
+| Exception / Error Path | Routine | Trigger / Detection | Fields / Messages Set | Handling Action | Downstream Effect | Detail Link | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [business / file I/O / external call / generic handler] | [SRxxx] | [IF / MONITOR / ON-ERROR / return-code check] | [status/message/flag/log text] | [return / rollback / skip / continue / abort / log] | [skipped update/call/output or continuation] | RLOG-[PROGRAM]-NNN exception closure / TBD | confirmed / inferred / unresolved |
+
+## Message Inventory
+
+| Message / Status / Literal | Description | Type | Routine | First Seen / Set By | Trigger / Handler | Related Validation / Exception | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [exact code/literal/operator text] | [description or unresolved - message description not available] | message / status / return_code / response / operator_text / generic_handler | [SRxxx] | [line / assignment / handler] | [condition or handler summary] | [Validation row / Exception row / RLOG-* / TBD] | confirmed / inferred / unresolved |
 
 ## Routine Details
 ```

@@ -570,8 +570,10 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
             "part_files_required_when": "routines > 80 or source lines > 10000",
             "part_file_front_matter": (
                 "Each routine-logic-details/part-*.md file must start with "
-                "batch-scoped Calculation Logic and Validation Logic sections "
-                "before per-routine detail."
+                "batch-scoped Calculation Logic, Validation Logic, Exception "
+                "Handling, and Message Inventory sections before per-routine "
+                "detail. Message Inventory must list every exact "
+                "message/status/literal observed in that batch."
             ),
             "part_file_examples": [
                 "routine-logic-details/part-01-mainline-and-dispatch.md",
@@ -1787,7 +1789,8 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
         "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
         "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` files.",
-        "- Each `routine-logic-details/part-*.md` file must start with batch-scoped `## Calculation Logic` and `## Validation Logic` before per-routine detail.",
+        "- Each `routine-logic-details/part-*.md` file must start with batch-scoped `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and `## Message Inventory` before per-routine detail.",
+        "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
     ]
 
     for detail in index["routine_logic_inventory"]["details"]:
