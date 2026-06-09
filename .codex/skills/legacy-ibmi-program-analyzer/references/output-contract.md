@@ -616,9 +616,30 @@ routine inline:
   detail lives in `routine-logic-details.md` plus machine-readable
   `routine-logic-details.yaml`.
 - `routine_count > 80` or source lines > 10,000: human-authored semantic detail
-  must be split into `routine-logic-details/part-*.md` shard files by
+  must be split into `routine-logic-details/part-*.md` working shard files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
+- Every `routine-logic-details/part-*.md` shard must be SME-first. Immediately
+  after the shard title, add batch-scoped `## Calculation Logic`,
+  `## Validation Logic`, `## Exception Handling`, and `## Message Inventory`
+  sections before the per-routine detail. These sections summarize only the
+  routines covered by that shard and link each row to the relevant `RLOG-*`
+  detail, conditioned block, outcome reverse trace, exception closure, message
+  detail, or TBD. Do not bury material calculation, validation, exception, or
+  message outcomes only inside routine subsections.
+- In each shard, `Message Inventory` must include one row per exact message ID,
+  status value, return code, response literal, SQLSTATE, CPF/MCH/RNX/CPD
+  message, operator text, or shop-local token observed in that batch. Preserve
+  exact codes/literals and do not replace individual rows with grouped labels
+  such as "validation messages", "queue errors", or "generic status codes".
+- The part files are a batch deep-read working surface, not the final SME
+  review surface. After the part files are complete, merge all shard content
+  into one final `routine-logic-details.md` consolidated SME review document.
+  That final document must include, in order: whole-program
+  `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
+  `## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
+  with every routine's detail section. Keep `program-analysis.md` compact and
+  do not require SMEs to jump across part files for final review.
 
 ```markdown
 ## Routine Logic Details
@@ -627,6 +648,69 @@ routine inline:
 | --- | --- | --- | --- | --- | --- | --- |
 | MAIN | entry dispatch | 1-3084 | deep_read | completed | control flow | RLOG-AUTH-001 |
 | SR120 | validation/message routine | 520-780 | deep_read | completed | response status | RLOG-AUTH-017 |
+
+### Sharded Part File Header
+
+Each `routine-logic-details/part-*.md` file must start with this structure:
+
+```markdown
+# Routine Logic Details: [PROGRAM] - [Part Name]
+
+## Calculation Logic
+
+| Logic / Calculation | Routine | Target Field / Variable | Source Operands | Guard / Condition | Output / Effect | Detail Link | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [batch-scoped material calculation] | [SRxxx] | [`FIELD`] | [`SOURCE`] | [always / IF / indicator / loop] | [persisted / returned / passed / message set] | RLOG-[PROGRAM]-NNN conditioned block / TBD | [EV-* / source lines] |
+
+## Validation Logic
+
+| Message / Status / Outcome | Routine | Trigger Chain | Carrier / Destination | Downstream Effect | Detail Link | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| [code/status/literal] | [SRxxx] | [guard -> calculation -> outcome] | [field / response / queue / message] | [return / skip / log / continue] | RLOG-[PROGRAM]-NNN outcome reverse trace / TBD | confirmed / inferred / unresolved |
+
+## Exception Handling
+
+| Exception / Error Path | Routine | Trigger / Detection | Fields / Messages Set | Handling Action | Downstream Effect | Detail Link | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [business / file I/O / external call / generic handler] | [SRxxx] | [IF / MONITOR / ON-ERROR / return-code check] | [status/message/flag/log text] | [return / rollback / skip / continue / abort / log] | [skipped update/call/output or continuation] | RLOG-[PROGRAM]-NNN exception closure / TBD | confirmed / inferred / unresolved |
+
+## Message Inventory
+
+| Message / Status / Literal | Description | Type | Routine | First Seen / Set By | Trigger / Handler | Related Validation / Exception | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [exact code/literal/operator text] | [description or unresolved - message description not available] | message / status / return_code / response / operator_text / generic_handler | [SRxxx] | [line / assignment / handler] | [condition or handler summary] | [Validation row / Exception row / RLOG-* / TBD] | confirmed / inferred / unresolved |
+
+## Routine Details
+```
+
+### Final Consolidated Routine Detail Document
+
+After all part files are complete, `routine-logic-details.md` must be the
+single SME review document for all routine detail:
+
+```markdown
+# Routine Logic Details: [PROGRAM]
+
+## Calculation Logic
+[Whole-program calculation summary across all routines.]
+
+## Validation Logic
+[Whole-program validation/status/outcome summary across all routines.]
+
+## Exception Handling
+[Whole-program exception-path summary across all routines.]
+
+## Message Inventory
+[Every exact message/status/return code/response literal/operator text observed
+in any routine, one row per message/code/literal.]
+
+## Routine Detail Index
+[All routines with RLOG ID, source lines, coverage, deep-read status, and source
+part file.]
+
+## Routine Details
+[All routine detail sections, including indexed_only/pending routines.]
+```
 
 ### SR120 ValidateExposure
 

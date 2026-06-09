@@ -1,7 +1,7 @@
 # Output Contract: Flow Analysis
 
 This document defines the precise shape and required fields for every
-`flow-<FLOW-SLUG>.md` artifact.
+`flow-<FLOW-SLUG>.md` artifact and its compact SME core-review companion.
 
 ## File Structure
 
@@ -30,6 +30,48 @@ This document defines the precise shape and required fields for every
 ## TBDs & Blocking Status
 ## Review Checklist
 ```
+
+---
+
+## SME Core Review Artifact
+
+When the user asks to merge multiple existing program-analysis results and only
+wants core SME information, produce a separate compact review artifact:
+
+- `flow-sme-core-review.md` when the provided programs form one proven flow.
+- `program-set-sme-core-review.md` when the provided programs are a program set
+  without a proven transaction order.
+
+This artifact must contain only:
+
+```markdown
+# SME Core Review: [Flow or Program Set Name]
+
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
+```
+
+**Rules:**
+- Use `templates/sme-core-review.md` as the starting structure.
+- Aggregate from compact program artifacts first:
+  `program-analysis-summary.yaml`, `routine-logic-details.yaml`,
+  `message-inventory.yaml`, and claim-specific optional sidecars.
+- Use `program-analysis.md` only for targeted human-readable clarification.
+- Do not include Metadata, Nodes, Edges, Transaction Call Map, Replay,
+  Persistence, Lineage, UI Surfaces, Capability Seeds, TBD tables, or SME
+  Checklist in the core-review artifact.
+- Every row must identify the source Program and, when available, Routine,
+  `RLOG-*` / `MSG-*`, source line, or evidence status.
+- `Message Inventory` must include every exact message ID, status value, return
+  code, response literal, SQLSTATE, CPF/MCH/RNX/CPD message, operator text, or
+  shop-local token observed across the participating program analyses. Do not
+  replace individual rows with grouped labels such as "validation messages",
+  "queue errors", or "generic status codes".
+- If the same exact message appears in multiple programs with the same meaning
+  and trigger, it may be one row with all Program/Routine sources listed. If the
+  trigger, handling, carrier, or meaning differs, split it into separate rows.
 
 ---
 

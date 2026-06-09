@@ -394,9 +394,24 @@ to the orchestrator.
        details live in `routine-logic-details.md` and
        `routine-logic-details.yaml`.
      - `routine_count > 80` or source lines > 10,000: split human-authored
-       semantic detail into `routine-logic-details/part-*.md` files by
-       mainline/dispatch, state-changing routines, validation/message routines,
-       external boundaries, and indexed utilities.
+       semantic detail into `routine-logic-details/part-*.md` working files
+       by mainline/dispatch, state-changing routines, validation/message
+       routines, external boundaries, and indexed utilities.
+       Each part file must be SME-first: immediately after the title, add
+       batch-scoped `## Calculation Logic`, `## Validation Logic`,
+       `## Exception Handling`, and `## Message Inventory` sections
+       summarizing the material calculations, assignments, validations,
+       exception paths, message/status outcomes, and links to the routines in
+       that part. `Message Inventory` must include one row per exact message,
+       status value, return code, response literal, or operator text observed
+       in that batch; do not group messages into family summaries. Then place
+       the detailed routine sections below those summaries.
+       After batch deep-read is complete, merge every part file back into one
+       final `routine-logic-details.md` SME review document. The final document
+       must contain whole-program `## Calculation Logic`,
+       `## Validation Logic`, `## Exception Handling`, `## Message Inventory`,
+       a routine detail index, and all routine detail sections. Do not leave
+       `part-*.md` files as the only SME review surface.
    - In Routine Logic Details, explain each routine's execution trigger,
      step-by-step logic, field calculations/assignments, branch outcomes,
      exits, and evidence. Do not summarize a routine as "validation logic" or

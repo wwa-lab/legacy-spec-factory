@@ -232,6 +232,67 @@ C                   SETON                                        LR
         self.assertEqual(sr931["end_line"], 7)
         self.assertIn("MAIN line 1", sr931["called_by"])
 
+    def test_fixed_format_begsr_accepts_change_tag_joined_to_spec(self) -> None:
+        indexer = load_indexer()
+
+        source_index = indexer.analyze_source(
+            [
+                "WKS02C                  EXSR      SR170",
+                "26191C                  EXSR      SR620",
+                "WKS02C* This comment mentions CALL UPDATE COMMIT SR999 BEGSR",
+                "WKS02C    SR170         BEGSR",
+                "WKS02C                  MOVE      *BLANK        W1ARDT",
+                "WKS02C    SR170E        ENDSR",
+                "26191C    SR620         BEGSR",
+                "26191C                  Z-ADD     1             WCOUNT",
+                "26191C    SR620E        ENDSR",
+            ],
+            program_name="CU101A",
+            source_path=Path("fixtures/CU101A.rpgle"),
+        )
+
+        routine_names = {routine["name"] for routine in source_index["routines"]}
+        self.assertIn("SR170", routine_names)
+        self.assertIn("SR620", routine_names)
+        self.assertNotIn("WKS02C", routine_names)
+        self.assertNotIn("26191C", routine_names)
+        self.assertNotIn("SR999", routine_names)
+        sr170 = next(routine for routine in source_index["routines"] if routine["name"] == "SR170")
+        sr620 = next(routine for routine in source_index["routines"] if routine["name"] == "SR620")
+        self.assertEqual(sr170["start_line"], 4)
+        self.assertEqual(sr170["end_line"], 6)
+        self.assertEqual(sr620["start_line"], 7)
+        self.assertEqual(sr620["end_line"], 9)
+        self.assertIn("MAIN line 1", sr170["called_by"])
+        self.assertIn("MAIN line 2", sr620["called_by"])
+
+    def test_fixed_format_c_spec_with_f_prefix_is_not_false_f_spec(self) -> None:
+        indexer = load_indexer()
+
+        source_index = indexer.analyze_source(
+            [
+                "FN01 C                  EXSR      SRA00",
+                "FN01 C                  EXSR      SR100",
+                "FN01 C* Comment mentions WRITE NEWREC and CALL TRIAD",
+                "FN01 C    SRA00         BEGSR",
+                "FN01 C                  MOVE      'A'           WSTATUS",
+                "FN01 C    SRA00E        ENDSR",
+                "FN01 C    SR100         BEGSR",
+                "FN01 C                  MOVE      'B'           WSTATUS",
+                "FN01 C    SR100E        ENDSR",
+            ],
+            program_name="CU101A",
+            source_path=Path("fixtures/CU101A.rpgle"),
+        )
+
+        self.assertNotIn("N01", source_index["declared_files"])
+        routine_names = {routine["name"] for routine in source_index["routines"]}
+        self.assertIn("SRA00", routine_names)
+        self.assertIn("SR100", routine_names)
+        self.assertNotIn("TRIAD", {call["target"] for call in source_index["calls"]})
+        sra00 = next(routine for routine in source_index["routines"] if routine["name"] == "SRA00")
+        self.assertIn("MAIN line 1", sra00["called_by"])
+
     def test_fixed_format_routine_boundaries_require_non_comment_sr_factor(self) -> None:
         indexer = load_indexer()
 
@@ -447,10 +508,21 @@ C                   SETON                                        LR
             routine_logic = (output_dir / "routine-logic-details.md").read_text(encoding="utf-8")
             self.assertIn("RLOG-CU106-001", routine_logic)
             self.assertIn("pending_deep_read", routine_logic)
+            self.assertIn("batch-scoped `## Calculation Logic`", routine_logic)
+            self.assertIn("`## Exception Handling`", routine_logic)
+            self.assertIn("`## Message Inventory` before per-routine detail", routine_logic)
+            self.assertIn("must list every exact message/status/literal", routine_logic)
+            self.assertIn("final consolidated `routine-logic-details.md`", routine_logic)
+            self.assertIn("all routine detail", routine_logic)
 
             routine_logic_yaml = (output_dir / "routine-logic-details.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_logic_inventory:", routine_logic_yaml)
             self.assertIn("semantic_status: pending_deep_read", routine_logic_yaml)
+            self.assertIn("part_file_front_matter:", routine_logic_yaml)
+            self.assertIn("Exception Handling, and Message Inventory sections", routine_logic_yaml)
+            self.assertIn("Message Inventory must list every exact", routine_logic_yaml)
+            self.assertIn("final_consolidation_required:", routine_logic_yaml)
+            self.assertIn("Part files are working shards", routine_logic_yaml)
 
             program_summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_summary:", program_summary)

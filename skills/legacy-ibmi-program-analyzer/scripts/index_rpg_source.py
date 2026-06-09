@@ -26,8 +26,10 @@ DCL_DS_RE = re.compile(r"\bDCL-DS\b\s+([A-Z0-9_#$@*]+)", re.I)
 DCL_S_RE = re.compile(r"\bDCL-S\b\s+([A-Z0-9_#$@*]+)", re.I)
 FIXED_F_RE = re.compile(r"^F([A-Z0-9_#$@]{1,10})\s+")
 PROC_BEGIN_RE = re.compile(r"\bDCL-PROC\s+([A-Z0-9_#$@]+)", re.I)
-FIXED_C_SPEC_RE = re.compile(r"^(?:\S+\s+)?C(?!\*)\s+(.*)$", re.I)
-FIXED_C_COMMENT_RE = re.compile(r"^(?:\S+\s+)?C\*", re.I)
+FIXED_C_SPEC_RE = re.compile(
+    r"^(?:(?:\S+\s+)?C(?!\*)|(?!EXEC\b)[A-Z0-9_#$@]+C(?!\*))\s+(.*)$",
+)
+FIXED_C_COMMENT_RE = re.compile(r"^(?:(?:\S+\s+)?C|[A-Z0-9_#$@]+C)\*")
 FIXED_SR_NAME_RE = re.compile(r"^SR[A-Z0-9_#$@]*$", re.I)
 FREE_BEGSR_RE = re.compile(r"\bBEGSR\b\s+([A-Z0-9_#$@*]+)?", re.I)
 FILE_OP_RE = re.compile(
@@ -377,6 +379,8 @@ def fixed_c_spec_tokens(line: str) -> list[str]:
 
 
 def fixed_file_name_from_line(line: str) -> str | None:
+    if fixed_c_spec_tokens(line) or is_fixed_c_comment(line):
+        return None
     match = FIXED_F_RE.search(line)
     if not match:
         return None
@@ -564,6 +568,21 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
         "sharding_guidance": {
             "main_document_limit": "summarize only when routines > 25",
             "part_files_required_when": "routines > 80 or source lines > 10000",
+            "part_file_front_matter": (
+                "Each routine-logic-details/part-*.md file must start with "
+                "batch-scoped Calculation Logic, Validation Logic, Exception "
+                "Handling, and Message Inventory sections before per-routine "
+                "detail. Message Inventory must list every exact "
+                "message/status/literal observed in that batch."
+            ),
+            "final_consolidation_required": (
+                "After batch deep-read, merge all part files into one final "
+                "routine-logic-details.md SME review document with whole-program "
+                "Calculation Logic, Validation Logic, Exception Handling, "
+                "Message Inventory, Routine Detail Index, and all Routine "
+                "Details. Part files are working shards, not the final SME "
+                "review surface."
+            ),
             "part_file_examples": [
                 "routine-logic-details/part-01-mainline-and-dispatch.md",
                 "routine-logic-details/part-02-state-changing-routines.md",
@@ -1777,7 +1796,10 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "## Sharding Guidance",
         "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
         "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
-        "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` files.",
+        "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` working files.",
+        "- Each `routine-logic-details/part-*.md` file must start with batch-scoped `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and `## Message Inventory` before per-routine detail.",
+        "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
+        "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
     ]
 
     for detail in index["routine_logic_inventory"]["details"]:
