@@ -9,6 +9,12 @@ If you just want to study a finished example, jump to
 [`docs/EXAMPLE-tutorial/`](docs/EXAMPLE-tutorial/) — it's a complete
 minimal project showing every artifact in the chain.
 
+For SME-ready copy/paste prompts, use
+[`docs/sme-ibmi-analysis-prompts.md`](docs/sme-ibmi-analysis-prompts.md). It
+includes bilingual prompts for normal program analysis, large-program
+five-routine batch analysis, and merging multiple program results into one core
+SME review.
+
 ---
 
 ## Prerequisites

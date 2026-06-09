@@ -512,6 +512,8 @@ C                   SETON                                        LR
             self.assertIn("`## Exception Handling`", routine_logic)
             self.assertIn("`## Message Inventory` before per-routine detail", routine_logic)
             self.assertIn("must list every exact message/status/literal", routine_logic)
+            self.assertIn("final consolidated `routine-logic-details.md`", routine_logic)
+            self.assertIn("all routine detail", routine_logic)
 
             routine_logic_yaml = (output_dir / "routine-logic-details.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_logic_inventory:", routine_logic_yaml)
@@ -519,6 +521,8 @@ C                   SETON                                        LR
             self.assertIn("part_file_front_matter:", routine_logic_yaml)
             self.assertIn("Exception Handling, and Message Inventory sections", routine_logic_yaml)
             self.assertIn("Message Inventory must list every exact", routine_logic_yaml)
+            self.assertIn("final_consolidation_required:", routine_logic_yaml)
+            self.assertIn("Part files are working shards", routine_logic_yaml)
 
             program_summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_summary:", program_summary)

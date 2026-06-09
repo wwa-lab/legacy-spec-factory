@@ -575,6 +575,14 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
                 "detail. Message Inventory must list every exact "
                 "message/status/literal observed in that batch."
             ),
+            "final_consolidation_required": (
+                "After batch deep-read, merge all part files into one final "
+                "routine-logic-details.md SME review document with whole-program "
+                "Calculation Logic, Validation Logic, Exception Handling, "
+                "Message Inventory, Routine Detail Index, and all Routine "
+                "Details. Part files are working shards, not the final SME "
+                "review surface."
+            ),
             "part_file_examples": [
                 "routine-logic-details/part-01-mainline-and-dispatch.md",
                 "routine-logic-details/part-02-state-changing-routines.md",
@@ -1788,9 +1796,10 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "## Sharding Guidance",
         "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
         "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
-        "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` files.",
+        "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` working files.",
         "- Each `routine-logic-details/part-*.md` file must start with batch-scoped `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and `## Message Inventory` before per-routine detail.",
         "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
+        "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
     ]
 
     for detail in index["routine_logic_inventory"]["details"]:

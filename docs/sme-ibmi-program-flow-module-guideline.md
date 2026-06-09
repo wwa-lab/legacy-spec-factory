@@ -5,10 +5,19 @@ This guideline explains how SMEs and analysts should use
 `legacy-ibmi-module-analyzer` when company LLM token budget is limited and one
 LLM turn may read at most five routines.
 
+For copy-ready bilingual prompts, see
+[`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md). It includes
+general program analysis, large-program automatic batch analysis, and compact
+multi-program SME core review prompts.
+
 ## 中文摘要
 
 这份 guideline 给 SME / BA / analyst 使用。核心用法是：
 
+- 常用中英双语提示词请直接看
+  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)，里面包含
+  普通 program、large program 自动分批、以及多个 program 结果合并成核心
+  SME review 的 prompt。
 - 只看一个程序，就跑 `legacy-ibmi-program-analyzer`。
 - 看一个业务交易从入口到落库，就跑 `legacy-ibmi-flow-analyzer`。
 - 看多个 flow 是否能组成一个可交付业务模块，就跑

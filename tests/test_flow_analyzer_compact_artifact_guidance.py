@@ -73,6 +73,39 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
         self.assertIn("Downstream-Readiness Gap", contract_text)
         self.assertIn("Analysis Intent", template_text)
 
+    def test_flow_analyzer_has_compact_multi_program_sme_core_review_view(self) -> None:
+        skill_text = (FLOW_ANALYZER_DIR / "SKILL.md").read_text(encoding="utf-8")
+        contract_text = (FLOW_ANALYZER_DIR / "references" / "output-contract.md").read_text(
+            encoding="utf-8"
+        )
+        template_text = (
+            FLOW_ANALYZER_DIR / "templates" / "sme-core-review.md"
+        ).read_text(encoding="utf-8")
+
+        for text in (skill_text, contract_text):
+            self.assertIn("flow-sme-core-review.md", text)
+            self.assertIn("program-set-sme-core-review.md", text)
+            self.assertIn("templates/sme-core-review.md", text)
+
+        expected_sections = [
+            "## Calculation Logic",
+            "## Validation Logic",
+            "## Exception Handling",
+            "## Message Inventory",
+        ]
+        positions = [template_text.index(section) for section in expected_sections]
+        self.assertEqual(positions, sorted(positions))
+
+        self.assertIn("program-analysis-summary.yaml", template_text)
+        self.assertIn("routine-logic-details.yaml", template_text)
+        self.assertIn("message-inventory.yaml", template_text)
+        self.assertIn("Message Inventory must list every exact", template_text)
+        self.assertIn("Do not include Nodes, Edges", template_text)
+        self.assertNotIn("## Nodes", template_text)
+        self.assertNotIn("## Edges", template_text)
+        self.assertNotIn("## Flow Replay Path", template_text)
+        self.assertNotIn("## Flow Persistence Matrix", template_text)
+
 
 if __name__ == "__main__":
     unittest.main()

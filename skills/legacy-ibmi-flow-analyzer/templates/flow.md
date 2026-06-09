@@ -44,16 +44,29 @@ rollback / handling action / SME question.]
 
 ## Message Inventory
 
-Purpose: compact flow-level summary of message/code/literal meanings. Detailed
-per-program occurrences remain in each program's `message-inventory.md` /
-`message-inventory.yaml`.
+Purpose: SME core review inventory of every exact message/code/literal observed
+across the participating program analyses.
 
-| Message / Code / Literal | Short Description | Producing Node(s) | Occurrences | Flow Effect | Detail Refs | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| [CPFxxxx / UCCxxxx / literal / status value] | [description or `unresolved - message description not available`] | [NODE-* list] | [count] | [flow outcome affected] | [MSG-* refs] | confirmed / inferred / unresolved |
+| Message / Code / Literal | Short Description | Program / Routine | Occurrences | Trigger / Handler | Flow Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [CPFxxxx / UCCxxxx / literal / status value / operator text] | [description or `unresolved - message description not available`] | [PROGRAM / SRxxx or NODE-* list] | [count] | [source-backed condition or handler] | [flow outcome affected / not flow-affecting] | [MSG-* / RLOG-* refs] | confirmed / inferred / unresolved |
 
 **Message inventory unresolved:** [None, or concrete missing description /
 source / carrier / trigger.]
+
+---
+
+## Routine Details
+
+Purpose: consolidated SME review of routine details from every participating
+program, without requiring reviewers to jump across per-program files.
+
+| Program | Routine | Role | Source Lines | Coverage | Core Logic / Outcome | Related Messages | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [PROGRAM] | [MAIN / SRxxx / procedure] | [entry / state-changing / validation-message / external boundary / utility] | [lines] | deep_read / indexed_only / blocked | [calculation, validation, exception, or handoff summary] | [message/status refs or N/A] | [RLOG-* / source-index / TBD-*] | confirmed / inferred / unresolved |
+
+**Routine detail unresolved:** [None, or concrete missing per-program routine
+detail / indexed_only state-impacting routine / SME waiver.]
 
 ---
 

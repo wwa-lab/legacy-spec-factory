@@ -212,9 +212,9 @@ For routine-dense programs, keep front-loaded `Routine Logic Details` inside
 `routine-logic-details.yaml`; link summary rows to stable `RLOG-<PROGRAM>-NNN`
 detail IDs. When a program has more than 80 routines or more than 10,000 source
 lines, split human-authored semantic detail into
-`routine-logic-details/part-*.md` files by mainline/dispatch, state-changing
-routines, validation/message routines, external boundaries, and indexed
-utilities.
+`routine-logic-details/part-*.md` working files by mainline/dispatch,
+state-changing routines, validation/message routines, external boundaries, and
+indexed utilities.
 
 Each part file must be SME-first. Put batch-scoped `## Calculation Logic`,
 `## Validation Logic`, `## Exception Handling`, and `## Message Inventory`
@@ -225,6 +225,15 @@ exception closure, message detail, or TBD. `Message Inventory` must list every
 exact message/status/literal observed in that batch as its own row; do not make
 SME reviewers scroll through routine subsections to find the batch's core
 calculations, validations, exception paths, or messages.
+
+The working shard files must be consolidated after batch deep-read. The final
+`routine-logic-details.md` is the single SME review document for all routine
+detail, even for very large programs. It must contain whole-program
+`## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
+`## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
+sections, with every routine included and every exact message/status/literal
+listed. Keep `program-analysis.md` compact; do not force SMEs to review only by
+jumping across `part-*.md` files.
 
 For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
 Logic` inside `program-analysis.md` as SME-readable summaries. Store complete

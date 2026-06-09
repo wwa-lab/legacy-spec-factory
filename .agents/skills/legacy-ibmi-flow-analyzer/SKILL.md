@@ -51,6 +51,12 @@ This skill supports two flow assembly modes:
 - **`assemble_existing`** — user provides existing per-program analysis
   directories, and the flow analyzer assembles them into one flow, filling only
   missing artifacts when possible.
+- **`core_review_only` companion view** — when SMEs want multiple existing
+  program analyses merged without the engineering flow sections, produce a
+  separate SME core review artifact that contains only Calculation Logic,
+  Validation Logic, Exception Handling, and Message Inventory. Use this as a
+  companion to `assemble_existing`, or as a program-set review when the provided
+  programs do not yet prove one transaction flow.
 
 This skill does **not** re-analyze individual program semantics inline. Every
 program in the flow must have approved program analysis evidence. Core
@@ -153,9 +159,16 @@ Stop and require clarification if:
 
 ## Output Contract
 
-Produce a single artifact:
+Produce the canonical flow artifact:
 
 - `flow-<FLOW-SLUG>.md`
+
+When the user asks to merge multiple program-analysis results for SME review,
+also produce one compact core-review artifact:
+
+- `flow-sme-core-review.md` when the programs form one flow
+- `program-set-sme-core-review.md` when the programs are only a program set and
+  the flow/order is not proven
 
 `<FLOW-SLUG>` is uppercase, hyphen-separated, business-event named (e.g.,
 `ONUS-AUTH`, `BATCH-RECON`, `CHARGEBACK-INTAKE`), and stable across the
@@ -164,6 +177,8 @@ analysis chain.
 Use:
 
 - `templates/flow.md` as the starting structure
+- `templates/sme-core-review.md` as the starting structure for the compact
+  multi-program SME review view
 - `references/output-contract.md` for section definitions and required fields
 - `references/trigger-models.md` for trigger-specific analysis guidance
 - `references/data-flow-patterns.md` for cross-program data passing
@@ -296,6 +311,11 @@ field-level rules. The summary below is normative for this skill.
 ### Output
 
 - **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
+- **SME core review artifact**: `flow-sme-core-review.md` for proven flows, or
+  `program-set-sme-core-review.md` for a merged program set without proven
+  transaction ordering. This artifact contains only Calculation Logic,
+  Validation Logic, Exception Handling, and Message Inventory, aggregated from
+  the participating program analyses.
 - **Required sections**: front-loaded Calculation Logic, Validation Logic,
   Exception Handling, Message Inventory, metadata, trigger model & entry point,
   transaction call map, nodes, edges, common dependencies, cross-program data
@@ -377,6 +397,13 @@ to the orchestrator.
    - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
      files across programs. Open full Markdown only for targeted human-readable
      clarification when compact artifacts are insufficient.
+   - If the user asks to merge multiple program-analysis results but only wants
+     core SME information, generate `flow-sme-core-review.md` or
+     `program-set-sme-core-review.md` from `templates/sme-core-review.md`.
+     Include only Calculation Logic, Validation Logic, Exception Handling, and
+     Message Inventory. Do not include Nodes, Edges, Replay, Persistence,
+     Lineage, UI Surfaces, Capability Seeds, or SME Checklist in that compact
+     core-review artifact.
    - In `standalone_exploratory`, continue with warning rows when approvals,
      inventory linkage, or sidecars are missing; in `chain_ready`, enforce the
      blocking gates.
