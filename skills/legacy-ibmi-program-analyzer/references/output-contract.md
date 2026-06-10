@@ -41,6 +41,43 @@ front-loaded even for large programs. Dense routine, message, file I/O,
 mutation, and embedded SQL evidence must be summarized in the main document and
 linked to sidecars rather than expanded until the document becomes unreadable.
 
+## Program Artifact Finalization Gate
+
+The final `program-analysis.md` / `program-analysis-<OBJ-ID>.md` is a full SME
+review wrapper, not a compressed narrative summary. Before delivery, validate
+the artifact set:
+
+- The main program analysis contains every required `##` section from File
+  Structure in the listed order. For small or exploratory programs, sections
+  may be concise or explicitly marked not applicable / pending, but they must
+  not be omitted.
+- `program-analysis-summary.yaml` is the compact machine-readable source for
+  program counts, mode/tier, and sidecar declarations. Core sidecars declared
+  there must exist: `source-index.yaml`, `routine-index.md`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`, and
+  `message-inventory.yaml`. Optional sidecars are required only when declared
+  `present` or `optional_triggered`.
+- `routine-logic-details.yaml` controls RLOG coverage. The final
+  `routine-logic-details.md` must include every
+  `routine_logic_inventory.details[].detail_id`; `routine-logic-details/part-*.md`
+  and `routine-logic-details/deep-read-batch-*.md` files are working surfaces
+  and cannot be the only SME review surface. Each batch file must front-load
+  `Calculation Logic`, `Validation Logic`, and `Exception Handling` before
+  per-routine RLOG detail.
+- Do not deliver a latest-batch-only, delta-only, or wrapper-only
+  `program-analysis.md` when sidecars show a larger artifact set.
+
+Run the mechanical validator before delivery:
+
+```text
+Windows: py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>
+macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
+```
+
+On Windows, fall back from `py -3` to `python` if needed. If every launcher
+fails, stop with **"Python runtime unavailable"** and do not configure PATH,
+install Python, or create a virtual environment.
+
 ---
 
 ## Calculation Logic Section
@@ -616,13 +653,20 @@ routine inline:
   detail lives in `routine-logic-details.md` plus machine-readable
   `routine-logic-details.yaml`.
 - `routine_count > 80` or source lines > 10,000: human-authored semantic detail
-  must be split into `routine-logic-details/part-*.md` working shard files by
+  must be split into `routine-logic-details/part-*.md` or
+  `routine-logic-details/deep-read-batch-*.md` working shard files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
-- Every `routine-logic-details/part-*.md` shard must be SME-first. Immediately
-  after the shard title, add batch-scoped `## Calculation Logic`,
-  `## Validation Logic`, `## Exception Handling`, and `## Message Inventory`
-  sections before the per-routine detail. These sections summarize only the
+- Every `routine-logic-details/part-*.md` or
+  `routine-logic-details/deep-read-batch-*.md` shard must be SME-first.
+  Immediately after the shard title, add batch-scoped
+  `## SME Core Logic Snapshot` with `### Calculation Logic`,
+  `### Validation Logic`, and `### Exception Handling`, or use top-level
+  `## Calculation Logic`, `## Validation Logic`, and
+  `## Exception Handling` sections. Add `## Message Inventory` before
+  per-routine detail when the batch observes messages, statuses, return codes,
+  response literals, SQLSTATEs, CPF/MCH/RNX/CPD messages, operator text, or
+  shop-local tokens. These sections summarize only the
   routines covered by that shard and link each row to the relevant `RLOG-*`
   detail, conditioned block, outcome reverse trace, exception closure, message
   detail, or TBD. Do not bury material calculation, validation, exception, or
@@ -651,28 +695,40 @@ routine inline:
 
 ### Sharded Part File Header
 
-Each `routine-logic-details/part-*.md` file must start with this structure:
+Each `routine-logic-details/part-*.md` or
+`routine-logic-details/deep-read-batch-*.md` file must start with this
+structure:
 
 ```markdown
 # Routine Logic Details: [PROGRAM] - [Part Name]
 
-## Calculation Logic
+## SME Core Logic Snapshot
+
+### Calculation Logic
 
 | Logic / Calculation | Routine | Target Field / Variable | Source Operands | Guard / Condition | Output / Effect | Detail Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [batch-scoped material calculation] | [SRxxx] | [`FIELD`] | [`SOURCE`] | [always / IF / indicator / loop] | [persisted / returned / passed / message set] | RLOG-[PROGRAM]-NNN conditioned block / TBD | [EV-* / source lines] |
 
-## Validation Logic
+### Validation Logic
 
 | Message / Status / Outcome | Routine | Trigger Chain | Carrier / Destination | Downstream Effect | Detail Link | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | [code/status/literal] | [SRxxx] | [guard -> calculation -> outcome] | [field / response / queue / message] | [return / skip / log / continue] | RLOG-[PROGRAM]-NNN outcome reverse trace / TBD | confirmed / inferred / unresolved |
 
-## Exception Handling
+### Exception Handling
 
 | Exception / Error Path | Routine | Trigger / Detection | Fields / Messages Set | Handling Action | Downstream Effect | Detail Link | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [business / file I/O / external call / generic handler] | [SRxxx] | [IF / MONITOR / ON-ERROR / return-code check] | [status/message/flag/log text] | [return / rollback / skip / continue / abort / log] | [skipped update/call/output or continuation] | RLOG-[PROGRAM]-NNN exception closure / TBD | confirmed / inferred / unresolved |
+
+## Scope
+
+[Batch routines/windows covered and excluded.]
+
+## Batch Coverage Summary
+
+[Batch RLOG IDs, source ranges, and deep-read status.]
 
 ## Message Inventory
 

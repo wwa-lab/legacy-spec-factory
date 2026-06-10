@@ -233,7 +233,25 @@ detail, even for very large programs. It must contain whole-program
 `## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
 sections, with every routine included and every exact message/status/literal
 listed. Keep `program-analysis.md` compact; do not force SMEs to review only by
-jumping across `part-*.md` files.
+part files.
+
+For large and segmented programs, the final `program-analysis.md` is still the
+contracted SME wrapper. It may stay compact, but it must include every required
+section from `references/output-contract.md`, link to the sidecars declared in
+`program-analysis-summary.yaml`, and pass the Program Artifact Finalization
+Gate. Each `routine-logic-details/part-*.md` or
+`routine-logic-details/deep-read-batch-*.md` working file must front-load SME
+core logic (`Calculation Logic`, `Validation Logic`, and `Exception Handling`)
+before per-routine detail. Do not replace the wrapper with a compressed
+latest-batch summary. Before delivery, run:
+
+```text
+Windows: py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>
+macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
+```
+
+The gate checks required wrapper sections, declared sidecar files, and RLOG
+coverage from `routine-logic-details.yaml` to `routine-logic-details.md`.
 
 For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
 Logic` inside `program-analysis.md` as SME-readable summaries. Store complete

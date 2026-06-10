@@ -569,11 +569,12 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
             "main_document_limit": "summarize only when routines > 25",
             "part_files_required_when": "routines > 80 or source lines > 10000",
             "part_file_front_matter": (
-                "Each routine-logic-details/part-*.md file must start with "
-                "batch-scoped Calculation Logic, Validation Logic, Exception "
-                "Handling, and Message Inventory sections before per-routine "
-                "detail. Message Inventory must list every exact "
-                "message/status/literal observed in that batch."
+                "Each routine-logic-details/part-*.md or "
+                "routine-logic-details/deep-read-batch-*.md file must start "
+                "with batch-scoped SME Core Logic Snapshot sections for "
+                "Calculation Logic, Validation Logic, and Exception Handling "
+                "before per-routine detail. Message Inventory must list every "
+                "exact message/status/literal observed in that batch."
             ),
             "final_consolidation_required": (
                 "After batch deep-read, merge all part files into one final "
@@ -1797,9 +1798,11 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
         "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
         "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` working files.",
-        "- Each `routine-logic-details/part-*.md` file must start with batch-scoped `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and `## Message Inventory` before per-routine detail.",
+        "- Each `routine-logic-details/part-*.md` or `routine-logic-details/deep-read-batch-*.md` file must start with batch-scoped SME core `##/### Calculation Logic`, `Validation Logic`, and `Exception Handling` before per-routine detail.",
         "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
         "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
+        "- `routine-logic-details.yaml` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
+        "- Before delivery, run `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` with the repository Python launcher convention.",
     ]
 
     for detail in index["routine_logic_inventory"]["details"]:
@@ -1957,7 +1960,9 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
             "Flow-level analysis should prefer this compact summary and present "
             "sidecar YAML files instead of concatenating large program-analysis "
             "Markdown. Optional sidecars can be generated on demand when their "
-            "trigger is true or downstream evidence needs them."
+            "trigger is true or downstream evidence needs them. Before delivery, "
+            "validate the main wrapper sections, declared sidecars, and RLOG "
+            "coverage with scripts/validate-program-analysis-contract.py."
         ),
     }
     return to_yaml(payload) + "\n"
