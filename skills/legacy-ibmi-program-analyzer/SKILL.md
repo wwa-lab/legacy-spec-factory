@@ -104,6 +104,13 @@ Use:
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
   during this skill.
+- `scripts/validate_program_analysis_contract.py` (or the root
+  `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
+  finalization gate before delivery:
+  - Windows: try `py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>`, fall back to `python` if `py -3` is unavailable
+  - macOS/Linux: `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`
+  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  Do not configure PATH, install Python, or create a virtual environment.
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
 - `references/evidence-tagging.md` for evidence strength levels and tagging methodology
@@ -256,7 +263,10 @@ field-level rules. The summary below is normative for this skill.
   evidence and unresolved inventory/object/evidence mappings are listed as
   downstream-readiness gaps, not current-analysis blockers. In both modes,
   every TBD has a blocking-status tag and required sections are present.
-  Reference-pack facts must cite the pack/file/row or anchor used.
+  `program-analysis.md` / `program-analysis-<OBJ-ID>.md` must pass the Program
+  Artifact Finalization Gate before delivery, and chain-ready output must not
+  be promoted when the gate fails. Reference-pack facts must cite the
+  pack/file/row or anchor used.
 - **AI semantic**: behaviors are consistent with the linked source lines;
   no invented subroutines, fields, files, field mutations, message IDs,
   or error codes; evidence strength not overstated (no
@@ -323,6 +333,43 @@ to the orchestrator.
    - Prevent claims of complete understanding until coverage supports
      them with indexed routines, deep-read windows, resolved call/data
      edges, and explicit gaps
+
+### Program Artifact Finalization Gate
+
+Run this gate before delivering `program-analysis.md` /
+`program-analysis-<OBJ-ID>.md`.
+
+- `program-analysis.md` is the SME review wrapper, not a free-form compressed
+  summary. It must follow `references/output-contract.md` File Structure with
+  all required `##` sections in order. Small programs may keep sections
+  concise or mark them not applicable / pending, but sections must not be
+  omitted.
+- `program-analysis-summary.yaml` is the compact machine-readable program
+  summary and sidecar index. Core sidecars declared there must exist:
+  `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
+  `routine-logic-details.yaml`, and `message-inventory.yaml`. Optional
+  sidecars are required only when declared `present` or `optional_triggered`.
+- `routine-logic-details.yaml` is the RLOG coverage source of truth.
+  `routine-logic-details/part-*.md` or
+  `routine-logic-details/deep-read-batch-*.md` files are temporary deep-read
+  working surfaces. Each batch file must front-load SME core logic with
+  `Calculation Logic`, `Validation Logic`, and `Exception Handling` before
+  per-routine detail. The final `routine-logic-details.md` must contain every
+  `routine_logic_inventory.details[].detail_id` from YAML and whole-program
+  `Calculation Logic`, `Validation Logic`, `Exception Handling`,
+  `Message Inventory`, `Routine Detail Index`, and `Routine Details`; do not
+  deliver only the latest batch, a delta, or a summary of recent batches.
+- For `normal_program` / quick exploratory runs with no part files, this gate
+  is a lightweight structural check. It does not require large-program
+  sidecars or batched deep-read. For `complex_normal_program`,
+  `large_extreme_program`, `segmented`, `large_program`, existing
+  `routine-logic-details/part-*.md` or
+  `routine-logic-details/deep-read-batch-*.md`, or `chain_ready` output, a
+  failed gate is blocking.
+- Run the validator with the repository Python launcher convention:
+  Windows `py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>`
+  (fall back to `python`), macOS/Linux
+  `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`.
 
 2. **Select Program & Resolve Analysis Intent**
    - Determine whether the user wants `standalone_exploratory` or
@@ -394,11 +441,18 @@ to the orchestrator.
        details live in `routine-logic-details.md` and
        `routine-logic-details.yaml`.
      - `routine_count > 80` or source lines > 10,000: split human-authored
-       semantic detail into `routine-logic-details/part-*.md` working files
-       by mainline/dispatch, state-changing routines, validation/message
+       semantic detail into `routine-logic-details/part-*.md` or
+       `routine-logic-details/deep-read-batch-*.md` working files by
+       mainline/dispatch, state-changing routines, validation/message
        routines, external boundaries, and indexed utilities.
-       Each part file must be SME-first: immediately after the title, add
-       batch-scoped `## Calculation Logic`, `## Validation Logic`,
+       Each batch file must be SME-first: immediately after the title, add
+       batch-scoped `## SME Core Logic Snapshot` with `### Calculation Logic`,
+       `### Validation Logic`, and `### Exception Handling`; also include
+       `## Message Inventory` before per-routine detail when messages,
+       statuses, return codes, response literals, or operator text are observed
+       in the batch.
+       Older `part-*.md` files may instead use top-level
+       `## Calculation Logic`, `## Validation Logic`,
        `## Exception Handling`, and `## Message Inventory` sections
        summarizing the material calculations, assignments, validations,
        exception paths, message/status outcomes, and links to the routines in
@@ -411,7 +465,8 @@ to the orchestrator.
        must contain whole-program `## Calculation Logic`,
        `## Validation Logic`, `## Exception Handling`, `## Message Inventory`,
        a routine detail index, and all routine detail sections. Do not leave
-       `part-*.md` files as the only SME review surface.
+       `part-*.md` or `deep-read-batch-*.md` files as the only SME review
+       surface.
    - In Routine Logic Details, explain each routine's execution trigger,
      step-by-step logic, field calculations/assignments, branch outcomes,
      exits, and evidence. Do not summarize a routine as "validation logic" or

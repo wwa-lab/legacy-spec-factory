@@ -298,20 +298,24 @@ Routine detail placement rules:
 - `routine_count > 25`: keep the main analysis to the summary table and place
   full details in `routine-logic-details.md` and `routine-logic-details.yaml`.
 - `routine_count > 80` or source lines > 10,000: split full human-authored
-  semantic detail into `routine-logic-details/part-*.md` working files by
+  semantic detail into `routine-logic-details/part-*.md` or
+  `routine-logic-details/deep-read-batch-*.md` working files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
-- Each `routine-logic-details/part-*.md` file must start with batch-scoped
-  `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, and
-  `## Message Inventory` sections before per-routine detail, so SME reviewers
-  see the core logic for that batch first. Message Inventory must list every
-  exact message/status/literal observed in the batch as its own row.
+- Each batch file must start with batch-scoped SME core logic:
+  `## SME Core Logic Snapshot` containing `### Calculation Logic`,
+  `### Validation Logic`, and `### Exception Handling` before per-routine
+  detail, so SME reviewers see the core logic for that batch first. Add
+  `## Message Inventory` before per-routine detail when messages, statuses,
+  return codes, response literals, or operator text are observed. Message
+  Inventory must list every exact message/status/literal observed in the batch
+  as its own row.
 - Final SME review must happen in one consolidated `routine-logic-details.md`.
   After batch deep-read is complete, merge all `part-*.md` content into that
   file with whole-program `## Calculation Logic`, `## Validation Logic`,
   `## Exception Handling`, `## Message Inventory`, `## Routine Detail Index`,
-  and `## Routine Details` sections. Do not leave part files as the only review
-  surface.
+  and `## Routine Details` sections. Do not leave part/deep-read batch files as
+  the only review surface.
 - This section must not collapse field calculations into generic labels such as
   "validation logic" or "amount calculation".
 
