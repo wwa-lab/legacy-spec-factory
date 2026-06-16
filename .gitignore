@@ -35,6 +35,9 @@ evidence/**/*sensitive*
 # Local IDE/agent settings
 .claude/settings.local.json
 
+# Local/internal review assets
+project_review/
+
 # Python cache
 __pycache__/
 *.py[cod]
