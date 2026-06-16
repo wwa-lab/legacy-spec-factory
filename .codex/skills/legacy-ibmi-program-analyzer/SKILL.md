@@ -65,6 +65,12 @@ Accept:
   document-intake outputs. Preferred paths:
   `00_reference_packs/<PACK-SLUG>/reference-pack-index.yaml` or
   `00_context_packages/<MODULE-SLUG>/field-dictionary-context.md`.
+- **Required for meaningful message review when message/status IDs are
+  observed:** message file, message catalog, approved reference pack,
+  source literal/comment, runtime evidence, or SME-approved description source
+  for every observed message/status/code. Static indexing may proceed without
+  it, but final delivery and chain-ready promotion are blocked until message
+  descriptions are resolved.
 - **Required for `chain_ready`:** Program must be referenced in an approved
   `01_inventory/inventory.yaml` via program ID (`OBJ-*`)
 - **Allowed for `standalone_exploratory`:** inventory may be absent when the
@@ -89,6 +95,11 @@ Produce:
   per analysis session)
 - `program-analysis.md` for standalone exploratory inspection when no
   inventory-backed `OBJ-*` exists yet
+- Never report the program-analysis step complete unless the main wrapper file
+  exists at the target output path and follows the required section order. When
+  deterministic indexing runs first, it must create a draft `program-analysis.md`
+  wrapper seed with all required sections; semantic deep-read then fills that
+  stable layout instead of inventing a new layout.
 
 Use:
 
@@ -104,6 +115,10 @@ Use:
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
   during this skill.
+  The helper writes a draft `program-analysis.md` wrapper seed, core sidecars,
+  and large-program batch checkpoints when triggered. The seed is not approved
+  analysis; it exists to keep the final layout stable and prevent missing main
+  artifacts.
 - `scripts/validate_program_analysis_contract.py` (or the root
   `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
   finalization gate before delivery:
@@ -197,7 +212,10 @@ field-level rules. The summary below is normative for this skill.
     routines, more than 20 external calls, more than 25 object dependencies, or
     cannot safely fit in context with evidence windows. Use
     `references/large-program-analysis.md`, build the full sidecar set, and
-    deep-read in batches of at most five routines/windows.
+    deep-read in batches of at most five routines/windows. The artifact set
+    must include retained batch checkpoint files under
+    `routine-logic-details/`, starting with
+    `routine-logic-details/deep-read-batch-001.md`.
 - When the source file is accessible on disk, first run
   `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
   wrapper) to classify the program tier and produce the appropriate artifact
@@ -249,6 +267,12 @@ field-level rules. The summary below is normative for this skill.
 - **Reference pack metadata**: when message catalogs, control files, code
   tables, or data dictionaries are used, record pack path, pack ID/version,
   authorization status, and lookup coverage in Metadata.
+- **Message description gate**: every observed message ID, status value,
+  response literal, return code, SQLSTATE, CPF/MCH/RNX/CPD message, operator
+  message, or shop-local token must have a specific description and description
+  source before final delivery. `unresolved - message description not
+  available` is allowed only as a pre-analysis gap; it is blocking for final
+  review / chain-ready output.
 - **Handoff status**: `status: draft` until SME review; `approved` or
   `approved_with_non_blocking_tbd` is required before
   `legacy-ibmi-flow-analyzer` runs against the chain that includes this
@@ -262,7 +286,11 @@ field-level rules. The summary below is normative for this skill.
   `standalone_exploratory`, every non-trivial behavior has source-range/local
   evidence and unresolved inventory/object/evidence mappings are listed as
   downstream-readiness gaps, not current-analysis blockers. In both modes,
-  every TBD has a blocking-status tag and required sections are present.
+  every TBD has a blocking-status tag and required sections are present. Any
+  observed message/status/code with an unresolved description source is
+  blocking for final delivery; provide message file/catalog/reference pack,
+  source literal/comment, runtime evidence, or SME-approved text before
+  declaring the analysis review-ready.
   `program-analysis.md` / `program-analysis-<OBJ-ID>.md` must pass the Program
   Artifact Finalization Gate before delivery, and chain-ready output must not
   be promoted when the gate fails. Reference-pack facts must cite the
@@ -309,7 +337,7 @@ to the orchestrator.
      Use the same launcher order for all temporary consistency checks, YAML
      readability checks, Markdown sanity checks, and one-off helper scripts.
    - Use `source-index.yaml`, `program-analysis-summary.yaml`,
-     `routine-index.md`, `routine-logic-details.md`,
+     `program-analysis.md`, `routine-index.md`, `routine-logic-details.md`,
      `routine-logic-details.yaml`, and `message-inventory.yaml` as the normal
      deterministic pre-analysis index. Add `all-routine-coverage-ledger.md`,
      `deep-read-plan.md`, `message-inventory.md`,
@@ -351,14 +379,25 @@ Run this gate before delivering `program-analysis.md` /
   sidecars are required only when declared `present` or `optional_triggered`.
 - `routine-logic-details.yaml` is the RLOG coverage source of truth.
   `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md` files are temporary deep-read
-  working surfaces. Each batch file must front-load SME core logic with
-  `Calculation Logic`, `Validation Logic`, and `Exception Handling` before
-  per-routine detail. The final `routine-logic-details.md` must contain every
+  `routine-logic-details/deep-read-batch-*.md` files are retained deep-read
+  checkpoint and audit surfaces for large/extreme runs. They do not replace
+  the consolidated `routine-logic-details.md`, but they must be kept when
+  generated. Each batch file must use the exact top-level `##` section order:
+  `Calculation Logic`, `Validation Logic`, `Exception Handling`, `Scope`,
+  `Batch Coverage Summary`, `Message Inventory`, `Routine Details`. The first
+  three core sections must appear before per-routine detail and must not
+  contain pasted source code, fenced code blocks, or verbatim RPG/CL/COBOL/SQL
+  statements. Use source identifiers, normalized logic summaries, source
+  ranges, evidence IDs, and `RLOG-*` links instead. The final
+  `routine-logic-details.md` must contain every
   `routine_logic_inventory.details[].detail_id` from YAML and whole-program
   `Calculation Logic`, `Validation Logic`, `Exception Handling`,
   `Message Inventory`, `Routine Detail Index`, and `Routine Details`; do not
   deliver only the latest batch, a delta, or a summary of recent batches.
+- For `large_extreme_program`, `routine-logic-details/` and at least
+  `routine-logic-details/deep-read-batch-001.md` are required checkpoint
+  artifacts. A missing batch directory or first batch file is blocking even if
+  the consolidated `routine-logic-details.md` exists.
 - For `normal_program` / quick exploratory runs with no part files, this gate
   is a lightweight structural check. It does not require large-program
   sidecars or batched deep-read. For `complex_normal_program`,
@@ -440,26 +479,24 @@ Run this gate before delivering `program-analysis.md` /
        Details summary table with `RLOG-<PROGRAM>-NNN` detail IDs, while full
        details live in `routine-logic-details.md` and
        `routine-logic-details.yaml`.
-     - `routine_count > 80` or source lines > 10,000: split human-authored
+    - `routine_count > 80` or source lines > 10,000: split human-authored
        semantic detail into `routine-logic-details/part-*.md` or
-       `routine-logic-details/deep-read-batch-*.md` working files by
+       `routine-logic-details/deep-read-batch-*.md` retained batch checkpoint
+       files by
        mainline/dispatch, state-changing routines, validation/message
        routines, external boundaries, and indexed utilities.
-       Each batch file must be SME-first: immediately after the title, add
-       batch-scoped `## SME Core Logic Snapshot` with `### Calculation Logic`,
-       `### Validation Logic`, and `### Exception Handling`; also include
-       `## Message Inventory` before per-routine detail when messages,
-       statuses, return codes, response literals, or operator text are observed
-       in the batch.
-       Older `part-*.md` files may instead use top-level
-       `## Calculation Logic`, `## Validation Logic`,
-       `## Exception Handling`, and `## Message Inventory` sections
-       summarizing the material calculations, assignments, validations,
-       exception paths, message/status outcomes, and links to the routines in
-       that part. `Message Inventory` must include one row per exact message,
-       status value, return code, response literal, or operator text observed
-       in that batch; do not group messages into family summaries. Then place
-       the detailed routine sections below those summaries.
+       Each batch file must be SME-first and use this exact top-level `##`
+       layout: `Calculation Logic`, `Validation Logic`,
+       `Exception Handling`, `Scope`, `Batch Coverage Summary`,
+       `Message Inventory`, `Routine Details`. The core logic sections must
+       summarize material calculations, assignments, validations, exception
+       paths, message/status outcomes, and links to the routines in that batch.
+       `Message Inventory` must include one row per exact message, status
+       value, return code, response literal, or operator text observed in that
+       batch; do not group messages into family summaries. Then place the
+       detailed routine sections below those summaries. Core sections must not
+       contain real source-code snippets or fenced code blocks; preserve
+       evidence through source ranges and identifiers, not pasted code.
        After batch deep-read is complete, merge every part file back into one
        final `routine-logic-details.md` SME review document. The final document
        must contain whole-program `## Calculation Logic`,
@@ -778,7 +815,10 @@ Run this gate before delivering `program-analysis.md` /
      still trace Emitted / Set By and Trigger / Handler from source in the
      sidecar detail.
      If no description is available, write
-     `unresolved - message description not available` and create an Open Item.
+     `unresolved - message description not available`, create an Open Item /
+     TBD, and mark the artifact not final-review-ready until the message file,
+     catalog, reference pack, source literal/comment, runtime evidence, or
+     SME-approved description is supplied.
    - Tag: `confirmed_from_code` (explicit error block) or `strongly_inferred` (pattern-based)
    - Create TBD if error handling is unclear or context-dependent
 
@@ -957,3 +997,15 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Required `Visual Overview` to remain a compact fenced `text` ASCII hierarchy
   - Standardized the tree shape around `PROGRAM mainline` plus `|--` branch connectors
   - Requires source flow headers to be reconciled against code-derived Call Evidence before use as the visual map
+- v0.2.9 (2026-06-16): Large-program artifact completion tightening
+  - Deterministic indexer now emits a draft `program-analysis.md` wrapper seed with the required section order
+  - Large/extreme runs retain `routine-logic-details/deep-read-batch-001.md` style batch checkpoint files under `routine-logic-details/`
+  - Finalization gate blocks large/extreme delivery when the main wrapper or required batch checkpoint artifacts are missing
+- v0.2.10 (2026-06-16): Batch layout and no-source-snippet gate
+  - Requires every `routine-logic-details/deep-read-batch-*.md` checkpoint to use the same top-level `##` layout
+  - Blocks batch core logic sections that include fenced code blocks or source-code-like RPG/CL/COBOL/SQL snippets
+  - Keeps evidence via identifiers, source ranges, and `RLOG-*` links rather than pasted source statements
+- v0.2.11 (2026-06-16): Message description gate
+  - Blocks final delivery when observed message/status/code values have unresolved descriptions
+  - Requires a message file/catalog/reference pack, source literal/comment, runtime evidence, or SME-approved description source
+  - Marks missing message catalog/reference data as a blocking TBD instead of silently producing low-value message ID lists

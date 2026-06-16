@@ -63,7 +63,48 @@ BATCH_CORE_SECTIONS = (
     "Exception Handling",
 )
 
+BATCH_REQUIRED_SECTIONS = (
+    "Calculation Logic",
+    "Validation Logic",
+    "Exception Handling",
+    "Scope",
+    "Batch Coverage Summary",
+    "Message Inventory",
+    "Routine Details",
+)
+
 RLOG_RE = re.compile(r"\bRLOG-[A-Z0-9_#$@-]+-\d{3}\b", re.I)
+FENCED_CODE_RE = re.compile(r"```")
+FIXED_FORMAT_SOURCE_RE = re.compile(
+    r"^\s*(?:[A-Z0-9_#$@]{1,10}\s+)?C\s{2,}.*\b"
+    r"(EXSR|BEGSR|ENDSR|CHAIN|SETLL|READE|READP?E?|READ|WRITE|UPDATE|"
+    r"DELETE|EXFMT|CALLP?|CALLPRC|EVAL|MOVE|MOVEL|Z-ADD|ADD|SUB|MULT|DIV|"
+    r"MONITOR|ON-ERROR|MONMSG|SNDPGMMSG)\b",
+    re.I,
+)
+FREE_FORMAT_SOURCE_RE = re.compile(
+    r"^\s*(IF|WHEN|DOW|DOU|FOR|SELECT|MONITOR|ON-ERROR|RETURN|EVAL|"
+    r"EXEC\s+SQL|CHAIN|SETLL|READE|READP?E?|READ|WRITE|UPDATE|DELETE|"
+    r"CALLP?|EXSR|DCL-[A-Z]+)\b.+;\s*$",
+    re.I,
+)
+SQL_SOURCE_RE = re.compile(
+    r"^\s*(SELECT|UPDATE|INSERT|DELETE|MERGE)\s+.+\b(FROM|SET|INTO|WHERE)\b.*;?\s*$",
+    re.I,
+)
+UNRESOLVED_MESSAGE_DESCRIPTION = "unresolved - message description not available"
+UNRESOLVED_DESCRIPTION_SOURCES = {
+    "",
+    "unresolved",
+    "missing_message_catalog_or_reference_pack",
+    "missing_message_file",
+    "pending_message_file",
+}
+UNRESOLVED_DESCRIPTION_STATUSES = {
+    "unresolved",
+    "unresolved_description",
+    "pending_message_file",
+}
 
 
 def read_text(path: Path) -> str:
@@ -110,6 +151,17 @@ def heading_positions(markdown: str) -> dict[str, int]:
     return positions
 
 
+def heading_spans(markdown: str) -> dict[str, tuple[int, int]]:
+    matches = list(re.finditer(r"^(#{2,6})\s+(.+?)\s*$", markdown, re.M))
+    spans: dict[str, tuple[int, int]] = {}
+    for index, match in enumerate(matches):
+        heading = match.group(2).strip()
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        spans.setdefault(heading, (start, end))
+    return spans
+
+
 def validate_ordered_headings(
     markdown: str,
     required_headings: tuple[str, ...],
@@ -124,6 +176,80 @@ def validate_ordered_headings(
     ordered_positions = [positions[heading] for heading in required_headings]
     if ordered_positions != sorted(ordered_positions):
         findings.append(f"{artifact_label} required headings are out of order")
+    return findings
+
+
+def validate_ordered_h2_headings(
+    markdown: str,
+    required_headings: tuple[str, ...],
+    artifact_label: str,
+) -> list[str]:
+    findings: list[str] = []
+    positions = h2_positions(markdown)
+    missing = [heading for heading in required_headings if heading not in positions]
+    if missing:
+        findings.append(f"{artifact_label} missing required ## headings: " + ", ".join(missing))
+        return findings
+    ordered_positions = [positions[heading] for heading in required_headings]
+    if ordered_positions != sorted(ordered_positions):
+        findings.append(f"{artifact_label} required ## headings are out of order")
+    return findings
+
+
+def table_cells_or_line(line: str) -> list[str]:
+    stripped = line.strip()
+    if not stripped:
+        return []
+    if stripped.startswith("|") and stripped.endswith("|"):
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        return [
+            cell
+            for cell in cells
+            if cell and not re.fullmatch(r":?-{3,}:?", cell)
+        ]
+    return [stripped]
+
+
+def strip_inline_code_marks(text: str) -> str:
+    return text.replace("`", "").strip()
+
+
+def looks_like_source_snippet(text: str) -> bool:
+    candidate = strip_inline_code_marks(text)
+    if not candidate:
+        return False
+    if FIXED_FORMAT_SOURCE_RE.search(candidate):
+        return True
+    if FREE_FORMAT_SOURCE_RE.search(candidate):
+        return True
+    if SQL_SOURCE_RE.search(candidate):
+        return True
+    return False
+
+
+def validate_batch_core_has_no_source_snippets(
+    batch_text: str,
+    batch_label: str,
+) -> list[str]:
+    findings: list[str] = []
+    spans = heading_spans(batch_text)
+    for section in BATCH_CORE_SECTIONS:
+        span = spans.get(section)
+        if span is None:
+            continue
+        section_text = batch_text[span[0] : span[1]]
+        if FENCED_CODE_RE.search(section_text):
+            findings.append(
+                f"{batch_label} {section} core logic must not contain fenced source/code blocks"
+            )
+        for line_number, line in enumerate(section_text.splitlines(), start=1):
+            for cell in table_cells_or_line(line):
+                if looks_like_source_snippet(cell):
+                    findings.append(
+                        f"{batch_label} {section} core logic contains a source-code-like snippet "
+                        f"near section line {line_number}: {cell[:80]}"
+                    )
+                    break
     return findings
 
 
@@ -186,11 +312,55 @@ def batch_detail_files(analysis_dir: Path) -> list[Path]:
     batch_dir = analysis_dir / "routine-logic-details"
     if not batch_dir.is_dir():
         return []
-    patterns = ("part-*.md", "deep-read-batch-*.md")
+    patterns = ("part-*.md", "deep-read-batch-*.md", "deep-batch-*.md")
     files: list[Path] = []
     for pattern in patterns:
         files.extend(batch_dir.glob(pattern))
     return sorted(set(files))
+
+
+def summary_payload(analysis_dir: Path) -> dict[str, Any]:
+    summary_path = analysis_dir / "program-analysis-summary.yaml"
+    if not summary_path.is_file():
+        return {}
+    payload = load_yaml(summary_path)
+    return payload if isinstance(payload, dict) else {}
+
+
+def requires_large_program_batches(payload: dict[str, Any]) -> bool:
+    if payload.get("program_size_tier") == "large_extreme_program":
+        return True
+    counts = payload.get("counts", {})
+    if isinstance(counts, dict) and int(counts.get("source_lines", 0) or 0) > 10000:
+        return True
+    source = payload.get("source", {})
+    if isinstance(source, dict) and int(source.get("line_count", 0) or 0) > 10000:
+        return True
+    return False
+
+
+def validate_large_program_batches(analysis_dir: Path) -> list[str]:
+    payload = summary_payload(analysis_dir)
+    if not payload or not requires_large_program_batches(payload):
+        return []
+
+    findings: list[str] = []
+    batches = batch_detail_files(analysis_dir)
+    if not batches:
+        findings.append(
+            "large_extreme_program requires routine-logic-details/deep-read-batch-*.md "
+            "batch checkpoint files"
+        )
+        return findings
+
+    canonical_first = analysis_dir / "routine-logic-details" / "deep-read-batch-001.md"
+    alias_first = analysis_dir / "routine-logic-details" / "deep-batch-001.md"
+    if not canonical_first.is_file() and not alias_first.is_file():
+        findings.append(
+            "large_extreme_program requires a first batch checkpoint: "
+            "routine-logic-details/deep-read-batch-001.md"
+        )
+    return findings
 
 
 def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
@@ -213,14 +383,17 @@ def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
         batch_text = read_text(batch_path)
         batch_label = str(batch_path.relative_to(analysis_dir))
         findings.extend(
-            validate_ordered_headings(
+            validate_ordered_h2_headings(
                 batch_text,
-                BATCH_CORE_SECTIONS,
+                BATCH_REQUIRED_SECTIONS,
                 batch_label,
             )
         )
+        findings.extend(validate_batch_core_has_no_source_snippets(batch_text, batch_label))
         positions = heading_positions(batch_text)
-        first_core_position = min(positions[heading] for heading in BATCH_CORE_SECTIONS if heading in positions)
+        if not all(heading in positions for heading in BATCH_CORE_SECTIONS):
+            continue
+        first_core_position = min(positions[heading] for heading in BATCH_CORE_SECTIONS)
         rlog_match = RLOG_RE.search(batch_text)
         if rlog_match and first_core_position > rlog_match.start():
             findings.append(
@@ -274,6 +447,63 @@ def validate_sidecar_set(analysis_dir: Path) -> list[str]:
     return findings
 
 
+def message_inventory_payload(analysis_dir: Path) -> dict[str, Any]:
+    path = analysis_dir / "message-inventory.yaml"
+    if not path.is_file():
+        return {}
+    payload = load_yaml(path)
+    inventory = (payload or {}).get("message_inventory", {})
+    return inventory if isinstance(inventory, dict) else {}
+
+
+def message_entries(inventory: dict[str, Any]) -> list[dict[str, Any]]:
+    details = inventory.get("details", [])
+    if isinstance(details, list) and details:
+        return [entry for entry in details if isinstance(entry, dict)]
+    summary = inventory.get("summary", [])
+    if isinstance(summary, list):
+        return [entry for entry in summary if isinstance(entry, dict)]
+    return []
+
+
+def has_unresolved_message_description(entry: dict[str, Any]) -> bool:
+    description = str(
+        entry.get("short_description")
+        or entry.get("message_description")
+        or entry.get("description")
+        or ""
+    ).strip().lower()
+    description_source = str(entry.get("description_source") or "").strip().lower()
+    evidence_status = str(entry.get("evidence_status") or "").strip().lower()
+    if description == UNRESOLVED_MESSAGE_DESCRIPTION:
+        return True
+    if description_source in UNRESOLVED_DESCRIPTION_SOURCES:
+        return True
+    if evidence_status in UNRESOLVED_DESCRIPTION_STATUSES:
+        return True
+    return False
+
+
+def validate_message_descriptions(analysis_dir: Path) -> list[str]:
+    inventory = message_inventory_payload(analysis_dir)
+    if not inventory:
+        return []
+    unresolved = [
+        str(entry.get("message") or entry.get("message_code") or entry.get("code") or "unknown")
+        for entry in message_entries(inventory)
+        if has_unresolved_message_description(entry)
+    ]
+    unresolved = sorted(set(unresolved))
+    if not unresolved:
+        return []
+    return [
+        "message descriptions unresolved for observed message/status/code values: "
+        + ", ".join(unresolved)
+        + ". Provide message file/catalog/reference pack, source literal/comment, "
+        "runtime evidence, or SME-approved descriptions before final delivery."
+    ]
+
+
 def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[str]:
     findings: list[str] = []
     if not analysis_dir.is_dir():
@@ -287,7 +517,9 @@ def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[s
 
     findings.extend(validate_sidecar_set(analysis_dir))
     findings.extend(validate_rlog_coverage(analysis_dir))
+    findings.extend(validate_large_program_batches(analysis_dir))
     findings.extend(validate_routine_detail_review_surfaces(analysis_dir))
+    findings.extend(validate_message_descriptions(analysis_dir))
     return findings
 
 
