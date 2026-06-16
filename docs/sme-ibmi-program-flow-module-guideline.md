@@ -5,19 +5,28 @@ This guideline explains how SMEs and analysts should use
 `legacy-ibmi-module-analyzer` when company LLM token budget is limited and one
 LLM turn may read at most five routines.
 
-For copy-ready bilingual prompts, see
-[`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md). It includes
-general program analysis, large-program automatic batch analysis, and compact
-multi-program SME core review prompts.
+For end-to-end SME code scan instructions for
+`legacy-ibmi-program-analyzer`, use the scenario-specific program analyzer
+guidelines:
+
+- [`sme-ibmi-program-analyzer-normal-guideline.md`](sme-ibmi-program-analyzer-normal-guideline.md)
+- [`sme-ibmi-program-analyzer-complex-guideline.md`](sme-ibmi-program-analyzer-complex-guideline.md)
+- [`sme-ibmi-program-analyzer-large-guideline.md`](sme-ibmi-program-analyzer-large-guideline.md)
+
+For short copy-ready prompt cards, see
+[`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md).
 
 ## 中文摘要
 
 这份 guideline 给 SME / BA / analyst 使用。核心用法是：
 
-- 常用中英双语提示词请直接看
-  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)，里面包含
-  普通 program、large program 自动分批、以及多个 program 结果合并成核心
-  SME review 的 prompt。
+- 如果要教 SME 端到端使用 `legacy-ibmi-program-analyzer` 做 code scan，
+  请按场景使用三份独立 guideline：
+  [`normal`](sme-ibmi-program-analyzer-normal-guideline.md)、
+  [`complex`](sme-ibmi-program-analyzer-complex-guideline.md)、
+  [`large`](sme-ibmi-program-analyzer-large-guideline.md)。
+- 常用短 prompt 卡片仍可参考
+  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)。
 - 只看一个程序，就跑 `legacy-ibmi-program-analyzer`。
 - 看一个业务交易从入口到落库，就跑 `legacy-ibmi-flow-analyzer`。
 - 看多个 flow 是否能组成一个可交付业务模块，就跑
@@ -80,374 +89,22 @@ level when the actual question is about one program or one transaction.
 | `complex_normal_program` | Under 10,000 lines but dense in routines, file I/O, SQL, messages, mutations, external calls, or more than one five-routine batch. | Same SME-first review plus only triggered sidecars. |
 | `large_extreme_program` | Over 10,000 lines, more than 25 routines, more than 20 external calls, more than 25 object dependencies, or unsafe to fit in context. | Full source index, all sidecars, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic loop when possible. |
 
-## Tier-Specific Prompts And Output Checkpoints
+## Program Analyzer E2E Guideline Set
 
-Use these copy-ready prompts after the first source index identifies the
-program tier. Each prompt has a matching output checkpoint so analysts can
-quickly verify whether the run is ready for SME review or needs another
-five-routine batch.
+For end-to-end `legacy-ibmi-program-analyzer` code scan instructions, use the
+scenario-specific SME guideline instead of copying prompts from this overview.
+Each guideline contains English and Chinese prompts for every major step, plus
+the required output checkpoints after each step.
 
-### Tier 1: `normal_program`
+| Program scenario | SME guideline | Use when |
+| --- | --- | --- |
+| `normal_program` | [`sme-ibmi-program-analyzer-normal-guideline.md`](sme-ibmi-program-analyzer-normal-guideline.md) | One program can be reviewed with lightweight core artifacts and at most one focused deep-read batch. |
+| `complex_normal_program` | [`sme-ibmi-program-analyzer-complex-guideline.md`](sme-ibmi-program-analyzer-complex-guideline.md) | The program is under large-program size but needs selective sidecars or multiple five-routine batches. |
+| `large_extreme_program` | [`sme-ibmi-program-analyzer-large-guideline.md`](sme-ibmi-program-analyzer-large-guideline.md) | The program is over 10,000 lines, has high dependency/routine density, or needs retained batch checkpoints. |
 
-Use this when the program is under 10,000 lines and has no density trigger.
-The target is a concise SME review surface, not a large sidecar package.
-
-English Prompt:
-
-```text
-Use legacy-ibmi-program-analyzer for a normal_program review.
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID or missing>
-Source path: <source path>
-Intent: <standalone_exploratory | chain_ready>
-Tier: normal_program
-
-Token rules:
-- Build or reuse source-index.yaml first.
-- Read at most 5 routine bodies in this turn.
-- Keep the review lightweight unless a density trigger is discovered.
-- Do not paste long source excerpts into the output.
-- Do not treat indexed_only routines as confirmed logic.
-
-Produce a concise program-analysis.md with stable sections:
-- Program Overview
-- Calculation Logic
-- Validation Logic
-- Exception Handling
-- Message Inventory
-- File I/O and SQL
-- External Calls and Handoffs
-- Evidence Coverage
-- Open TBDs and SME Questions
-
-Also produce or update the core compact artifacts:
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.yaml
-
-If message/status/code values are observed but descriptions are missing,
-mark them unresolved and do not mark the review final-ready.
-```
-
-中文 Prompt:
-
-```text
-请使用 legacy-ibmi-program-analyzer 做 normal_program review。
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID 或 missing>
-Source path: <source 路径>
-Intent: <standalone_exploratory | chain_ready>
-Tier: normal_program
-
-Token 规则:
-- 先建立或复用 source-index.yaml。
-- 本轮最多读取 5 个 routine body。
-- 没有密集度触发时，保持轻量 review，不要生成大量 sidecar。
-- 输出中不要粘贴大段真实 source code。
-- 不要把 indexed_only routines 当成 confirmed logic。
-
-请生成简洁、layout 稳定的 program-analysis.md，包含这些章节:
-- Program Overview
-- Calculation Logic
-- Validation Logic
-- Exception Handling
-- Message Inventory
-- File I/O and SQL
-- External Calls and Handoffs
-- Evidence Coverage
-- Open TBDs and SME Questions
-
-同时生成或更新核心 compact artifacts:
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.yaml
-
-如果发现 message/status/code，但没有对应描述，请标记 unresolved，
-不要把 review 标记为 final-ready。
-```
-
-Output Checkpoint:
-
-- `program-analysis.md` exists and uses the stable section order above.
-- Core compact artifacts exist and are internally consistent.
-- No optional sidecar is required unless the run discovered a density trigger.
-- `routine-logic-details.yaml` distinguishes `deep_read` from `indexed_only`.
-- Message IDs without descriptions are marked unresolved and block final-ready
-  status.
-- No confident business claim is based only on `indexed_only` evidence.
-
-### Tier 2: `complex_normal_program`
-
-Use this when the source is still below large-program size but has dense
-routines, messages, file I/O, SQL, field mutation, or external-call behavior.
-The target is selective sidecar generation, not automatic full expansion.
-
-English Prompt:
-
-```text
-Use legacy-ibmi-program-analyzer for a complex_normal_program review.
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID or missing>
-Source path: <source path>
-Intent: <standalone_exploratory | chain_ready>
-Tier: complex_normal_program
-
-Token rules:
-- Build or reuse source-index.yaml first.
-- Read at most 5 routine bodies in this turn.
-- Prioritize entry/dispatch, validation, calculation, persistence, exception,
-  message/status handling, SQL, and external-call boundary routines.
-- Generate only the sidecars triggered by observed evidence.
-- Do not paste real source-code snippets into narrative output.
-- Do not claim behavior from indexed_only routines.
-
-Required core output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.yaml
-
-Triggered sidecars:
-- deep-read-plan.md and all-routine-coverage-ledger.md when more than one
-  five-routine batch is needed.
-- file-io-inventory.yaml when file I/O is dense or state-changing.
-- field-mutation-matrix.yaml when persisted field mutation is observed.
-- sql-inventory.yaml when embedded SQL / SQLRPGLE evidence is observed.
-- message-inventory.md when message behavior needs SME-facing review.
-
-End the run with a checkpoint listing:
-- routines deep_read in this turn
-- routines still indexed_only
-- triggered sidecars created or updated
-- supported claims
-- unsafe claims
-- unresolved message descriptions
-- next five-routine batch candidates
-```
-
-中文 Prompt:
-
-```text
-请使用 legacy-ibmi-program-analyzer 做 complex_normal_program review。
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID 或 missing>
-Source path: <source 路径>
-Intent: <standalone_exploratory | chain_ready>
-Tier: complex_normal_program
-
-Token 规则:
-- 先建立或复用 source-index.yaml。
-- 本轮最多读取 5 个 routine body。
-- 优先读取 entry / dispatch、validation、calculation、persistence、
-  exception、message/status handling、SQL、external-call boundary routines。
-- 只生成被证据触发的 sidecars。
-- narrative 输出中不要粘贴真实 source-code snippets。
-- 不要根据 indexed_only routine 声称 confirmed behavior。
-
-核心产出:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.yaml
-
-按需触发的 sidecars:
-- deep-read-plan.md / all-routine-coverage-ledger.md:
-  当需要超过一轮 5 个 routine batch 时生成。
-- file-io-inventory.yaml:
-  当 file I/O 密集，或存在 write/update/delete/commit/rollback 时生成。
-- field-mutation-matrix.yaml:
-  当发现 persisted field mutation 时生成。
-- sql-inventory.yaml:
-  当发现 embedded SQL / SQLRPGLE evidence 时生成。
-- message-inventory.md:
-  当 message 行为需要 SME review 时生成。
-
-本轮结束时输出 checkpoint，列出:
-- 本轮 deep_read 的 routines
-- 仍然 indexed_only 的 routines
-- 本轮创建或更新的 triggered sidecars
-- 已有证据支持的 claims
-- 仍然不安全的 claims
-- 未解决的 message descriptions
-- 下一轮最多 5 个 routine 的候选列表
-```
-
-Output Checkpoint:
-
-- `program-analysis.md` exists and keeps the stable SME-first section layout.
-- Core compact artifacts exist for the program.
-- Every triggered sidecar has a clear evidence trigger; untriggered sidecars
-  are not required.
-- `deep-read-plan.md` and `all-routine-coverage-ledger.md` exist when more
-  than one five-routine batch is needed.
-- Coverage status remains explicit: `deep_read`, `indexed_only`, `blocked`, or
-  `pending_sme_judgment`.
-- Message IDs have descriptions or are marked unresolved with a requested
-  message file/catalog/reference pack or SME-approved text.
-- The next action is specific: another routine batch, a missing artifact, or
-  an SME decision.
-
-### Tier 3: `large_extreme_program`
-
-Use this when the source is over 10,000 lines, has very high routine/object
-density, or cannot be safely reviewed in one context. The target is automatic
-batchable progress with retained checkpoints.
-
-English Prompt:
-
-```text
-Use legacy-ibmi-program-analyzer for a large_extreme_program review.
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID or missing>
-Source path: <source path>
-Intent: <standalone_exploratory | chain_ready>
-Tier: large_extreme_program
-
-Token rules:
-- Never paste or re-read the full source in one turn.
-- Build or reuse source-index.yaml first.
-- Read at most 5 routine/window bodies in each turn.
-- Generate retained deep-read batch checkpoints under routine-logic-details/.
-- Do not paste real source-code snippets in deep-read-batch core logic
-  sections; cite source ranges, evidence IDs, and RLOG-* links instead.
-- Do not mark chain_ready while message descriptions, copybooks, external
-  program semantics, or critical state-changing routines remain unresolved.
-
-Required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.md
-- message-inventory.yaml
-- file-io-inventory.md
-- file-io-inventory.yaml
-- field-mutation-matrix.md
-- field-mutation-matrix.yaml
-- sql-inventory.md when SQL evidence exists
-- sql-inventory.yaml when SQL evidence exists
-- deep-read-plan.md
-- all-routine-coverage-ledger.md
-- routine-logic-details/deep-read-batch-001.md
-- additional routine-logic-details/deep-read-batch-*.md files for later
-  five-routine batches
-
-Every deep-read-batch-*.md must use this top-level layout:
-- Calculation Logic
-- Validation Logic
-- Exception Handling
-- Scope
-- Batch Coverage Summary
-- Message Inventory
-- Routine Details
-
-End every batch with a checkpoint listing:
-- batch number
-- routines/windows actually read
-- source line ranges read
-- artifacts updated
-- gaps closed
-- blockers added or retained
-- unresolved message descriptions
-- next batch candidates
-```
-
-中文 Prompt:
-
-```text
-请使用 legacy-ibmi-program-analyzer 做 large_extreme_program review。
-
-Program: <PROGRAM_NAME>
-Program ID: <OBJ-ID 或 missing>
-Source path: <source 路径>
-Intent: <standalone_exploratory | chain_ready>
-Tier: large_extreme_program
-
-Token 规则:
-- 不要在一轮里粘贴或重读完整 source。
-- 先建立或复用 source-index.yaml。
-- 每轮最多读取 5 个 routine/window body。
-- 必须在 routine-logic-details/ 下保留 deep-read batch checkpoints。
-- deep-read-batch 的核心逻辑章节不要粘贴真实 source-code snippets；
-  用 source ranges、evidence IDs、RLOG-* links 代替。
-- 只要 message descriptions、copybooks、external program semantics、
-  critical state-changing routines 仍未解决，就不要标记 chain_ready。
-
-必须产出:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
-- message-inventory.md
-- message-inventory.yaml
-- file-io-inventory.md
-- file-io-inventory.yaml
-- field-mutation-matrix.md
-- field-mutation-matrix.yaml
-- sql-inventory.md，如果存在 SQL evidence
-- sql-inventory.yaml，如果存在 SQL evidence
-- deep-read-plan.md
-- all-routine-coverage-ledger.md
-- routine-logic-details/deep-read-batch-001.md
-- 后续每轮 5 个 routine batch 对应的
-  routine-logic-details/deep-read-batch-*.md
-
-每个 deep-read-batch-*.md 必须使用这些顶层章节:
-- Calculation Logic
-- Validation Logic
-- Exception Handling
-- Scope
-- Batch Coverage Summary
-- Message Inventory
-- Routine Details
-
-每个 batch 结束时输出 checkpoint，列出:
-- batch number
-- 本轮实际读取的 routines/windows
-- 本轮读取的 source line ranges
-- 本轮更新的 artifacts
-- 本轮关闭的 gaps
-- 本轮新增或保留的 blockers
-- 未解决的 message descriptions
-- 下一轮 batch candidates
-```
-
-Output Checkpoint:
-
-- `program-analysis.md` exists and remains summary-level, not a full source
-  rewrite.
-- `deep-read-plan.md` and `all-routine-coverage-ledger.md` exist.
-- `routine-logic-details/deep-read-batch-001.md` exists after the first batch.
-- Every `deep-read-batch-*.md` uses the required top-level layout.
-- Batch core logic sections contain no pasted source-code snippets.
-- Each batch records the actual source line ranges read.
-- Core and triggered sidecars are updated incrementally, not regenerated from
-  unsupported assumptions.
-- `program-analysis-summary.yaml` shows remaining downstream-readiness gaps.
-- Unresolved message IDs block final-ready / chain-ready status until a
-  message file/catalog/reference pack, source literal/comment, runtime
-  evidence, or SME-approved description is provided.
+The three program analyzer guidelines are the handoff-ready SME operating
+manuals. This document remains the broader overview for program, flow, and
+module review.
 
 ## SME Review Priorities
 
