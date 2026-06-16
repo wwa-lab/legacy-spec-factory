@@ -74,8 +74,10 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("python3 scripts/index-rpg-source.py", text)
             self.assertIn("validate-program-analysis-contract.py", text)
             self.assertIn("program-analysis-summary.yaml", text)
+            self.assertIn("program-analysis.md", text)
             self.assertIn("routine-logic-details.md", text)
             self.assertIn("routine-logic-details.yaml", text)
+            self.assertIn("routine-logic-details/deep-read-batch-001.md", text)
             self.assertIn("temporary consistency checks", text)
             self.assertIn("YAML", text)
             self.assertIn("readability checks", text)
@@ -154,6 +156,7 @@ C                   SETON                                        LR
 
             self.assertIn("source-index.yaml", result.stdout)
             expected_present = {
+                "program-analysis.md",
                 "source-index.yaml",
                 "program-analysis-summary.yaml",
                 "routine-index.md",
@@ -176,14 +179,19 @@ C                   SETON                                        LR
                 self.assertTrue((output_dir / artifact).exists(), artifact)
             for artifact in expected_absent:
                 self.assertFalse((output_dir / artifact).exists(), artifact)
+            self.assertFalse((output_dir / "routine-logic-details").exists())
 
             source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
             summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
+            program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
             routine_details = (output_dir / "routine-logic-details.md").read_text(encoding="utf-8")
             self.assertIn("program_size_tier: normal_program", source_index)
             self.assertIn("default_output_profile: lightweight_program_review", summary)
+            self.assertIn("program_analysis:", summary)
             self.assertIn("not_written_by_default", summary)
             self.assertIn("validate-program-analysis-contract.py", summary)
+            self.assertIn("## Calculation Logic", program_analysis)
+            self.assertIn("## Review Checklist", program_analysis)
             self.assertIn("RLOG coverage source of truth", routine_details)
 
     def test_fixed_format_begsr_uses_factor_before_opcode_with_source_prefix(self) -> None:
@@ -484,6 +492,7 @@ C                   SETON                                        LR
             self.assertEqual(result.returncode, 0, result.stderr)
             for name in (
                 "source-index.yaml",
+                "program-analysis.md",
                 "program-analysis-summary.yaml",
                 "routine-index.md",
                 "all-routine-coverage-ledger.md",
@@ -498,6 +507,7 @@ C                   SETON                                        LR
                 "field-mutation-matrix.yaml",
                 "sql-inventory.md",
                 "sql-inventory.yaml",
+                "routine-logic-details/deep-read-batch-001.md",
             ):
                 self.assertTrue((output_dir / name).exists(), name)
 
@@ -512,27 +522,45 @@ C                   SETON                                        LR
             routine_logic = (output_dir / "routine-logic-details.md").read_text(encoding="utf-8")
             self.assertIn("RLOG-CU106-001", routine_logic)
             self.assertIn("pending_deep_read", routine_logic)
-            self.assertIn("batch-scoped SME core", routine_logic)
             self.assertIn("Calculation Logic", routine_logic)
             self.assertIn("Exception Handling", routine_logic)
-            self.assertIn("before per-routine detail", routine_logic)
+            self.assertIn("Batch Coverage Summary", routine_logic)
+            self.assertIn("pasted source-code snippets", routine_logic)
             self.assertIn("must list every exact message/status/literal", routine_logic)
             self.assertIn("final consolidated `routine-logic-details.md`", routine_logic)
             self.assertIn("all routine detail", routine_logic)
+
+            program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
+            self.assertIn("Draft wrapper seed generated", program_analysis)
+            self.assertIn("## Calculation Logic", program_analysis)
+            self.assertIn("## Metadata", program_analysis)
+            self.assertIn("## Review Checklist", program_analysis)
 
             routine_logic_yaml = (output_dir / "routine-logic-details.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_logic_inventory:", routine_logic_yaml)
             self.assertIn("semantic_status: pending_deep_read", routine_logic_yaml)
             self.assertIn("part_file_front_matter:", routine_logic_yaml)
-            self.assertIn("SME Core Logic Snapshot", routine_logic_yaml)
-            self.assertIn("Exception Handling before per-routine detail", routine_logic_yaml)
-            self.assertIn("Message Inventory must list every exact", routine_logic_yaml)
+            self.assertIn("Batch Coverage Summary", routine_logic_yaml)
+            self.assertIn("Core logic must not contain", routine_logic_yaml)
             self.assertIn("final_consolidation_required:", routine_logic_yaml)
-            self.assertIn("Part files are working shards", routine_logic_yaml)
+            self.assertIn("Batch files are retained audit surfaces", routine_logic_yaml)
 
             program_summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             self.assertIn("routine_summary:", program_summary)
             self.assertIn("message_summary:", program_summary)
+            self.assertIn("routine_logic_deep_read_batch_001:", program_summary)
+            self.assertIn("routine-logic-details/deep-read-batch-001.md", program_summary)
+
+            batch = (output_dir / "routine-logic-details" / "deep-read-batch-001.md").read_text(encoding="utf-8")
+            self.assertIn("# Routine Logic Details: CU106 - Deep Read Batch 001", batch)
+            self.assertIn("## Calculation Logic", batch)
+            self.assertIn("## Validation Logic", batch)
+            self.assertIn("## Exception Handling", batch)
+            self.assertIn("## Scope", batch)
+            self.assertIn("## Batch Coverage Summary", batch)
+            self.assertIn("## Message Inventory", batch)
+            self.assertIn("## Routine Details", batch)
+            self.assertIn("RLOG-CU106-001", batch)
 
             message_inventory = (output_dir / "message-inventory.md").read_text(encoding="utf-8")
             self.assertIn("MSG-CU106-001", message_inventory)

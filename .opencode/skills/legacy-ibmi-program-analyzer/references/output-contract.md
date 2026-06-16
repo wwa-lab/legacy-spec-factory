@@ -47,6 +47,9 @@ The final `program-analysis.md` / `program-analysis-<OBJ-ID>.md` is a full SME
 review wrapper, not a compressed narrative summary. Before delivery, validate
 the artifact set:
 
+- The main wrapper file exists. Deterministic indexing may create a draft
+  `program-analysis.md` seed, but the step is not complete until this wrapper
+  remains present and follows the required section order.
 - The main program analysis contains every required `##` section from File
   Structure in the listed order. For small or exploratory programs, sections
   may be concise or explicitly marked not applicable / pending, but they must
@@ -57,13 +60,27 @@ the artifact set:
   `routine-logic-details.md`, `routine-logic-details.yaml`, and
   `message-inventory.yaml`. Optional sidecars are required only when declared
   `present` or `optional_triggered`.
+- Message descriptions are not optional for final delivery. If
+  `message-inventory.yaml` contains observed message/status/code values with
+  `unresolved - message description not available`, unresolved description
+  source, or unresolved evidence status, the finalization gate fails. Provide a
+  message file/catalog/reference pack, source literal/comment, runtime
+  evidence, or SME-approved description source.
 - `routine-logic-details.yaml` controls RLOG coverage. The final
   `routine-logic-details.md` must include every
   `routine_logic_inventory.details[].detail_id`; `routine-logic-details/part-*.md`
-  and `routine-logic-details/deep-read-batch-*.md` files are working surfaces
-  and cannot be the only SME review surface. Each batch file must front-load
-  `Calculation Logic`, `Validation Logic`, and `Exception Handling` before
-  per-routine RLOG detail.
+  and `routine-logic-details/deep-read-batch-*.md` files are retained
+  checkpoint/audit surfaces for large or batched deep-read and cannot be the
+  only SME review surface. Each batch file must use the exact top-level `##`
+  section order `Calculation Logic`, `Validation Logic`,
+  `Exception Handling`, `Scope`, `Batch Coverage Summary`,
+  `Message Inventory`, `Routine Details`. The first three core sections must
+  appear before per-routine RLOG detail and must not contain pasted source
+  code, fenced code blocks, or verbatim RPG/CL/COBOL/SQL statements.
+- For `large_extreme_program`, the artifact set must include
+  `routine-logic-details/` with at least
+  `routine-logic-details/deep-read-batch-001.md`. Missing batch checkpoints are
+  blocking even when the consolidated `routine-logic-details.md` exists.
 - Do not deliver a latest-batch-only, delta-only, or wrapper-only
   `program-analysis.md` when sidecars show a larger artifact set.
 
@@ -186,6 +203,8 @@ message sidecars rather than expanding every occurrence in the main analysis.
 - Preserve exact source codes/literals and do not group message families.
 - Include the best available short description. If unavailable, write
   `unresolved - message description not available` and create an Open Item.
+  This unresolved state is a blocking finalization gap, not a valid final
+  review value.
 - Approved reference packs may supply the description source. Cite them as
   `reference pack: <pack_id>/<file>#<row-or-anchor>`. Do not invent message
   rows from the catalog; the message/code/literal must first be observed in
@@ -654,30 +673,31 @@ routine inline:
   `routine-logic-details.yaml`.
 - `routine_count > 80` or source lines > 10,000: human-authored semantic detail
   must be split into `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md` working shard files by
+  `routine-logic-details/deep-read-batch-*.md` retained batch checkpoint files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
 - Every `routine-logic-details/part-*.md` or
   `routine-logic-details/deep-read-batch-*.md` shard must be SME-first.
-  Immediately after the shard title, add batch-scoped
-  `## SME Core Logic Snapshot` with `### Calculation Logic`,
-  `### Validation Logic`, and `### Exception Handling`, or use top-level
-  `## Calculation Logic`, `## Validation Logic`, and
-  `## Exception Handling` sections. Add `## Message Inventory` before
-  per-routine detail when the batch observes messages, statuses, return codes,
-  response literals, SQLSTATEs, CPF/MCH/RNX/CPD messages, operator text, or
-  shop-local tokens. These sections summarize only the
-  routines covered by that shard and link each row to the relevant `RLOG-*`
-  detail, conditioned block, outcome reverse trace, exception closure, message
-  detail, or TBD. Do not bury material calculation, validation, exception, or
-  message outcomes only inside routine subsections.
+  Immediately after the shard title, use this exact top-level `##` layout:
+  `Calculation Logic`, `Validation Logic`, `Exception Handling`, `Scope`,
+  `Batch Coverage Summary`, `Message Inventory`, `Routine Details`.
+  These sections summarize only the routines covered by that shard and link
+  each row to the relevant `RLOG-*` detail, conditioned block, outcome reverse
+  trace, exception closure, message detail, or TBD. Do not bury material
+  calculation, validation, exception, or message outcomes only inside routine
+  subsections.
+- Batch core logic sections (`Calculation Logic`, `Validation Logic`,
+  `Exception Handling`) must not contain fenced code blocks, pasted source
+  statements, or source-code-like RPG/CL/COBOL/SQL snippets. Preserve exact
+  source identifiers and conditions, but cite source ranges/evidence instead
+  of copying code.
 - In each shard, `Message Inventory` must include one row per exact message ID,
   status value, return code, response literal, SQLSTATE, CPF/MCH/RNX/CPD
   message, operator text, or shop-local token observed in that batch. Preserve
   exact codes/literals and do not replace individual rows with grouped labels
   such as "validation messages", "queue errors", or "generic status codes".
-- The part files are a batch deep-read working surface, not the final SME
-  review surface. After the part files are complete, merge all shard content
+- The part/deep-read batch files are retained batch checkpoints, not the final
+  SME review surface. After the part files are complete, merge all shard content
   into one final `routine-logic-details.md` consolidated SME review document.
   That final document must include, in order: whole-program
   `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
@@ -702,21 +722,19 @@ structure:
 ```markdown
 # Routine Logic Details: [PROGRAM] - [Part Name]
 
-## SME Core Logic Snapshot
-
-### Calculation Logic
+## Calculation Logic
 
 | Logic / Calculation | Routine | Target Field / Variable | Source Operands | Guard / Condition | Output / Effect | Detail Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [batch-scoped material calculation] | [SRxxx] | [`FIELD`] | [`SOURCE`] | [always / IF / indicator / loop] | [persisted / returned / passed / message set] | RLOG-[PROGRAM]-NNN conditioned block / TBD | [EV-* / source lines] |
 
-### Validation Logic
+## Validation Logic
 
 | Message / Status / Outcome | Routine | Trigger Chain | Carrier / Destination | Downstream Effect | Detail Link | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | [code/status/literal] | [SRxxx] | [guard -> calculation -> outcome] | [field / response / queue / message] | [return / skip / log / continue] | RLOG-[PROGRAM]-NNN outcome reverse trace / TBD | confirmed / inferred / unresolved |
 
-### Exception Handling
+## Exception Handling
 
 | Exception / Error Path | Routine | Trigger / Detection | Fields / Messages Set | Handling Action | Downstream Effect | Detail Link | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -926,7 +944,8 @@ literal code assignments were not fully traced.
   literal, source comment, runtime evidence, vendor reference, or SME note. If
   no description is available, write
   `unresolved - message description not available`, mark Evidence Status
-  `unresolved`, and create an Open Item / TBD.
+  `unresolved`, and create an Open Item / TBD. This blocks final delivery /
+  chain-ready promotion until the message description source is supplied.
 - Columns: Message / Status Code, Message Description, Validation / Error Type,
   Set By / Source Lines, Trigger Condition, Reverse Trigger Chain / Routine
   Logic Link, Output Carrier, Downstream Effect, Evidence Status.

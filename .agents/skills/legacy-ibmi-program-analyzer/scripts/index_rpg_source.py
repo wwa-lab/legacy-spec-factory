@@ -61,6 +61,7 @@ READ_OPS = {"CHAIN", "SETLL", "READE", "READPE", "READP", "READ", "OPEN", "CLOSE
 DATA_READ_OPS = {"CHAIN", "SETLL", "READE", "READPE", "READP", "READ"}
 TRANSACTION_OPS = {"COMMIT", "ROLLBACK"}
 SQL_DML_OPS = {"INSERT", "UPDATE", "DELETE", "MERGE"}
+BATCH_SIZE = 5
 FREE_F_SPEC_BLOCKERS = {"FOR", "FROM"}
 FREE_ASSIGNMENT_BLOCKERS = {
     "IF",
@@ -463,7 +464,12 @@ def build_message_inventory(messages: list[dict[str, Any]], program_name: str) -
                 "detail_id": detail_id,
                 "message": code,
                 "short_description": "unresolved - message description not available",
-                "description_source": "unresolved",
+                "description_source": "missing_message_catalog_or_reference_pack",
+                "description_required": True,
+                "description_tbd": (
+                    f"TBD-{program_name.upper()}-MSG-{index:03d}: provide message "
+                    f"file/catalog/reference pack or SME-approved text for {code}"
+                ),
                 "occurrence_count": len(occurrences),
                 "routines": routines,
                 "first_seen": f"source line {occurrences[0]['line']}",
@@ -471,7 +477,7 @@ def build_message_inventory(messages: list[dict[str, Any]], program_name: str) -
                 "trigger_or_handler": "pending deep read",
                 "carrier_or_destination": "pending deep read",
                 "related_validation_or_exception": "pending program-analysis trace",
-                "evidence_status": "unresolved",
+                "evidence_status": "unresolved_description",
                 "occurrences": occurrences,
             }
         )
@@ -481,6 +487,8 @@ def build_message_inventory(messages: list[dict[str, Any]], program_name: str) -
             "message": detail["message"],
             "short_description": detail["short_description"],
             "description_source": detail["description_source"],
+            "description_required": detail["description_required"],
+            "description_tbd": detail["description_tbd"],
             "occurrence_count": detail["occurrence_count"],
             "routines": detail["routines"],
             "first_seen": detail["first_seen"],
@@ -567,29 +575,33 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
         "sidecar_yaml": "routine-logic-details.yaml",
         "sharding_guidance": {
             "main_document_limit": "summarize only when routines > 25",
-            "part_files_required_when": "routines > 80 or source lines > 10000",
+            "batch_files_required_when": (
+                "program_size_tier is large_extreme_program; canonical seed files "
+                "use routine-logic-details/deep-read-batch-001.md and continue "
+                "in five-window batches"
+            ),
             "part_file_front_matter": (
                 "Each routine-logic-details/part-*.md or "
-                "routine-logic-details/deep-read-batch-*.md file must start "
-                "with batch-scoped SME Core Logic Snapshot sections for "
-                "Calculation Logic, Validation Logic, and Exception Handling "
-                "before per-routine detail. Message Inventory must list every "
-                "exact message/status/literal observed in that batch."
+                "routine-logic-details/deep-read-batch-*.md file must use "
+                "top-level Calculation Logic, Validation Logic, Exception "
+                "Handling, Scope, Batch Coverage Summary, Message Inventory, "
+                "and Routine Details sections. Core logic must not contain "
+                "pasted source-code snippets or fenced code blocks."
             ),
             "final_consolidation_required": (
                 "After batch deep-read, merge all part files into one final "
                 "routine-logic-details.md SME review document with whole-program "
                 "Calculation Logic, Validation Logic, Exception Handling, "
                 "Message Inventory, Routine Detail Index, and all Routine "
-                "Details. Part files are working shards, not the final SME "
-                "review surface."
+                "Details. Batch files are retained audit surfaces and checkpoints, "
+                "but not the final consolidated SME review surface."
             ),
             "part_file_examples": [
+                "routine-logic-details/deep-read-batch-001.md",
+                "routine-logic-details/deep-read-batch-002.md",
                 "routine-logic-details/part-01-mainline-and-dispatch.md",
                 "routine-logic-details/part-02-state-changing-routines.md",
                 "routine-logic-details/part-03-validation-and-message-routines.md",
-                "routine-logic-details/part-04-external-boundaries.md",
-                "routine-logic-details/part-05-indexed-utility-routines.md",
             ],
         },
     }
@@ -1773,6 +1785,21 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
     ]
     if not summary_rows:
         summary_rows = [["-", "no routines observed by static index", "-", "-", "-", "-", "-", "-"]]
+    message_rows = [
+        [
+            item["message"],
+            item["short_description"],
+            "message/status",
+            item["occurrence_count"],
+            item["routines"],
+            item["first_seen"],
+            item["detail_ref"],
+            item["evidence_status"],
+        ]
+        for item in index["message_inventory"]["summary"]
+    ]
+    if not message_rows:
+        message_rows = [["-", "no message/status tokens observed by static index", "-", 0, "-", "-", "-", "-"]]
 
     sections = [
         f"# Routine Logic Details: {index['program']}",
@@ -1780,7 +1807,39 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "`program-analysis.md` summary. The static index seeds routine IDs, "
         "line ranges, call/data evidence, and deep-read priorities; semantic "
         "logic remains `pending_deep_read` until source windows are analyzed.",
-        "## Summary",
+        "## Calculation Logic",
+        "Pending semantic deep-read. This consolidated section must be populated before final delivery.",
+        markdown_table(
+            ["Logic / Calculation", "Routine", "Target Field / Variable", "Source Operands", "Guard / Condition", "Output / Effect", "Detail Link", "Evidence"],
+            [["pending", "-", "pending", "pending", "pending", "pending", "RLOG pending", "source-index"]],
+        ),
+        "## Validation Logic",
+        "Pending semantic deep-read and message/reference-pack lookup.",
+        markdown_table(
+            ["Message / Status / Outcome", "Routine", "Trigger Chain", "Carrier / Destination", "Downstream Effect", "Detail Link", "Evidence Status"],
+            [["pending", "-", "pending", "pending", "pending", "RLOG pending", "pending"]],
+        ),
+        "## Exception Handling",
+        "Pending semantic deep-read.",
+        markdown_table(
+            ["Exception / Error Path", "Routine", "Trigger / Detection", "Fields / Messages Set", "Handling Action", "Downstream Effect", "Detail Link", "Evidence Status"],
+            [["pending", "-", "pending", "pending", "pending", "pending", "RLOG pending", "pending"]],
+        ),
+        "## Message Inventory",
+        markdown_table(
+            [
+                "Message / Code / Literal",
+                "Short Description",
+                "Type",
+                "Occurrences",
+                "Primary Routine(s)",
+                "First Seen / Set By",
+                "Detail",
+                "Evidence Status",
+            ],
+            message_rows,
+        ),
+        "## Routine Detail Index",
         markdown_table(
             [
                 "Routine",
@@ -1794,21 +1853,13 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
             ],
             summary_rows,
         ),
-        "## Sharding Guidance",
-        "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
-        "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
-        "- If routines > 80 or source lines > 10,000, split semantic details into `routine-logic-details/part-*.md` working files.",
-        "- Each `routine-logic-details/part-*.md` or `routine-logic-details/deep-read-batch-*.md` file must start with batch-scoped SME core `##/### Calculation Logic`, `Validation Logic`, and `Exception Handling` before per-routine detail.",
-        "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
-        "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
-        "- `routine-logic-details.yaml` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
-        "- Before delivery, run `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` with the repository Python launcher convention.",
+        "## Routine Details",
     ]
 
     for detail in index["routine_logic_inventory"]["details"]:
         sections.extend(
             [
-                f"## {detail['detail_id']} - {detail['routine']}",
+                f"### {detail['detail_id']} - {detail['routine']}",
                 markdown_table(
                     ["Field", "Value"],
                     [
@@ -1837,6 +1888,21 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
             ]
         )
 
+    sections.extend(
+        [
+            "## Sharding Guidance",
+            "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
+            "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
+            "- If routines > 80 or source lines > 10,000, split semantic details into retained `routine-logic-details/deep-read-batch-*.md` checkpoint files.",
+            "- Each `routine-logic-details/part-*.md` or `routine-logic-details/deep-read-batch-*.md` file must use the same top-level layout: `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, `## Scope`, `## Batch Coverage Summary`, `## Message Inventory`, `## Routine Details`.",
+            "- Batch core logic sections must not contain pasted source-code snippets or fenced code blocks; use identifiers, source ranges, evidence IDs, and RLOG links.",
+            "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
+            "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
+            "- `routine-logic-details.yaml` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
+            "- Before delivery, run `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` with the repository Python launcher convention.",
+        ]
+    )
+
     return "\n\n".join(sections) + "\n"
 
 
@@ -1853,6 +1919,538 @@ def render_routine_logic_details_yaml(index: dict[str, Any]) -> str:
         ),
     }
     return to_yaml(payload) + "\n"
+
+
+def requires_routine_batch_files(index: dict[str, Any]) -> bool:
+    return index.get("program_size_tier") == "large_extreme_program"
+
+
+def routine_batch_path(batch_number: int) -> str:
+    return f"routine-logic-details/deep-read-batch-{batch_number:03d}.md"
+
+
+def routine_batch_groups(index: dict[str, Any]) -> list[list[dict[str, Any]]]:
+    windows = list(index.get("deep_read_windows", []))
+    if not windows and index.get("routines"):
+        first_routine = index["routines"][0]
+        windows = [
+            {
+                "window_id": f"DRW-{index['program']}-001",
+                "routine": first_routine["name"],
+                "source_lines": f"{first_routine['start_line']}-{first_routine['end_line']}",
+                "why_selected": "fallback first routine window",
+                "coverage_outcome": "selected_for_deep_read",
+                "evidence": "source-index",
+            }
+        ]
+    return [windows[index_: index_ + BATCH_SIZE] for index_ in range(0, len(windows), BATCH_SIZE)]
+
+
+def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
+    triggers = index["optional_sidecar_triggers"]
+    sidecars = {
+        "program_analysis": {"path": "program-analysis.md", "status": "present"},
+        "source_index": {"path": "source-index.yaml", "status": "present"},
+        "routine_index": {"path": "routine-index.md", "status": "present"},
+        "routine_logic_details": {"path": "routine-logic-details.md", "status": "present"},
+        "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": "present"},
+        "message_inventory_yaml": {"path": "message-inventory.yaml", "status": "present"},
+        "message_inventory": {
+            "path": "message-inventory.md",
+            "status": (
+                "optional_triggered"
+                if triggers["message_inventory_markdown"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "coverage_ledger": {
+            "path": "all-routine-coverage-ledger.md",
+            "status": (
+                "optional_triggered"
+                if triggers["coverage_ledger"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "deep_read_plan": {
+            "path": "deep-read-plan.md",
+            "status": (
+                "optional_triggered"
+                if triggers["deep_read_plan"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "file_io_inventory": {
+            "path": "file-io-inventory.md",
+            "status": (
+                "optional_triggered"
+                if triggers["file_io_inventory"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "file_io_inventory_yaml": {
+            "path": "file-io-inventory.yaml",
+            "status": (
+                "optional_triggered"
+                if triggers["file_io_inventory"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "field_mutation_matrix": {
+            "path": "field-mutation-matrix.md",
+            "status": (
+                "optional_triggered"
+                if triggers["field_mutation_matrix"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "field_mutation_matrix_yaml": {
+            "path": "field-mutation-matrix.yaml",
+            "status": (
+                "optional_triggered"
+                if triggers["field_mutation_matrix"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "sql_inventory": {
+            "path": "sql-inventory.md",
+            "status": (
+                "optional_triggered"
+                if triggers["sql_inventory"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+        "sql_inventory_yaml": {
+            "path": "sql-inventory.yaml",
+            "status": (
+                "optional_triggered"
+                if triggers["sql_inventory"]["write"]
+                else "not_written_by_default"
+            ),
+        },
+    }
+    if requires_routine_batch_files(index):
+        for batch_number, _windows in enumerate(routine_batch_groups(index), start=1):
+            sidecars[f"routine_logic_deep_read_batch_{batch_number:03d}"] = {
+                "path": routine_batch_path(batch_number),
+                "status": "present",
+            }
+    return sidecars
+
+
+def render_program_analysis(index: dict[str, Any]) -> str:
+    counts = index["counts"]
+    program = index["program"]
+    sidecar_rows = [
+        [key, value["path"], value["status"]]
+        for key, value in sidecar_declarations(index).items()
+    ]
+    routine_rows = [
+        [
+            item["routine"],
+            item["role"],
+            item["source_lines"],
+            item["coverage"],
+            item["semantic_status"],
+            item["detail_ref"],
+        ]
+        for item in index["routine_logic_inventory"]["summary"]
+    ] or [["-", "no routines observed", "-", "-", "-", "-"]]
+    message_rows = [
+        [
+            item["message"],
+            item["short_description"],
+            "message/status",
+            item["occurrence_count"],
+            item["routines"],
+            item["first_seen"],
+            "pending deep read",
+            item["detail_ref"],
+        ]
+        for item in index["message_inventory"]["summary"]
+    ] or [["-", "no message/status tokens observed by static index", "-", 0, "-", "-", "-", "-"]]
+    validation_rows = [
+        [
+            item["message"],
+            item["short_description"],
+            "unresolved",
+            item["first_seen"],
+            "pending deep read",
+            f"Routine Logic Details pending -> {item['detail_ref']}",
+            "pending deep read",
+            "pending deep read",
+            item["evidence_status"],
+        ]
+        for item in index["message_inventory"]["summary"]
+    ] or [["-", "no validation/status tokens observed by static index", "-", "-", "-", "-", "-", "-", "-"]]
+    call_rows = [
+        [call["caller"], call["target"], call["call_type"], "pending deep read", call["line"], call["evidence"], "confirmed"]
+        for call in index["calls"]
+    ] or [["MAIN", "-", "mainline", "N/A", "-", "source-index", "pending"]]
+    reverse_call_rows = [
+        [routine["name"], routine["called_by"], "from static source index"]
+        for routine in index["routines"]
+    ] or [["-", "-", "-"]]
+    dependency_rows = [
+        [item["name"], "file", "-", "declared source file", "TBD", f"source line {item['declared_at']}"]
+        for item in index["declared_files"]
+    ]
+    dependency_rows.extend(
+        [
+            [call["target"], "program/procedure", "-", "external call target", "TBD", call["evidence"]]
+            for call in index["external_calls"]
+        ]
+    )
+    if not dependency_rows:
+        dependency_rows = [["-", "none observed", "-", "-", "-", "-"]]
+    data_touch_rows = [
+        [operation["object"], "file operation", operation["operation"], operation["routine"], "pending deep read", "-", operation["state_impact"], operation["evidence"]]
+        for operation in index["file_operations"]
+    ] or [["-", "-", "-", "-", "-", "-", "-", "-"]]
+    file_io_rows = [
+        [item["object"], "-", "-", item["operations"], "pending DDS/copybook", "pending deep read", "pending deep read", "pending deep read", item["detail_refs"], "source-index"]
+        for item in index["file_io_inventory"]["summary"]
+    ] or [["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]]
+    external_rows = [
+        [call["caller"], call["target"], call["call_type"], "pending deep read", call["line"], "pending", call["evidence"]]
+        for call in index["external_calls"]
+    ] or [["-", "-", "-", "-", "-", "-", "-"]]
+    deep_read_rows = [
+        [
+            window["window_id"],
+            window["routine"],
+            window["source_lines"],
+            window["why_selected"],
+            window["coverage_outcome"],
+            window["evidence"],
+        ]
+        for window in index["deep_read_windows"]
+    ] or [["-", "-", "-", "no high-risk window selected by static index", "-", "-"]]
+    files_accessed = ", ".join(
+        sorted(
+            {
+                operation["object"]
+                for operation in index["file_operations"]
+                if operation["object"] != "unresolved"
+            }
+        )
+    ) or "none observed by source index"
+    static_calls = ", ".join(
+        sorted({call["target"] for call in index["external_calls"]})
+    ) or "none observed by source index"
+    message_tbd_rows = [
+        [
+            item.get("description_tbd", f"TBD-{program}-MSG"),
+            "blocking_for_final_review",
+            (
+                f"message/status/code {item['message']} has no resolved description; "
+                "message catalog/reference pack/SME-approved text is missing"
+            ),
+            "provide message file/catalog/reference pack or SME-approved description",
+        ]
+        for item in index["message_inventory"]["summary"]
+        if item.get("description_required")
+    ]
+    if not message_tbd_rows:
+        message_tbd_rows = [
+            [
+                "TBD-" + program + "-001",
+                "non_blocking",
+                "draft wrapper seed; semantic deep-read pending",
+                "populate routine details and rerun validator",
+            ]
+        ]
+
+    return "\n\n".join(
+        [
+            f"# Program Analysis: {program} (unlinked)",
+            (
+                "Draft wrapper seed generated by `index_rpg_source.py`. It fixes "
+                "the required review layout and sidecar links before semantic "
+                "deep-read. Do not treat pending rows as approved behavior."
+            ),
+            "## Calculation Logic",
+            "**Calculation logic unresolved:** pending semantic deep-read. Populate only after source windows are analyzed.",
+            markdown_table(
+                [
+                    "Calculation / Assignment",
+                    "Target Field / Variable",
+                    "Source Operands / Carriers",
+                    "Guard / Branch",
+                    "Output / Business Effect",
+                    "Supporting Detail Link",
+                    "Evidence",
+                ],
+                [["pending deep read", "pending", "pending", "pending", "pending", "routine-logic-details.md", "source-index"]],
+            ),
+            "## Validation Logic",
+            "**Validation logic unresolved:** pending semantic deep-read and message/reference-pack lookup.",
+            markdown_table(
+                [
+                    "Message / Status Code",
+                    "Message Description",
+                    "Validation / Error Type",
+                    "Set By / Source Lines",
+                    "Trigger Condition",
+                    "Reverse Trigger Chain / Routine Logic Link",
+                    "Output Carrier",
+                    "Downstream Effect",
+                    "Evidence Status",
+                ],
+                validation_rows,
+            ),
+            "## Exception Handling",
+            "**Exception handling unresolved:** pending semantic deep-read.",
+            markdown_table(
+                [
+                    "Exception / Error Path",
+                    "Trigger",
+                    "Detection Mechanism",
+                    "Fields / Messages Set",
+                    "Handling Action",
+                    "Downstream Effect",
+                    "Supporting Detail Link",
+                    "Evidence",
+                ],
+                [["pending deep read", "pending", "pending", "pending", "pending", "pending", "routine-logic-details.md", "source-index"]],
+            ),
+            "## Message Inventory",
+            markdown_table(
+                [
+                    "Message / Code / Literal",
+                    "Short Description",
+                    "Type",
+                    "Occurrences",
+                    "Primary Routine(s)",
+                    "First Seen / Set By",
+                    "Trigger / Handler Summary",
+                    "Detail",
+                ],
+                message_rows,
+            ),
+            "## Metadata",
+            "\n".join(
+                [
+                    f"- **Program ID:** unlinked - inventory not provided",
+                    f"- **Program Name:** {program}",
+                    f"- **Program Type:** {index['program_profile']['program_type']}",
+                    "- **Library:** not recorded in inventory",
+                    "- **Build Target:** not recorded",
+                    "- **Build / Library Evidence:** pending inventory linkage",
+                    "- **Reference Packs Used:** not used by source indexer",
+                    "- **Document Intake Manifests:** not used",
+                    "- **Reference Lookup Coverage:** pending reference-pack lookup",
+                    "- **Analysis Intent:** standalone_exploratory",
+                    "- **Inventory Linkage:** missing",
+                    "- **Downstream Readiness:** not_chain_ready",
+                    f"- **Source Location:** {index['source']['path']}",
+                    "- **Collection Date:** not recorded",
+                    "- **Entry Points:** MAIN",
+                    f"- **Files Accessed:** {files_accessed}",
+                    f"- **Static Calls:** {static_calls}",
+                    "- **Dynamic Calls:** none resolved by source index",
+                    "- **Evidence IDs:** source-index",
+                    f"- **Status:** draft_exploratory",
+                ]
+            ),
+            "## Analysis Coverage & Scope",
+            "### Source Size & Strategy",
+            markdown_table(
+                ["Metric", "Count / Value", "Notes"],
+                [
+                    ["Source Lines", index["source"]["line_count"], "full source indexed"],
+                    ["Routine Count", counts["routines"], "mainline + detected routines/procedures"],
+                    ["External Call Count", counts["external_calls"], "visible call targets"],
+                    ["Object Dependency Count", counts["object_dependencies"], "declared files + referenced objects"],
+                    ["Program Size Tier", index["program_size_tier"], index["tier_reason"]],
+                    ["Analysis Mode", index["analysis_mode"], index["mode_reason"]],
+                    ["Default Output Profile", index["default_output_profile"], "from program-size tier"],
+                ],
+            ),
+            "### Sidecar Indexes",
+            markdown_table(["Sidecar Key", "Path", "Status"], sidecar_rows),
+            "### Coverage Ledger",
+            markdown_table(
+                ["Metric", "Count / Percent", "Notes"],
+                [
+                    ["Routines Found", counts["routines"], "from source index"],
+                    ["Routines Deep-Read", "0", "semantic deep-read not performed by indexer"],
+                    ["Routines Indexed Only", counts["routines"], "all routines remain indexed_only until deep-read"],
+                    ["External Edges Resolved", counts["external_calls"], "target token extraction only"],
+                    ["Data Touches Resolved", counts["file_operations"], "operation tokens only"],
+                    ["Blocking Gaps", "0", "not evaluated by source indexer"],
+                    ["Non-Blocking Gaps", "0", "not evaluated by source indexer"],
+                ],
+            ),
+            "## Program Call Map",
+            "### Visual Overview",
+            "Evidence basis: derived call analysis only\n\n```text\n" + program + " mainline\n|-- see Call Evidence for indexed calls\n```",
+            "### Node Inventory",
+            markdown_table(["Node", "Node Type", "Defined At", "Role / Notes", "Evidence"], [
+                [routine["name"], routine["type"], f"{routine['start_line']}-{routine['end_line']}", routine_role(routine), "source-index"]
+                for routine in index["routines"]
+            ] or [["MAIN", "Mainline", "1", "entry orchestration", "source-index"]]),
+            "### Call Evidence",
+            markdown_table(["Caller", "Callee", "Call Type", "Condition", "Source Lines", "Evidence Source", "Resolution"], call_rows),
+            "### Reverse Caller Index",
+            markdown_table(["Node", "Called By", "Notes"], reverse_call_rows),
+            "## Routine Cards",
+            markdown_table(
+                ["Routine", "Location", "Called By", "Calls Out", "Data Touches", "State Impact", "Error Handling", "Evidence", "Coverage"],
+                [
+                    [
+                        routine["name"],
+                        f"{routine['start_line']}-{routine['end_line']}",
+                        routine["called_by"],
+                        routine["calls_out"],
+                        routine["data_touches"],
+                        routine["state_impact"],
+                        routine["error_handling"],
+                        "source-index",
+                        routine["coverage"],
+                    ]
+                    for routine in index["routines"]
+                ] or [["-", "-", "-", "-", "-", "-", "-", "-", "-"]],
+            ),
+            "## Routine Logic Details",
+            markdown_table(["Routine", "Role", "Source Lines", "Coverage", "Semantic Status", "Detail"], routine_rows),
+            "Full routine detail belongs in `routine-logic-details.md` / `routine-logic-details.yaml`; large-program batch checkpoints live under `routine-logic-details/`.",
+            "## Deep Read Windows",
+            markdown_table(["Window ID", "Routine / Path", "Source Lines", "Why Selected", "Coverage Outcome", "Evidence"], deep_read_rows),
+            "## Entry Points & Parameters",
+            markdown_table(["Entry Point", "Type", "Parameters", "Return", "Evidence"], [["MAIN", "Main Program", "pending source-header deep read", "pending", "source-index"]]),
+            "## Object Dependencies",
+            markdown_table(["Object", "Type", "Version", "Description", "Inventory ID", "Evidence"], dependency_rows),
+            "## Logic Decomposition Ledger",
+            "Pending semantic deep-read. Arithmetic, constants, branch priority, and loop scope must be added before approval.",
+            "## Data Touch Map",
+            markdown_table(["Data Object / Carrier", "Mechanism", "Operation", "Routine / Procedure", "Key / Payload", "Critical Fields Touched", "State Impact", "Evidence"], data_touch_rows),
+            "## Key File & Field Logic",
+            "Pending DDS/copybook/reference-pack linkage and semantic deep-read.",
+            "## Control Flow",
+            "Pending semantic deep-read. Use Program Call Map and Routine Logic Details as source-backed inputs.",
+            "## File I/O",
+            markdown_table(["File", "Record Format", "Type", "Operations", "Key Fields", "Purpose", "Read / Mutation Conditions", "Indicators / Status Checks", "Detail", "Evidence"], file_io_rows),
+            "## External Calls",
+            markdown_table(["Caller", "Target", "Call Type", "Parameters", "Source Lines", "Resolution", "Evidence"], external_rows),
+            "## Error Handling",
+            "Pending semantic deep-read. Error and message tokens are seeded in Validation Logic and Message Inventory.",
+            "## Redundancy Candidate Notes",
+            "No redundancy candidates identified by the deterministic source indexer.",
+            "## TBDs & Blocking Status",
+            markdown_table(
+                ["TBD", "Blocking Status", "Reason", "Follow-up"],
+                message_tbd_rows,
+            ),
+            "## Review Checklist",
+            "\n".join(
+                [
+                    "- [ ] `program-analysis.md` follows the required section order.",
+                    "- [ ] Large-program batch files under `routine-logic-details/` are present when tier is `large_extreme_program`.",
+                    "- [ ] Routine Logic Details and YAML contain matching `RLOG-*` IDs.",
+                    "- [ ] Calculation, validation, exception, and message rows are source-backed before SME approval.",
+                    "- [ ] `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` passes before delivery.",
+                ]
+            ),
+        ]
+    ) + "\n"
+
+
+def render_routine_logic_batch(
+    index: dict[str, Any],
+    batch_number: int,
+    windows: list[dict[str, Any]],
+) -> str:
+    detail_by_routine = {
+        detail["routine"]: detail
+        for detail in index["routine_logic_inventory"]["details"]
+    }
+    batch_routines = [window["routine"] for window in windows]
+    coverage_rows = [
+        [
+            window["window_id"],
+            window["routine"],
+            window["source_lines"],
+            window["why_selected"],
+            detail_by_routine.get(window["routine"], {}).get("detail_id", "RLOG pending"),
+        ]
+        for window in windows
+    ]
+    message_rows = [
+        [
+            item["message"],
+            item["short_description"],
+            "message/status",
+            ", ".join(routine for routine in item["routines"] if routine in batch_routines) or "pending deep read",
+            item["first_seen"],
+            "pending deep read",
+            item["detail_ref"],
+            item["evidence_status"],
+        ]
+        for item in index["message_inventory"]["summary"]
+        if any(routine in batch_routines for routine in item["routines"])
+    ] or [["-", "no message/status tokens observed in this batch seed", "-", "-", "-", "-", "-", "-"]]
+    routine_sections: list[str] = []
+    for window in windows:
+        detail = detail_by_routine.get(window["routine"])
+        detail_id = detail["detail_id"] if detail else "RLOG pending"
+        routine_sections.append(
+            "\n\n".join(
+                [
+                    f"### {detail_id} - {window['routine']}",
+                    f"**Source lines:** {window['source_lines']}",
+                    f"**Deep-read reason:** {window['why_selected']}",
+                    "**Semantic status:** pending_deep_read",
+                    "- Execution trigger: pending deep read.",
+                    "- Step-by-step logic: pending deep read.",
+                    "- Field calculations and assignments: pending deep read.",
+                    "- Conditioned calculation blocks: pending deep read.",
+                    "- Outcome reverse traces: pending deep read.",
+                    "- Routine field lineage / carriers: pending deep read.",
+                    "- Routine exception closure: pending deep read.",
+                ]
+            )
+        )
+
+    return "\n\n".join(
+        [
+            f"# Routine Logic Details: {index['program']} - Deep Read Batch {batch_number:03d}",
+            (
+                "Batch seed generated by `index_rpg_source.py`. Update this "
+                "file while deep-reading the selected source windows, then "
+                "merge completed semantic detail into `routine-logic-details.md`. "
+                "Keep this batch file as an audit checkpoint."
+            ),
+            "## Calculation Logic",
+            "Pending semantic deep-read for this batch.",
+            markdown_table(
+                ["Logic / Calculation", "Routine", "Target Field / Variable", "Source Operands", "Guard / Condition", "Output / Effect", "Detail Link", "Evidence"],
+                [["pending", ", ".join(batch_routines), "pending", "pending", "pending", "pending", "RLOG pending", "source-index"]],
+            ),
+            "## Validation Logic",
+            "Pending semantic deep-read for this batch.",
+            markdown_table(
+                ["Message / Status / Outcome", "Routine", "Trigger Chain", "Carrier / Destination", "Downstream Effect", "Detail Link", "Evidence Status"],
+                [["pending", ", ".join(batch_routines), "pending", "pending", "pending", "RLOG pending", "pending"]],
+            ),
+            "## Exception Handling",
+            "Pending semantic deep-read for this batch.",
+            markdown_table(
+                ["Exception / Error Path", "Routine", "Trigger / Detection", "Fields / Messages Set", "Handling Action", "Downstream Effect", "Detail Link", "Evidence Status"],
+                [["pending", ", ".join(batch_routines), "pending", "pending", "pending", "pending", "RLOG pending", "pending"]],
+            ),
+            "## Scope",
+            "This batch covers at most five routine/window seeds.",
+            "## Batch Coverage Summary",
+            markdown_table(["Window ID", "Routine", "Source Lines", "Why Selected", "RLOG Detail"], coverage_rows),
+            "## Message Inventory",
+            markdown_table(
+                ["Message / Status / Literal", "Description", "Type", "Routine", "First Seen / Set By", "Trigger / Handler", "Related Detail", "Evidence Status"],
+                message_rows,
+            ),
+            "## Routine Details",
+            "\n\n".join(routine_sections),
+        ]
+    ) + "\n"
 
 
 def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
@@ -1877,85 +2475,7 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
         "declared_files": index["declared_files"],
         "deep_read_windows": index["deep_read_windows"],
         "optional_sidecar_triggers": index["optional_sidecar_triggers"],
-        "sidecars": {
-            "source_index": {"path": "source-index.yaml", "status": "present"},
-            "routine_index": {"path": "routine-index.md", "status": "present"},
-            "routine_logic_details": {"path": "routine-logic-details.md", "status": "present"},
-            "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": "present"},
-            "message_inventory_yaml": {"path": "message-inventory.yaml", "status": "present"},
-            "message_inventory": {
-                "path": "message-inventory.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["message_inventory_markdown"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "coverage_ledger": {
-                "path": "all-routine-coverage-ledger.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["coverage_ledger"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "deep_read_plan": {
-                "path": "deep-read-plan.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["deep_read_plan"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "file_io_inventory": {
-                "path": "file-io-inventory.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["file_io_inventory"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "file_io_inventory_yaml": {
-                "path": "file-io-inventory.yaml",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["file_io_inventory"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "field_mutation_matrix": {
-                "path": "field-mutation-matrix.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["field_mutation_matrix"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "field_mutation_matrix_yaml": {
-                "path": "field-mutation-matrix.yaml",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["field_mutation_matrix"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "sql_inventory": {
-                "path": "sql-inventory.md",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["sql_inventory"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-            "sql_inventory_yaml": {
-                "path": "sql-inventory.yaml",
-                "status": (
-                    "optional_triggered"
-                    if index["optional_sidecar_triggers"]["sql_inventory"]["write"]
-                    else "not_written_by_default"
-                ),
-            },
-        },
+        "sidecars": sidecar_declarations(index),
         "contract_note": (
             "Flow-level analysis should prefer this compact summary and present "
             "sidecar YAML files instead of concatenating large program-analysis "
@@ -1971,6 +2491,7 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
 def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = [
+        (out_dir / "program-analysis.md", render_program_analysis(index)),
         (out_dir / "source-index.yaml", to_yaml(index) + "\n"),
         (out_dir / "program-analysis-summary.yaml", render_program_analysis_summary_yaml(index)),
         (out_dir / "routine-index.md", render_routine_index(index)),
@@ -2006,8 +2527,17 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
                 (out_dir / "sql-inventory.yaml", render_sql_inventory_yaml(index)),
             ]
         )
+    if requires_routine_batch_files(index):
+        for batch_number, windows in enumerate(routine_batch_groups(index), start=1):
+            files.append(
+                (
+                    out_dir / routine_batch_path(batch_number),
+                    render_routine_logic_batch(index, batch_number, windows),
+                )
+            )
     written: list[Path] = []
     for path, content in files:
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         written.append(path)
     return written

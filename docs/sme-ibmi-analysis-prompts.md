@@ -50,6 +50,9 @@ Rules:
 - Use compact artifacts first.
 - Mark missing message descriptions, copybooks, external program semantics, or
   SME-only meanings as TBD.
+- If message/status/code values are observed and no message file/catalog,
+  reference pack, source literal/comment, runtime evidence, or SME-approved
+  description is supplied, mark the analysis not final-review-ready.
 
 Required SME-first output:
 1. Calculation Logic
@@ -65,8 +68,8 @@ Required artifacts:
 - routine-index.md
 - routine-logic-details.md
 - routine-logic-details.yaml
-- message-inventory.md
 - message-inventory.yaml
+- message-inventory.md, only when message/status/code density triggers it
 ```
 
 ### 中文
@@ -90,6 +93,9 @@ Output directory: <program analysis 输出目录>
 - 优先使用 compact artifacts。
 - 缺失 message description、copybook、外部程序语义、只能由 SME 判断的含义，
   都要标记为 TBD。
+- 如果发现 message/status/code，但没有提供 message file/catalog、
+  reference pack、source literal/comment、runtime evidence 或 SME-approved
+  description，请标记为 not final-review-ready。
 
 SME 第一屏必须优先展示:
 1. Calculation Logic
@@ -105,8 +111,8 @@ SME 第一屏必须优先展示:
 - routine-index.md
 - routine-logic-details.md
 - routine-logic-details.yaml
-- message-inventory.md
 - message-inventory.yaml
+- message-inventory.md，只有 message/status/code 密集度触发时才需要
 ```
 
 ---
@@ -139,8 +145,15 @@ Execution rules:
 - If Python is unavailable, stop and report the error.
 
 Large-program rules:
-- First build source-index.yaml, routine-index.md,
+- First build program-analysis.md, source-index.yaml, routine-index.md,
   all-routine-coverage-ledger.md, and deep-read-plan.md.
+- Create `routine-logic-details/deep-read-batch-001.md` as the first retained
+  checkpoint; continue with `deep-read-batch-002.md` and later files as needed.
+- Every `deep-read-batch-*.md` file must use the same top-level layout:
+  Calculation Logic, Validation Logic, Exception Handling, Scope,
+  Batch Coverage Summary, Message Inventory, Routine Details.
+- Do not paste real source code snippets into batch core logic sections. Use
+  source identifiers, source ranges, evidence IDs, and RLOG links instead.
 - Classify the program tier before writing the final narrative.
 - Do not read the whole source into context.
 - Each turn may deep-read at most 5 routine/window bodies.
@@ -162,6 +175,9 @@ For each batch:
 - Read only the selected source line windows.
 - Update routine-logic-details.md and routine-logic-details.yaml.
 - Update message-inventory.md/yaml when messages/status/codes are observed.
+- Do not leave observed message/status/code rows as ID-only output. If message
+  descriptions are unresolved, stop final delivery and request message
+  file/catalog/reference pack or SME-approved descriptions.
 - Update file-io-inventory, field-mutation-matrix, or sql-inventory only when
   triggered by observed evidence.
 - Update all-routine-coverage-ledger.md.
@@ -200,8 +216,15 @@ Output directory: <program analysis 输出目录>
 - 如果 Python 不可用，请停止并报告错误。
 
 Large-program 规则:
-- 先生成 source-index.yaml、routine-index.md、
+- 先生成 program-analysis.md、source-index.yaml、routine-index.md、
   all-routine-coverage-ledger.md、deep-read-plan.md。
+- 创建 `routine-logic-details/deep-read-batch-001.md` 作为第一批保留的
+  checkpoint；需要时继续生成 `deep-read-batch-002.md` 等后续文件。
+- 每个 `deep-read-batch-*.md` 必须使用同一个顶层 layout:
+  Calculation Logic、Validation Logic、Exception Handling、Scope、
+  Batch Coverage Summary、Message Inventory、Routine Details。
+- 不要在 batch 核心逻辑区粘贴真实源码片段；使用 source identifiers、
+  source ranges、evidence IDs 和 RLOG links。
 - 先判断 program tier，再写最终 narrative。
 - 不要把完整 source 读进上下文。
 - 每轮最多 deep-read 5 个 routine/window body。
@@ -223,6 +246,9 @@ Deep-read 优先级:
 - 只读取被选中的 source line windows。
 - 更新 routine-logic-details.md 和 routine-logic-details.yaml。
 - 发现 message/status/code 时更新 message-inventory.md/yaml。
+- 不要交付只有 message ID、没有描述的输出。如果 message description 仍未解析，
+  停止 final delivery，并要求补充 message file/catalog/reference pack 或
+  SME-approved descriptions。
 - 只有观察到证据时，才按需更新 file-io-inventory、
   field-mutation-matrix、sql-inventory。
 - 更新 all-routine-coverage-ledger.md。

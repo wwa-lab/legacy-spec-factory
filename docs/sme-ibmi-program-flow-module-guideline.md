@@ -78,7 +78,7 @@ level when the actual question is about one program or one transaction.
 | --- | --- | --- |
 | `normal_program` | Most programs under 10,000 lines with no density trigger. | Concise `program-analysis.md` plus core artifacts only. |
 | `complex_normal_program` | Under 10,000 lines but dense in routines, file I/O, SQL, messages, mutations, external calls, or more than one five-routine batch. | Same SME-first review plus only triggered sidecars. |
-| `large_extreme_program` | Over 10,000 lines, more than 25 routines, more than 20 external calls, more than 25 object dependencies, or unsafe to fit in context. | Full source index, all sidecars, coverage ledger, deep-read plan, and optional automatic loop. |
+| `large_extreme_program` | Over 10,000 lines, more than 25 routines, more than 20 external calls, more than 25 object dependencies, or unsafe to fit in context. | Full source index, all sidecars, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic loop when possible. |
 
 ## SME Review Priorities
 
@@ -103,6 +103,12 @@ For every SME review, the first visible sections should answer:
   and whether rollback/commit/message behavior is visible.
 - Message Inventory: which messages are emitted, when, and to whom.
 - File I/O and SQL: which files/tables are read or changed, by which routine.
+
+If message/status/code values are observed, the program analysis is not
+final-review-ready until each row has a real description source: message file,
+message catalog, approved reference pack, source literal/comment, runtime
+evidence, or SME-approved text. ID-only Message Inventory output is a blocking
+gap, not useful SME review material.
 
 ## End-To-End Workflow
 
@@ -166,6 +172,7 @@ needed.
 
 Core output for every tier:
 
+- `program-analysis.md`
 - `source-index.yaml`
 - `program-analysis-summary.yaml`
 - `routine-index.md`
@@ -184,6 +191,18 @@ Optional output when triggered:
 - `field-mutation-matrix.yaml`
 - `sql-inventory.md`
 - `sql-inventory.yaml`
+
+Required extra output for `large_extreme_program`:
+
+- `routine-logic-details/deep-read-batch-001.md`
+- additional `routine-logic-details/deep-read-batch-*.md` files when more
+  than five selected routines/windows are processed
+
+Every `deep-read-batch-*.md` file uses the same top-level layout:
+`Calculation Logic`, `Validation Logic`, `Exception Handling`, `Scope`,
+`Batch Coverage Summary`, `Message Inventory`, `Routine Details`. The core
+logic sections must not contain pasted source code snippets; cite source
+ranges, evidence IDs, and `RLOG-*` links instead.
 
 Prompt:
 
@@ -206,9 +225,11 @@ Token constraint:
   and external calls. Generate SQL sidecar only when embedded SQL is present.
 
 Core output required:
+- program-analysis.md
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
+- routine-logic-details.md
 - routine-logic-details.yaml
 - message-inventory.yaml
 
@@ -488,6 +509,8 @@ still preserve the five-routine limit, evidence boundaries, and
    - 仅当本轮发现、解释或影响了 message/status/code 时更新。
    - 找不到 description 时写:
      unresolved - message description not available。
+   - 如果仍有 unresolved description，不要标记 final-review-ready；要求补充
+     message file/catalog/reference pack 或 SME-approved description。
 10. 更新 file-io-inventory.md / file-io-inventory.yaml:
     - 仅当本轮发现或确认 read/write/update/delete、commit、rollback、
       lock、chain/setll/reade、SQL persistence 行为时更新。

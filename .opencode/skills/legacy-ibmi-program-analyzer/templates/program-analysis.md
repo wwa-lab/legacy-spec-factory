@@ -55,6 +55,9 @@ Validation logic rules:
   file, source literal, source comment, runtime trace, vendor reference, or SME
   note. If no description is available, write
   `unresolved - message description not available` and create an Open Item.
+  This blocks final delivery until a message file/catalog/reference pack,
+  source literal/comment, runtime evidence, or SME-approved description is
+  supplied.
 - Every material row must point back to Routine Logic Details with the exact
   conditioned calculation block or outcome reverse trace that explains why the
   outcome is reached. If the reverse trigger chain is not visible, mark it as
@@ -114,6 +117,8 @@ Message inventory rules:
 - Preserve the exact code or literal as seen in source.
 - If message text or business meaning is unavailable, write
   `unresolved - message description not available` and create an Open Item.
+  Do not mark the analysis final-review-ready while any observed
+  message/status/code row remains unresolved.
 - If an approved reference pack supplies the description, cite the exact pack,
   file, and row/anchor. Do not use reference-pack text to invent a message that
   is not observed in source, runtime, or SME notes.
@@ -299,23 +304,28 @@ Routine detail placement rules:
   full details in `routine-logic-details.md` and `routine-logic-details.yaml`.
 - `routine_count > 80` or source lines > 10,000: split full human-authored
   semantic detail into `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md` working files by
+  `routine-logic-details/deep-read-batch-*.md` retained batch checkpoint files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
 - Each batch file must start with batch-scoped SME core logic:
-  `## SME Core Logic Snapshot` containing `### Calculation Logic`,
-  `### Validation Logic`, and `### Exception Handling` before per-routine
-  detail, so SME reviewers see the core logic for that batch first. Add
-  `## Message Inventory` before per-routine detail when messages, statuses,
-  return codes, response literals, or operator text are observed. Message
-  Inventory must list every exact message/status/literal observed in the batch
-  as its own row.
+  top-level `## Calculation Logic`, `## Validation Logic`, and
+  `## Exception Handling` before per-routine detail, so SME reviewers see the
+  core logic for that batch first. The full batch layout is fixed:
+  `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
+  `## Scope`, `## Batch Coverage Summary`, `## Message Inventory`,
+  `## Routine Details`. Message Inventory must list every exact
+  message/status/literal observed in the batch as its own row.
+- Batch core logic sections must not contain pasted source code, fenced code
+  blocks, or verbatim RPG/CL/COBOL/SQL statements. Use source identifiers,
+  normalized logic summaries, source ranges, evidence IDs, and `RLOG-*` links
+  instead.
 - Final SME review must happen in one consolidated `routine-logic-details.md`.
-  After batch deep-read is complete, merge all `part-*.md` content into that
-  file with whole-program `## Calculation Logic`, `## Validation Logic`,
-  `## Exception Handling`, `## Message Inventory`, `## Routine Detail Index`,
-  and `## Routine Details` sections. Do not leave part/deep-read batch files as
-  the only review surface.
+  After batch deep-read is complete, merge all `part-*.md` /
+  `deep-read-batch-*.md` content into that file with whole-program
+  `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
+  `## Message Inventory`, `## Routine Detail Index`, and
+  `## Routine Details` sections. Keep part/deep-read batch files as audit
+  checkpoints, but do not leave them as the only review surface.
 - This section must not collapse field calculations into generic labels such as
   "validation logic" or "amount calculation".
 
