@@ -42,6 +42,18 @@ PR review, see
   sidecars 和分批 deep read。
 - flow 和 module 不重新吞源码，也不拼多个完整 Markdown；它们只消费
   program/flow 的 compact artifacts。
+- 如果 SME 一次输入一个 program flow，先按
+  `delivery_artifact_lookup_profile` 去 central delivery repo 查每个 program
+  的既有分析结果；你们部门默认是
+  `CH-WPS-LENDING-CARDS/legacy-modernization-delivery` 的 GitHub remote
+  `main`，路径使用 exact `modules/*/{PROGRAM}`。`@` 是 program identity 的
+  一部分，所以 `@CU118` 和 `CU118` 不互相命中。其它部门可以覆盖
+  repo、branch、module roots、program folder patterns 和 alias rules。GitHub
+  lookup 用方式 2：`git ls-remote` 加临时 shallow clone / sparse checkout，
+  或使用已确认同步到 `origin/main` 的本地 cache。remote `main` 有 exact
+  program folder 就不重扫，并且生成 `program-set-sme-core-review.md` 时从
+  这个 remote-main checkout/cache 读取 compact artifacts；没有才 scan；
+  remote 查不到就标 `remote_unavailable`，不要当成 missing。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
   哪些地方仍然是 TBD。
@@ -58,7 +70,8 @@ evidence needs require it.
 | Scenario | Use | SME question it answers | Main review surface |
 | --- | --- | --- | --- |
 | One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus core artifacts; optional sidecars only when triggered |
-| One transaction spans programs | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
+| SME gives a program flow/list for core review | `legacy-ibmi-flow-analyzer` | What are the combined Calculation Logic, Validation Logic, Exception Handling, and Message Inventory across these programs? | `program-set-sme-core-review.md` |
+| Full transaction flow analysis is explicitly requested | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
 | Multiple flows form a module | `legacy-ibmi-module-analyzer` | Is this business module covered enough for BRD/spec handoff? | `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md` |
 
 Use the smallest layer that answers the SME question. Do not start at module
@@ -69,21 +82,22 @@ level when the actual question is about one program or one transaction.
 1. Read no more than five routine bodies in one LLM turn.
 2. Never paste a full large RPGLE / SQLRPGLE source member into a prompt.
 3. Never concatenate multiple full `program-analysis.md` or `flow.md` files.
-4. Use core compact artifacts first:
+4. Before scanning source, check central delivery repo artifacts first.
+5. Use core compact artifacts first:
    - `program-analysis-summary.yaml`
    - `source-index.yaml`
    - `routine-logic-details.yaml`
    - `message-inventory.yaml`
-5. Add optional sidecars only when triggered:
+6. Add optional sidecars only when triggered:
    - `deep-read-plan.md` and `all-routine-coverage-ledger.md` when more than
      one five-routine batch is needed.
    - `file-io-inventory.yaml` when file I/O is dense or state-changing.
    - `field-mutation-matrix.yaml` when persisted field mutations are observed.
    - `sql-inventory.yaml` when embedded SQL / SQLRPGLE evidence is observed.
-6. Open human-readable Markdown only for targeted SME clarification.
-7. Treat `indexed_only` as structure evidence, not confirmed behavior.
-8. Treat `deep_read` as the minimum evidence level for strong logic claims.
-9. If a flow or module needs a routine that is still `indexed_only`, route
+7. Open human-readable Markdown only for targeted SME clarification.
+8. Treat `indexed_only` as structure evidence, not confirmed behavior.
+9. Treat `deep_read` as the minimum evidence level for strong logic claims.
+10. If a flow or module needs a routine that is still `indexed_only`, route
    back to program analysis for the next five-routine batch.
 
 ## Program Tier Rules

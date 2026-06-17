@@ -83,9 +83,11 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         for text in (skill_text, contract_text):
-            self.assertIn("flow-sme-core-review.md", text)
             self.assertIn("program-set-sme-core-review.md", text)
             self.assertIn("templates/sme-core-review.md", text)
+            self.assertIn("Do not produce `flow-<FLOW-SLUG>.md`", text)
+
+        self.assertNotIn("flow-sme-core-review.md", contract_text)
 
         expected_sections = [
             "## Calculation Logic",

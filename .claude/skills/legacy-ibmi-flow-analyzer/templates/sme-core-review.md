@@ -1,13 +1,30 @@
-# SME Core Review: [Flow or Program Set Name]
+# Program Set SME Core Review: [Program Set Name]
 
 Purpose: compact SME review view that merges multiple program-analysis results
-without the engineering flow sections.
+without the engineering flow sections. Use this as
+`program-set-sme-core-review.md` for SME-provided program-flow/list input.
+
+Lookup Profile:
+
+| Field | Value |
+| --- | --- |
+| Repo | [owner/repo from delivery_artifact_lookup_profile] |
+| Branch | [main or configured branch] |
+| Module Roots | [modules/* or configured roots] |
+| Program Folder Patterns | [modules/*/{PROGRAM}; or configured patterns] |
+| Program Name Normalization | [uppercase; preserve leading @; exact folder-name match; or configured rule] |
 
 Sources:
 
-| Program | Analysis Directory | Compact Artifacts Used | Coverage / Readiness | Notes |
-| --- | --- | --- | --- | --- |
-| [PROGRAM] | [path] | program-analysis-summary.yaml; routine-logic-details.yaml; message-inventory.yaml; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
+| Program | Analysis Directory | Central Lookup Result | Compact Artifacts Used | Coverage / Readiness | Notes |
+| --- | --- | --- | --- | --- | --- |
+| [PROGRAM] | [remote-main path or local scan path] | found_on_remote_main / not_found_on_remote_main / remote_unavailable | program-analysis-summary.yaml; routine-logic-details.yaml; message-inventory.yaml; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
+
+Core Completeness Ledger:
+
+| Program | Expected In Scope From | Central Lookup Result | Calculation Logic | Validation Logic | Exception Handling | Message Inventory | Missing / Targeted Follow-up |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [PROGRAM] | SME-provided flow / central lookup / inventory / call evidence | found_on_remote_main / not_found_on_remote_main / remote_unavailable | present / missing / N/A | present / missing / N/A | present / missing / N/A | present / missing / N/A | [none / scan this program / remote unavailable] |
 
 ## Calculation Logic
 
@@ -36,9 +53,15 @@ Sources:
 Rules:
 
 - This artifact contains only Calculation Logic, Validation Logic, Exception
-  Handling, and Message Inventory.
+  Handling, Message Inventory, plus the Sources table and Core Completeness
+  Ledger used to prove coverage.
 - Do not include Nodes, Edges, Transaction Call Map, Replay, Persistence,
-  Lineage, UI Surfaces, Capability Seeds, TBD tables, or SME Checklist.
+  Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables, or SME
+  Checklist.
+- No program may be omitted from the Core Completeness Ledger. If the exact
+  program folder is not on remote `main`, keep the row and mark
+  `not_found_on_remote_main`; if the remote cannot be checked, mark
+  `remote_unavailable`.
 - Message Inventory must list every exact message/status/literal observed
   across the participating program analyses. Do not replace individual rows
   with grouped labels.

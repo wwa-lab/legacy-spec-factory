@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-flow-analyzer
-description: Analyze a complete IBM i call chain — one business transaction end-to-end across all programs it touches. Supports seven trigger models (batch job, interactive menu, subfile dispatch, F-key branch, DB trigger, scheduler, API/remote). Produces a flow analysis covering trigger context, sequence, cross-program data flow, error propagation, commit boundaries, UI surfaces, and business-capability seeds. Use when a single program analysis is insufficient because the business event spans multiple programs. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory without rescanning. Supports central artifact reuse from delivery repo remote main before source scan and records per-program lookup status. Also retains explicit full transaction-flow analysis support for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -20,10 +20,10 @@ Retain this notice in substantial copies or derived versions.
 
 | Field | Notes |
 | --- | --- |
-| Problem solved | Explains one end-to-end IBM i business transaction across the programs, triggers, data movement, and error paths it touches. |
-| Input | Approved inventory, relevant program analyses, trigger context, runtime clues, screen/report evidence, and SME notes. |
-| Output | Flow analysis with trigger model, sequence, cross-program data flow, error propagation, commit boundaries, and capability seeds. |
-| Core prompt strategy | Stitch only evidence-backed hops, separate technical sequence from business meaning, and expose missing links as TBDs. |
+| Problem solved | Merges a SME-provided multi-program flow/list into one compact program-set core review without losing any requested program. Full transaction-flow analysis remains available only when explicitly requested. |
+| Input | Approved inventory, relevant program analyses or central delivery artifact paths, trigger context, runtime clues, screen/report evidence, and SME notes. |
+| Output | For SME-provided program-flow/core merge requests, `program-set-sme-core-review.md` only. For separately requested full transaction-flow analysis, `flow-<FLOW-SLUG>.md`. |
+| Core prompt strategy | Reuse remote-main central program artifacts first, aggregate compact core artifacts, preserve SME order as navigation evidence, and expose missing programs/sections in a completeness ledger. |
 | Upstream skill | `legacy-ibmi-program-analyzer` and `legacy-ibmi-inventory`. |
 | Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and capability/spec preparation. |
 | Validation standard | All called programs and files map to inventory IDs, trigger model is declared, and unresolved branches are not hidden. |
@@ -32,34 +32,47 @@ Retain this notice in substantial copies or derived versions.
 
 ## Purpose
 
-Analyze one **call chain** — a complete business transaction that spans
-multiple programs, from trigger to final outcome. Where
-`legacy-ibmi-program-analyzer` looks inside one program, this skill looks
-across programs: how they are stitched together, what data passes between
-them, when they branch, and how errors propagate.
+For the current SME program-flow workflow, merge multiple analyzed programs
+into one compact **program-set SME core review**. Where
+`legacy-ibmi-program-analyzer` looks inside one program, this skill combines
+the already-produced core logic from every program the SME named, without
+re-reading full source and without producing a full engineering flow artifact.
+
+Full transaction-flow analysis is still available when explicitly requested,
+but it is not the default output for SME-provided program-flow intake.
 
 The primary orientation view is a **Transaction Call Map**: an RDi-style
 cross-program/cross-boundary call map. It is not a statement-level
 flowchart. It should preserve the transaction's program and external
 dependency structure while keeping full call details in tables.
 
-This skill supports two flow assembly modes:
+This skill supports **central artifact reuse** before any source scan. If the
+central delivery documents repo remote `main` already contains an exact
+program folder for a program named by the user or discovered in the flow, load
+that program's compact artifacts from the remote-main sparse checkout or a
+fresh cache verified against `origin/main`; do not rescan the program and do
+not read from an unverified local copy. Only programs with
+`central_lookup_result: not_found_on_remote_main` are routed to
+`legacy-ibmi-program-analyzer`.
 
+This skill supports these assembly modes:
+
+- **`core_review_only` (default for SME-provided program-flow input)** — user
+  provides an ordered or partial program flow/list; the analyzer produces
+  `program-set-sme-core-review.md` by merging compact program-analysis
+  artifacts. Do not produce `flow-<FLOW-SLUG>.md` in this mode.
 - **`orchestrated`** — start from a trigger / entry program, discover the
   involved programs, run or route missing per-program analysis first, then
-  assemble the flow from the generated compact artifacts.
+  assemble a full transaction flow from the generated compact artifacts. Use
+  only when the user explicitly asks for full flow analysis.
 - **`assemble_existing`** — user provides existing per-program analysis
   directories, and the flow analyzer assembles them into one flow, filling only
-  missing artifacts when possible.
-- **`core_review_only` companion view** — when SMEs want multiple existing
-  program analyses merged without the engineering flow sections, produce a
-  separate SME core review artifact that contains only Calculation Logic,
-  Validation Logic, Exception Handling, and Message Inventory. Use this as a
-  companion to `assemble_existing`, or as a program-set review when the provided
-  programs do not yet prove one transaction flow.
+  missing artifacts when possible. Use only when the user explicitly asks for
+  full flow analysis.
 
 This skill does **not** re-analyze individual program semantics inline. Every
-program in the flow must have approved program analysis evidence. Core
+program in the program set must have program analysis evidence from remote
+`main` or from a newly routed source scan. Core
 artifacts are `program-analysis-summary.yaml`, `source-index.yaml`,
 `routine-logic-details.yaml`, and `message-inventory.yaml`; optional sidecars
 such as `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
@@ -93,6 +106,20 @@ Accept:
 
 - **Analysis intent** — `standalone_exploratory` by default, or `chain_ready`
   when the user explicitly asks for downstream-ready output.
+- **SME-provided program flow** — an ordered or partial list of programs,
+  entry/exit hints, menu/job/API context, or a rough sequence from the SME.
+  When the SME provides a program flow for the current core-merge workflow,
+  default `flow_scan_mode` to `core_review_only`, preserve the supplied order as
+  SME navigation evidence, and output `program-set-sme-core-review.md`.
+  Reconcile contradictions against upstream Call Evidence as notes/TBDs rather
+  than silently rewriting the SME-provided list.
+- **Central delivery artifact root / repo** — optional GitHub repo, local
+  checkout, or `delivery_artifact_lookup_profile` for
+  `legacy-modernization-delivery` or an equivalent delivery documents repo. The
+  accepted artifact source of truth is GitHub remote `main`; local checkouts
+  are caches only after freshness is verified against `origin/main`. The repo
+  name, branch, module roots, and program folder patterns are configurable.
+  Search the remote-current snapshot before asking to rescan source.
 - **Flow definition** — the entry point of the chain, declared as one of
   seven trigger types (see `references/trigger-models.md`):
   - batch job (CL + SBMJOB or direct CALL)
@@ -111,6 +138,13 @@ Accept:
   `field-mutation-matrix.yaml`, `sql-inventory.yaml`) are required only when
   present/triggered by the program tier or when the flow needs native file I/O,
   persisted field mutation, or SQLRPGLE evidence.
+- **Central lookup result per program** — record one row per requested or
+  discovered program:
+  `found_on_remote_main`, `not_found_on_remote_main`, or
+  `remote_unavailable`. Do not scan every program in a provided flow just
+  because one node is missing; scan only programs with
+  `not_found_on_remote_main`. For `found_on_remote_main`, read the compact
+  artifacts from the remote-main checkout/cache used for the lookup.
 - **Approved inventory** with `relationships` populated for the involved objects
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
@@ -159,16 +193,22 @@ Stop and require clarification if:
 
 ## Output Contract
 
-Produce the canonical flow artifact:
+For current SME-provided program-flow/core-merge requests, produce only:
 
-- `flow-<FLOW-SLUG>.md`
+- `program-set-sme-core-review.md`
 
-When the user asks to merge multiple program-analysis results for SME review,
-also produce one compact core-review artifact:
+Do not produce `flow-<FLOW-SLUG>.md` for this current workflow. Produce a full
+flow artifact only when the user explicitly asks for full transaction-flow
+analysis with trigger/context, edges, data flow, persistence, replay, and
+capability seeds.
 
-- `flow-sme-core-review.md` when the programs form one flow
-- `program-set-sme-core-review.md` when the programs are only a program set and
-  the flow/order is not proven
+`program-set-sme-core-review.md` must include a **Core Completeness Ledger**
+before the four core sections. The ledger lists every program from the
+SME-provided flow, inventory relationship, discovered call evidence, or central
+artifact lookup; its `central_lookup_result`; required compact artifacts;
+missing core sections; and whether the next action is reuse, source scan, or
+remote-access follow-up. No program may be omitted merely because its artifact
+is missing.
 
 `<FLOW-SLUG>` is uppercase, hyphen-separated, business-event named (e.g.,
 `ONUS-AUTH`, `BATCH-RECON`, `CHARGEBACK-INTAKE`), and stable across the
@@ -310,12 +350,12 @@ field-level rules. The summary below is normative for this skill.
 
 ### Output
 
-- **Canonical artifact**: `flow-<FLOW-SLUG>.md`.
-- **SME core review artifact**: `flow-sme-core-review.md` for proven flows, or
-  `program-set-sme-core-review.md` for a merged program set without proven
-  transaction ordering. This artifact contains only Calculation Logic,
-  Validation Logic, Exception Handling, and Message Inventory, aggregated from
-  the participating program analyses.
+- **Default SME program-flow artifact**: `program-set-sme-core-review.md`.
+  This artifact contains the Sources table, Core Completeness Ledger,
+  Calculation Logic, Validation Logic, Exception Handling, and Message
+  Inventory, aggregated from the participating program analyses.
+- **Full transaction-flow artifact**: `flow-<FLOW-SLUG>.md`, only when the user
+  explicitly asks for full flow analysis.
 - **Required sections**: front-loaded Calculation Logic, Validation Logic,
   Exception Handling, Message Inventory, metadata, trigger model & entry point,
   transaction call map, nodes, edges, common dependencies, cross-program data
@@ -383,13 +423,42 @@ to the orchestrator.
      for approved/downstream-ready/chain-ready output.
    - Use `analysis_intent: chain_ready` only when the flow must feed module,
      BRD, spec, or formal downstream handoff.
-   - Use `flow_scan_mode: orchestrated` when the user provides a trigger /
+   - If the SME provides a program flow/list and asks for core logic merge,
+     default to `flow_scan_mode: core_review_only`, normalize the supplied
+     program list/order, and mark it as SME navigation evidence. Do not produce
+     `flow-<FLOW-SLUG>.md` unless the user explicitly asks for full transaction
+     flow analysis.
+   - Run **central artifact reuse** before routing any program to source scan:
+     resolve the remote-current snapshot using Git method 2:
+     `git ls-remote` followed by a temporary shallow clone / sparse checkout
+     of `main`, or an already-fresh local cache verified against `origin/main`.
+     Do not use GitHub API tooling, a stale local checkout, or a feature branch
+     to conclude that a program artifact is absent.
+   - Use the profile's `program_folder_patterns` to find each program. The
+     current lending-card default supports exact `modules/*/{PROGRAM}` folder
+     matching and preserves leading `@`, so `@CU118` and `CU118` are distinct
+     programs. Other departments can override the repo name, branch,
+     `module_roots`, folder patterns, artifact filenames, and alias rules.
+   - Search remote-current central artifacts for each program named by the SME,
+     discovered from the entry program, or present in inventory relationships.
+     Match by exact program/member name first, then `OBJ-*`, module/CAP-ID,
+     source library/member, and source ref when available.
+   - Record `central_lookup_result` for every program:
+     `found_on_remote_main`, `not_found_on_remote_main`, or
+     `remote_unavailable`.
+   - Do not rescan programs with `found_on_remote_main`; tell the user they
+     have already been scanned, then read their compact artifacts from the
+     remote-main sparse checkout or fresh cache and use those rows in
+     `program-set-sme-core-review.md`. Scan only programs with
+     `not_found_on_remote_main`. If any lookup is `remote_unavailable`, ask for
+     access/context instead of assuming missing.
+   - Use `flow_scan_mode: orchestrated` when the user explicitly provides a trigger /
      entry program and wants the skill to discover, index, and assemble the
      whole flow.
-   - Use `flow_scan_mode: assemble_existing` when the user provides several
+   - Use `flow_scan_mode: assemble_existing` when the user explicitly provides several
      existing program analysis directories and asks to combine them into one
      flow.
-   - In both modes, flow aggregation must prefer compact artifacts:
+   - In all modes, aggregation must prefer compact artifacts:
      `program-analysis-summary.yaml`, `source-index.yaml`,
      `routine-logic-details.yaml`, `message-inventory.yaml`,
      `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
@@ -397,13 +466,14 @@ to the orchestrator.
    - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
      files across programs. Open full Markdown only for targeted human-readable
      clarification when compact artifacts are insufficient.
-   - If the user asks to merge multiple program-analysis results but only wants
-     core SME information, generate `flow-sme-core-review.md` or
+   - If the user asks to merge multiple program-analysis results or provides a
+     SME program flow for core SME review, generate
      `program-set-sme-core-review.md` from `templates/sme-core-review.md`.
-     Include only Calculation Logic, Validation Logic, Exception Handling, and
-     Message Inventory. Do not include Nodes, Edges, Replay, Persistence,
-     Lineage, UI Surfaces, Capability Seeds, or SME Checklist in that compact
-     core-review artifact.
+     Include the Source table and Core Completeness Ledger, then only
+     Calculation Logic, Validation Logic, Exception Handling, and Message
+     Inventory. Do not include Nodes, Edges, Replay, Persistence, Lineage, UI
+     Surfaces, Capability Seeds, or SME Checklist in that compact core-review
+     artifact.
    - In `standalone_exploratory`, continue with warning rows when approvals,
      inventory linkage, or sidecars are missing; in `chain_ready`, enforce the
      blocking gates.
@@ -650,20 +720,25 @@ Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-
 
 **Stage this skill produces:**
 
-- `3d Flow Analysis Done` when **every** business transaction the SME lists
-  for this module has an approved `flow-*.md`
-- `3c Flow Analysis In Progress` when one or more in-scope flows are still
-  draft, blocked, or missing
+- `3d Flow Analysis Done` when every in-scope SME program set has a completed
+  `program-set-sme-core-review.md`, or every explicitly requested full
+  transaction flow has an approved `flow-*.md`
+- `3c Flow Analysis In Progress` when one or more in-scope program sets or full
+  flows are still draft, blocked, or missing
 
 **Last artifact path pattern:**
-`03_flows/<MODULE-SLUG>/flow-<FLOW-SLUG>.md`
+`03_flows/<MODULE-SLUG>/program-set-sme-core-review.md` for the current SME
+program-flow core-merge workflow, or
+`03_flows/<MODULE-SLUG>/flow-<FLOW-SLUG>.md` for explicitly requested full flow
+analysis.
 
 **Writes per run:**
 
 1. Overwrite `capabilities[<CAP-* from current_focus>]` with stage id, the
-   path of the flow you just saved, `last_skill: legacy-ibmi-flow-analyzer`,
-   and blocking IDs (`tbds`, `sme_pending` for trigger context / commit
-   boundary questions).
+   path of the program-set core review or full flow you just saved,
+   `last_skill: legacy-ibmi-flow-analyzer`, and blocking IDs (`tbds`,
+   `sme_pending` for missing program artifacts or, for full flow analysis,
+   trigger context / commit boundary questions).
 2. Append one `history[]` entry with `note` naming the flow
    (e.g. `"analyzed flow-submit-order"`).
 3. Overwrite `project.last_updated_at` / `project.last_updated_by`.
@@ -736,8 +811,8 @@ both observations are recorded and a TBD blocks the flow until SME reconciles th
 
 ## SME Review Questions
 
-The generated `flow-<FLOW-SLUG>.md` must include a review checklist
-covering:
+When full transaction-flow analysis is explicitly requested, the generated
+`flow-<FLOW-SLUG>.md` must include a review checklist covering:
 
 - [ ] Trigger model correctly identified (batch / menu / subfile /
       F-key / trigger / scheduler / API)
@@ -777,6 +852,22 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.4 (2026-06-17): Central artifact reuse and SME program-flow intake
+  - Added central artifact reuse before missing-program scans
+  - Uses configurable `delivery_artifact_lookup_profile` values for delivery
+    repo, branch, module roots, and program folder patterns instead of assuming
+    every department uses the same repository layout; the lending-card default
+    preserves leading `@` as part of program identity
+  - Added per-program `central_lookup_result` routing:
+    `found_on_remote_main`, `not_found_on_remote_main`, or
+    `remote_unavailable`
+  - Required compact SME core reviews to include a Core Completeness Ledger so
+    every requested/discovered program is accounted for even when an artifact is
+    missing
+  - Scoped SME-provided program-flow intake to
+    `program-set-sme-core-review.md` by default; full `flow-<FLOW-SLUG>.md`
+    generation is reserved for explicit full transaction-flow analysis
 
 - v0.2.3 (2026-06-06): Program-analysis dense evidence sidecar consumption
   alignment

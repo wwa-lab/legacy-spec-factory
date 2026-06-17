@@ -297,10 +297,10 @@ Rules:
   source-index.yaml,
   and optional sidecars only when they already exist and are needed.
 - Use program-analysis.md only for targeted clarification.
-- If the programs form one proven transaction flow, create
-  flow-sme-core-review.md.
-- If the programs are only a related program set and the order is not proven,
-  create program-set-sme-core-review.md.
+- Create program-set-sme-core-review.md.
+- Preserve the SME-provided order as navigation evidence, but do not generate
+  flow-<FLOW-SLUG>.md unless full transaction-flow analysis is explicitly
+  requested.
 
 The output must contain only these sections:
 1. Calculation Logic
@@ -353,10 +353,9 @@ Intent: standalone_exploratory
   source-index.yaml、
   以及已经存在且本次确实需要的 optional sidecars。
 - program-analysis.md 只允许用于定点澄清。
-- 如果这些 program 构成一个已证明的 transaction flow，请生成
-  flow-sme-core-review.md。
-- 如果它们只是相关 program set，执行顺序还没有证明，请生成
-  program-set-sme-core-review.md。
+- 生成 program-set-sme-core-review.md。
+- 保留 SME 输入顺序作为 navigation evidence，但除非明确要求 full
+  transaction-flow analysis，不生成 flow-<FLOW-SLUG>.md。
 
 输出只能包含这四个 section:
 1. Calculation Logic

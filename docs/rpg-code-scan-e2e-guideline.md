@@ -54,13 +54,22 @@ The design rules are:
 6. **Draft output is not organizational knowledge.**
    Only SME-reviewed output merged into the central delivery repo `main` branch
    becomes the accepted analysis fact layer.
+7. **Central artifacts are reused before scanning.**
+   Do not rerun program analysis when the central delivery repo remote `main`
+   already contains an exact folder for the requested program. The source of
+   truth is `legacy-modernization-delivery` GitHub remote `main`, not a random
+   local checkout. Search remote-current central artifacts first, then scan only
+   programs with `central_lookup_result: not_found_on_remote_main`.
 
 ## 2. Current Focus: RPG Code Scan
 
 For the project closeout phase, the practical focus is RPG code scan:
 
 ```text
-source repository
+central delivery repo lookup
+  -> reuse remote-main program-analysis artifacts when exact folder exists
+  -> source scan only when central_lookup_result is not_found_on_remote_main
+  -> source repository
   -> repo scan
   -> program tier
   -> tier-specific prompt
@@ -119,7 +128,8 @@ first, not a whole system.
 
 ### What The Assistant / Engineer Provides
 
-- repo scan outputs
+- central delivery repo lookup result
+- repo scan outputs only for programs not found on remote `main`
 - tier classification
 - the right prompt card
 - program analysis artifacts
@@ -144,7 +154,96 @@ the main analysis links to `RLOG-*` details.
 
 ## 4. Simple RPG Code Scan Flow
 
-### 4.1 Use Skill To Scan Code In Source Repo
+### 4.1 Check Central Delivery Repo Before Scanning
+
+Before running a source repo scan, check the central delivery documents repo
+remote `main` for an exact program folder for the requested program or program
+flow. For the current lending-card setup, the default delivery repo is
+`CH-WPS-LENDING-CARDS/legacy-modernization-delivery`, and the latest accepted
+state is the GitHub remote `main` branch.
+
+If you have a local checkout of `legacy-modernization-delivery`, treat it as a
+cache only. Fetch and verify it against `origin/main` before lookup. Do not
+use a stale local checkout, feature branch, or private working copy to conclude
+that an artifact does not exist. Use Git method 2 for remote lookup:
+`git ls-remote` plus a temporary shallow clone / sparse checkout, or an
+already-fresh verified cache. Do not use GitHub API tooling.
+
+Read-only Git lookup:
+
+```bash
+git ls-remote <delivery-repo-url> main
+git clone --depth 1 --branch main --filter=blob:none \
+  --sparse <delivery-repo-url> <tmp-delivery-dir>
+git -C <tmp-delivery-dir> sparse-checkout set "modules"
+```
+
+Then inspect the configured `program_folder_patterns`. Delete the temporary
+checkout after lookup if it is not a managed cache.
+
+#### Delivery Artifact Lookup Profile
+
+Use a configurable lookup profile instead of hardcoding one repo name or one
+folder depth.
+
+Default profile for the current lending-card setup:
+
+```yaml
+delivery_artifact_lookup_profile:
+  repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
+  branch: main
+  module_roots:
+    - modules/*
+  program_folder_patterns:
+    - modules/*/{PROGRAM}
+  artifact_file_patterns:
+    - program-analysis.md
+    - program-analysis-*.md
+    - program-analysis-summary.yaml
+  program_name_normalization:
+    case: upper
+    preserve_prefixes: ["@"]
+    exact_folder_name_match: true
+```
+
+This matches folders like `modules/CAP-ID-0001-large_extreme_program/@CU118`
+and `modules/CAP-ID-0001-large_extreme_program/CC050` by exact program
+identity. `@CU118` and `CU118` are different programs: scanning `CU118` must
+not reuse `@CU118`, and scanning `@CU118` must not reuse `CU118`, unless a
+department-specific profile explicitly defines aliases.
+
+Other departments can override `repo`, `branch`, `module_roots`,
+`program_folder_patterns`, artifact filenames, and normalization rules. For
+example, another team could use `delivery-docs`, `capabilities/*/{PROGRAM}`, or
+`apps/*/programs/{PROGRAM}` without changing the skill logic.
+
+Use these lookup keys when available:
+
+- `OBJ-*`
+- program/member name
+- module or `CAP-*`
+- source library/member
+- source ref, source collection date, or source fingerprint recorded in
+  `program-analysis-summary.yaml` or module metadata
+
+Do not rerun program analysis when an exact program folder exists on remote
+`main`. Remote `main` is already PR-reviewed, so this is a lookup routing
+result, not a second approval gate.
+
+Lookup result values:
+
+| central_lookup_result | Use when | Next action |
+| --- | --- | --- |
+| `found_on_remote_main` | Exact program folder exists on delivery repo remote `main`. | Tell the user this program has already been scanned and provide the central path. Do not scan source. |
+| `not_found_on_remote_main` | No exact program folder exists on remote `main`. | Run source scan for that program. |
+| `remote_unavailable` | Remote `main` could not be checked. | Ask for access/context; do not assume missing. |
+
+For SME-provided program flows, build one row per program with its
+`central_lookup_result` before scanning anything. The expected outcome is that
+programs found on central repo remote `main` are reused, and only true
+`not_found_on_remote_main` gaps are scanned.
+
+### 4.2 Use Skill To Scan Code In Source Repo
 
 Run repo scan from the legacy source repo or source export root.
 
@@ -175,7 +274,7 @@ their `source_kind`, line counts, `size_tier`, `tier_reason`,
 `default_output_profile`, and whether classification came from
 `legacy-ibmi-program-analyzer` or a fallback scanner rule.
 
-### 4.2 Identify Source Tier And Use Different Prompt
+### 4.3 Identify Source Tier And Use Different Prompt
 
 Use the `size_tier` column in `program-list.csv`.
 
@@ -229,7 +328,7 @@ Large-program rules:
 - Do not mark chain_ready until approved inventory/evidence linkage exists.
 ```
 
-### 4.3 Validate Key Files
+### 4.4 Validate Key Files
 
 The two key human-review files are:
 
@@ -285,7 +384,7 @@ Manual validation checklist:
 If validation fails, fix the analysis artifacts before syncing to the central
 delivery repo.
 
-### 4.4 Sync Result To Central Documents Repo
+### 4.5 Sync Result To Central Documents Repo
 
 The central delivery documents repo is `legacy-modernization-delivery`. It is
 the project-specific delivery repo. It stores reviewed module delivery
@@ -341,7 +440,7 @@ output_location: "modules/<CAP-ID>/output/source-output/"
 If the output contains unresolved findings, keep status as `needs_sme_review`
 or `draft`. Do not mark `approved` before SME review.
 
-### 4.5 Create PR And Merge To Main Branch
+### 4.6 Create PR And Merge To Main Branch
 
 Open a PR in `legacy-modernization-delivery` after the output is copied and the
 module metadata is updated.
@@ -404,12 +503,15 @@ the accepted analysis snapshot.
 For internal teams, encourage small usage first:
 
 1. Pick one representative program.
-2. Run repo scan.
-3. Use the tier-specific prompt.
-4. Validate `program-analysis.md` and `routine-logic-details.md`.
-5. Sync to `legacy-modernization-delivery`.
-6. Open a PR and invite one RPG / IBM i SME.
-7. Merge only after SME review.
+2. Check `legacy-modernization-delivery` remote `main` for an exact program
+   folder.
+3. Reuse the central artifact when found, or run repo scan only when
+   `central_lookup_result: not_found_on_remote_main`.
+4. Use the tier-specific prompt.
+5. Validate `program-analysis.md` and `routine-logic-details.md`.
+6. Sync new or refreshed artifacts to `legacy-modernization-delivery`.
+7. Open a PR and invite one RPG / IBM i SME.
+8. Merge only after SME review.
 
 Recommended first pilot size:
 
@@ -457,6 +559,7 @@ Use this as the project closeout checklist:
 - [ ] Normal / complex / large program guidelines are available.
 - [ ] Large-program path handles 10,000+ line RPG members through index +
       five-routine batches.
+- [ ] Central delivery repo lookup happens before any new source scan.
 - [ ] `program-analysis.md` and `routine-logic-details.md` validation is
       documented.
 - [ ] Central delivery repo sync path is documented.

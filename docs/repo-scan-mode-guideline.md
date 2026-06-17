@@ -23,6 +23,18 @@ Use repo scan mode when you need to:
 Do not treat repo scan output as final modernization evidence. It is a triage
 input for deciding what to analyze next.
 
+Before running repo scan for a named program or SME-provided program flow,
+check the central delivery documents repo remote `main` for an exact existing
+program-analysis folder. Use a configurable `delivery_artifact_lookup_profile`;
+the current lending-card default is
+`CH-WPS-LENDING-CARDS/legacy-modernization-delivery` with exact program folders
+under `modules/*/{PROGRAM}`. Leading `@` is part of the program identity, so
+`@CU118` and `CU118` do not cross-match. Use Git method 2:
+`git ls-remote` plus a temporary shallow clone / sparse checkout, or an
+already-fresh local cache verified against `origin/main`. Repo scan is needed
+only when the exact program folder is `not_found_on_remote_main`. If the remote
+cannot be checked, treat the result as `remote_unavailable`, not as missing.
+
 ## Required Skill Folders
 
 When running outside the `legacy-spec-factory` repository, copy the relevant
@@ -201,14 +213,17 @@ analysis tiers.
 
 ## Recommended Workflow
 
-1. Run `legacy-ibmi-inventory` repo scan mode against the source repository.
-2. Review `program-list.csv` and the Markdown tier report.
-3. Assign `large_extreme_program` entries to full `legacy-ibmi-program-analyzer`
+1. Check the central delivery repo remote `main` for exact program-analysis
+   folders using Git method 2.
+2. Run `legacy-ibmi-inventory` repo scan mode against the source repository
+   only for programs with `central_lookup_result: not_found_on_remote_main`.
+3. Review `program-list.csv` and the Markdown tier report.
+4. Assign `large_extreme_program` entries to full `legacy-ibmi-program-analyzer`
    processing first.
-4. Review `complex_normal_program` entries using call graph, file dependency,
+5. Review `complex_normal_program` entries using call graph, file dependency,
    and SME criticality.
-5. Use lightweight flow or SME review packages for `normal_program` entries.
-6. Promote any normal program if downstream analysis shows high business or
+6. Use lightweight flow or SME review packages for `normal_program` entries.
+7. Promote any normal program if downstream analysis shows high business or
    data risk.
 
 ## Suggested Copilot Prompt

@@ -1,9 +1,31 @@
 # Output Contract: Flow Analysis
 
-This document defines the precise shape and required fields for every
-`flow-<FLOW-SLUG>.md` artifact and its compact SME core-review companion.
+This document defines the precise shape and required fields for compact
+`program-set-sme-core-review.md` artifacts and, when explicitly requested,
+full `flow-<FLOW-SLUG>.md` artifacts.
 
-## File Structure
+## Program-Set Core Review File Structure
+
+Default for SME-provided program-flow/core-merge requests:
+
+```markdown
+# Program Set SME Core Review: [Program Set Name]
+
+Lookup Profile:
+Sources:
+Core Completeness Ledger:
+
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
+```
+
+---
+
+## Full Flow File Structure
+
+Use this only when full transaction-flow analysis is explicitly requested:
 
 ```markdown
 # Flow Analysis: [Business Event Name] (FLOW-*)
@@ -35,17 +57,49 @@ This document defines the precise shape and required fields for every
 
 ## SME Core Review Artifact
 
-When the user asks to merge multiple existing program-analysis results and only
-wants core SME information, produce a separate compact review artifact:
+When the user asks to merge multiple existing program-analysis results, or when
+the SME provides a program flow that should reuse existing central artifacts
+before any scan, produce:
 
-- `flow-sme-core-review.md` when the provided programs form one proven flow.
-- `program-set-sme-core-review.md` when the provided programs are a program set
-  without a proven transaction order.
+- `program-set-sme-core-review.md`
 
-This artifact must contain only:
+Do not produce `flow-<FLOW-SLUG>.md` for this current SME core-merge workflow.
+The SME-provided order may still be preserved inside the Sources table and Core
+Completeness Ledger. Full transaction-flow artifacts are reserved for a
+separately requested full flow analysis.
+
+This artifact uses central artifact reuse / lookup first. For every requested
+or discovered program, record `central_lookup_result` as
+`found_on_remote_main`, `not_found_on_remote_main`, or `remote_unavailable`.
+Only programs with `not_found_on_remote_main` are routed back to
+`legacy-ibmi-program-analyzer`; a found remote-main folder means the program
+has already been scanned and should not be rescanned. For
+`found_on_remote_main`, read `program-analysis-summary.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`, and needed optional
+sidecars from the remote-main sparse checkout or already-fresh verified cache
+used for lookup.
+
+The accepted central artifact source of truth is the
+`legacy-modernization-delivery` GitHub remote `main` branch. A local checkout
+may be used only after a freshness check against `origin/main`; do not use a
+stale local checkout or feature branch to prove that an artifact is missing.
+Use Git method 2 (`git ls-remote` plus temporary shallow clone / sparse
+checkout, or an already-fresh verified cache), not GitHub API tooling.
+When another department uses a different delivery repo or folder structure,
+the run must provide a `delivery_artifact_lookup_profile` with configurable
+`repo`, `branch`, `module_roots`, `program_folder_patterns`, and artifact file
+patterns. The current lending-card default uses exact `modules/*/{PROGRAM}`
+matching and preserves leading `@`; `@CU118` and `CU118` remain different
+programs unless a department-specific profile explicitly defines aliases.
+
+This artifact must contain only source/coverage control surfaces plus the four
+core SME sections:
 
 ```markdown
 # SME Core Review: [Flow or Program Set Name]
+
+Sources:
+Core Completeness Ledger:
 
 ## Calculation Logic
 ## Validation Logic
@@ -58,10 +112,13 @@ This artifact must contain only:
 - Aggregate from compact program artifacts first:
   `program-analysis-summary.yaml`, `routine-logic-details.yaml`,
   `message-inventory.yaml`, and claim-specific optional sidecars.
+- Populate the Core Completeness Ledger from the SME-provided program flow,
+  central delivery artifact lookup, inventory relationships, and discovered
+  call evidence. No program may be omitted because its artifact is missing.
 - Use `program-analysis.md` only for targeted human-readable clarification.
 - Do not include Metadata, Nodes, Edges, Transaction Call Map, Replay,
-  Persistence, Lineage, UI Surfaces, Capability Seeds, TBD tables, or SME
-  Checklist in the core-review artifact.
+  Persistence, Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables,
+  or SME Checklist in the core-review artifact.
 - Every row must identify the source Program and, when available, Routine,
   `RLOG-*` / `MSG-*`, source line, or evidence status.
 - `Message Inventory` must include every exact message ID, status value, return
