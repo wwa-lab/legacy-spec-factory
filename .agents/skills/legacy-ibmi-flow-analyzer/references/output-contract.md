@@ -91,6 +91,12 @@ the run must provide a `delivery_artifact_lookup_profile` with configurable
 patterns. The current lending-card default uses exact `modules/*/{PROGRAM}`
 matching and preserves leading `@`; `@CU118` and `CU118` remain different
 programs unless a department-specific profile explicitly defines aliases.
+Use `templates/delivery-profile.yaml` as the editable profile shape. Its
+`delivery_workspace_profile` controls where new scan output is written: the
+working branch is normally `develop-<person>` and may be created from
+`origin/main`; program artifacts go under tier-specific roots; cross-tier
+program-set reviews go under `program_set_review_parent/{REVIEW_SLUG}/`.
+Never use the working branch as the approved reuse source.
 
 This artifact must contain only source/coverage control surfaces plus the four
 core SME sections:

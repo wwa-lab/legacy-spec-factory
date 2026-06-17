@@ -13,7 +13,11 @@ FLOW_OUTPUT_CONTRACT = (
 SME_CORE_TEMPLATE = (
     REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "templates" / "sme-core-review.md"
 )
+DELIVERY_PROFILE_TEMPLATE = (
+    REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "templates" / "delivery-profile.yaml"
+)
 RPG_E2E_GUIDE = REPO_ROOT / "docs" / "rpg-code-scan-e2e-guideline.md"
+DELIVERY_PROFILE_QUICKSTART = REPO_ROOT / "docs" / "delivery-profile-quickstart.md"
 
 
 class CentralArtifactReuseGuidanceTests(unittest.TestCase):
@@ -54,6 +58,8 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
             self.assertIn("Core Completeness Ledger", text)
             self.assertIn("GitHub remote `main`", text)
             self.assertIn("delivery_artifact_lookup_profile", text)
+            self.assertIn("delivery_workspace_profile", text)
+            self.assertIn("templates/delivery-profile.yaml", text)
             self.assertIn("program-set-sme-core-review.md", text)
             self.assertIn("remote-main sparse checkout", text)
             self.assertNotIn("reuse_approved_artifact", text)
@@ -90,6 +96,33 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertNotIn('strip_prefixes: ["@"]', guide_text)
         self.assertIn("Other departments can override", guide_text)
         self.assertIn("program-analysis-summary.yaml", guide_text)
+        self.assertIn("delivery_workspace_profile", guide_text)
+        self.assertIn("develop-{PERSON}", guide_text)
+        self.assertIn("write_to_main: false", guide_text)
+
+    def test_delivery_profile_template_supports_team_onboarding(self) -> None:
+        profile_text = DELIVERY_PROFILE_TEMPLATE.read_text(encoding="utf-8")
+        quickstart_text = DELIVERY_PROFILE_QUICKSTART.read_text(encoding="utf-8")
+
+        for text in (profile_text, quickstart_text):
+            self.assertIn("delivery_artifact_lookup_profile", text)
+            self.assertIn("delivery_workspace_profile", text)
+            self.assertIn("program_folder_patterns", text)
+            self.assertIn("modules/*/{PROGRAM}", text)
+            self.assertIn("use_or_create_provided", text)
+            self.assertIn("develop-{PERSON}", text)
+            self.assertIn("develop-*", text)
+            self.assertIn("origin/main", text)
+            self.assertIn("write_to_main: false", text)
+            self.assertIn("program_set_review_parent", text)
+            self.assertIn("program_tier_roots", text)
+            self.assertIn("large_extreme_program", text)
+            self.assertIn("complex_normal_program", text)
+            self.assertIn("normal_program", text)
+
+        self.assertIn("found_on_remote_main: read_from_remote_main_checkout", profile_text)
+        self.assertIn("not_found_on_remote_main: scan_source_then_write_to_working_branch", profile_text)
+        self.assertIn("remote_unavailable: stop_for_access_context", profile_text)
 
 
 if __name__ == "__main__":

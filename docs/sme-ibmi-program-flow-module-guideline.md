@@ -54,6 +54,12 @@ PR review, see
   program folder 就不重扫，并且生成 `program-set-sme-core-review.md` 时从
   这个 remote-main checkout/cache 读取 compact artifacts；没有才 scan；
   remote 查不到就标 `remote_unavailable`，不要当成 missing。
+- 团队应先从
+  `skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` 复制一份
+  delivery profile。SME/engineer 每次只需要提供
+  `Delivery working branch: develop-<person>`、review name 和 program list。
+  如果 `develop-<person>` 不存在，就从 `origin/main` 创建；新 scan 输出写到
+  这个 branch，但 approved reuse lookup 仍然只看 remote `main`。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
   哪些地方仍然是 TBD。

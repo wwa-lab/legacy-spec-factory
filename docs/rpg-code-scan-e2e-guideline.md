@@ -186,7 +186,10 @@ checkout after lookup if it is not a managed cache.
 Use a configurable lookup profile instead of hardcoding one repo name or one
 folder depth.
 
-Default profile for the current lending-card setup:
+Default profile for the current lending-card setup. Teams should start from
+`skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` and edit the
+repo/folder/branch values once instead of asking SMEs to configure them each
+run:
 
 ```yaml
 delivery_artifact_lookup_profile:
@@ -216,6 +219,24 @@ Other departments can override `repo`, `branch`, `module_roots`,
 `program_folder_patterns`, artifact filenames, and normalization rules. For
 example, another team could use `delivery-docs`, `capabilities/*/{PROGRAM}`, or
 `apps/*/programs/{PROGRAM}` without changing the skill logic.
+
+For new scan output, keep lookup and write paths separate:
+
+```yaml
+delivery_workspace_profile:
+  branch_mode: use_or_create_provided
+  working_branch_pattern: develop-{PERSON}
+  allowed_branch_patterns:
+    - develop-*
+  create_from: origin/main
+  write_to_main: false
+  program_set_review_parent: modules/CAP-ID-0004-program_set_reviews
+```
+
+At runtime the SME or engineer provides `Delivery working branch:
+develop-<person>`, such as `develop-leo`. If the branch does not exist, create
+it from `origin/main`; if it exists, update it before writing. Reuse lookup
+still reads remote `main` only.
 
 Use these lookup keys when available:
 

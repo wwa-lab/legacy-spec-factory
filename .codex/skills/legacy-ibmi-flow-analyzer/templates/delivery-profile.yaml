@@ -1,0 +1,56 @@
+# Copy this file into a project/team config location and edit the values for
+# that delivery repository. Keep lookup and write targets separate:
+# - lookup reads remote main only
+# - output writes to the named working branch
+
+delivery_artifact_lookup_profile:
+  repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
+  branch: main
+  remote_ref: origin/main
+  lookup_method:
+    type: git_method_2
+    sparse_checkout:
+      - modules
+  module_roots:
+    - modules/*
+  program_folder_patterns:
+    - modules/*/{PROGRAM}
+  artifact_file_patterns:
+    - program-analysis.md
+    - program-analysis-*.md
+    - program-analysis-summary.yaml
+    - routine-logic-details.yaml
+    - message-inventory.yaml
+  program_name_normalization:
+    case: upper
+    preserve_prefixes:
+      - "@"
+    exact_folder_name_match: true
+
+delivery_workspace_profile:
+  repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
+  base_branch_for_reuse_lookup: main
+  branch_mode: use_or_create_provided
+  working_branch_required: true
+  working_branch_pattern: develop-{PERSON}
+  allowed_branch_patterns:
+    - develop-*
+  create_from: origin/main
+  write_to_main: false
+
+  # Program artifacts are written to their tier-specific roots after source scan.
+  program_tier_roots:
+    large_extreme_program: modules/CAP-ID-0001-large_extreme_program
+    complex_normal_program: modules/CAP-ID-0002-complex_normal_program
+    normal_program: modules/CAP-ID-0003-normal_program
+
+  # Program-set reviews are cross-tier and live under one configured parent.
+  program_set_review_parent: modules/CAP-ID-0004-program_set_reviews
+  program_set_review_path_pattern: "{REVIEW_SLUG}"
+  review_slug_source: review_name
+  review_slug_collision_strategy: append_sequence
+
+  output_rules:
+    found_on_remote_main: read_from_remote_main_checkout
+    not_found_on_remote_main: scan_source_then_write_to_working_branch
+    remote_unavailable: stop_for_access_context

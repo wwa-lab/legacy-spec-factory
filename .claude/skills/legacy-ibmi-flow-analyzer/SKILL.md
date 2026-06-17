@@ -119,7 +119,13 @@ Accept:
   accepted artifact source of truth is GitHub remote `main`; local checkouts
   are caches only after freshness is verified against `origin/main`. The repo
   name, branch, module roots, and program folder patterns are configurable.
-  Search the remote-current snapshot before asking to rescan source.
+  Search the remote-current snapshot before asking to rescan source. For other
+  teams, start from `templates/delivery-profile.yaml`.
+- **Delivery workspace profile** — optional `delivery_workspace_profile`
+  describing where new scan output is written in the delivery repo. The current
+  default is `branch_mode: use_or_create_provided` with a provided
+  `develop-<person>` branch such as `develop-leo`; create it from `origin/main`
+  if it does not exist, but never write directly to `main`.
 - **Flow definition** — the entry point of the chain, declared as one of
   seven trigger types (see `references/trigger-models.md`):
   - batch job (CL + SBMJOB or direct CALL)
@@ -428,6 +434,10 @@ to the orchestrator.
      program list/order, and mark it as SME navigation evidence. Do not produce
      `flow-<FLOW-SLUG>.md` unless the user explicitly asks for full transaction
      flow analysis.
+   - Load the team/project delivery profile when supplied. If no team profile is
+     supplied, use `templates/delivery-profile.yaml` as the editable starting
+     shape. Keep the lookup profile and workspace profile separate: lookup reads
+     remote `main`; output writes to the provided delivery working branch.
    - Run **central artifact reuse** before routing any program to source scan:
      resolve the remote-current snapshot using Git method 2:
      `git ls-remote` followed by a temporary shallow clone / sparse checkout
@@ -452,6 +462,15 @@ to the orchestrator.
      `program-set-sme-core-review.md`. Scan only programs with
      `not_found_on_remote_main`. If any lookup is `remote_unavailable`, ask for
      access/context instead of assuming missing.
+   - When new source scan output is needed, write it to the delivery repo
+     working branch named by the user/profile, normally `develop-<person>`. If
+     that branch does not exist, create it from `origin/main`; if it exists,
+     update it before writing. This working branch is a draft workspace only and
+     must not be used as the approved reuse lookup source.
+   - Write newly scanned program artifacts under
+     `delivery_workspace_profile.program_tier_roots` by size tier. Write
+     `program-set-sme-core-review.md` under
+     `delivery_workspace_profile.program_set_review_parent/{REVIEW_SLUG}/`.
    - Use `flow_scan_mode: orchestrated` when the user explicitly provides a trigger /
      entry program and wants the skill to discover, index, and assemble the
      whole flow.
@@ -868,6 +887,10 @@ No runtime-specific assumptions are embedded in the canonical source.
   - Scoped SME-provided program-flow intake to
     `program-set-sme-core-review.md` by default; full `flow-<FLOW-SLUG>.md`
     generation is reserved for explicit full transaction-flow analysis
+  - Added `templates/delivery-profile.yaml` as the portable team configuration
+    shape for central lookup, `develop-*` delivery working branches,
+    tier-specific program artifact roots, and cross-tier program-set review
+    output
 
 - v0.2.3 (2026-06-06): Program-analysis dense evidence sidecar consumption
   alignment
