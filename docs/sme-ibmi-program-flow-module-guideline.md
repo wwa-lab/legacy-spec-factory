@@ -16,6 +16,11 @@ guidelines:
 For short copy-ready prompt cards, see
 [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md).
 
+For the simple source-repo-to-delivery-repo RPG code scan flow, including repo
+scan, tier selection, validation, sync to `legacy-modernization-delivery`, and
+PR review, see
+[`rpg-code-scan-e2e-guideline.md`](rpg-code-scan-e2e-guideline.md).
+
 ## 中文摘要
 
 这份 guideline 给 SME / BA / analyst 使用。核心用法是：

@@ -1,0 +1,185 @@
+<mxfile host="Electron">
+  <diagram name="RPG Code Scan Tiered Flow" id="5DL_XERxIOb19KWag8wy">
+    <mxGraphModel dx="2162" dy="1339" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2180" pageHeight="980" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=#111827;fontColor=#ffffff;fontSize=20;fontStyle=1;spacing=12;" value="RPG Code Scan E2E Flow&#xa;Different program tiers, different handling paths" vertex="1">
+          <mxGeometry height="75" width="520" x="40" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="principle" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#6b7280;fontColor=#111827;fontSize=13;spacing=10;" value="Design principle&#xa;Code proves behavior. SME approves intent. AI organizes evidence." vertex="1">
+          <mxGeometry height="75" width="450" x="610" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="adoption" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontColor=#1e1b4b;fontSize=13;spacing=10;" value="Adoption guidance&#xa;Start with one program and one SME question.&#xa;Do not scan the whole system as the first formal package." vertex="1">
+          <mxGeometry height="75" width="570" x="1100" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="common_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#1e3a8a;fontSize=13;fontStyle=1;align=left;" value="Common entry" vertex="1">
+          <mxGeometry height="26" width="250" x="60" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="tier_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#111827;fontSize=13;fontStyle=1;align=left;" value="Tier-specific processing" vertex="1">
+          <mxGeometry height="26" width="320" x="760" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="governance_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#14532d;fontSize=13;fontStyle=1;align=left;" value="Shared delivery and SME approval" vertex="1">
+          <mxGeometry height="26" width="360" x="1590" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="normal_band" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#86efac;dashed=1;" value="" vertex="1">
+          <mxGeometry height="135" width="780" x="740" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="complex_band" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#facc15;dashed=1;" value="" vertex="1">
+          <mxGeometry height="145" width="780" x="740" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="large_band" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1f2;strokeColor=#fb7185;dashed=1;" value="" vertex="1">
+          <mxGeometry height="160" width="780" x="740" y="505" as="geometry" />
+        </mxCell>
+        <mxCell id="source" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;spacing=8;" value="1. Source repo&#xa;RPG / RPGLE / SQLRPGLE&#xa;Redacted or approved" vertex="1">
+          <mxGeometry height="92" width="180" x="60" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="scan" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0284c7;fontColor=#0c4a6e;fontStyle=1;spacing=8;" value="2. Scan code&#xa;Repo scan mode&#xa;First-pass inventory" vertex="1">
+          <mxGeometry height="92" width="205" x="300" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="classify" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#78350f;fontStyle=1;spacing=8;" value="3. Classify&#xa;program tier&#xa;from scan result" vertex="1">
+          <mxGeometry height="120" width="135" x="570" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="scan_doc" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#334155;fontSize=12;spacing=8;" value="Human scan report&#xa;large-program-candidates.md" vertex="1">
+          <mxGeometry height="70" width="205" x="300" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="normal_tier" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" value="normal_program&#xa;Under 10,000 lines&#xa;No density trigger" vertex="1">
+          <mxGeometry height="85" width="205" x="770" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="normal_action" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" value="Use normal prompt&#xa;Lightweight SME review&#xa;No sidecar by default" vertex="1">
+          <mxGeometry height="85" width="215" x="1010" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="normal_files" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#22c55e;fontColor=#14532d;fontSize=12;fontStyle=1;spacing=8;" value="Human-readable output files&#xa;program-analysis.md&#xa;routine-logic-details.md" vertex="1">
+          <mxGeometry height="105" width="225" x="1260" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="complex_tier" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontColor=#713f12;fontStyle=1;spacing=8;" value="complex_normal_program&#xa;Under 10,000 lines&#xa;Dense or triggered areas" vertex="1">
+          <mxGeometry height="95" width="205" x="770" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="complex_action" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#ca8a04;fontColor=#713f12;fontStyle=1;spacing=8;" value="Use complex prompt&#xa;Generate sidecars only when evidence needs them" vertex="1">
+          <mxGeometry height="95" width="215" x="1010" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="complex_files" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#f59e0b;fontColor=#78350f;fontSize=12;fontStyle=1;spacing=8;" value="Human-readable output files&#xa;program-analysis.md&#xa;routine-logic-details.md&#xa;message-inventory.md, if triggered" vertex="1">
+          <mxGeometry height="115" width="225" x="1260" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="large_tier" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#7f1d1d;fontStyle=1;spacing=8;" value="large_extreme_program&#xa;10,000+ lines or high density&#xa;Safety rail required" vertex="1">
+          <mxGeometry height="105" width="205" x="770" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="large_action" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1f2;strokeColor=#dc2626;fontColor=#7f1d1d;fontStyle=1;spacing=8;" value="Use large prompt&#xa;Index first&#xa;Deep-read max 5 routines per batch&#xa;Do not summarize full source" vertex="1">
+          <mxGeometry height="105" width="215" x="1010" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="large_files" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1f2;strokeColor=#fb7185;fontColor=#7f1d1d;fontSize=12;fontStyle=1;spacing=8;" value="Human-readable output files&#xa;program-analysis.md&#xa;routine-logic-details.md&#xa;deep-read-batch-*.md&#xa;message-inventory.md, if triggered" vertex="1">
+          <mxGeometry height="125" width="225" x="1260" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="validate" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontColor=#7c2d12;fontStyle=1;spacing=8;" value="4. Validate analysis package&#xa;Run contract validator when available&#xa;Check claims, messages, TBDs, and coverage" vertex="1">
+          <mxGeometry height="120" width="235" x="1590" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="sync" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" value="5. Sync output&#xa;legacy-modernization-delivery&#xa;modules/&lt;CAP-ID&gt;/output/source-output/" vertex="1">
+          <mxGeometry height="105" width="235" x="1590" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="pr" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;spacing=8;" value="6. Open PR&#xa;Scope, tier result, SME review focus, validation checklist" vertex="1">
+          <mxGeometry height="105" width="235" x="1590" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="review" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontColor=#713f12;fontStyle=1;spacing=8;" value="7. SME review&#xa;Approve?" vertex="1">
+          <mxGeometry height="145" width="165" x="1625" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="merge" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbf7d0;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" value="8. Merge to main&#xa;Approved analysis snapshot&#xa;Trusted fact layer" vertex="1">
+          <mxGeometry height="80" width="235" x="1590" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="changes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#7c2d12;fontSize=12;spacing=8;" value="If changes requested&#xa;Update artifacts on PR branch, rerun validation, request SME review again.&#xa;Do not merge draft output as trusted knowledge." vertex="1">
+          <mxGeometry height="105" width="260" x="1860" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="e_source_scan" edge="1" parent="1" source="source" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563eb;strokeWidth=2;" target="scan" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_scan_classify" edge="1" parent="1" source="scan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#0284c7;strokeWidth=2;" target="classify" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_classify_normal" edge="1" parent="1" source="classify" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;" target="normal_tier" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="223" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_classify_complex" edge="1" parent="1" source="classify" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ca8a04;strokeWidth=2;" target="complex_tier" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="223" />
+              <mxPoint x="730" y="398" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_classify_large" edge="1" parent="1" source="classify" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#dc2626;strokeWidth=2;" target="large_tier" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="223" />
+              <mxPoint x="730" y="583" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_normal_action" edge="1" parent="1" source="normal_tier" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;" target="normal_action" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_normal_files" edge="1" parent="1" source="normal_action" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;" target="normal_files" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_complex_action" edge="1" parent="1" source="complex_tier" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ca8a04;strokeWidth=2;" target="complex_action" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_complex_files" edge="1" parent="1" source="complex_action" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ca8a04;strokeWidth=2;" target="complex_files" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_large_action" edge="1" parent="1" source="large_tier" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#dc2626;strokeWidth=2;" target="large_action" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_large_files" edge="1" parent="1" source="large_action" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#dc2626;strokeWidth=2;" target="large_files" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_normal_validate" edge="1" parent="1" source="normal_files" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#6b7280;strokeWidth=2;" target="validate" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1545" y="223" />
+              <mxPoint x="1545" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_complex_validate" edge="1" parent="1" source="complex_files" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#6b7280;strokeWidth=2;" target="validate" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1545" y="398" />
+              <mxPoint x="1545" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_large_validate" edge="1" parent="1" source="large_files" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#6b7280;strokeWidth=2;" target="validate" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1545" y="583" />
+              <mxPoint x="1545" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_validate_sync" edge="1" parent="1" source="validate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;" target="sync" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sync_pr" edge="1" parent="1" source="sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;" target="pr" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pr_review" edge="1" parent="1" source="pr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563eb;strokeWidth=2;" target="review" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_review_merge" edge="1" parent="1" source="review" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;fontSize=11;" target="merge" value="approved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_review_changes" edge="1" parent="1" source="review" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#f97316;strokeWidth=2;fontSize=11;" target="changes" value="changes requested">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1835" y="792" />
+              <mxPoint x="1835" y="773" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
