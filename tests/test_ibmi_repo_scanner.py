@@ -119,6 +119,9 @@ class IbmiRepoScannerTests(unittest.TestCase):
             summary = (out_dir / "scan-summary.yaml").read_text(encoding="utf-8")
             self.assertIn("large_extreme_program: 1", summary)
             self.assertIn("normal_program: 1", summary)
+            self.assertIn("source_revision:", summary)
+            self.assertIn("source_revision_key:", summary)
+            self.assertIn("type: filesystem", summary)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,10 @@ includes bilingual prompts for normal program analysis, large-program
 five-routine batch analysis, and merging multiple program results into one core
 SME review.
 
+For the current month-end RPG code-scan flow from source repo scan to central
+delivery repo PR, use
+[`docs/rpg-code-scan-e2e-guideline.md`](docs/rpg-code-scan-e2e-guideline.md).
+
 ---
 
 ## Prerequisites

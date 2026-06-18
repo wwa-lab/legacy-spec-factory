@@ -42,6 +42,10 @@ For the chat-driven SME review experience, see
 For SME use of the IBM i program / flow / module analyzers under token-limited
 LLM constraints, see
 [`docs/sme-ibmi-program-flow-module-guideline.md`](docs/sme-ibmi-program-flow-module-guideline.md).
+For the current RPG code-scan E2E adoption path — source repo scan, program
+tiering, tier-specific prompts, artifact validation, sync to
+`legacy-modernization-delivery`, and PR review — see
+[`docs/rpg-code-scan-e2e-guideline.md`](docs/rpg-code-scan-e2e-guideline.md).
 
 ## Current Operating Model
 

@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-program-analyzer
-description: Analyze individual IBM i programs (RPGLE, CLLE, COBOL) to extract control flow, file I/O, external calls, and error handling with evidence backing. Use when diving deep into one program's behavior from an approved inventory, or in standalone exploratory mode when the user only wants to inspect a skill output before BRD/spec chain readiness. Layer 1 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Analyze individual IBM i programs (RPGLE, CLLE, COBOL) to extract control flow, file I/O, external calls, and error handling with evidence backing. Use when diving deep into one program's behavior from an approved inventory, when standalone exploratory review is needed, or when checking whether an existing central delivery artifact can be reused before scanning source again. Layer 1 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -23,7 +23,7 @@ Retain this notice in substantial copies or derived versions.
 | Problem solved | Creates an evidence-backed technical analysis of one RPGLE, CLLE, or COBOL program. |
 | Input | One approved source program; for chain-ready output, its `OBJ-*` inventory entry; referenced DDS/copybooks; optional runtime, SME notes, and project reference packs for message catalogs, control files, or data dictionaries. |
 | Output | `program-analysis-<OBJ-ID>.md` for chain-ready runs, or standalone `program-analysis.md` for exploratory inspection, covering call map, control flow, file I/O, external calls, and error handling. |
-| Core prompt strategy | Extract concrete code behavior first, enrich field/message meanings from approved reference packs, tag every inference, avoid business-rule invention, and separate exploratory analysis warnings from downstream blocking gates. |
+| Core prompt strategy | Check reusable central artifacts before scanning, extract concrete code behavior only when needed, enrich field/message meanings from approved reference packs, tag every inference, avoid business-rule invention, and separate exploratory analysis warnings from downstream blocking gates. |
 | Upstream skill | `legacy-ibmi-inventory` for chain-ready output; none required for standalone exploratory output. |
 | Downstream consumer | `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, data-model analysis, batch digest, and spec synthesis. |
 | Validation standard | Chain-ready output resolves Program ID in approved inventory; standalone exploratory output marks inventory linkage missing and uses source ranges/local evidence without claiming downstream readiness. |
@@ -56,6 +56,15 @@ This skill supports two intent modes:
 
 Accept:
 
+- Optional: central delivery documents repo identity and
+  `delivery_artifact_lookup_profile`. For the current lending-card setup, the
+  default repo is `CH-WPS-LENDING-CARDS/legacy-modernization-delivery`.
+  The delivery repo name is configurable. The accepted artifact source of truth
+  is GitHub remote `main`; a local checkout is only a cache after it has been
+  fetched and verified against `origin/main`. Prior accepted program-analysis
+  artifacts may be stored directly under program folders such as
+  `modules/*/{PROGRAM}` where `{PROGRAM}` is the exact program identity. For
+  this department, `@CU118` and `CU118` are distinct programs.
 - One RPGLE, CLLE, or COBOL source file (the program to analyze)
 - Optional: DDS copybook definitions (DSPF, PRTF, PF, LF) referenced by the program
 - Optional: SME notes on entry points, quirks, or runtime behavior
@@ -95,6 +104,14 @@ Produce:
   per analysis session)
 - `program-analysis.md` for standalone exploratory inspection when no
   inventory-backed `OBJ-*` exists yet
+- `central_lookup_result` when a central delivery artifact is checked before
+  source analysis. Values:
+  - `found_on_remote_main` — program folder exists on the delivery repo remote
+    `main`; return the path and do not scan source again.
+  - `not_found_on_remote_main` — no exact program folder match exists on
+    remote `main`; proceed to normal source scan.
+  - `remote_unavailable` — remote `main` could not be checked; do not pretend
+    the artifact is missing.
 - Never report the program-analysis step complete unless the main wrapper file
   exists at the target output path and follows the required section order. When
   deterministic indexing runs first, it must create a draft `program-analysis.md`
@@ -108,13 +125,20 @@ Use:
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
   local file access is available:
-  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`, fall back to `python` if `py -3` is unavailable
-  - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
   If all launchers fail, stop and report: **"Python runtime unavailable"**.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
   during this skill.
+  When `--delivery-root` is provided, the helper checks central delivery
+  artifacts first. If it prints `central_lookup_result: found_on_remote_main`,
+  stop and reuse the approved artifact path instead of writing new source-index
+  artifacts. If the SME explicitly wants to refresh an existing approved
+  artifact, rerun with `--force-rescan --rescan-reason "<why>"`; the helper
+  will scan source and record the prior central artifact path in the generated
+  metadata.
   The helper writes a draft `program-analysis.md` wrapper seed, core sidecars,
   and large-program batch checkpoints when triggered. The seed is not approved
   analysis; it exists to keep the final layout stable and prevent missing main
@@ -228,6 +252,11 @@ field-level rules. The summary below is normative for this skill.
   structure artifacts, not the final program analysis. Do not produce
   whole-program business narrative until the source index, SME-first sections,
   and any needed coverage evidence exist.
+  Pass `--delivery-root <remote-main-snapshot>` and
+  `--delivery-profile <delivery-profile.yaml>` when available. If the helper
+  reports `central_lookup_result: found_on_remote_main`, stop the scan and
+  return the approved central artifact path to the user unless the SME has
+  explicitly requested `--force-rescan --rescan-reason "<why>"`.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
   calculations and branch logic from source statements; file I/O from
   F-spec and I/O statements; field lineage from visible assignments,
@@ -326,12 +355,84 @@ to the orchestrator.
 
 ## Workflow
 
+0. **Central Artifact Reuse Preflight**
+   - Before reading or scanning source, resolve the latest accepted central
+     artifact snapshot using a `delivery_artifact_lookup_profile`. The
+     delivery repo name is configurable; do not hardcode
+     `legacy-modernization-delivery` except as the current department default.
+     Use Git method 2 only: check remote availability with `git ls-remote`,
+     then inspect `main` with a temporary shallow clone / sparse checkout or an
+     already-fresh local cache. Do not use GitHub API tooling for this lookup.
+   - Do not use a stale local checkout, unsynced branch, feature branch, or
+     private working copy as proof that no central artifact exists. If remote
+     `main` cannot be checked, set
+     `central_lookup_result: remote_unavailable` and ask for access/context
+     before deciding whether to scan.
+   - Recommended read-only Git sequence:
+     ```bash
+     git ls-remote <delivery-repo-url> main
+     git clone --depth 1 --branch main --filter=blob:none \
+       --sparse <delivery-repo-url> <tmp-delivery-dir>
+     git -C <tmp-delivery-dir> sparse-checkout set "modules"
+     ```
+     Then inspect the configured `program_folder_patterns` under the temporary
+     checkout. Delete the temporary checkout after the lookup if it is not a
+     managed cache.
+   - Build the lookup from this profile shape, supplied by user/project config
+     when available and otherwise defaulted conservatively:
+     ```yaml
+     delivery_artifact_lookup_profile:
+       repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
+       branch: main
+       module_roots:
+         - modules/*
+       program_folder_patterns:
+         - modules/*/{PROGRAM}
+       artifact_file_patterns:
+         - program-analysis.md
+         - program-analysis-*.md
+         - program-analysis-summary.yaml
+       program_name_normalization:
+         case: upper
+         preserve_prefixes: ["@"]
+         exact_folder_name_match: true
+     ```
+     Other departments can override `repo`, `branch`, `module_roots`,
+     `program_folder_patterns`, and artifact filenames. A profile may point to
+     `capabilities/*/{PROGRAM}`, `apps/*/programs/{PROGRAM}`, or any equivalent
+     reviewed-delivery layout as long as it identifies one program folder at a
+     time.
+   - Search the remote-current central artifact snapshot for an exact program
+     folder match before using project-local output. Preferred lookup keys:
+     exact program/member name first, then `OBJ-*`, module/CAP-ID,
+     source library/member, and the source ref or collection date recorded in
+     `program-analysis-summary.yaml` or module metadata.
+   - Match program folders by exact normalized program identity. For the
+     current screenshot layout, `@CU118` and `CU118` are distinct programs; do
+     not strip leading `@` and do not cross-match the two names. Do not treat a
+     substring match such as `CU11` inside `CU118` as a hit unless the profile
+     explicitly allows fuzzy matching.
+   - If an exact program folder exists on remote `main`, set
+     `central_lookup_result: found_on_remote_main`, return the remote path, and
+     tell the user the program has already been scanned in the central delivery
+     repo. Do not run deterministic source indexing, deep-read, or source
+     scanning.
+   - If no exact program folder exists on remote `main`, set
+     `central_lookup_result: not_found_on_remote_main` and proceed to normal
+     source scan.
+
 1. **Size & Structure Preflight**
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
-     - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+     - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
+     When `--delivery-root` is available and the helper reports
+     `central_lookup_result: found_on_remote_main`, stop and return the central
+     artifact path instead of generating a new local analysis seed. To refresh
+     a reviewed central artifact intentionally, add
+     `--force-rescan --rescan-reason "<SME/business reason>"`; never force a
+     rescan silently.
      If all launchers fail, stop and report: **"Python runtime unavailable"**.
      Do not configure PATH, install Python, or create a virtual environment.
      Use the same launcher order for all temporary consistency checks, YAML
@@ -1009,3 +1110,29 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Blocks final delivery when observed message/status/code values have unresolved descriptions
   - Requires a message file/catalog/reference pack, source literal/comment, runtime evidence, or SME-approved description source
   - Marks missing message catalog/reference data as a blocking TBD instead of silently producing low-value message ID lists
+- v0.2.12 (2026-06-17): Central artifact reuse preflight
+  - Requires checking a configurable `delivery_artifact_lookup_profile` and
+    the delivery repo remote `main` before scanning a requested program again
+  - Defaults the current lending-card profile to
+    `CH-WPS-LENDING-CARDS/legacy-modernization-delivery` remote `main`, with
+    exact program folder pattern `modules/*/{PROGRAM}` and preserved leading
+    `@` in program identities
+  - Uses lightweight `central_lookup_result` routing:
+    `found_on_remote_main`, `not_found_on_remote_main`, or
+    `remote_unavailable`
+  - Standardizes GitHub lookup on read-only Git method 2:
+    `git ls-remote` plus temporary shallow clone / sparse checkout
+  - Forbids rerunning deterministic source indexing when remote `main` already
+    contains an exact central program artifact folder for the requested program
+
+- v0.2.13 (2026-06-18): Direct indexer central reuse gate
+  - Added `--delivery-root` and `--delivery-profile` to the deterministic
+    source indexer so direct single-program analyzer runs can check the
+    remote-main snapshot/cache before writing new artifacts
+  - When the exact program folder is found, the indexer prints
+    `central_lookup_result: found_on_remote_main`, reports the artifact path,
+    and exits without generating a new `source-index.yaml` or
+    `program-analysis.md` seed
+  - Added explicit `--force-rescan --rescan-reason "<why>"` override for SME
+    refresh scenarios; forced scans record `central_artifact_reuse` metadata so
+    reviewers can see which approved artifact was intentionally bypassed

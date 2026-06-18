@@ -393,6 +393,25 @@ Ask the SME to confirm:
 - Are there shop-specific naming conventions or copybooks that affect analysis?
 - Which missing items block downstream program analysis or spec generation?
 
+## Repo Scan Cache Artifacts
+
+For source-repo preflight and program-set routing, the portable scanner
+`scripts/scan_ibmi_repo.py` may write a lightweight cache under
+`outputs/repo-scan/`:
+
+```text
+outputs/repo-scan/program-list.csv
+outputs/repo-scan/large-program-candidates.md
+outputs/repo-scan/scan-summary.yaml
+```
+
+`program-list.csv` is the deterministic member lookup table used by downstream
+program/flow routing. `scan-summary.yaml` records `source_revision` and
+`source_revision_key`. A downstream skill may reuse the cache only when the
+recorded key matches the current clean Git source HEAD. The cache directory
+itself is ignored when checking source dirty state, so generated cache files do
+not make their own source revision stale.
+
 ## Runtime Portability
 
 The canonical skill source lives under:
@@ -413,6 +432,12 @@ Runtime copies may be synced to:
 Use `../../scripts/sync-skills.sh` to create or check runtime copies.
 
 ## Version History
+
+- v0.3.2 (2026-06-18): Repo scan cache freshness metadata
+  - `scan_ibmi_repo.py` now records `generated_at`, `source_revision`, and
+    `source_revision_key` in `outputs/repo-scan/scan-summary.yaml`
+  - Downstream flow/program routing can reuse `program-list.csv` only when the
+    cache matches the current clean Git source revision
 
 - v0.3.1 (2026-05-30): Clarified that normalized document/context packages can
   seed a candidate object map, but document-derived anchors remain lower

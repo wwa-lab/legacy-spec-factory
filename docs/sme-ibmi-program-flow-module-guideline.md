@@ -5,19 +5,40 @@ This guideline explains how SMEs and analysts should use
 `legacy-ibmi-module-analyzer` when company LLM token budget is limited and one
 LLM turn may read at most five routines.
 
-For copy-ready bilingual prompts, see
-[`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md). It includes
-general program analysis, large-program automatic batch analysis, and compact
-multi-program SME core review prompts.
+For end-to-end SME code scan instructions for
+`legacy-ibmi-program-analyzer`, use the scenario-specific program analyzer
+guidelines:
+
+- [`sme-ibmi-program-analyzer-normal-guideline.md`](sme-ibmi-program-analyzer-normal-guideline.md)
+- [`sme-ibmi-program-analyzer-complex-guideline.md`](sme-ibmi-program-analyzer-complex-guideline.md)
+- [`sme-ibmi-program-analyzer-large-guideline.md`](sme-ibmi-program-analyzer-large-guideline.md)
+
+For short copy-ready prompt cards, see
+[`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md).
+
+For the simple source-repo-to-delivery-repo RPG code scan flow, including repo
+scan, tier selection, validation, sync to `legacy-modernization-delivery`, and
+PR review, see
+[`rpg-code-scan-e2e-guideline.md`](rpg-code-scan-e2e-guideline.md).
+
+For the current SME-provided program-flow workflow, use
+[`flow-skill-e2e-guideline.md`](flow-skill-e2e-guideline.md). For onboarding a
+new team from zero, use
+[`new-team-flow-scan-quickstart.md`](new-team-flow-scan-quickstart.md).
+For copy-ready internal testing prompts, use
+[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
 
 ## 中文摘要
 
 这份 guideline 给 SME / BA / analyst 使用。核心用法是：
 
-- 常用中英双语提示词请直接看
-  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)，里面包含
-  普通 program、large program 自动分批、以及多个 program 结果合并成核心
-  SME review 的 prompt。
+- 如果要教 SME 端到端使用 `legacy-ibmi-program-analyzer` 做 code scan，
+  请按场景使用三份独立 guideline：
+  [`normal`](sme-ibmi-program-analyzer-normal-guideline.md)、
+  [`complex`](sme-ibmi-program-analyzer-complex-guideline.md)、
+  [`large`](sme-ibmi-program-analyzer-large-guideline.md)。
+- 常用短 prompt 卡片仍可参考
+  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)。
 - 只看一个程序，就跑 `legacy-ibmi-program-analyzer`。
 - 看一个业务交易从入口到落库，就跑 `legacy-ibmi-flow-analyzer`。
 - 看多个 flow 是否能组成一个可交付业务模块，就跑
@@ -28,6 +49,42 @@ multi-program SME core review prompts.
   sidecars 和分批 deep read。
 - flow 和 module 不重新吞源码，也不拼多个完整 Markdown；它们只消费
   program/flow 的 compact artifacts。
+- 如果 SME 一次输入一个 program flow，先按
+  `delivery_artifact_lookup_profile` 去 central delivery repo 查每个 program
+  的既有分析结果；你们部门默认是
+  `CH-WPS-LENDING-CARDS/legacy-modernization-delivery` 的 GitHub remote
+  `main`，路径使用 exact `modules/*/{PROGRAM}`。`@` 是 program identity 的
+  一部分，所以 `@CU118` 和 `CU118` 不互相命中。其它部门可以覆盖
+  repo、branch、module roots、program folder patterns 和 alias rules。GitHub
+  lookup 用方式 2：`git ls-remote` 加临时 shallow clone / sparse checkout，
+  或使用已确认同步到 `origin/main` 的本地 cache。remote `main` 有 exact
+  program folder 就不重扫，并且生成 `program-set-sme-core-review.md` 时从
+  这个 remote-main checkout/cache 读取 compact artifacts；没有才 scan；
+  remote 查不到就标 `remote_unavailable`，不要当成 missing。
+- 如果 SME 一次输入多个 program flow，也支持，但要拆成多个 flow block。
+  每个 flow block 有自己的 review name、program list 和输出 folder：
+  `modules/CAP-ID-0004-program_set_reviews/{review_slug}/`。同一批 flow
+  可以共用一个 `develop-<person>` branch 和一个 PR；不要把不同业务 flow
+  混成一个 `program-set-sme-core-review.md`。
+- 对 remote `main` 没命中的 program，不是马上全量 scan。先查 source repo
+  默认 cache：`<source-root>/outputs/repo-scan/program-list.csv` 和
+  `scan-summary.yaml`。如果 `scan-summary.yaml.source_revision_key` 和当前
+  clean Git source HEAD 一致，就复用 `program-list.csv` 定位 source path 和
+  tier，只 scan 缺的 program；如果 cache 不存在、stale，或 source code
+  dirty，才先跑一次 repo-level inventory scan。
+- 团队应先从
+  `skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` 复制一份
+  delivery profile。SME/engineer 每次只需要提供
+  `Delivery working branch: develop-<person>`、review name、source repo path
+  和 program list。
+  如果 `develop-<person>` 不存在，就从 `origin/main` 创建；新 scan 输出写到
+  这个 branch，但 approved reuse lookup 仍然只看 remote `main`。
+- program flow 的稳定输出由 builder + validator 固定：先用
+  `scripts/build-program-set-core-review.py` 从 remote-main snapshot/cache
+  生成 `program-set-core-input-manifest.yaml` 和
+  `program-set-sme-core-review.md` 骨架；填完四个核心区后，再跑
+  `scripts/validate-program-set-core-review.py`，确保没有漏 program，也没有
+  混入 full flow 的 Nodes/Edges/Replay 等章节。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
   哪些地方仍然是 TBD。
@@ -44,7 +101,9 @@ evidence needs require it.
 | Scenario | Use | SME question it answers | Main review surface |
 | --- | --- | --- | --- |
 | One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus core artifacts; optional sidecars only when triggered |
-| One transaction spans programs | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
+| SME gives a program flow/list for core review | `legacy-ibmi-flow-analyzer` | What are the combined Calculation Logic, Validation Logic, Exception Handling, and Message Inventory across these programs? | `program-set-sme-core-review.md` |
+| SME gives multiple program flows for core review | `legacy-ibmi-flow-analyzer` | What are the core logic summaries for each named flow without mixing business transactions? | One `{review_slug}/program-set-sme-core-review.md` per flow |
+| Full transaction flow analysis is explicitly requested | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
 | Multiple flows form a module | `legacy-ibmi-module-analyzer` | Is this business module covered enough for BRD/spec handoff? | `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md` |
 
 Use the smallest layer that answers the SME question. Do not start at module
@@ -55,21 +114,22 @@ level when the actual question is about one program or one transaction.
 1. Read no more than five routine bodies in one LLM turn.
 2. Never paste a full large RPGLE / SQLRPGLE source member into a prompt.
 3. Never concatenate multiple full `program-analysis.md` or `flow.md` files.
-4. Use core compact artifacts first:
+4. Before scanning source, check central delivery repo artifacts first.
+5. Use core compact artifacts first:
    - `program-analysis-summary.yaml`
    - `source-index.yaml`
    - `routine-logic-details.yaml`
    - `message-inventory.yaml`
-5. Add optional sidecars only when triggered:
+6. Add optional sidecars only when triggered:
    - `deep-read-plan.md` and `all-routine-coverage-ledger.md` when more than
      one five-routine batch is needed.
    - `file-io-inventory.yaml` when file I/O is dense or state-changing.
    - `field-mutation-matrix.yaml` when persisted field mutations are observed.
    - `sql-inventory.yaml` when embedded SQL / SQLRPGLE evidence is observed.
-6. Open human-readable Markdown only for targeted SME clarification.
-7. Treat `indexed_only` as structure evidence, not confirmed behavior.
-8. Treat `deep_read` as the minimum evidence level for strong logic claims.
-9. If a flow or module needs a routine that is still `indexed_only`, route
+7. Open human-readable Markdown only for targeted SME clarification.
+8. Treat `indexed_only` as structure evidence, not confirmed behavior.
+9. Treat `deep_read` as the minimum evidence level for strong logic claims.
+10. If a flow or module needs a routine that is still `indexed_only`, route
    back to program analysis for the next five-routine batch.
 
 ## Program Tier Rules
@@ -79,6 +139,23 @@ level when the actual question is about one program or one transaction.
 | `normal_program` | Most programs under 10,000 lines with no density trigger. | Concise `program-analysis.md` plus core artifacts only. |
 | `complex_normal_program` | Under 10,000 lines but dense in routines, file I/O, SQL, messages, mutations, external calls, or more than one five-routine batch. | Same SME-first review plus only triggered sidecars. |
 | `large_extreme_program` | Over 10,000 lines, more than 25 routines, more than 20 external calls, more than 25 object dependencies, or unsafe to fit in context. | Full source index, all sidecars, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic loop when possible. |
+
+## Program Analyzer E2E Guideline Set
+
+For end-to-end `legacy-ibmi-program-analyzer` code scan instructions, use the
+scenario-specific SME guideline instead of copying prompts from this overview.
+Each guideline contains English and Chinese prompts for every major step, plus
+the required output checkpoints after each step.
+
+| Program scenario | SME guideline | Use when |
+| --- | --- | --- |
+| `normal_program` | [`sme-ibmi-program-analyzer-normal-guideline.md`](sme-ibmi-program-analyzer-normal-guideline.md) | One program can be reviewed with lightweight core artifacts and at most one focused deep-read batch. |
+| `complex_normal_program` | [`sme-ibmi-program-analyzer-complex-guideline.md`](sme-ibmi-program-analyzer-complex-guideline.md) | The program is under large-program size but needs selective sidecars or multiple five-routine batches. |
+| `large_extreme_program` | [`sme-ibmi-program-analyzer-large-guideline.md`](sme-ibmi-program-analyzer-large-guideline.md) | The program is over 10,000 lines, has high dependency/routine density, or needs retained batch checkpoints. |
+
+The three program analyzer guidelines are the handoff-ready SME operating
+manuals. This document remains the broader overview for program, flow, and
+module review.
 
 ## SME Review Priorities
 

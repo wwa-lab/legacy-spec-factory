@@ -1,9 +1,77 @@
 # Output Contract: Flow Analysis
 
-This document defines the precise shape and required fields for every
-`flow-<FLOW-SLUG>.md` artifact and its compact SME core-review companion.
+This document defines the precise shape and required fields for compact
+`program-set-sme-core-review.md` artifacts and, when explicitly requested,
+full `flow-<FLOW-SLUG>.md` artifacts.
 
-## File Structure
+## Program-Set Core Review File Structure
+
+Default for SME-provided program-flow/core-merge requests:
+
+The deterministic builder must first write:
+
+```text
+program-set-core-input-manifest.yaml
+program-set-sme-core-review.md
+```
+
+`program-set-core-input-manifest.yaml` is the control input. It records the
+SME-supplied program order, normalized program identity, central lookup result,
+artifact root, compact artifact availability, delivery lookup profile, and
+delivery workspace profile. It also records source inventory cache status under
+`source_inventory`: the checked cache directory, `program-list.csv` /
+`scan-summary.yaml` presence, freshness/action, current source revision,
+inventory revision, and per-program source-path/tier hints for programs not
+found on delivery remote `main`. The LLM or agent may summarize from the
+manifest and listed compact artifacts, but must not silently add or remove
+programs. When source scans were needed in the current run, the builder may
+also receive `--working-root <delivery-working-branch-checkout>` so the
+manifest can include newly scanned artifacts while preserving
+`central_lookup_result: not_found_on_remote_main`.
+
+```markdown
+# Program Set SME Core Review: [Program Set Name]
+
+Lookup Profile:
+Source Inventory Cache:
+Sources:
+Core Completeness Ledger:
+
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
+```
+
+After the four core sections are populated, run the structural validator:
+
+Windows:
+
+```powershell
+py -3 scripts\validate-program-set-core-review.py `
+  --manifest program-set-core-input-manifest.yaml `
+  --review program-set-sme-core-review.md
+```
+
+macOS/Linux:
+
+```bash
+python3 scripts/validate-program-set-core-review.py \
+  --manifest program-set-core-input-manifest.yaml \
+  --review program-set-sme-core-review.md
+```
+
+The validator must pass before SME handoff. It checks required core sections,
+per-program coverage in Sources and Core Completeness Ledger, legal
+`central_lookup_result` values, and absence of full-flow sections such as
+Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and
+SME Checklist.
+
+---
+
+## Full Flow File Structure
+
+Use this only when full transaction-flow analysis is explicitly requested:
 
 ```markdown
 # Flow Analysis: [Business Event Name] (FLOW-*)
@@ -35,17 +103,94 @@ This document defines the precise shape and required fields for every
 
 ## SME Core Review Artifact
 
-When the user asks to merge multiple existing program-analysis results and only
-wants core SME information, produce a separate compact review artifact:
+When the user asks to merge multiple existing program-analysis results, or when
+the SME provides a program flow that should reuse existing central artifacts
+before any scan, produce:
 
-- `flow-sme-core-review.md` when the provided programs form one proven flow.
-- `program-set-sme-core-review.md` when the provided programs are a program set
-  without a proven transaction order.
+- `program-set-sme-core-review.md`
 
-This artifact must contain only:
+Do not produce `flow-<FLOW-SLUG>.md` for this current SME core-merge workflow.
+The SME-provided order may still be preserved inside the Sources table and Core
+Completeness Ledger. Full transaction-flow artifacts are reserved for a
+separately requested full flow analysis.
+
+If the SME provides multiple named program flows in one request, split the
+request into independent flow blocks. Each flow block produces its own folder
+under `program_set_review_parent`:
+
+```text
+program_set_review_parent/
+  {flow_1_review_slug}/
+    program-set-core-input-manifest.yaml
+    program-set-sme-core-review.md
+  {flow_2_review_slug}/
+    program-set-core-input-manifest.yaml
+    program-set-sme-core-review.md
+```
+
+The same delivery working branch and PR may contain all sibling folders, but
+each folder has its own manifest, Sources table, Core Completeness Ledger, and
+validator result. Do not combine unrelated business flows into one
+`program-set-sme-core-review.md`.
+
+This artifact uses central artifact reuse / lookup first. For every requested
+or discovered program, record `central_lookup_result` as
+`found_on_remote_main`, `not_found_on_remote_main`, or `remote_unavailable`.
+Only programs with `not_found_on_remote_main` are routed back to
+`legacy-ibmi-program-analyzer`; a found remote-main folder means the program
+has already been scanned and should not be rescanned. For
+`found_on_remote_main`, read `program-analysis-summary.yaml`,
+`routine-logic-details.yaml`, `message-inventory.yaml`, and needed optional
+sidecars from the remote-main sparse checkout or already-fresh verified cache
+used for lookup.
+
+If the SME explicitly requests a refresh of a `found_on_remote_main` program,
+record a force-rescan reason and do not use the old remote-main artifact for
+the current review. Run `legacy-ibmi-program-analyzer` with
+`--force-rescan --rescan-reason "<why>"`, write the new draft artifacts to the
+delivery working branch, and pass `--force-rescan-file <file>` to the
+program-set builder. The force-rescan file uses one `PROGRAM|reason` row per
+program. The manifest must preserve the prior `remote_main_artifact_root`,
+`force_rescan: true`, and the reason.
+
+For programs with `not_found_on_remote_main`, check the source repo inventory
+cache before source discovery. Default path:
+`<source-root>/outputs/repo-scan/program-list.csv` and
+`<source-root>/outputs/repo-scan/scan-summary.yaml`. Reuse `program-list.csv`
+only when `scan-summary.yaml.source_revision_key` matches the current clean Git
+source HEAD. If the cache is missing, stale, or the source worktree has
+uncommitted source changes, run repo-level `legacy-ibmi-inventory` first, then
+use the refreshed `program-list.csv` for targeted program analysis.
+
+The accepted central artifact source of truth is the
+`legacy-modernization-delivery` GitHub remote `main` branch. A local checkout
+may be used only after a freshness check against `origin/main`; do not use a
+stale local checkout or feature branch to prove that an artifact is missing.
+Use Git method 2 (`git ls-remote` plus temporary shallow clone / sparse
+checkout, or an already-fresh verified cache), not GitHub API tooling.
+When another department uses a different delivery repo or folder structure,
+the run must provide a `delivery_artifact_lookup_profile` with configurable
+`repo`, `branch`, `module_roots`, `program_folder_patterns`, and artifact file
+patterns. The current lending-card default uses exact `modules/*/{PROGRAM}`
+matching and preserves leading `@`; `@CU118` and `CU118` remain different
+programs unless a department-specific profile explicitly defines aliases.
+Use `templates/delivery-profile.yaml` as the editable profile shape. Its
+`delivery_workspace_profile` controls where new scan output is written: the
+working branch is normally `develop-<person>` and may be created from
+`origin/main`; program artifacts go under tier-specific roots; cross-tier
+program-set reviews go under `program_set_review_parent/{REVIEW_SLUG}/`.
+Never use the working branch as the approved reuse source.
+
+This artifact must contain only source/coverage control surfaces plus the four
+core SME sections:
 
 ```markdown
 # SME Core Review: [Flow or Program Set Name]
+
+Lookup Profile:
+Source Inventory Cache:
+Sources:
+Core Completeness Ledger:
 
 ## Calculation Logic
 ## Validation Logic
@@ -55,13 +200,21 @@ This artifact must contain only:
 
 **Rules:**
 - Use `templates/sme-core-review.md` as the starting structure.
+- Prefer `scripts/build-program-set-core-review.py` to create the manifest and
+  skeleton whenever a delivery remote-main snapshot/cache is available.
+- Pass `--source-root <source-repo>` so the builder can check the default
+  `outputs/repo-scan` inventory cache; pass `--inventory-dir` only when the
+  team's cache is outside the configured default location.
 - Aggregate from compact program artifacts first:
   `program-analysis-summary.yaml`, `routine-logic-details.yaml`,
   `message-inventory.yaml`, and claim-specific optional sidecars.
+- Populate the Core Completeness Ledger from the SME-provided program flow,
+  central delivery artifact lookup, inventory relationships, and discovered
+  call evidence. No program may be omitted because its artifact is missing.
 - Use `program-analysis.md` only for targeted human-readable clarification.
 - Do not include Metadata, Nodes, Edges, Transaction Call Map, Replay,
-  Persistence, Lineage, UI Surfaces, Capability Seeds, TBD tables, or SME
-  Checklist in the core-review artifact.
+  Persistence, Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables,
+  or SME Checklist in the core-review artifact.
 - Every row must identify the source Program and, when available, Routine,
   `RLOG-*` / `MSG-*`, source line, or evidence status.
 - `Message Inventory` must include every exact message ID, status value, return
@@ -72,6 +225,9 @@ This artifact must contain only:
 - If the same exact message appears in multiple programs with the same meaning
   and trigger, it may be one row with all Program/Routine sources listed. If the
   trigger, handling, carrier, or meaning differs, split it into separate rows.
+- Run `scripts/validate-program-set-core-review.py` before handoff. Fix
+  structural findings in the review; do not edit the manifest just to make a
+  missing program disappear.
 
 ---
 
