@@ -70,7 +70,8 @@ central delivery repo lookup
   -> reuse remote-main program-analysis artifacts when exact folder exists
   -> source scan only when central_lookup_result is not_found_on_remote_main
   -> source repository
-  -> repo scan
+  -> source inventory cache freshness check
+  -> repo scan only when cache is missing or stale
   -> program tier
   -> tier-specific prompt
   -> program-analysis artifacts
@@ -264,9 +265,49 @@ For SME-provided program flows, build one row per program with its
 programs found on central repo remote `main` are reused, and only true
 `not_found_on_remote_main` gaps are scanned.
 
+Use the deterministic program-set builder after the remote-main snapshot is
+prepared:
+
+```bash
+python3 scripts/build-program-set-core-review.py \
+  --review-name "<review name>" \
+  --programs-file <programs.txt> \
+  --delivery-root <tmp-delivery-dir-or-fresh-cache> \
+  --working-root <delivery-working-branch-checkout> \
+  --source-root <source-repo> \
+  --profile <delivery-profile.yaml> \
+  --working-branch develop-<person> \
+  --output-dir <delivery-worktree>/modules/CAP-ID-0004-program_set_reviews/{review_slug}
+```
+
+This writes `program-set-core-input-manifest.yaml` and
+`program-set-sme-core-review.md`. Fill only Calculation Logic, Validation
+Logic, Exception Handling, and Message Inventory from manifest-listed compact
+artifacts. Omit `--working-root` only for the first preflight before missing
+programs are scanned; include it for the final build so newly scanned working
+branch artifacts can join remote-main reused artifacts. Then validate before
+SME handoff:
+
+```bash
+python3 scripts/validate-program-set-core-review.py \
+  --manifest <output-dir>/program-set-core-input-manifest.yaml \
+  --review <output-dir>/program-set-sme-core-review.md
+```
+
 ### 4.2 Use Skill To Scan Code In Source Repo
 
-Run repo scan from the legacy source repo or source export root.
+Before running repo scan, check the default source inventory cache:
+
+```text
+<source-repo>/outputs/repo-scan/program-list.csv
+<source-repo>/outputs/repo-scan/scan-summary.yaml
+```
+
+If both files exist and `scan-summary.yaml.source_revision_key` matches the
+current clean Git source HEAD, reuse `program-list.csv` to locate the missing
+program's source path and `size_tier`. If either file is missing, the revision
+is stale, or source code has uncommitted changes, rerun repo scan from the
+legacy source repo or source export root.
 
 macOS / Linux:
 
@@ -294,6 +335,10 @@ Review `program-list.csv` first. It tells you which members were detected,
 their `source_kind`, line counts, `size_tier`, `tier_reason`,
 `default_output_profile`, and whether classification came from
 `legacy-ibmi-program-analyzer` or a fallback scanner rule.
+
+`scan-summary.yaml` records `source_revision` and `source_revision_key`.
+Downstream flow/program routing should treat `program-list.csv` as reusable
+only when that key still matches the current clean source revision.
 
 ### 4.3 Identify Source Tier And Use Different Prompt
 
@@ -526,13 +571,15 @@ For internal teams, encourage small usage first:
 1. Pick one representative program.
 2. Check `legacy-modernization-delivery` remote `main` for an exact program
    folder.
-3. Reuse the central artifact when found, or run repo scan only when
-   `central_lookup_result: not_found_on_remote_main`.
-4. Use the tier-specific prompt.
-5. Validate `program-analysis.md` and `routine-logic-details.md`.
-6. Sync new or refreshed artifacts to `legacy-modernization-delivery`.
-7. Open a PR and invite one RPG / IBM i SME.
-8. Merge only after SME review.
+3. Reuse the central artifact when found. For
+   `central_lookup_result: not_found_on_remote_main`, check
+   `outputs/repo-scan` cache before rerunning repo scan.
+4. Rerun repo scan only when the cache is missing, stale, or dirty.
+5. Use the tier-specific prompt.
+6. Validate `program-analysis.md` and `routine-logic-details.md`.
+7. Sync new or refreshed artifacts to `legacy-modernization-delivery`.
+8. Open a PR and invite one RPG / IBM i SME.
+9. Merge only after SME review.
 
 Recommended first pilot size:
 

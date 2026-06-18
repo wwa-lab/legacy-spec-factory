@@ -21,6 +21,13 @@ scan, tier selection, validation, sync to `legacy-modernization-delivery`, and
 PR review, see
 [`rpg-code-scan-e2e-guideline.md`](rpg-code-scan-e2e-guideline.md).
 
+For the current SME-provided program-flow workflow, use
+[`flow-skill-e2e-guideline.md`](flow-skill-e2e-guideline.md). For onboarding a
+new team from zero, use
+[`new-team-flow-scan-quickstart.md`](new-team-flow-scan-quickstart.md).
+For copy-ready internal testing prompts, use
+[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+
 ## 中文摘要
 
 这份 guideline 给 SME / BA / analyst 使用。核心用法是：
@@ -54,12 +61,30 @@ PR review, see
   program folder 就不重扫，并且生成 `program-set-sme-core-review.md` 时从
   这个 remote-main checkout/cache 读取 compact artifacts；没有才 scan；
   remote 查不到就标 `remote_unavailable`，不要当成 missing。
+- 如果 SME 一次输入多个 program flow，也支持，但要拆成多个 flow block。
+  每个 flow block 有自己的 review name、program list 和输出 folder：
+  `modules/CAP-ID-0004-program_set_reviews/{review_slug}/`。同一批 flow
+  可以共用一个 `develop-<person>` branch 和一个 PR；不要把不同业务 flow
+  混成一个 `program-set-sme-core-review.md`。
+- 对 remote `main` 没命中的 program，不是马上全量 scan。先查 source repo
+  默认 cache：`<source-root>/outputs/repo-scan/program-list.csv` 和
+  `scan-summary.yaml`。如果 `scan-summary.yaml.source_revision_key` 和当前
+  clean Git source HEAD 一致，就复用 `program-list.csv` 定位 source path 和
+  tier，只 scan 缺的 program；如果 cache 不存在、stale，或 source code
+  dirty，才先跑一次 repo-level inventory scan。
 - 团队应先从
   `skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` 复制一份
   delivery profile。SME/engineer 每次只需要提供
-  `Delivery working branch: develop-<person>`、review name 和 program list。
+  `Delivery working branch: develop-<person>`、review name、source repo path
+  和 program list。
   如果 `develop-<person>` 不存在，就从 `origin/main` 创建；新 scan 输出写到
   这个 branch，但 approved reuse lookup 仍然只看 remote `main`。
+- program flow 的稳定输出由 builder + validator 固定：先用
+  `scripts/build-program-set-core-review.py` 从 remote-main snapshot/cache
+  生成 `program-set-core-input-manifest.yaml` 和
+  `program-set-sme-core-review.md` 骨架；填完四个核心区后，再跑
+  `scripts/validate-program-set-core-review.py`，确保没有漏 program，也没有
+  混入 full flow 的 Nodes/Edges/Replay 等章节。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
   哪些地方仍然是 TBD。
@@ -77,6 +102,7 @@ evidence needs require it.
 | --- | --- | --- | --- |
 | One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus core artifacts; optional sidecars only when triggered |
 | SME gives a program flow/list for core review | `legacy-ibmi-flow-analyzer` | What are the combined Calculation Logic, Validation Logic, Exception Handling, and Message Inventory across these programs? | `program-set-sme-core-review.md` |
+| SME gives multiple program flows for core review | `legacy-ibmi-flow-analyzer` | What are the core logic summaries for each named flow without mixing business transactions? | One `{review_slug}/program-set-sme-core-review.md` per flow |
 | Full transaction flow analysis is explicitly requested | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
 | Multiple flows form a module | `legacy-ibmi-module-analyzer` | Is this business module covered enough for BRD/spec handoff? | `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md` |
 

@@ -14,6 +14,21 @@ Lookup Profile:
 | Program Folder Patterns | [modules/*/{PROGRAM}; or configured patterns] |
 | Program Name Normalization | [uppercase; preserve leading @; exact folder-name match; or configured rule] |
 
+Source Inventory Cache:
+
+| Field | Value |
+| --- | --- |
+| Default Inventory Dir | outputs/repo-scan |
+| Inventory Dir Checked | [<source-root>/outputs/repo-scan or configured override] |
+| program-list.csv | present / missing / not_checked |
+| scan-summary.yaml | present / missing / not_checked |
+| Freshness | fresh / missing / stale / dirty_source / not_checked |
+| Action | reuse_inventory / rerun_repo_inventory_scan / provide_source_root_to_check_inventory |
+
+| Program | Central Lookup Result | Inventory Status | Source Path | Tier | Targeted Scan Allowed |
+| --- | --- | --- | --- | --- | --- |
+| [PROGRAM] | found_on_remote_main / not_found_on_remote_main / remote_unavailable | not_needed_remote_main_reuse / found / missing_from_inventory / inventory_cache_missing | [source member path] | normal_program / complex_normal_program / large_extreme_program / unknown | yes / no |
+
 Sources:
 
 | Program | Analysis Directory | Central Lookup Result | Compact Artifacts Used | Coverage / Readiness | Notes |
@@ -53,8 +68,8 @@ Core Completeness Ledger:
 Rules:
 
 - This artifact contains only Calculation Logic, Validation Logic, Exception
-  Handling, Message Inventory, plus the Sources table and Core Completeness
-  Ledger used to prove coverage.
+  Handling, Message Inventory, plus Lookup Profile, Source Inventory Cache,
+  Sources, and Core Completeness Ledger tables used to prove coverage.
 - Do not include Nodes, Edges, Transaction Call Map, Replay, Persistence,
   Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables, or SME
   Checklist.
@@ -62,6 +77,9 @@ Rules:
   program folder is not on remote `main`, keep the row and mark
   `not_found_on_remote_main`; if the remote cannot be checked, mark
   `remote_unavailable`.
+- For programs marked `not_found_on_remote_main`, use source inventory cache
+  only when freshness is `fresh`; otherwise rerun repo-level inventory before
+  targeted program scan.
 - Message Inventory must list every exact message/status/literal observed
   across the participating program analyses. Do not replace individual rows
   with grouped labels.

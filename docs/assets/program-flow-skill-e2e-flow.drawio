@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Program Flow Skill E2E">
+    <mxGraphModel dx="2400" dy="1500" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2380" pageHeight="1280" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Program Flow Skill E2E&#xa;SME program list -> central reuse -> targeted scan -> delivery folders -> SME review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=#111827;fontColor=#ffffff;fontSize=20;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="720" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="principle" value="Remote main is approved reuse.&#xa;Working branch is draft output.&#xa;Only missing programs are scanned." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#6b7280;fontColor=#111827;fontSize=13;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="810" y="30" width="430" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="result_note" value="Final handoff artifact&#xa;program-set-sme-core-review.md&#xa;with Calculation, Validation, Exception, Message Inventory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontColor=#1e1b4b;fontSize=13;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="30" width="550" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_manual" value="SME per-run manual input" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=12;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="270" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_team" value="Team setup once / project context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="330" y="120" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_auto" value="Skill automatic lookup / scan / generation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontColor=#581c87;fontSize=12;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="650" y="120" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_review" value="SME focus review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontSize=12;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="120" width="230" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane_input" value="Inputs" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#93c5fd;fontColor=#1e3a8a;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="270" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_flow" value="legacy-ibmi-flow-analyzer" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#c084fc;fontColor=#581c87;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="150" width="350" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_central" value="Approved Reuse Source" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#86efac;fontColor=#14532d;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="150" width="320" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_scan" value="Targeted Source Scan" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fdba74;fontColor=#7c2d12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="150" width="360" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_output" value="Delivery Working Branch Output" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#334155;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1530" y="150" width="450" height="840" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_review" value="Review &amp; Promotion" style="swimlane;startSize=30;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#34d399;fontColor=#064e3b;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="2030" y="150" width="300" height="840" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sme_flow" value="SME per-run input&#xa;program flow/list&#xa;@CU118 -> CU257F -> CC050" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="210" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="profile" value="Team setup once&#xa;delivery profile&#xa;repo, branch, folder patterns&#xa;tier roots, review parent" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="340" width="210" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="source_repo" value="Team setup once&#xa;source repo access&#xa;RPG / RPGLE / SQLRPGLE&#xa;read-only evidence" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="500" width="210" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="normalize" value="Skill automatic&#xa;1. Normalize program list&#xa;preserve exact identity&#xa;@CU118 != CU118" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#581c87;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="385" y="215" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="load_profile" value="Skill automatic&#xa;2. Load lookup &amp; workspace profile&#xa;lookup reads main&#xa;output writes develop-*" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontColor=#581c87;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="385" y="345" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="lookup" value="Skill automatic&#xa;3. Central lookup per program&#xa;Git method 2&#xa;remote-main snapshot/cache" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;fontColor=#2e1065;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="385" y="475" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="found_decision" value="Skill automatic decision&#xa;Exact program folder&#xa;found on remote main?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#713f12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="455" y="600" width="140" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="remote_main" value="Approved reuse source&#xa;legacy-modernization-delivery&#xa;remote main&#xa;approved artifacts" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="795" y="230" width="230" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="reuse_artifacts" value="Skill automatic reuse&#xa;compact artifacts&#xa;program-analysis-summary.yaml&#xa;routine-logic-details.yaml&#xa;message-inventory.yaml" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#22c55e;fontColor=#14532d;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="790" y="405" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="reuse_status" value="Skill automatic result&#xa;central_lookup_result&#xa;found_on_remote_main&#xa;Do not rescan" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="790" y="570" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="inventory_skill" value="Skill automatic routing&#xa;legacy-ibmi-inventory&#xa;scan source repo&#xa;classify program tier" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#7c2d12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="235" width="280" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="program_skill" value="Skill automatic routing&#xa;legacy-ibmi-program-analyzer&#xa;only for missing programs&#xa;normal / complex / large strategy" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontColor=#7c2d12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="380" width="280" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="scan_status" value="Skill automatic result&#xa;central_lookup_result&#xa;not_found_on_remote_main&#xa;scan once, then write draft artifacts" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#7c2d12;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="545" width="280" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="large_folder" value="Auto output&#xa;Large / extreme program folder&#xa;modules/CAP-ID-0001-large_extreme_program/&lt;PROGRAM&gt;/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#7f1d1d;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="220" width="370" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="complex_folder" value="Auto output&#xa;Complex normal program folder&#xa;modules/CAP-ID-0002-complex_normal_program/&lt;PROGRAM&gt;/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontColor=#713f12;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="330" width="370" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="normal_folder" value="Auto output&#xa;Normal program folder&#xa;modules/CAP-ID-0003-normal_program/&lt;PROGRAM&gt;/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="440" width="370" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="builder" value="Skill automatic generation&#xa;Program-set builder&#xa;build-program-set-core-review.py&#xa;remote-main root + optional working root" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="585" width="370" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="review_folder" value="Auto output&#xa;Program-set review folder&#xa;modules/CAP-ID-0004-program_set_reviews/{review_slug}/&#xa;program-set-core-input-manifest.yaml&#xa;program-set-sme-core-review.md" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontColor=#1e1b4b;fontSize=12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="725" width="370" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="validator" value="Skill automatic validation&#xa;validate-program-set-core-review.py&#xa;no missing programs&#xa;no full-flow sections" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#713f12;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="890" width="370" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sme_review" value="SME focus review&#xa;core logic only&#xa;calculation, validation, exception, messages" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2065" y="720" width="230" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pr" value="Team review / PR&#xa;develop-&lt;person&gt; -> main&#xa;batch of programs + review" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2065" y="855" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="merge" value="Promotion result&#xa;Merge to main&#xa;artifacts become reusable&#xa;for future flow scans" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#064e3b;fontStyle=1;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2090" y="1010" width="180" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_sme_normalize" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563eb;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="sme_flow" target="normalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_profile_load" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#0284c7;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="profile" target="load_profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_normalize_lookup" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#7c3aed;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="normalize" target="load_profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_load_lookup" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#7c3aed;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="load_profile" target="lookup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_lookup_decision" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#7c3aed;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="lookup" target="found_decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_main_lookup" value="lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="lookup" target="remote_main">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="520" />
+              <mxPoint x="720" y="283" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_found_reuse" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=1;exitY=0.45;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="found_decision" target="reuse_artifacts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_reuse_status" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="reuse_artifacts" target="reuse_status">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_missing_inventory" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#f97316;strokeWidth=2;exitX=1;exitY=0.8;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="found_decision" target="inventory_skill">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="680" />
+              <mxPoint x="1090" y="283" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_source_inventory" value="source evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#666666;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="source_repo" target="inventory_skill">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="315" y="548" />
+              <mxPoint x="315" y="735" />
+              <mxPoint x="1090" y="735" />
+              <mxPoint x="1090" y="283" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_inventory_program" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ea580c;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="inventory_skill" target="program_skill">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_program_status" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ea580c;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="program_skill" target="scan_status">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_scan_large" value="large" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#dc2626;strokeWidth=2;exitX=1;exitY=0.3;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="program_skill" target="large_folder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_scan_complex" value="complex" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#ca8a04;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="program_skill" target="complex_folder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_scan_normal" value="normal" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=1;exitY=0.75;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="program_skill" target="normal_folder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_reuse_builder" value="remote-main compact artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=1;exitY=0.85;entryX=0;entryY=0.85;fontSize=11;" edge="1" parent="1" source="reuse_status" target="builder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1085" y="662" />
+              <mxPoint x="1500" y="662" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_programs_builder" value="working-branch artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#334155;strokeWidth=2;exitX=1;exitY=0.5;entryX=1;entryY=0.75;fontSize=11;" edge="1" parent="1" source="normal_folder" target="builder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1978" y="480" />
+              <mxPoint x="1978" y="656" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_large_builder" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#334155;strokeWidth=2;exitX=1;exitY=0.5;entryX=1;entryY=0.25;fontSize=11;" edge="1" parent="1" source="large_folder" target="builder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="260" />
+              <mxPoint x="1950" y="609" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_complex_builder" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#334155;strokeWidth=2;exitX=1;exitY=0.5;entryX=1;entryY=0.5;fontSize=11;" edge="1" parent="1" source="complex_folder" target="builder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1964" y="370" />
+              <mxPoint x="1964" y="633" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_builder_folder" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563eb;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="builder" target="review_folder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_folder_validator" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#d6b656;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="review_folder" target="validator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_validator_sme" value="pass" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=1;exitY=0.45;entryX=0;entryY=0.5;fontSize=11;" edge="1" parent="1" source="validator" target="sme_review">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2005" y="930" />
+              <mxPoint x="2005" y="773" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sme_pr" value="approved / changes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563eb;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=11;" edge="1" parent="1" source="sme_review" target="pr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pr_merge" value="merge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#16a34a;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=11;" edge="1" parent="1" source="pr" target="merge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_merge_main" value="promotes reusable artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;dashed=1;strokeColor=#16a34a;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=11;" edge="1" parent="1" source="merge" target="remote_main">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2010" y="1058" />
+              <mxPoint x="2010" y="1130" />
+              <mxPoint x="740" y="1130" />
+              <mxPoint x="740" y="283" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-flow-analyzer
-description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory without rescanning. Supports central artifact reuse from delivery repo remote main before source scan and records per-program lookup status. Also retains explicit full transaction-flow analysis support for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory without rescanning. Supports central artifact reuse from delivery repo remote main before source scan, source inventory cache reuse from outputs/repo-scan when fresh, and per-program lookup status. Also retains explicit full transaction-flow analysis support for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -54,6 +54,16 @@ fresh cache verified against `origin/main`; do not rescan the program and do
 not read from an unverified local copy. Only programs with
 `central_lookup_result: not_found_on_remote_main` are routed to
 `legacy-ibmi-program-analyzer`.
+
+For programs not found on delivery repo remote `main`, this skill uses the
+source repo inventory cache before doing expensive source discovery. By
+default it checks `<source-root>/outputs/repo-scan/program-list.csv` and
+`<source-root>/outputs/repo-scan/scan-summary.yaml`. If the cache exists and
+`scan-summary.yaml.source_revision_key` matches the current clean Git source
+HEAD, reuse the inventory to locate source path and size tier for targeted
+program scan. If the cache is missing, stale, or the source worktree has
+uncommitted source changes, rerun `legacy-ibmi-inventory` repo-level scan
+first.
 
 This skill supports these assembly modes:
 
@@ -113,6 +123,13 @@ Accept:
   SME navigation evidence, and output `program-set-sme-core-review.md`.
   Reconcile contradictions against upstream Call Evidence as notes/TBDs rather
   than silently rewriting the SME-provided list.
+- **Multiple SME-provided program flows** — one request may contain multiple
+  named flow blocks. Treat each block as a separate program set with its own
+  review name, program list, manifest, and `{review_slug}` output folder under
+  `delivery_workspace_profile.program_set_review_parent`. Reuse the same
+  source inventory cache, delivery remote-main snapshot, working branch, and PR
+  when they belong to the same SME batch. Do not merge unrelated business flows
+  into one `program-set-sme-core-review.md`.
 - **Central delivery artifact root / repo** — optional GitHub repo, local
   checkout, or `delivery_artifact_lookup_profile` for
   `legacy-modernization-delivery` or an equivalent delivery documents repo. The
@@ -126,6 +143,11 @@ Accept:
   default is `branch_mode: use_or_create_provided` with a provided
   `develop-<person>` branch such as `develop-leo`; create it from `origin/main`
   if it does not exist, but never write directly to `main`.
+- **Source inventory profile / source root** — optional
+  `source_inventory_profile` plus source repo path. The default cache is
+  `<source-root>/outputs/repo-scan/` with `program-list.csv` and
+  `scan-summary.yaml`. Teams may change filenames or cache directory in the
+  profile; SMEs should not edit these values every run.
 - **Flow definition** — the entry point of the chain, declared as one of
   seven trigger types (see `references/trigger-models.md`):
   - batch job (CL + SBMJOB or direct CALL)
@@ -215,6 +237,22 @@ artifact lookup; its `central_lookup_result`; required compact artifacts;
 missing core sections; and whether the next action is reuse, source scan, or
 remote-access follow-up. No program may be omitted merely because its artifact
 is missing.
+
+For multiple SME-provided program flows, produce one program-set review folder
+per flow:
+
+```text
+{program_set_review_parent}/{flow_1_review_slug}/
+  program-set-core-input-manifest.yaml
+  program-set-sme-core-review.md
+{program_set_review_parent}/{flow_2_review_slug}/
+  program-set-core-input-manifest.yaml
+  program-set-sme-core-review.md
+```
+
+The current deterministic builder runs once per flow block. A future wrapper
+may batch these calls, but the contract remains one manifest and one SME core
+review per flow.
 
 `<FLOW-SLUG>` is uppercase, hyphen-separated, business-event named (e.g.,
 `ONUS-AUTH`, `BATCH-RECON`, `CHARGEBACK-INTAKE`), and stable across the
@@ -434,6 +472,11 @@ to the orchestrator.
      program list/order, and mark it as SME navigation evidence. Do not produce
      `flow-<FLOW-SLUG>.md` unless the user explicitly asks for full transaction
      flow analysis.
+   - If the SME provides multiple named program flow blocks, split them first
+     and process each flow block independently. Use one `review_name`,
+     `programs.txt`, manifest, review skeleton, and `{review_slug}` output
+     folder per flow. The blocks may share the same `develop-<person>` working
+     branch and PR.
    - Load the team/project delivery profile when supplied. If no team profile is
      supplied, use `templates/delivery-profile.yaml` as the editable starting
      shape. Keep the lookup profile and workspace profile separate: lookup reads
@@ -462,6 +505,14 @@ to the orchestrator.
      `program-set-sme-core-review.md`. Scan only programs with
      `not_found_on_remote_main`. If any lookup is `remote_unavailable`, ask for
      access/context instead of assuming missing.
+   - Before source scanning any `not_found_on_remote_main` program, check the
+     source inventory cache. Default path:
+     `<source-root>/outputs/repo-scan/program-list.csv` plus
+     `<source-root>/outputs/repo-scan/scan-summary.yaml`. Reuse it only when
+     the source revision in `scan-summary.yaml` matches the current clean Git
+     source HEAD. If missing, stale, or dirty, rerun repo-level
+     `legacy-ibmi-inventory` first, then use `program-list.csv` to locate each
+     missing program's source path and tier for targeted program analysis.
    - When new source scan output is needed, write it to the delivery repo
      working branch named by the user/profile, normally `develop-<person>`. If
      that branch does not exist, create it from `origin/main`; if it exists,
@@ -471,6 +522,18 @@ to the orchestrator.
      `delivery_workspace_profile.program_tier_roots` by size tier. Write
      `program-set-sme-core-review.md` under
      `delivery_workspace_profile.program_set_review_parent/{REVIEW_SLUG}/`.
+   - For `core_review_only`, run the deterministic builder before the LLM fills
+     the review:
+     `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person>`.
+     The builder writes `program-set-core-input-manifest.yaml` plus a fixed
+     `program-set-sme-core-review.md` skeleton. Treat the manifest as the
+     control input for all subsequent summarization. The manifest records
+     delivery remote-main lookup results and source inventory cache freshness.
+     `--source-root` enables the default `<source-root>/outputs/repo-scan`
+     lookup; `--inventory-dir` may override that cache path for teams with a
+     different layout. `--working-root` is optional before missing programs are
+     scanned; after scans complete, pass it so newly scanned artifacts can be
+     included while preserving `central_lookup_result: not_found_on_remote_main`.
    - Use `flow_scan_mode: orchestrated` when the user explicitly provides a trigger /
      entry program and wants the skill to discover, index, and assemble the
      whole flow.
@@ -493,6 +556,15 @@ to the orchestrator.
      Inventory. Do not include Nodes, Edges, Replay, Persistence, Lineage, UI
      Surfaces, Capability Seeds, or SME Checklist in that compact core-review
      artifact.
+   - After the four core sections are filled, run
+     `python3 scripts/validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
+     A failed validator means the artifact is structurally unsafe to hand to
+     the SME; fix the review instead of hiding missing programs or changing the
+     manifest.
+   - For multiple flow blocks, validate each generated
+     `program-set-sme-core-review.md` independently. A failure in one flow
+     blocks that flow's SME handoff but does not require regenerating sibling
+     flows that already passed validation.
    - In `standalone_exploratory`, continue with warning rows when approvals,
      inventory linkage, or sidecars are missing; in `chain_ready`, enforce the
      blocking gates.
@@ -871,6 +943,41 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.7 (2026-06-18): Multiple SME program-flow block guidance
+  - Clarified that one SME request may contain multiple named program-flow
+    blocks, but each block produces its own `{review_slug}` folder,
+    `program-set-core-input-manifest.yaml`, and
+    `program-set-sme-core-review.md`
+  - Documented that multiple flows can share the same source inventory cache,
+    delivery remote-main snapshot, delivery working branch, and PR while still
+    validating each review independently
+
+- v0.2.6 (2026-06-18): Source inventory cache gate for program-set runs
+  - Added `source_inventory_profile` support with default
+    `<source-root>/outputs/repo-scan/program-list.csv` and
+    `<source-root>/outputs/repo-scan/scan-summary.yaml`
+  - Builder records `source_inventory` freshness/action in
+    `program-set-core-input-manifest.yaml` and renders a Source Inventory
+    Cache section in `program-set-sme-core-review.md`
+  - Inventory cache is reused only when the recorded source revision matches
+    the current clean Git source HEAD; missing, stale, or dirty source states
+    route to repo-level `legacy-ibmi-inventory` before targeted program scan
+
+- v0.2.5 (2026-06-18): Program-set builder and validator
+  - Added `scripts/program_set_core_review.py` under the canonical flow
+    analyzer skill plus root wrappers:
+    `scripts/build-program-set-core-review.py` and
+    `scripts/validate-program-set-core-review.py`
+  - Builder creates `program-set-core-input-manifest.yaml` and a deterministic
+    `program-set-sme-core-review.md` skeleton from a verified remote-main
+    delivery snapshot/cache
+  - Builder can optionally read newly scanned program artifacts from the
+    delivery working branch via `--working-root` while keeping remote `main` as
+    the approved reuse lookup source
+  - Validator checks required core sections, per-program coverage in Sources
+    and Core Completeness Ledger, valid `central_lookup_result` values, and
+    blocks accidental full-flow sections in compact SME reviews
 
 - v0.2.4 (2026-06-17): Central artifact reuse and SME program-flow intake
   - Added central artifact reuse before missing-program scans

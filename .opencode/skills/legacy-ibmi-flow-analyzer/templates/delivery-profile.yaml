@@ -54,3 +54,10 @@ delivery_workspace_profile:
     found_on_remote_main: read_from_remote_main_checkout
     not_found_on_remote_main: scan_source_then_write_to_working_branch
     remote_unavailable: stop_for_access_context
+
+source_inventory_profile:
+  default_cache_dir: outputs/repo-scan
+  program_list_filename: program-list.csv
+  scan_summary_filename: scan-summary.yaml
+  freshness_policy: clean_git_head_must_match
+  missing_or_stale_action: rerun_repo_inventory_scan

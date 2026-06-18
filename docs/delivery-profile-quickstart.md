@@ -3,6 +3,11 @@
 Use this guide when a team wants to scan source code from one repo and store
 reviewed scan artifacts in a separate delivery repo.
 
+For a full new-team onboarding path, see
+[`new-team-flow-scan-quickstart.md`](new-team-flow-scan-quickstart.md). For a
+single or batched SME program-flow run, see
+[`flow-skill-e2e-guideline.md`](flow-skill-e2e-guideline.md).
+
 ## Two Repos
 
 Use the source repo as the read-only code evidence source.
@@ -37,6 +42,12 @@ delivery_workspace_profile:
     large_extreme_program: modules/CAP-ID-0001-large_extreme_program
     complex_normal_program: modules/CAP-ID-0002-complex_normal_program
     normal_program: modules/CAP-ID-0003-normal_program
+
+source_inventory_profile:
+  default_cache_dir: outputs/repo-scan
+  program_list_filename: program-list.csv
+  scan_summary_filename: scan-summary.yaml
+  freshness_policy: clean_git_head_must_match
 ```
 
 ## Runtime Inputs
@@ -46,6 +57,7 @@ The SME or engineer should provide only the work-specific values:
 ```text
 Delivery working branch: develop-leo
 Review name: card auth posting core review
+Source repo: /path/to/source-repo
 Programs:
 - @CU118
 - CU257F
@@ -54,6 +66,86 @@ Programs:
 
 The tool may create `develop-leo` from `origin/main` if it does not exist.
 New outputs are written to `develop-leo`, never directly to `main`.
+
+## Prepare Remote Main Snapshot
+
+Lookup must use delivery repo remote `main`, not a stale local branch. The
+agent may prepare a temporary sparse checkout/cache with Git method 2:
+
+```bash
+git ls-remote <DELIVERY_REPO_URL> refs/heads/main
+git clone --depth 1 --branch main --filter=blob:none --sparse <DELIVERY_REPO_URL> /tmp/legacy-modernization-delivery-main
+git -C /tmp/legacy-modernization-delivery-main sparse-checkout set modules
+```
+
+Use that path as `--delivery-root` for the builder. If a cache already exists,
+refresh and verify it against `origin/main` before use.
+
+## Build Program-Set Review Inputs
+
+Create a program list file:
+
+```text
+@CU118
+CU257F
+CC050
+```
+
+Then build the deterministic manifest and review skeleton:
+
+```bash
+python3 scripts/build-program-set-core-review.py \
+  --review-name "card auth posting core review" \
+  --programs-file programs.txt \
+  --delivery-root /tmp/legacy-modernization-delivery-main \
+  --working-root /path/to/legacy-modernization-delivery \
+  --source-root /path/to/source-repo \
+  --profile path/to/delivery-profile.yaml \
+  --working-branch develop-leo \
+  --output-dir /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review
+```
+
+`--delivery-root` is the remote-main snapshot/cache used for approved reuse
+lookup. `--working-root` is optional during the first preflight; after missing
+programs are scanned into `develop-leo`, pass the working-branch checkout so
+the final manifest can include those new artifacts without marking them as
+remote-main approved.
+
+`--source-root` enables automatic source inventory cache lookup at
+`<source-root>/outputs/repo-scan/`. If `program-list.csv` and
+`scan-summary.yaml` exist and `scan-summary.yaml.source_revision_key` matches
+the current clean Git source HEAD, the builder marks the cache `fresh` and the
+skill uses it to target only missing programs. If the cache is missing, stale,
+or the source worktree has uncommitted source changes, rerun repo inventory:
+
+```bash
+python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py /path/to/source-repo \
+  --out-dir /path/to/source-repo/outputs/repo-scan
+```
+
+Teams with a different cache location can change `source_inventory_profile` or
+pass `--inventory-dir`; SMEs should not edit this per run.
+
+The builder writes:
+
+```text
+program-set-core-input-manifest.yaml
+program-set-sme-core-review.md
+```
+
+Fill `program-set-sme-core-review.md` from the manifest-listed compact
+artifacts only.
+
+## Validate Before SME Handoff
+
+```bash
+python3 scripts/validate-program-set-core-review.py \
+  --manifest /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/program-set-core-input-manifest.yaml \
+  --review /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/program-set-sme-core-review.md
+```
+
+Validation failure means the review is structurally unsafe for handoff. Fix the
+review rows/sections instead of deleting programs from the manifest.
 
 ## Routing Rules
 
@@ -76,10 +168,15 @@ modules/CAP-ID-0003-normal_program/<PROGRAM>/
 Program-set reviews are cross-tier and stored under one configured parent:
 
 ```text
-modules/CAP-ID-0004-program_set_reviews/<review_slug>/
+modules/CAP-ID-0004-program_set_reviews/{review_slug}/
   program-set-core-input-manifest.yaml
   program-set-sme-core-review.md
 ```
+
+When the SME gives multiple program flows, each flow gets its own
+`{review_slug}` child folder under the same parent. Reuse the same delivery
+working branch for the batch; do not create one branch per flow unless the team
+explicitly wants separate PRs.
 
 ## Invariants
 
@@ -87,4 +184,6 @@ modules/CAP-ID-0004-program_set_reviews/<review_slug>/
   explicitly defines aliases.
 - A working branch such as `develop-leo` is draft output only; it is not an
   approved reuse source.
+- `program_set_review_parent` is a parent folder. Each SME flow/review writes
+  to a child `{review_slug}` folder beneath it.
 - PR merge to `main` promotes artifacts into the central reusable snapshot.
