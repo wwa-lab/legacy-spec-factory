@@ -83,6 +83,9 @@ refresh and verify it against `origin/main` before use.
 
 ## Build Program-Set Review Inputs
 
+The field deployment environment is Windows. Use `py -3` there. Use
+`python3` only on macOS/Linux development machines.
+
 Create a program list file:
 
 ```text
@@ -91,7 +94,21 @@ CU257F
 CC050
 ```
 
-Then build the deterministic manifest and review skeleton:
+Then build the deterministic manifest and review skeleton on Windows:
+
+```powershell
+py -3 scripts\build-program-set-core-review.py `
+  --review-name "card auth posting core review" `
+  --programs-file programs.txt `
+  --delivery-root C:\tmp\legacy-modernization-delivery-main `
+  --working-root C:\path\to\legacy-modernization-delivery `
+  --source-root C:\path\to\source-repo `
+  --profile C:\path\to\delivery-profile.yaml `
+  --working-branch develop-leo `
+  --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/build-program-set-core-review.py \
@@ -111,12 +128,52 @@ programs are scanned into `develop-leo`, pass the working-branch checkout so
 the final manifest can include those new artifacts without marking them as
 remote-main approved.
 
+For a direct single-program analyzer run, use the same lookup profile and
+remote-main snapshot:
+
+```powershell
+py -3 scripts\index-rpg-source.py C:\path\to\source\CU257F.RPGLE `
+  --program CU257F `
+  --out-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0002-complex_normal_program\CU257F `
+  --delivery-root C:\tmp\legacy-modernization-delivery-main `
+  --delivery-profile C:\path\to\delivery-profile.yaml
+```
+
+When the helper prints `central_lookup_result: found_on_remote_main`, do not
+scan source. Return the reported central `artifact_root` to the SME. When it
+prints `central_lookup_result: not_found_on_remote_main`, the helper continues
+and writes the normal draft analysis seed to `--out-dir`.
+
+To intentionally refresh an existing approved artifact, add a reasoned override:
+
+```powershell
+py -3 scripts\index-rpg-source.py C:\path\to\source\CU257F.RPGLE `
+  --program CU257F `
+  --out-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0002-complex_normal_program\CU257F `
+  --delivery-root C:\tmp\legacy-modernization-delivery-main `
+  --delivery-profile C:\path\to\delivery-profile.yaml `
+  --force-rescan `
+  --rescan-reason "SME requested refresh after major source or rule change"
+```
+
+Use this only when the SME deliberately wants a new draft for review. The
+output records the remote-main artifact that was bypassed; it still needs the
+normal delivery branch review before becoming reusable from `main`.
+
 `--source-root` enables automatic source inventory cache lookup at
 `<source-root>/outputs/repo-scan/`. If `program-list.csv` and
 `scan-summary.yaml` exist and `scan-summary.yaml.source_revision_key` matches
 the current clean Git source HEAD, the builder marks the cache `fresh` and the
 skill uses it to target only missing programs. If the cache is missing, stale,
-or the source worktree has uncommitted source changes, rerun repo inventory:
+or the source worktree has uncommitted source changes, rerun repo inventory on
+Windows:
+
+```powershell
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo `
+  --out-dir C:\path\to\source-repo\outputs\repo-scan
+```
+
+macOS/Linux:
 
 ```bash
 python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py /path/to/source-repo \
@@ -137,6 +194,16 @@ Fill `program-set-sme-core-review.md` from the manifest-listed compact
 artifacts only.
 
 ## Validate Before SME Handoff
+
+Windows:
+
+```powershell
+py -3 scripts\validate-program-set-core-review.py `
+  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
+  --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/validate-program-set-core-review.py \

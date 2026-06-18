@@ -71,25 +71,37 @@ script directly.
 
 ## How To Run
 
-From the target repository root on macOS or Linux:
-
-```bash
-python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py . --out-dir outputs/repo-scan
-```
-
 From the target repository root on Windows:
 
 ```powershell
 py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py . --out-dir outputs\repo-scan
 ```
 
-To scan a different source root:
+From the target repository root on macOS or Linux:
+
+```bash
+python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py . --out-dir outputs/repo-scan
+```
+
+To scan a different source root on Windows:
+
+```powershell
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-root --out-dir outputs\repo-scan
+```
+
+macOS/Linux:
 
 ```bash
 python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py /path/to/source-root --out-dir outputs/repo-scan
 ```
 
-Optional threshold override:
+Optional threshold override on Windows:
+
+```powershell
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py . --out-dir outputs\repo-scan --large-threshold 10000
+```
+
+macOS/Linux:
 
 ```bash
 python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py . --out-dir outputs/repo-scan --large-threshold 10000

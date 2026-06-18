@@ -31,9 +31,9 @@ Source Inventory Cache:
 
 Sources:
 
-| Program | Analysis Directory | Central Lookup Result | Compact Artifacts Used | Coverage / Readiness | Notes |
-| --- | --- | --- | --- | --- | --- |
-| [PROGRAM] | [remote-main path or local scan path] | found_on_remote_main / not_found_on_remote_main / remote_unavailable | program-analysis-summary.yaml; routine-logic-details.yaml; message-inventory.yaml; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
+| Program | Analysis Directory | Central Lookup Result | Force Rescan | Compact Artifacts Used | Coverage / Readiness | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| [PROGRAM] | [remote-main path / working-branch path / pending source scan] | found_on_remote_main / not_found_on_remote_main / remote_unavailable | no / yes: [reason] | program-analysis-summary.yaml; routine-logic-details.yaml; message-inventory.yaml; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
 
 Core Completeness Ledger:
 

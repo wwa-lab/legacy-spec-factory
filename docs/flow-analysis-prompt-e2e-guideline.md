@@ -12,6 +12,7 @@ Validate that the skill can:
 - reuse delivery repo remote `main` artifacts before scanning source
 - use fresh source inventory cache before repo-level source scan
 - scan only missing programs
+- support explicit SME force-rescan requests for approved remote-main programs
 - write program artifacts to tier folders
 - write one program-set review folder per SME flow under
   `modules/CAP-ID-0004-program_set_reviews/`
@@ -28,6 +29,7 @@ Delivery working branch: develop-<person>
 Delivery working checkout: /path/to/legacy-modernization-delivery
 Source repo: /path/to/source-repo
 Delivery profile: /path/to/delivery-profile.yaml
+Optional force rescan file: /path/to/force-rescan-programs.txt
 ```
 
 Team setup is not repeated in every prompt. It should already live in the
@@ -38,6 +40,11 @@ delivery_artifact_lookup_profile
 delivery_workspace_profile
 source_inventory_profile
 ```
+
+When the prompt asks the agent/operator to run a Python script in the company
+Windows environment, use `py -3`, for example
+`py -3 scripts\validate-program-set-core-review.py ...`. Use `python3` only on
+macOS/Linux development machines.
 
 ## Prompt 1: Single Flow Core Review
 
@@ -69,6 +76,8 @@ Expected behavior:
 1. Check delivery repo remote main snapshot first for each exact program folder.
 2. Treat @CU118 and CU118 as different program identities.
 3. Reuse any found_on_remote_main compact artifacts; do not rescan those programs.
+   Exception: only rescan a found_on_remote_main program if the prompt provides
+   an explicit force-rescan request with a reason.
 4. For only not_found_on_remote_main programs, check source inventory cache at
    <source-root>/outputs/repo-scan/program-list.csv and scan-summary.yaml.
 5. If source inventory cache is missing or stale, run repo-level inventory once.
@@ -194,7 +203,67 @@ Expected behavior:
 Report the manifest source_inventory section and the next action.
 ```
 
-## Prompt 4: Validation And PR Summary
+## Prompt 4: Explicit Program Refresh Override
+
+Use this to test that an SME can intentionally refresh a program even though an
+approved artifact already exists on delivery repo remote `main`.
+
+```text
+Use legacy-ibmi-flow-analyzer.
+
+Goal:
+Create a compact SME program-set core review, but intentionally refresh one
+program that already exists on delivery repo remote main. Do not create
+flow-<FLOW-SLUG>.md.
+
+Runtime inputs:
+- Delivery repo remote main snapshot/cache: /tmp/legacy-modernization-delivery-main
+- Delivery working checkout: /path/to/legacy-modernization-delivery
+- Delivery working branch: develop-leo
+- Source repo: /path/to/source-repo
+- Delivery profile: /path/to/delivery-profile.yaml
+
+Review name:
+card auth posting refresh test
+
+SME-provided program flow, preserve this order:
+- CU257F
+- CC050
+
+Force rescan requests:
+- CU257F | SME requested refresh after major source or rule change
+
+Expected behavior:
+1. Check delivery repo remote main snapshot first for every program.
+2. If CU257F is found_on_remote_main, do not reuse the old remote-main artifact
+   for this review because an explicit force-rescan request exists.
+3. Create a force-rescan file with one row:
+   CU257F|SME requested refresh after major source or rule change
+4. Run the targeted program analyzer for CU257F with:
+   --force-rescan
+   --rescan-reason "SME requested refresh after major source or rule change"
+5. Write the refreshed CU257F draft artifacts to the delivery working branch
+   tier folder.
+6. Run the program-set builder with:
+   --force-rescan-file <force-rescan-programs.txt>
+   --working-root <delivery-working-checkout>
+7. Confirm the manifest keeps:
+   force_rescan: true
+   rescan_reason: SME requested refresh after major source or rule change
+   remote_main_artifact_root: <prior CU257F remote-main path>
+   artifact_source: delivery_working_branch
+8. Fill program-set-sme-core-review.md from the working-branch CU257F artifact
+   plus normal remote-main or working artifacts for the other programs.
+9. Run the validator before SME handoff.
+
+Report:
+- original remote-main artifact path for CU257F
+- refreshed working-branch artifact path for CU257F
+- manifest force_rescan fields
+- validator result
+```
+
+## Prompt 5: Validation And PR Summary
 
 Use this after the reviews are generated and filled.
 
@@ -226,7 +295,7 @@ Return:
 - PR summary bullets
 ```
 
-## Prompt 5: Explicit Full Transaction Flow
+## Prompt 6: Explicit Full Transaction Flow
 
 Use this only when the internal test intentionally wants the full
 `flow-<FLOW-SLUG>.md` artifact. This is not the default SME core-review path.
@@ -272,6 +341,7 @@ Capture these results for each test run:
 | Exact program identity is preserved | `@CU118` and `CU118` do not match each other unless aliases are configured |
 | Source inventory cache gate is visible | Manifest has `source_inventory.freshness` and `source_inventory.action` |
 | Missing programs are targeted | Only `not_found_on_remote_main` programs are scanned |
+| Explicit force rescan is honored | Forced programs record `force_rescan: true` and use working-branch artifacts |
 | Multiple flows remain separate | One `{review_slug}` folder per flow |
 | Repeated programs are not rescanned | Reuse remote-main or working-branch artifact |
 | Review shape is compact | Only Calculation, Validation, Exception, Message sections after control tables |
@@ -284,6 +354,8 @@ Capture these results for each test run:
 - The model strips `@` from a program name.
 - The model reruns repo inventory even though `outputs/repo-scan` is fresh.
 - The model rescans a program already found on remote `main`.
+- The model ignores an explicit force-rescan request or still fills the review
+  from the old remote-main artifact.
 - The model puts full-flow sections into `program-set-sme-core-review.md`.
 - The model writes a review directly under `CAP-ID-0004-program_set_reviews/`
   instead of a `{review_slug}` child folder.

@@ -125,13 +125,20 @@ Use:
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
   local file access is available:
-  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`, fall back to `python` if `py -3` is unavailable
-  - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR>`
+  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
   If all launchers fail, stop and report: **"Python runtime unavailable"**.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
   during this skill.
+  When `--delivery-root` is provided, the helper checks central delivery
+  artifacts first. If it prints `central_lookup_result: found_on_remote_main`,
+  stop and reuse the approved artifact path instead of writing new source-index
+  artifacts. If the SME explicitly wants to refresh an existing approved
+  artifact, rerun with `--force-rescan --rescan-reason "<why>"`; the helper
+  will scan source and record the prior central artifact path in the generated
+  metadata.
   The helper writes a draft `program-analysis.md` wrapper seed, core sidecars,
   and large-program batch checkpoints when triggered. The seed is not approved
   analysis; it exists to keep the final layout stable and prevent missing main
@@ -245,6 +252,11 @@ field-level rules. The summary below is normative for this skill.
   structure artifacts, not the final program analysis. Do not produce
   whole-program business narrative until the source index, SME-first sections,
   and any needed coverage evidence exist.
+  Pass `--delivery-root <remote-main-snapshot>` and
+  `--delivery-profile <delivery-profile.yaml>` when available. If the helper
+  reports `central_lookup_result: found_on_remote_main`, stop the scan and
+  return the approved central artifact path to the user unless the SME has
+  explicitly requested `--force-rescan --rescan-reason "<why>"`.
 - **Allowed inference**: control flow extracted from EXSR/CALL/PERFORM;
   calculations and branch logic from source statements; file I/O from
   F-spec and I/O statements; field lineage from visible assignments,
@@ -413,8 +425,14 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
-     - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+     - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
+     When `--delivery-root` is available and the helper reports
+     `central_lookup_result: found_on_remote_main`, stop and return the central
+     artifact path instead of generating a new local analysis seed. To refresh
+     a reviewed central artifact intentionally, add
+     `--force-rescan --rescan-reason "<SME/business reason>"`; never force a
+     rescan silently.
      If all launchers fail, stop and report: **"Python runtime unavailable"**.
      Do not configure PATH, install Python, or create a virtual environment.
      Use the same launcher order for all temporary consistency checks, YAML
@@ -1106,3 +1124,15 @@ No runtime-specific assumptions are embedded in the canonical version.
     `git ls-remote` plus temporary shallow clone / sparse checkout
   - Forbids rerunning deterministic source indexing when remote `main` already
     contains an exact central program artifact folder for the requested program
+
+- v0.2.13 (2026-06-18): Direct indexer central reuse gate
+  - Added `--delivery-root` and `--delivery-profile` to the deterministic
+    source indexer so direct single-program analyzer runs can check the
+    remote-main snapshot/cache before writing new artifacts
+  - When the exact program folder is found, the indexer prints
+    `central_lookup_result: found_on_remote_main`, reports the artifact path,
+    and exits without generating a new `source-index.yaml` or
+    `program-analysis.md` seed
+  - Added explicit `--force-rescan --rescan-reason "<why>"` override for SME
+    refresh scenarios; forced scans record `central_artifact_reuse` metadata so
+    reviewers can see which approved artifact was intentionally bypassed

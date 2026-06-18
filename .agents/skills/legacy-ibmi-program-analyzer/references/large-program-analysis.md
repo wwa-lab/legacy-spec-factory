@@ -124,7 +124,9 @@ Windows:
 ```powershell
 py -3 scripts\index-rpg-source.py path\to\PROGRAM.rpgle `
   --program PROGRAM `
-  --out-dir path\to\PROGRAM-analysis
+  --out-dir path\to\PROGRAM-analysis `
+  --delivery-root path\to\delivery-remote-main-snapshot `
+  --delivery-profile path\to\delivery-profile.yaml
 ```
 
 macOS/Linux:
@@ -132,7 +134,9 @@ macOS/Linux:
 ```bash
 python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --program PROGRAM \
-  --out-dir path/to/PROGRAM-analysis
+  --out-dir path/to/PROGRAM-analysis \
+  --delivery-root path/to/delivery-remote-main-snapshot \
+  --delivery-profile path/to/delivery-profile.yaml
 ```
 
 Windows launcher order: try `py -3` first, fall back to `python` if unavailable.
@@ -141,6 +145,16 @@ macOS/Linux: use `python3`. If all launchers fail, stop and report:
 or create a virtual environment. Apply the same launcher order to all
 temporary consistency checks, YAML readability checks, Markdown sanity checks,
 and one-off helper scripts in this skill.
+
+When `--delivery-root` is provided, the helper first checks the central
+delivery remote-main snapshot/cache. If it prints
+`central_lookup_result: found_on_remote_main`, stop and reuse the reported
+artifact path instead of generating a new source index. If it prints
+`central_lookup_result: not_found_on_remote_main`, continue with this large
+program indexing flow. If the SME explicitly asks to refresh an existing
+approved artifact, add `--force-rescan --rescan-reason "<why>"`; the scan will
+continue and the generated metadata will record the central artifact that was
+intentionally bypassed.
 
 The helper writes core artifacts for every tier and optional sidecars only
 when their triggers are true. Large/extreme programs write the full set.

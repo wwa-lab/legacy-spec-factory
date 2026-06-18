@@ -33,6 +33,8 @@ Programs, in SME order:
 Optional context:
 - entry/menu/job/API hint
 - known files, messages, or exception paths
+Optional force rescan requests:
+- <PROGRAM>|<why this approved remote-main artifact should be refreshed>
 ```
 
 Program identity is exact. `@CU118` and `CU118` are different programs unless
@@ -77,7 +79,8 @@ only.
 2. Load the delivery profile.
 3. Prepare or refresh a remote-main snapshot/cache of the delivery repo.
 4. Run central artifact lookup for every program.
-5. Reuse programs found on remote `main`; do not rescan them.
+5. Reuse programs found on remote `main`; do not rescan them unless the SME
+   explicitly provides a force-rescan request with a reason.
 6. For only `not_found_on_remote_main` programs, check source inventory cache:
    `<source-root>/outputs/repo-scan/program-list.csv` and
    `<source-root>/outputs/repo-scan/scan-summary.yaml`.
@@ -101,6 +104,9 @@ artifact; do not rescan it just because it appears in a second flow.
 
 ## Commands
 
+The field deployment environment is Windows. Use `py -3` there. Use
+`python3` only on macOS/Linux development machines.
+
 Prepare a read-only remote-main snapshot:
 
 ```bash
@@ -118,7 +124,21 @@ CU257F
 CC050
 ```
 
-Build the deterministic program-set inputs:
+Build the deterministic program-set inputs on Windows:
+
+```powershell
+py -3 scripts/build-program-set-core-review.py `
+  --review-name "card auth posting core review" `
+  --programs-file programs.txt `
+  --delivery-root C:\tmp\legacy-modernization-delivery-main `
+  --working-root C:\path\to\legacy-modernization-delivery `
+  --source-root C:\path\to\source-repo `
+  --profile C:\path\to\delivery-profile.yaml `
+  --working-branch develop-leo `
+  --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/build-program-set-core-review.py \
@@ -137,12 +157,48 @@ after missing programs have been scanned into the working branch, so the final
 manifest can include newly scanned artifacts without marking them as approved
 remote-main reuse.
 
+If the SME explicitly wants to refresh an approved remote-main artifact, create
+a force-rescan file:
+
+```text
+CU257F|SME requested refresh after major source or rule change
+```
+
+Pass it to the builder:
+
+```powershell
+py -3 scripts\build-program-set-core-review.py `
+  --review-name "card auth posting core review" `
+  --programs-file programs.txt `
+  --delivery-root C:\tmp\legacy-modernization-delivery-main `
+  --working-root C:\path\to\legacy-modernization-delivery `
+  --source-root C:\path\to\source-repo `
+  --profile C:\path\to\delivery-profile.yaml `
+  --working-branch develop-leo `
+  --force-rescan-file force-rescan-programs.txt `
+  --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
+```
+
+Then run the single-program analyzer for each forced program with
+`--force-rescan --rescan-reason "<why>"` and write the refreshed draft artifact
+to the delivery working branch. Rerun the builder with the same
+`--force-rescan-file` and `--working-root` after the refreshed artifact exists,
+so `program-set-sme-core-review.md` uses the working-branch artifact instead of
+the old remote-main artifact.
+
 Use `--source-root` to enable the default source inventory cache lookup at
 `<source-root>/outputs/repo-scan/`. Use `--inventory-dir` only when the team
 profile or local run stores `program-list.csv` and `scan-summary.yaml` in a
 different location.
 
-Repo-level inventory cache, only when needed:
+Repo-level inventory cache, only when needed on Windows:
+
+```powershell
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo `
+  --out-dir C:\path\to\source-repo\outputs\repo-scan
+```
+
+macOS/Linux:
 
 ```bash
 python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py /path/to/source-repo \
@@ -153,7 +209,15 @@ The builder marks the cache `fresh` only when `scan-summary.yaml` records the
 same clean Git source revision. Missing, stale, or dirty source states route to
 repo-level inventory before targeted program scan.
 
-Validate before handoff:
+Validate before handoff on Windows:
+
+```powershell
+py -3 scripts\validate-program-set-core-review.py `
+  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
+  --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/validate-program-set-core-review.py \
@@ -179,6 +243,7 @@ modules/CAP-ID-0004-program_set_reviews/
 | Lookup result | What it means | Action |
 | --- | --- | --- |
 | `found_on_remote_main` | Exact program folder exists in delivery repo remote `main`. | Reuse compact artifacts from remote-main snapshot/cache. |
+| `found_on_remote_main` + explicit force rescan | Exact program folder exists, but SME requested a refreshed draft with a reason. | Run program analyzer with `--force-rescan --rescan-reason`, write to working branch, and pass `--force-rescan-file` to the builder. |
 | `not_found_on_remote_main` | Program was not approved on remote `main`. | Scan source, write artifacts to working branch, include them via `--working-root`. |
 | `remote_unavailable` | Remote `main` could not be checked. | Stop for access/context; do not assume missing. |
 

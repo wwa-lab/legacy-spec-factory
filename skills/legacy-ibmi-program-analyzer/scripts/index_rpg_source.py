@@ -2485,6 +2485,8 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
             "coverage with scripts/validate-program-analysis-contract.py."
         ),
     }
+    if "central_artifact_reuse" in index:
+        payload["central_artifact_reuse"] = index["central_artifact_reuse"]
     return to_yaml(payload) + "\n"
 
 
@@ -2543,6 +2545,81 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
     return written
 
 
+def load_yaml(path: Path) -> Any:
+    try:
+        import yaml  # type: ignore
+    except ImportError as exc:  # pragma: no cover - depends on local runtime
+        raise RuntimeError("PyYAML is required for --delivery-profile. Install with: pip install pyyaml") from exc
+    with path.open("r", encoding="utf-8") as handle:
+        return yaml.safe_load(handle)
+
+
+def delivery_lookup_profile(profile_path: Path | None) -> dict[str, Any]:
+    if profile_path is None:
+        return {
+            "program_folder_patterns": ["modules/*/{PROGRAM}"],
+            "program_name_normalization": {
+                "case": "upper",
+                "preserve_prefixes": ["@"],
+                "exact_folder_name_match": True,
+            },
+        }
+    loaded = load_yaml(profile_path)
+    if not isinstance(loaded, dict):
+        raise RuntimeError("delivery profile must be a YAML mapping")
+    profile = loaded.get("delivery_artifact_lookup_profile", loaded)
+    if not isinstance(profile, dict):
+        raise RuntimeError("delivery_artifact_lookup_profile must be a YAML mapping")
+    return profile
+
+
+def normalize_program_name(program: str, profile: dict[str, Any]) -> str:
+    normalization = profile.get("program_name_normalization", {}) or {}
+    normalized = program.strip()
+    if normalization.get("case") == "upper":
+        normalized = normalized.upper()
+    return normalized
+
+
+def relative_path(root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def find_central_program_artifact_root(
+    delivery_root: Path,
+    program: str,
+    profile: dict[str, Any],
+) -> tuple[str | None, list[str]]:
+    patterns = profile.get("program_folder_patterns") or ["modules/*/{PROGRAM}"]
+    matches: list[Path] = []
+    for pattern in patterns:
+        resolved_pattern = str(pattern).replace("{PROGRAM}", program)
+        matches.extend(path for path in delivery_root.glob(resolved_pattern) if path.is_dir())
+    relative_matches = sorted({relative_path(delivery_root, path) for path in matches})
+    return (relative_matches[0] if relative_matches else None, relative_matches)
+
+
+def central_reuse_preflight(
+    *,
+    delivery_root: Path | None,
+    delivery_profile: Path | None,
+    program: str,
+) -> tuple[str, str | None, list[str]]:
+    if delivery_root is None:
+        return ("not_checked", None, [])
+    if not delivery_root.is_dir():
+        return ("remote_unavailable", None, [])
+    profile = delivery_lookup_profile(delivery_profile)
+    normalized = normalize_program_name(program, profile)
+    artifact_root, matches = find_central_program_artifact_root(delivery_root, normalized, profile)
+    if artifact_root:
+        return ("found_on_remote_main", artifact_root, matches)
+    return ("not_found_on_remote_main", None, [])
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build source-index artifacts for RPG/RPGLE program analysis."
@@ -2550,17 +2627,80 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("source", type=Path, help="RPG/RPGLE source member text file")
     parser.add_argument("--program", help="Program/member name; defaults to source stem")
     parser.add_argument("--out-dir", type=Path, default=Path("."), help="Directory for generated artifacts")
+    parser.add_argument(
+        "--delivery-root",
+        type=Path,
+        help="Fresh delivery repo remote-main snapshot/cache for central artifact reuse preflight",
+    )
+    parser.add_argument(
+        "--delivery-profile",
+        type=Path,
+        help="Delivery profile YAML with delivery_artifact_lookup_profile",
+    )
+    parser.add_argument(
+        "--force-rescan",
+        action="store_true",
+        help="Scan source even when an exact central artifact exists on delivery remote main",
+    )
+    parser.add_argument(
+        "--rescan-reason",
+        help="Required with --force-rescan; records why the existing central artifact is being refreshed",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
+    if args.force_rescan and not args.rescan_reason:
+        print("rescan_reason_required: --rescan-reason is required with --force-rescan", file=sys.stderr)
+        return 4
+    program = args.program or args.source.stem
+    lookup_result, artifact_root, matches = central_reuse_preflight(
+        delivery_root=args.delivery_root,
+        delivery_profile=args.delivery_profile,
+        program=program,
+    )
+    if lookup_result == "remote_unavailable":
+        print("central_lookup_result: remote_unavailable", file=sys.stderr)
+        print(f"delivery_root_unavailable: {args.delivery_root}", file=sys.stderr)
+        return 3
+    if lookup_result == "found_on_remote_main":
+        print("central_lookup_result: found_on_remote_main")
+        print(f"artifact_root: {artifact_root}")
+        if len(matches) > 1:
+            print("matched_artifact_roots:")
+            for match in matches:
+                print(f"- {match}")
+        if args.force_rescan:
+            print("action: force_rescan_requested")
+            print(f"rescan_reason: {args.rescan_reason}")
+            print("message: central artifact exists, but explicit force rescan was requested")
+        else:
+            print("action: reuse_existing_program_artifacts")
+            print("message: program already has approved artifacts on delivery remote main; source scan skipped")
+            return 0
+    if lookup_result == "not_found_on_remote_main":
+        print("central_lookup_result: not_found_on_remote_main")
+        print("action: proceed_to_source_scan")
     if not args.source.exists():
         print(f"Source file not found: {args.source}", file=sys.stderr)
         return 2
     text = args.source.read_text(encoding="utf-8", errors="replace")
-    program = args.program or args.source.stem
     index = analyze_source(text.splitlines(), program_name=program, source_path=args.source)
+    if lookup_result != "not_checked":
+        reuse_decision = "source_scan_required"
+        if args.force_rescan and artifact_root:
+            reuse_decision = "force_rescan_requested"
+        elif args.force_rescan:
+            reuse_decision = "force_rescan_requested_no_existing_central_artifact"
+        index["central_artifact_reuse"] = {
+            "central_lookup_result": lookup_result,
+            "artifact_root": artifact_root,
+            "matched_artifact_roots": matches,
+            "force_rescan": bool(args.force_rescan),
+            "rescan_reason": args.rescan_reason or "not_applicable",
+            "reuse_decision": reuse_decision,
+        }
     written = write_artifacts(index, args.out_dir)
     for path in written:
         print(path)

@@ -278,6 +278,82 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(programs["CU257F"]["follow_up"], "none - source scan completed in working branch")
             self.assertTrue(manifest["delivery_repo"]["working_root_used"])  # type: ignore[index]
 
+    def test_builder_force_rescan_bypasses_remote_main_until_working_artifact_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            delivery_root = temp_root / "delivery-main"
+            source_root = temp_root / "source"
+            init_clean_git_source_root(source_root)
+            write_inventory_cache(source_root)
+            write_compact_artifacts(
+                delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CU257F"],
+                delivery_root=delivery_root,
+                source_root=source_root,
+                config=config,
+                working_branch="develop-leo",
+                force_rescan_requests={"CU257F": "SME requested refresh"},
+            )
+            program = manifest["programs"][0]  # type: ignore[index]
+            inventory_program = manifest["source_inventory"]["programs"][0]  # type: ignore[index]
+
+            self.assertEqual(program["central_lookup_result"], "found_on_remote_main")
+            self.assertTrue(program["force_rescan"])
+            self.assertEqual(program["artifact_source"], "source_scan_required")
+            self.assertIsNone(program["artifact_root"])
+            self.assertEqual(
+                program["remote_main_artifact_root"],
+                "modules/CAP-ID-0002-complex_normal_program/CU257F",
+            )
+            self.assertEqual(program["follow_up"], "force rescan requested - scan this program")
+            self.assertEqual(inventory_program["inventory_status"], "found")
+            self.assertTrue(inventory_program["targeted_scan_allowed"])
+
+    def test_builder_force_rescan_uses_working_root_after_refresh(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            delivery_root = temp_root / "delivery-main"
+            working_root = temp_root / "delivery-working"
+            output_dir = temp_root / "review-output"
+            write_compact_artifacts(
+                delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
+            )
+            write_compact_artifacts(
+                working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CU257F"],
+                delivery_root=delivery_root,
+                working_root=working_root,
+                config=config,
+                working_branch="develop-leo",
+                force_rescan_requests={"CU257F": "SME requested refresh"},
+            )
+            manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
+            program = manifest["programs"][0]  # type: ignore[index]
+
+            self.assertEqual(program["central_lookup_result"], "found_on_remote_main")
+            self.assertTrue(program["force_rescan"])
+            self.assertEqual(program["artifact_source"], "delivery_working_branch")
+            self.assertEqual(
+                program["artifact_root"],
+                "modules/CAP-ID-0002-complex_normal_program/CU257F",
+            )
+            self.assertEqual(program["follow_up"], "none - forced rescan completed in working branch")
+            self.assertEqual(BUILDER.validate(manifest_path, review_path), [])
+            self.assertIn(
+                "| CU257F | modules/CAP-ID-0002-complex_normal_program/CU257F | found_on_remote_main | complex_normal_program | yes: SME requested refresh |",
+                review_path.read_text(encoding="utf-8"),
+            )
+
     def test_builder_reuses_fresh_source_inventory_cache_for_missing_programs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)

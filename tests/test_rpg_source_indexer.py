@@ -194,6 +194,191 @@ C                   SETON                                        LR
             self.assertIn("## Review Checklist", program_analysis)
             self.assertIn("RLOG coverage source of truth", routine_details)
 
+    def test_cli_reuses_central_artifact_before_source_scan(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "CU257F.RPGLE"
+            output_dir = temp_path / "out"
+            delivery_root = temp_path / "delivery-main"
+            artifact_root = delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
+            artifact_root.mkdir(parents=True)
+            (artifact_root / "program-analysis-summary.yaml").write_text(
+                "schema_version: '0.1'\nprogram: CU257F\n",
+                encoding="utf-8",
+            )
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "CU257F",
+                    "--out-dir",
+                    str(output_dir),
+                    "--delivery-root",
+                    str(delivery_root),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertIn("central_lookup_result: found_on_remote_main", result.stdout)
+            self.assertIn("artifact_root: modules/CAP-ID-0002-complex_normal_program/CU257F", result.stdout)
+            self.assertIn("action: reuse_existing_program_artifacts", result.stdout)
+            self.assertFalse((output_dir / "source-index.yaml").exists())
+            self.assertFalse((output_dir / "program-analysis.md").exists())
+
+    def test_cli_force_rescan_writes_artifacts_with_central_reuse_trace(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "CU257F.RPGLE"
+            output_dir = temp_path / "out"
+            delivery_root = temp_path / "delivery-main"
+            artifact_root = delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
+            artifact_root.mkdir(parents=True)
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "CU257F",
+                    "--out-dir",
+                    str(output_dir),
+                    "--delivery-root",
+                    str(delivery_root),
+                    "--force-rescan",
+                    "--rescan-reason",
+                    "SME requested refresh after major source change",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertIn("central_lookup_result: found_on_remote_main", result.stdout)
+            self.assertIn("action: force_rescan_requested", result.stdout)
+            self.assertTrue((output_dir / "source-index.yaml").exists())
+            self.assertTrue((output_dir / "program-analysis-summary.yaml").exists())
+            source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
+            summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
+            self.assertIn("central_artifact_reuse:", source_index)
+            self.assertIn("reuse_decision: force_rescan_requested", source_index)
+            self.assertIn("artifact_root: modules/CAP-ID-0002-complex_normal_program/CU257F", source_index)
+            self.assertIn('rescan_reason: "SME requested refresh after major source change"', summary)
+
+    def test_cli_force_rescan_requires_reason(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "CU257F.RPGLE"
+            output_dir = temp_path / "out"
+            delivery_root = temp_path / "delivery-main"
+            (delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F").mkdir(parents=True)
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "CU257F",
+                    "--out-dir",
+                    str(output_dir),
+                    "--delivery-root",
+                    str(delivery_root),
+                    "--force-rescan",
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 4)
+            self.assertIn("rescan_reason_required", result.stderr)
+            self.assertFalse((output_dir / "source-index.yaml").exists())
+
+    def test_cli_continues_source_scan_when_central_artifact_missing(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "CU999.RPGLE"
+            output_dir = temp_path / "out"
+            delivery_root = temp_path / "delivery-main"
+            (delivery_root / "modules").mkdir(parents=True)
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "CU999",
+                    "--out-dir",
+                    str(output_dir),
+                    "--delivery-root",
+                    str(delivery_root),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertIn("central_lookup_result: not_found_on_remote_main", result.stdout)
+            self.assertIn("action: proceed_to_source_scan", result.stdout)
+            self.assertTrue((output_dir / "source-index.yaml").exists())
+            self.assertTrue((output_dir / "program-analysis.md").exists())
+
+    def test_cli_keeps_at_prefixed_programs_distinct_in_central_lookup(self) -> None:
+        source = """H DFTACTGRP(*NO)
+C                   EVAL      RESULT = 'Y'
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "CU118.RPGLE"
+            output_dir = temp_path / "out"
+            delivery_root = temp_path / "delivery-main"
+            prefixed_root = delivery_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
+            prefixed_root.mkdir(parents=True)
+            source_path.write_text(source, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CANONICAL_SCRIPT_PATH),
+                    str(source_path),
+                    "--program",
+                    "CU118",
+                    "--out-dir",
+                    str(output_dir),
+                    "--delivery-root",
+                    str(delivery_root),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertIn("central_lookup_result: not_found_on_remote_main", result.stdout)
+            self.assertIn("action: proceed_to_source_scan", result.stdout)
+            self.assertTrue((output_dir / "source-index.yaml").exists())
+
     def test_fixed_format_begsr_uses_factor_before_opcode_with_source_prefix(self) -> None:
         indexer = load_indexer()
 

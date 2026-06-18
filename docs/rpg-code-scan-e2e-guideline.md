@@ -265,8 +265,73 @@ For SME-provided program flows, build one row per program with its
 programs found on central repo remote `main` are reused, and only true
 `not_found_on_remote_main` gaps are scanned.
 
+For direct single-program analyzer runs, pass the same remote-main snapshot to
+the program analyzer helper. This makes the single-program path self-gating,
+not dependent on the flow builder:
+
+Windows:
+
+```powershell
+py -3 scripts\index-rpg-source.py <source-file> `
+  --program <PROGRAM> `
+  --out-dir <analysis-dir> `
+  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
+  --delivery-profile <delivery-profile.yaml>
+```
+
+macOS/Linux:
+
+```bash
+python3 scripts/index-rpg-source.py <source-file> \
+  --program <PROGRAM> \
+  --out-dir <analysis-dir> \
+  --delivery-root <tmp-delivery-dir-or-fresh-cache> \
+  --delivery-profile <delivery-profile.yaml>
+```
+
+If the helper prints `central_lookup_result: found_on_remote_main`, stop and
+reuse the reported `artifact_root`. It will not write new
+`source-index.yaml` or `program-analysis.md` files. If it prints
+`central_lookup_result: not_found_on_remote_main`, continue the normal source
+analysis path.
+
+If the SME is not satisfied with the approved artifact on remote `main`, or a
+large source/business change makes a refresh necessary, make that an explicit
+override instead of silently rescanning:
+
+```powershell
+py -3 scripts\index-rpg-source.py <source-file> `
+  --program <PROGRAM> `
+  --out-dir <analysis-dir> `
+  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
+  --delivery-profile <delivery-profile.yaml> `
+  --force-rescan `
+  --rescan-reason "SME requested refresh after major source or rule change"
+```
+
+Forced rescans still print the central lookup result. The generated
+`source-index.yaml` and `program-analysis-summary.yaml` include
+`central_artifact_reuse` metadata with the prior central artifact path and the
+rescan reason.
+
 Use the deterministic program-set builder after the remote-main snapshot is
 prepared:
+
+Windows:
+
+```powershell
+py -3 scripts\build-program-set-core-review.py `
+  --review-name "<review name>" `
+  --programs-file <programs.txt> `
+  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
+  --working-root <delivery-working-branch-checkout> `
+  --source-root <source-repo> `
+  --profile <delivery-profile.yaml> `
+  --working-branch develop-<person> `
+  --output-dir <delivery-worktree>\modules\CAP-ID-0004-program_set_reviews\{review_slug}
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/build-program-set-core-review.py \
@@ -287,6 +352,16 @@ artifacts. Omit `--working-root` only for the first preflight before missing
 programs are scanned; include it for the final build so newly scanned working
 branch artifacts can join remote-main reused artifacts. Then validate before
 SME handoff:
+
+Windows:
+
+```powershell
+py -3 scripts\validate-program-set-core-review.py `
+  --manifest <output-dir>\program-set-core-input-manifest.yaml `
+  --review <output-dir>\program-set-sme-core-review.md
+```
+
+macOS/Linux:
 
 ```bash
 python3 scripts/validate-program-set-core-review.py \

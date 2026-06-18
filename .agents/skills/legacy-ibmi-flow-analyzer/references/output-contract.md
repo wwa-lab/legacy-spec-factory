@@ -45,6 +45,16 @@ Core Completeness Ledger:
 
 After the four core sections are populated, run the structural validator:
 
+Windows:
+
+```powershell
+py -3 scripts\validate-program-set-core-review.py `
+  --manifest program-set-core-input-manifest.yaml `
+  --review program-set-sme-core-review.md
+```
+
+macOS/Linux:
+
 ```bash
 python3 scripts/validate-program-set-core-review.py \
   --manifest program-set-core-input-manifest.yaml \
@@ -133,6 +143,15 @@ has already been scanned and should not be rescanned. For
 `routine-logic-details.yaml`, `message-inventory.yaml`, and needed optional
 sidecars from the remote-main sparse checkout or already-fresh verified cache
 used for lookup.
+
+If the SME explicitly requests a refresh of a `found_on_remote_main` program,
+record a force-rescan reason and do not use the old remote-main artifact for
+the current review. Run `legacy-ibmi-program-analyzer` with
+`--force-rescan --rescan-reason "<why>"`, write the new draft artifacts to the
+delivery working branch, and pass `--force-rescan-file <file>` to the
+program-set builder. The force-rescan file uses one `PROGRAM|reason` row per
+program. The manifest must preserve the prior `remote_main_artifact_root`,
+`force_rescan: true`, and the reason.
 
 For programs with `not_found_on_remote_main`, check the source repo inventory
 cache before source discovery. Default path:

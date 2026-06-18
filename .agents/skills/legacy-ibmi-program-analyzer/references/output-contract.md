@@ -352,13 +352,23 @@ understanding. Align terminology with `references/large-program-analysis.md`.
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`, fall back to `python` if `py -3` is unavailable
-  - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir>`
+  - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+  - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
   If all launchers fail, stop and report: **"Python runtime unavailable"**.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts in
   this skill.
+  When `--delivery-root` is provided, the helper performs the central delivery
+  reuse gate before reading/writing source analysis artifacts. If it reports
+  `central_lookup_result: found_on_remote_main`, return that central artifact
+  path and do not generate new `source-index.yaml` or `program-analysis.md`
+  files. If it reports `central_lookup_result: not_found_on_remote_main`,
+  continue with normal source indexing. If the SME explicitly wants to refresh
+  the existing approved artifact, use `--force-rescan --rescan-reason "<why>"`;
+  the generated `source-index.yaml` and `program-analysis-summary.yaml` must
+  include `central_artifact_reuse` metadata with the prior artifact root,
+  `force_rescan: true`, and the reason.
   Use its core artifacts (`source-index.yaml`,
   `program-analysis-summary.yaml`, `routine-index.md`,
   `routine-logic-details.md`, `routine-logic-details.yaml`, and

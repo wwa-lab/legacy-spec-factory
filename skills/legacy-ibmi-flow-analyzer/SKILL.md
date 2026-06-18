@@ -173,6 +173,11 @@ Accept:
   because one node is missing; scan only programs with
   `not_found_on_remote_main`. For `found_on_remote_main`, read the compact
   artifacts from the remote-main checkout/cache used for the lookup.
+- Optional: **Force rescan requests** for programs that have a remote-main
+  artifact but the SME intentionally wants a refreshed draft. Require a named
+  reason per program. Route those programs through `legacy-ibmi-program-analyzer`
+  with `--force-rescan --rescan-reason "<why>"`, then use the delivery working
+  branch artifact in the program-set review. Do not force rescan silently.
 - **Approved inventory** with `relationships` populated for the involved objects
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
@@ -505,6 +510,13 @@ to the orchestrator.
      `program-set-sme-core-review.md`. Scan only programs with
      `not_found_on_remote_main`. If any lookup is `remote_unavailable`, ask for
      access/context instead of assuming missing.
+   - Exception: if the SME explicitly provides a force-rescan request with a
+     reason for a `found_on_remote_main` program, do not use the old remote-main
+     artifact as this run's review source. Route that program to
+     `legacy-ibmi-program-analyzer` with `--force-rescan --rescan-reason`,
+     write the refreshed draft to the delivery working branch, and rerun the
+     program-set builder with `--force-rescan-file` and `--working-root` so the
+     manifest points at the working-branch artifact.
    - Before source scanning any `not_found_on_remote_main` program, check the
      source inventory cache. Default path:
      `<source-root>/outputs/repo-scan/program-list.csv` plus
@@ -524,6 +536,9 @@ to the orchestrator.
      `delivery_workspace_profile.program_set_review_parent/{REVIEW_SLUG}/`.
    - For `core_review_only`, run the deterministic builder before the LLM fills
      the review:
+     Windows:
+     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person>`.
+     macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person>`.
      The builder writes `program-set-core-input-manifest.yaml` plus a fixed
      `program-set-sme-core-review.md` skeleton. Treat the manifest as the
@@ -534,6 +549,10 @@ to the orchestrator.
      different layout. `--working-root` is optional before missing programs are
      scanned; after scans complete, pass it so newly scanned artifacts can be
      included while preserving `central_lookup_result: not_found_on_remote_main`.
+     If any program has an explicit force-rescan request, pass
+     `--force-rescan-file <programs-to-refresh.txt>` where each row is
+     `PROGRAM|reason`; the builder will bypass remote-main reuse for those
+     programs and use the working-branch artifact after the refreshed scan.
    - Use `flow_scan_mode: orchestrated` when the user explicitly provides a trigger /
      entry program and wants the skill to discover, index, and assemble the
      whole flow.
@@ -557,6 +576,9 @@ to the orchestrator.
      Surfaces, Capability Seeds, or SME Checklist in that compact core-review
      artifact.
    - After the four core sections are filled, run
+     Windows:
+     `py -3 scripts\validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
+     macOS/Linux:
      `python3 scripts/validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
      A failed validator means the artifact is structurally unsafe to hand to
      the SME; fix the review instead of hiding missing programs or changing the
