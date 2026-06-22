@@ -53,6 +53,8 @@ macOS/Linux development machines.
 Use this when the expected result is one completed SME-ready core review, not
 only the first manifest/build step.
 
+### English
+
 ```text
 Use legacy-ibmi-flow-analyzer.
 
@@ -165,6 +167,114 @@ Report:
 - output folder
 - validator result
 - remaining SME TBDs, if any
+```
+
+### 中文
+
+```text
+请使用 legacy-ibmi-flow-analyzer。
+
+目标:
+请把一个 SME 提供的 program flow 完整跑完，产出一份可交给 SME review 的
+compact program-set core review。
+不要生成 flow-<FLOW-SLUG>.md。
+不要在生成 manifest、review skeleton、source lookup report，或 placeholder
+compact artifacts 之后就停止。
+
+Runtime inputs:
+- Delivery repo remote main snapshot/cache: /tmp/legacy-modernization-delivery-main
+- Delivery working checkout: /path/to/legacy-modernization-delivery
+- Delivery working branch: develop-leo
+- Source repo: /path/to/source-repo
+- Delivery profile: /path/to/delivery-profile.yaml
+
+Review name:
+card auth posting core review
+
+SME 提供的 program flow，请保留这个顺序:
+- @CU118
+- CU257F
+- CC050
+
+完成标准:
+这次运行只有在下面条件全部满足时才算完成:
+- 每一个 SME 提供的 program 都出现在 manifest、Sources table 和 Core
+  Completeness Ledger 里
+- 每一个缺失的 program 都已经分析到足够的 routine evidence，可以支撑四个
+  SME 核心区，或者留下精确的 evidence-backed TBD
+- program-set-sme-core-review.md 的 Calculation Logic、Validation Logic、
+  Exception Handling 和 Message Inventory 下面都有真实内容行
+- 不允许只有泛泛的 placeholder，例如 "No explicit CALL literal detected"；
+  除非它绑定到具体缺失证据行和下一步动作
+- scripts/validate-program-set-core-review.py 通过
+
+Phase 1 - access, reuse, and routing:
+1. 先检查 delivery repo remote main snapshot/cache，逐个查 exact program
+   folder。
+2. @CU118 和 CU118 是不同 program identity，不要互相匹配。
+3. 如果 delivery remote main 无法检查，停止并报告 remote_unavailable。
+   不要把 remote_unavailable 当成 not_found，也不要继续 scan source；
+   除非用户明确授权在没有 central reuse 检查的情况下继续。
+4. 对 found_on_remote_main 的 program，复用 remote-main compact artifacts，
+   不要 rescan。例外: prompt 明确提供 force-rescan request 和原因时，才允许
+   重扫对应 program。
+5. 只对 not_found_on_remote_main 的 program 检查 source inventory cache:
+   <source-root>/outputs/repo-scan/program-list.csv 和 scan-summary.yaml。
+6. 如果 source inventory cache 缺失、stale，或 source tree dirty，先跑一次
+   repo-level inventory，再用刷新后的 program-list.csv 定位每个缺失 program。
+
+Phase 2 - aggregation 前先完成缺失 program analysis:
+7. 只 scan 缺失的 program，并按 delivery profile 的 tier folder 写入
+   delivery working branch。
+8. 对每个新 scan 的 program，按它的 tier 运行 legacy-ibmi-program-analyzer。
+   先生成 source-index.yaml，然后分析这个 SME flow 需要的 entry/mainline、
+   validation、calculation、file I/O 或 SQL update、exception/message、
+   external-call routines。每轮不要读取超过 5 个 routine body；继续分批直到
+   四个 SME 核心区有足够证据支撑。
+9. 每个新 scan 的 program 至少必须有:
+   - program-analysis-summary.yaml
+   - source-index.yaml
+   - routine-logic-details.yaml
+   - message-inventory.yaml
+   - 如观察到或本次需要，还要有 optional sidecars:
+     file-io-inventory.yaml、field-mutation-matrix.yaml、sql-inventory.yaml
+10. 拒绝 placeholder-only program artifacts。如果某个 program artifact 只写了
+    lightweight scan、no CALL literal、no obvious messages，或没有业务逻辑行，
+    回到该 program 的 source-index，继续 deep-read 能解释 calculation、
+    validation、exception handling、messages 和 state changes 的 routines。
+
+Phase 3 - build 并填完整 program-set review:
+11. remote-main reuse 和所有缺失 program scan 都完成后，build 或 rebuild:
+    modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/
+      program-set-core-input-manifest.yaml
+      program-set-sme-core-review.md
+    不要直接写到 modules/CAP-ID-0004-program_set_reviews/ 根目录。
+12. 只从 manifest-listed compact artifacts 和定点澄清用的 program-analysis.md
+    填写 program-set-sme-core-review.md。行顺序要按 SME 提供的 program flow
+    分组。
+13. 四个核心区必须包含 evidence-backed rows:
+    - Calculation Logic: assignments、derived values、counters、totals、dates、
+      flags，或带 evidence scope 的明确 "no calculation observed" TBD 行
+    - Validation Logic: checks、reject conditions、statuses、return codes 和
+      outcomes
+    - Exception Handling: monitored errors、file 或 SQL failures、message
+      paths、rollback/continue/stop behavior 和 unresolved paths
+    - Message Inventory: 每个观察到的 exact message ID、status、return code、
+      SQLSTATE、CPF/MCH/RNX/CPD code、operator text、literal 或 shop-local token
+14. 如果某个 program 在某个 section 确实没有观察到证据，添加精确 TBD 行，
+    写清 program、已检查的 routine/window、缺失 artifact 或 evidence type、
+    以及下一步动作。不要用泛泛一句话替代整个 section。
+15. 运行 scripts/validate-program-set-core-review.py。如果失败，修复 review
+    并重新运行，直到通过。
+
+Report:
+- 每个 program 的 lookup result
+- inventory cache freshness/action
+- newly scanned programs
+- 每个 program 的 analysis completeness，以及仍然 indexed_only 的 routines
+- output folder
+- validator result
+- remaining SME TBDs，如有
 ```
 
 ## Prompt 2: Multiple Flow Core Review Batch
