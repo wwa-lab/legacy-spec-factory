@@ -278,6 +278,47 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(programs["CU257F"]["follow_up"], "none - source scan completed in working branch")
             self.assertTrue(manifest["delivery_repo"]["working_root_used"])  # type: ignore[index]
 
+    def test_program_first_reuses_remote_and_uses_working_for_not_found_programs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            delivery_root = temp_root / "delivery-main"
+            working_root = temp_root / "delivery-working"
+            write_compact_artifacts(
+                delivery_root / "modules" / "CAP-ID-0003-normal_program" / "CU257F"
+            )
+            write_compact_artifacts(
+                working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CC050"
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CU257F", "CC050"],
+                delivery_root=delivery_root,
+                working_root=working_root,
+                config=config,
+                working_branch="develop-leo",
+                program_first=True,
+            )
+            programs = {
+                str(entry["normalized_name"]): entry
+                for entry in manifest["programs"]  # type: ignore[index]
+            }
+
+            self.assertEqual(programs["CU257F"]["central_lookup_result"], "found_on_remote_main")
+            self.assertEqual(programs["CU257F"]["artifact_source"], "remote_main")
+            self.assertEqual(
+                programs["CU257F"]["artifact_root"],
+                "modules/CAP-ID-0003-normal_program/CU257F",
+            )
+            self.assertEqual(programs["CC050"]["central_lookup_result"], "not_found_on_remote_main")
+            self.assertEqual(programs["CC050"]["artifact_source"], "delivery_working_branch")
+            self.assertEqual(
+                programs["CC050"]["artifact_root"],
+                "modules/CAP-ID-0002-complex_normal_program/CC050",
+            )
+            self.assertTrue(manifest["delivery_repo"]["program_first"])  # type: ignore[index]
+
     def test_builder_force_rescan_bypasses_remote_main_until_working_artifact_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)

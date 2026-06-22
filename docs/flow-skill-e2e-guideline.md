@@ -4,6 +4,21 @@ Use this guide when an SME provides one or more program flows/lists and expects
 reviewable output that merges the core logic across each flow's programs.
 For copy-ready internal test prompts, see
 [`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+For interrupted runs or new-session handoff, see
+[`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
+
+The default field workflow is **program-evidence first**:
+
+1. Resolve every program named by the SME to current program-analysis evidence:
+   reuse approved remote-main artifacts when they are complete/current, or
+   analyze from source when they are missing, incomplete, stale, or explicitly
+   refreshed.
+2. Assemble those resolved program-level results into one
+   `program-set-sme-core-review.md`.
+
+Remote-main reuse is intentional in this workflow. It is safe only when the
+remote artifact is an approved program-analysis result with the required core
+files; otherwise route that program back through program analysis.
 
 Default output:
 
@@ -70,8 +85,9 @@ Each flow block becomes one independent program-set review folder under
 - Team delivery profile, usually copied from
   [`skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml`](../skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml).
 
-Remote `main` is the approved reuse source. The working branch is draft output
-only.
+The working branch is draft output only. Remote `main` is the approved reuse
+source for prior program-analysis results; the working branch holds newly
+generated or force-refreshed artifacts.
 
 ## E2E Flow
 
@@ -79,33 +95,64 @@ only.
 2. Load the delivery profile.
 3. Prepare or refresh a remote-main snapshot/cache of the delivery repo.
 4. Run central artifact lookup for every program.
-5. Reuse programs found on remote `main`; do not rescan them unless the SME
-   explicitly provides a force-rescan request with a reason.
-6. For only `not_found_on_remote_main` programs, check source inventory cache:
+5. Reuse programs found on remote `main` only when their required
+   program-analysis artifacts are present and complete enough for SME handoff.
+6. For programs not resolved by approved remote-main reuse, check source
+   inventory cache:
    `<source-root>/outputs/repo-scan/program-list.csv` and
    `<source-root>/outputs/repo-scan/scan-summary.yaml`.
 7. If cache is fresh, use `program-list.csv` to locate source path and tier; if
    cache is missing/stale/dirty, rerun `legacy-ibmi-inventory` repo scan first.
-8. Use `legacy-ibmi-program-analyzer` for missing programs with the appropriate
-   normal, complex, or large strategy.
-9. Write newly scanned program artifacts to the delivery working branch under
+8. Use `legacy-ibmi-program-analyzer` for each program not resolved by approved
+   remote-main reuse, with the appropriate normal, complex, or large strategy.
+9. For each program, whether reused or newly analyzed, confirm the required
+   program-level artifacts:
+   `program-analysis.md`, `program-analysis-summary.yaml`,
+   `source-index.yaml`, `routine-logic-details.md`,
+   `routine-logic-details.yaml`, and `message-inventory.yaml`.
+10. For complex or large programs, keep retained detail such as
+   `deep-read-plan.md`, `all-routine-coverage-ledger.md`, and
+   `routine-logic-details/deep-read-batch-*.md` when more than one
+   five-routine batch is needed.
+11. Write newly analyzed program artifacts to the delivery working branch under
    the configured tier folder.
-10. Build the program-set manifest and review skeleton.
-11. Fill only Calculation Logic, Validation Logic, Exception Handling, and
-   Message Inventory from manifest-listed compact artifacts.
-12. Validate the review before SME handoff.
-13. Open a PR from the working branch. Merge to `main` only after review.
+12. Build the program-set manifest and review skeleton only after all programs
+   have been resolved to approved remote-main artifacts or completed
+   working-branch artifacts.
+13. Fill only Calculation Logic, Validation Logic, Exception Handling, and
+   Message Inventory from the resolved per-program artifacts.
+14. Validate the review before SME handoff.
+15. Open a PR from the working branch. Merge to `main` only after review.
 
-For multiple flow blocks, run steps 1-12 once per flow block. Reuse the same
-remote-main snapshot, source inventory cache, delivery working branch, and PR
-when they belong to the same SME batch. If a program appears in more than one
-flow, reuse its remote-main artifact or the newly scanned working-branch
-artifact; do not rescan it just because it appears in a second flow.
+For multiple flow blocks, resolve each distinct program once, then run the
+assembly steps once per flow block. Reuse the same remote-main snapshot, source
+inventory cache, delivery working branch, and PR when they belong to the same
+SME batch. If a program appears in more than one flow in the same batch, reuse
+the resolved remote-main or working-branch artifact; do not rescan it just
+because it appears in a second flow.
 
 ## Commands
 
 The field deployment environment is Windows. Use `py -3` there. Use
 `python3` only on macOS/Linux development machines.
+
+Default program-evidence-first order:
+
+1. Run or refresh repo-level inventory when the source inventory cache is not
+   fresh for programs that need source analysis.
+2. Reuse approved remote-main program-analysis artifacts when present and
+   complete.
+3. Run `legacy-ibmi-program-analyzer` only for programs not resolved by
+   approved remote-main reuse, then write new artifacts to the delivery working
+   branch tier folders.
+4. Confirm each program has `program-analysis.md`,
+   `program-analysis-summary.yaml`, `source-index.yaml`,
+   `routine-logic-details.md`, `routine-logic-details.yaml`, and
+   `message-inventory.yaml`; complex or large programs also keep retained
+   deep-read evidence when needed.
+5. Run the program-set builder and fill `program-set-sme-core-review.md` from
+   those completed per-program artifacts.
+6. Validate before SME handoff.
 
 Prepare a read-only remote-main snapshot:
 
@@ -135,6 +182,7 @@ py -3 scripts/build-program-set-core-review.py `
   --source-root C:\path\to\source-repo `
   --profile C:\path\to\delivery-profile.yaml `
   --working-branch develop-leo `
+  --program-first `
   --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
 ```
 
@@ -149,13 +197,15 @@ python3 scripts/build-program-set-core-review.py \
   --source-root /path/to/source-repo \
   --profile path/to/delivery-profile.yaml \
   --working-branch develop-leo \
+  --program-first \
   --output-dir /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review
 ```
 
-Use `--delivery-root` for approved remote-main lookup. Use `--working-root`
-after missing programs have been scanned into the working branch, so the final
-manifest can include newly scanned artifacts without marking them as approved
-remote-main reuse.
+For the default program-evidence-first flow, pass both `--delivery-root` and
+`--working-root`: `--delivery-root` supplies approved remote-main artifacts,
+while `--working-root` supplies newly analyzed or force-refreshed artifacts.
+Use `--program-first` to make the intended evidence gate explicit; it does not
+disable approved remote-main reuse.
 
 If the SME explicitly wants to refresh an approved remote-main artifact, create
 a force-rescan file:
@@ -238,7 +288,7 @@ modules/CAP-ID-0004-program_set_reviews/
     program-set-sme-core-review.md
 ```
 
-## Routing Table
+## Program Evidence Routing Table
 
 | Lookup result | What it means | Action |
 | --- | --- | --- |
@@ -277,10 +327,9 @@ modules/CAP-ID-0004-program_set_reviews/{flow_3_review_slug}/
 
 - Every SME-provided program appears in the manifest, Sources table, and Core
   Completeness Ledger for its flow.
-- Found remote-main programs are not rescanned.
-- `remote_unavailable` is treated as an access/context blocker, not as a
-  missing-program result.
-- Missing programs are scanned once and written to the correct tier folder.
+- Every SME-provided program has completed program-level artifacts before the
+  program-set review is assembled.
+- Program artifacts are written to the correct tier folder.
 - Source inventory cache is reused only when its source revision is fresh.
 - Multiple SME-provided flows produce separate `{review_slug}` folders under
   `program_set_review_parent`; they may share one working branch and PR.

@@ -2,9 +2,10 @@
 """Build and validate program-set SME core review scaffolds.
 
 The builder is intentionally deterministic: it discovers program artifact
-folders from a delivery repo remote-main checkout/cache, writes a manifest, and
-renders a fixed review skeleton. The validator checks structure and coverage;
-it does not judge whether the LLM-written summaries are semantically correct.
+folders from an approved delivery repo remote-main checkout/cache and from the
+delivery working branch, writes a manifest, and renders a fixed review
+skeleton. The validator checks structure and coverage; it does not judge
+whether the LLM-written summaries are semantically correct.
 """
 
 from __future__ import annotations
@@ -297,6 +298,7 @@ def build_program_entries(
     config: dict[str, Any],
     working_root: Path | None = None,
     force_rescan_requests: dict[str, str] | None = None,
+    program_first: bool = False,
 ) -> tuple[list[ProgramEntry], list[str]]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
@@ -621,6 +623,7 @@ def build_manifest(
     source_root: Path | None = None,
     inventory_dir: Path | None = None,
     force_rescan_requests: dict[str, str] | None = None,
+    program_first: bool = False,
 ) -> dict[str, Any]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
@@ -634,6 +637,7 @@ def build_manifest(
         config,
         working_root,
         force_rescan_requests=normalized_force_requests,
+        program_first=program_first,
     )
     source_inventory = build_source_inventory_status(
         entries=entries,
@@ -652,6 +656,7 @@ def build_manifest(
             "lookup_branch": lookup.get("branch", "main"),
             "working_branch": working_branch,
             "working_root_used": working_root is not None,
+            "program_first": program_first,
         },
         "lookup_profile": {
             "program_folder_patterns": lookup.get("program_folder_patterns", ["modules/*/{PROGRAM}"]),
@@ -993,6 +998,7 @@ def build_command(args: argparse.Namespace) -> int:
         source_root=args.source_root,
         inventory_dir=args.inventory_dir,
         force_rescan_requests=force_rescan_requests,
+        program_first=args.program_first,
     )
     manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
     print(f"Wrote {manifest_path}")
@@ -1025,6 +1031,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--force-rescan-file",
         type=Path,
         help="Optional file with PROGRAM|reason rows that should bypass remote-main reuse",
+    )
+    build.add_argument(
+        "--program-first",
+        action="store_true",
+        help=(
+            "Require program-level analysis evidence before assembly. Approved remote-main "
+            "artifacts are still reused; working-root artifacts are used for not-found or "
+            "force-rescanned programs."
+        ),
     )
     build.add_argument("--profile", type=Path, required=True)
     build.add_argument("--output-dir", type=Path, required=True)

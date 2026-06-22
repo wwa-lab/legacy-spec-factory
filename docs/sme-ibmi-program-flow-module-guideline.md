@@ -27,6 +27,8 @@ new team from zero, use
 [`new-team-flow-scan-quickstart.md`](new-team-flow-scan-quickstart.md).
 For copy-ready internal testing prompts, use
 [`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+For interrupted runs or cross-session handoff, use
+[`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
 
 ## 中文摘要
 
@@ -47,42 +49,46 @@ For copy-ready internal testing prompts, use
   并判断 `normal_program` / `complex_normal_program` /
   `large_extreme_program`。普通程序默认轻量产出；只有复杂或极限场景才加
   sidecars 和分批 deep read。
-- flow 和 module 不重新吞源码，也不拼多个完整 Markdown；它们只消费
-  program/flow 的 compact artifacts。
-- 如果 SME 一次输入一个 program flow，先按
-  `delivery_artifact_lookup_profile` 去 central delivery repo 查每个 program
-  的既有分析结果；你们部门默认是
-  `CH-WPS-LENDING-CARDS/legacy-modernization-delivery` 的 GitHub remote
-  `main`，路径使用 exact `modules/*/{PROGRAM}`。`@` 是 program identity 的
-  一部分，所以 `@CU118` 和 `CU118` 不互相命中。其它部门可以覆盖
-  repo、branch、module roots、program folder patterns 和 alias rules。GitHub
-  lookup 用方式 2：`git ls-remote` 加临时 shallow clone / sparse checkout，
-  或使用已确认同步到 `origin/main` 的本地 cache。remote `main` 有 exact
-  program folder 就不重扫，并且生成 `program-set-sme-core-review.md` 时从
-  这个 remote-main checkout/cache 读取 compact artifacts；没有才 scan；
-  remote 查不到就标 `remote_unavailable`，不要当成 missing。
+- flow 的默认现场工作流是 program-evidence first：SME 一次输入一个
+  program flow 时，先把每一个 program resolve 成合格的 program-analysis
+  evidence。remote `main` 上已有 approved 且完整/current 的分析结果就复用；
+  没有、缺文件、stale，或 SME 要 force refresh 的 program，才从 source repo
+  分析并生成 `program-analysis.md`、`program-analysis-summary.yaml`、
+  `source-index.yaml`、`routine-logic-details.md`、
+  `routine-logic-details.yaml`、`message-inventory.yaml`。complex / large
+  program 还要保留 `deep-read-plan.md`、`all-routine-coverage-ledger.md` 和
+  `routine-logic-details/deep-read-batch-*.md` 等必要分批证据。然后才用这些
+  program-level artifacts 组装 `program-set-sme-core-review.md`。
+- flow 和 module 不重新吞多个完整源码，也不拼多个完整 Markdown；它们消费
+  已完成的 program/flow artifacts。`program-set-sme-core-review.md` 只能在
+  每个 SME-provided program 至少达到可支撑四个核心区的证据深度后生成。
+- central delivery repo remote `main` 的既有 artifact 是默认复用候选，用来避免
+  重复分析别人已经完成并批准的 program。复用前必须按
+  `delivery_artifact_lookup_profile` 精确查找，并确认 required core artifacts
+  足够支撑 SME review。`@` 是 program identity 的一部分，所以 `@CU118` 和
+  `CU118` 不互相命中。
 - 如果 SME 一次输入多个 program flow，也支持，但要拆成多个 flow block。
   每个 flow block 有自己的 review name、program list 和输出 folder：
   `modules/CAP-ID-0004-program_set_reviews/{review_slug}/`。同一批 flow
   可以共用一个 `develop-<person>` branch 和一个 PR；不要把不同业务 flow
   混成一个 `program-set-sme-core-review.md`。
-- 对 remote `main` 没命中的 program，不是马上全量 scan。先查 source repo
-  默认 cache：`<source-root>/outputs/repo-scan/program-list.csv` 和
-  `scan-summary.yaml`。如果 `scan-summary.yaml.source_revision_key` 和当前
-  clean Git source HEAD 一致，就复用 `program-list.csv` 定位 source path 和
-  tier，只 scan 缺的 program；如果 cache 不存在、stale，或 source code
-  dirty，才先跑一次 repo-level inventory scan。
+- 对没有被 approved remote-main reuse resolve 的 program，先查 source repo 默认 cache：
+  `<source-root>/outputs/repo-scan/program-list.csv` 和 `scan-summary.yaml`。
+  如果 `scan-summary.yaml.source_revision_key` 和当前 clean Git source HEAD
+  一致，就复用 `program-list.csv` 定位 source path 和 tier；如果 cache
+  不存在、stale，或 source code dirty，才先跑一次 repo-level inventory scan。
 - 团队应先从
   `skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` 复制一份
   delivery profile。SME/engineer 每次只需要提供
   `Delivery working branch: develop-<person>`、review name、source repo path
   和 program list。
-  如果 `develop-<person>` 不存在，就从 `origin/main` 创建；新 scan 输出写到
-  这个 branch，但 approved reuse lookup 仍然只看 remote `main`。
-- program flow 的稳定输出由 builder + validator 固定：先用
-  `scripts/build-program-set-core-review.py` 从 remote-main snapshot/cache
-  生成 `program-set-core-input-manifest.yaml` 和
-  `program-set-sme-core-review.md` 骨架；填完四个核心区后，再跑
+  如果 `develop-<person>` 不存在，就从 `origin/main` 创建；本次新分析或
+  force-refreshed 的 program analysis 输出写到这个 branch 的 tier folders。
+- program flow 的稳定输出由 program analyzer + builder + validator 一起固定：
+  先逐个 program 生成足够深度的 program-level artifacts，再用
+  `scripts/build-program-set-core-review.py` 生成
+  `program-set-core-input-manifest.yaml` 和 `program-set-sme-core-review.md`
+  骨架；填完四个核心区后，再跑
   `scripts/validate-program-set-core-review.py`，确保没有漏 program，也没有
   混入 full flow 的 Nodes/Edges/Replay 等章节。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
@@ -114,7 +120,9 @@ level when the actual question is about one program or one transaction.
 1. Read no more than five routine bodies in one LLM turn.
 2. Never paste a full large RPGLE / SQLRPGLE source member into a prompt.
 3. Never concatenate multiple full `program-analysis.md` or `flow.md` files.
-4. Before scanning source, check central delivery repo artifacts first.
+4. For program-flow core review, resolve every SME-provided program to current
+   program-analysis evidence first: reuse approved remote-main artifacts when
+   complete/current, otherwise analyze from source.
 5. Use core compact artifacts first:
    - `program-analysis-summary.yaml`
    - `source-index.yaml`
