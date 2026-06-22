@@ -17,6 +17,8 @@ Validate that the skill can:
 - write one program-set review folder per SME flow under
   `modules/CAP-ID-0004-program_set_reviews/`
 - produce `program-set-sme-core-review.md` with only the four core sections
+- complete the review with evidence-backed SME content, not just a generated
+  skeleton or lookup report
 - pass `scripts/validate-program-set-core-review.py`
 
 ## Required Test Inputs
@@ -46,16 +48,20 @@ Windows environment, use `py -3`, for example
 `py -3 scripts\validate-program-set-core-review.py ...`. Use `python3` only on
 macOS/Linux development machines.
 
-## Prompt 1: Single Flow Core Review
+## Prompt 1: Single Flow Core Review Complete E2E
 
-Use this for the first internal smoke test.
+Use this when the expected result is one completed SME-ready core review, not
+only the first manifest/build step.
 
 ```text
 Use legacy-ibmi-flow-analyzer.
 
 Goal:
-Create a compact SME program-set core review for one SME-provided program flow.
+Run one SME-provided program flow all the way to a completed compact SME
+program-set core review.
 Do not create flow-<FLOW-SLUG>.md.
+Do not stop after creating the manifest, skeleton, source lookup report, or
+placeholder compact artifacts.
 
 Runtime inputs:
 - Delivery repo remote main snapshot/cache: /tmp/legacy-modernization-delivery-main
@@ -72,30 +78,93 @@ SME-provided program flow, preserve this order:
 - CU257F
 - CC050
 
-Expected behavior:
-1. Check delivery repo remote main snapshot first for each exact program folder.
+Completion rule:
+This run is complete only when:
+- every SME-provided program appears in the manifest, Sources table, and Core
+  Completeness Ledger
+- every missing program has been analyzed with enough routine evidence to
+  populate the four SME sections or a precise evidence-backed TBD
+- program-set-sme-core-review.md contains real rows under Calculation Logic,
+  Validation Logic, Exception Handling, and Message Inventory
+- there are no generic placeholder statements such as "No explicit CALL literal
+  detected" unless they are tied to a specific missing-evidence row and next
+  action
+- scripts/validate-program-set-core-review.py passes
+
+Phase 1 - access, reuse, and routing:
+1. Check delivery repo remote main snapshot/cache first for each exact program
+   folder.
 2. Treat @CU118 and CU118 as different program identities.
-3. Reuse any found_on_remote_main compact artifacts; do not rescan those programs.
-   Exception: only rescan a found_on_remote_main program if the prompt provides
-   an explicit force-rescan request with a reason.
-4. For only not_found_on_remote_main programs, check source inventory cache at
+3. If delivery remote main cannot be checked, stop and report
+   remote_unavailable. Do not treat remote_unavailable as not_found and do not
+   scan source unless the user explicitly authorizes proceeding without central
+   reuse.
+4. Reuse any found_on_remote_main compact artifacts; do not rescan those
+   programs. Exception: only rescan a found_on_remote_main program if the prompt
+   provides an explicit force-rescan request with a reason.
+5. For only not_found_on_remote_main programs, check source inventory cache at
    <source-root>/outputs/repo-scan/program-list.csv and scan-summary.yaml.
-5. If source inventory cache is missing or stale, run repo-level inventory once.
-6. Scan only missing programs and write new artifacts to the delivery working branch.
-7. Build:
-   modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/
-     program-set-core-input-manifest.yaml
-     program-set-sme-core-review.md
-8. Fill only Calculation Logic, Validation Logic, Exception Handling, and
-   Message Inventory from manifest-listed compact artifacts.
-9. Run the program-set validator before SME handoff.
+6. If source inventory cache is missing, stale, or the source tree is dirty,
+   run repo-level inventory once, then use the refreshed program-list.csv to
+   locate each missing program.
+
+Phase 2 - complete missing program analysis before aggregation:
+7. Scan only missing programs and write new artifacts to the delivery working
+   branch under the tier folder from the delivery profile.
+8. For each newly scanned program, run legacy-ibmi-program-analyzer according
+   to its tier. Build source-index.yaml first, then analyze the entry/mainline,
+   validation, calculation, file I/O or SQL update, exception/message, and
+   external-call routines needed for this SME flow. Do not read more than five
+   routine bodies per turn; continue in batches until the core SME sections can
+   be supported.
+9. Each newly scanned program must have at least:
+   - program-analysis-summary.yaml
+   - source-index.yaml
+   - routine-logic-details.yaml
+   - message-inventory.yaml
+   - optional sidecars when observed or needed: file-io-inventory.yaml,
+     field-mutation-matrix.yaml, sql-inventory.yaml
+10. Reject placeholder-only program artifacts. If a program artifact only says
+    lightweight scan, no CALL literal, no obvious messages, or otherwise lacks
+    business logic rows, go back to that program's source-index and deep-read
+    the routines needed to explain calculation, validation, exception handling,
+    messages, and state changes.
+
+Phase 3 - build and fill the program-set review:
+11. After remote-main reuse and all missing program scans are complete, build
+    or rebuild:
+    modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/
+      program-set-core-input-manifest.yaml
+      program-set-sme-core-review.md
+    Do not write the review directly under
+    modules/CAP-ID-0004-program_set_reviews/.
+12. Fill program-set-sme-core-review.md only from manifest-listed compact
+    artifacts and targeted program-analysis.md clarification. Keep rows grouped
+    by the SME program order.
+13. The four core sections must contain evidence-backed rows:
+    - Calculation Logic: assignments, derived values, counters, totals, dates,
+      flags, or explicit "no calculation observed" TBD rows with evidence scope
+    - Validation Logic: checks, reject conditions, statuses, return codes, and
+      outcomes
+    - Exception Handling: monitored errors, file or SQL failures, message paths,
+      rollback/continue/stop behavior, and unresolved paths
+    - Message Inventory: every exact message ID, status, return code, SQLSTATE,
+      CPF/MCH/RNX/CPD code, operator text, literal, or shop-local token observed
+14. If a section truly has no observed evidence for a program, add a precise
+    TBD row naming the program, routine/window inspected, missing artifact or
+    evidence type, and next action. Do not replace the section with a generic
+    sentence.
+15. Run scripts/validate-program-set-core-review.py. If it fails, fix the
+    review and rerun until it passes.
 
 Report:
 - lookup result by program
 - inventory cache freshness/action
 - newly scanned programs
+- per-program analysis completeness and any routines still indexed_only
 - output folder
 - validator result
+- remaining SME TBDs, if any
 ```
 
 ## Prompt 2: Multiple Flow Core Review Batch
@@ -345,6 +414,9 @@ Capture these results for each test run:
 | Multiple flows remain separate | One `{review_slug}` folder per flow |
 | Repeated programs are not rescanned | Reuse remote-main or working-branch artifact |
 | Review shape is compact | Only Calculation, Validation, Exception, Message sections after control tables |
+| Review is complete enough for SME handoff | Four core sections contain evidence-backed rows or precise per-program TBD rows |
+| Placeholder output is rejected | Generic lightweight-scan/no-CALL/no-message statements are replaced by routine-level evidence or named gaps |
+| Output placement is scoped | Review is written under `program_set_review_parent/{review_slug}/`, not the parent folder |
 | Validator runs | Each review folder has a pass/fail result |
 
 ## Common Test Failures
@@ -359,3 +431,10 @@ Capture these results for each test run:
 - The model puts full-flow sections into `program-set-sme-core-review.md`.
 - The model writes a review directly under `CAP-ID-0004-program_set_reviews/`
   instead of a `{review_slug}` child folder.
+- The model stops after generating `program-set-core-input-manifest.yaml` and a
+  review skeleton.
+- The model treats `remote_unavailable` as `not_found_on_remote_main` and scans
+  source without explicit approval.
+- The model creates compact artifacts that only report simple source scan facts
+  such as missing CALL literals, then fills the SME review from those
+  placeholders instead of completing per-program routine analysis.

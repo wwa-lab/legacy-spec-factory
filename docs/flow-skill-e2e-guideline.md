@@ -278,6 +278,8 @@ modules/CAP-ID-0004-program_set_reviews/{flow_3_review_slug}/
 - Every SME-provided program appears in the manifest, Sources table, and Core
   Completeness Ledger for its flow.
 - Found remote-main programs are not rescanned.
+- `remote_unavailable` is treated as an access/context blocker, not as a
+  missing-program result.
 - Missing programs are scanned once and written to the correct tier folder.
 - Source inventory cache is reused only when its source revision is fresh.
 - Multiple SME-provided flows produce separate `{review_slug}` folders under
@@ -287,4 +289,7 @@ modules/CAP-ID-0004-program_set_reviews/{flow_3_review_slug}/
   - Validation Logic
   - Exception Handling
   - Message Inventory
+- The four core sections contain routine-level evidence-backed rows or precise
+  per-program TBD rows. Placeholder-only statements from lightweight source
+  scans are not sufficient for SME handoff.
 - `scripts/validate-program-set-core-review.py` passes before SME review.
