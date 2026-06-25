@@ -1,0 +1,172 @@
+---
+name: legacy-ibmi-program-list-batch
+description: Orchestrate IBM i program analysis from a program-list CSV or Excel export for Copilot Chat-limited environments. Use when the user has many RPGLE/SQLRPGLE/CLLE/COBOL programs to analyze, needs one-program-per-chat prompt queues, per-program status tracking, resumable handoff, batch manifests, or a final program-set SME review. Supplemental skill; delegates actual source analysis to legacy-ibmi-program-analyzer and final cross-program review scaffolding to legacy-ibmi-flow-analyzer/program-set review tools.
+---
+
+<!--
+Legacy Spec Factory
+Copyright 2026 Leo L Zhang
+
+Original author: Leo L Zhang
+License: Apache License 2.0
+
+This skill is part of the Legacy Spec Factory project.
+Retain this notice in substantial copies or derived versions.
+-->
+
+# IBM i Program List Batch
+
+## Skill Card
+
+| Field | Notes |
+| --- | --- |
+| Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program work queue with durable status files. |
+| Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, delivery root, profile, and remote-main snapshot. |
+| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`. |
+| Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
+| Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
+| Downstream skill | `legacy-ibmi-program-analyzer` for each program; `legacy-ibmi-flow-analyzer` / program-set review builder after rows are classified. |
+| Validation standard | Every row is represented, status values are legal, completed rows have required artifacts and validator status, and output folders are unique. |
+| Known risk | Treating one Copilot Chat as a concurrent batch runner; this causes context contamination and status drift. |
+
+## Purpose
+
+Use this skill to prepare and control a batch of IBM i program-analysis runs
+when the available runtime is GitHub Copilot Chat or another limited chat UI.
+It does not analyze source code itself. It creates a queue of small,
+copy-ready prompts so each program can be analyzed in a fresh chat by
+`legacy-ibmi-program-analyzer`.
+
+The original `program-list.csv` should remain the source export. Create
+`program-list-status.csv` as the working copy with status columns.
+
+## When To Use
+
+Use this skill when:
+
+- The user has a program list and wants to process it row by row.
+- The team can only use Copilot Chat and cannot run a true agent batch worker.
+- Context limits require one program per session.
+- The team needs resumable progress across sessions.
+- The user asks for a "program batch plan", status columns in CSV/Excel, prompt
+  queue generation, or batch resume/handoff.
+
+Do not use this skill for a single program. Use `legacy-ibmi-program-analyzer`
+directly.
+
+## Core Rules
+
+- One program equals one Copilot Chat session.
+- One prompt file names exactly one program.
+- Do not ask one Copilot Chat session to process multiple programs
+  concurrently.
+- Do not carry source excerpts, prior program summaries, or chat history into
+  the next program.
+- After every program, update all durable state files before starting another:
+  `program-batch-plan.md`, `program-list-status.csv`, and
+  `batch-scan-manifest.yaml`.
+- Use `legacy-ibmi-program-analyzer` for the actual source analysis.
+- Run the program-analysis validator before marking a row complete.
+- Generate the final program-set review only after every requested row is
+  classified as completed, reused, skipped, blocked, or failed.
+
+## Standard Output Layout
+
+```text
+outputs/program-list-batch/
+  program-batch-plan.md
+  program-list-status.csv
+  batch-scan-manifest.yaml
+  prompt-queue/
+    0001-@CC080.md
+    0002-@CC081.md
+  completed/
+  blocked/
+  failed/
+```
+
+## Workflow
+
+1. **Initialize the batch**
+   - Read the input program list.
+   - Preserve original columns.
+   - Create `program-list-status.csv` with status columns.
+   - Create `program-batch-plan.md` as the human-readable queue.
+   - Create `batch-scan-manifest.yaml` as the durable machine state.
+   - Create `prompt-queue/*.md` per `object_type = program` row.
+
+2. **Run one program in Copilot Chat**
+   - Open a fresh chat.
+   - Paste the next prompt file.
+   - Let `legacy-ibmi-program-analyzer` analyze only that program.
+   - Validate the output directory.
+   - Update the plan, status CSV, and manifest.
+
+3. **Resume safely**
+   - In any new session, read durable files first.
+   - Continue from the first row with `queued`, `in_progress`,
+     `failed_runtime`, `failed_validator`, or a now-resolved blocker.
+   - Do not rescan `completed` rows with validator pass.
+   - Do not rescan `reused_remote_main` rows without explicit force-rescan.
+
+4. **Finish the batch**
+   - Validate status consistency.
+   - Build or refresh `program-set-core-input-manifest.yaml` and
+     `program-set-sme-core-review.md` using existing program-set review tools.
+   - Validate the program-set review before SME handoff.
+
+## Scripts
+
+Use the repository Python launcher convention. For company-internal Windows 11
+testing, use `py -3` only.
+
+- Windows / company Copilot environment: use `py -3`.
+- macOS/Linux: use `python3`.
+- If Python is unavailable, stop and report the runtime issue.
+
+Initialize a Copilot Chat queue:
+
+```powershell
+py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
+  --program-list outputs\repo-scan\program-list.csv `
+  --out-dir outputs\program-list-batch `
+  --source-root C:\path\to\source-repo `
+  --delivery-root C:\path\to\delivery-work `
+  --review-name "normal program batch"
+```
+
+Validate batch state:
+
+```powershell
+py -3 skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py `
+  --batch-dir outputs\program-list-batch
+```
+
+## References
+
+- Read `references/status-contract.md` when creating, updating, or validating
+  `program-batch-plan.md`, `program-list-status.csv`, or
+  `batch-scan-manifest.yaml`.
+- Read `references/copilot-chat-operating-model.md` when the user asks about
+  Copilot Chat limitations, concurrency, clean sessions, or resuming after
+  context exhaustion.
+- Use `../../docs/program-list-batch-prompt-test-plan.md` for company
+  Copilot Chat prompt-driven dry-run testing before field pilot.
+
+## Templates
+
+- Use `templates/copilot-single-program-prompt.md` for each prompt queue item.
+- Use `templates/program-batch-plan.md` for the human-readable batch plan.
+- Use `templates/batch-session-handoff.md` when a session must stop and hand
+  the next action to a new chat.
+
+## Acceptance Checklist
+
+- `program-list-status.csv` exists and preserves original program-list fields.
+- `program-batch-plan.md` shows progress, current/next action, queue, and
+  blockers.
+- `batch-scan-manifest.yaml` records every row.
+- Every prompt file names exactly one program.
+- No two active rows share the same output directory.
+- Completed rows have required per-program artifacts and validator status.
+- Blocked and failed rows have `last_error` and `next_action`.

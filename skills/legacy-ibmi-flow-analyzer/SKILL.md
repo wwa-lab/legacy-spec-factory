@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-flow-analyzer
-description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory without rescanning. Supports central artifact reuse from delivery repo remote main before source scan, source inventory cache reuse from outputs/repo-scan when fresh, and per-program lookup status. Also retains explicit full transaction-flow analysis support for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Default field workflow is program-evidence first: reuse complete/current approved program-analysis artifacts from delivery repo remote main when available, analyze only unresolved programs with tier-appropriate routine evidence, then assemble the program-set review. Supports source inventory cache reuse from outputs/repo-scan when fresh, central artifact reuse, force refresh, and per-program lookup status. Also retains explicit full transaction-flow analysis support for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -23,7 +23,7 @@ Retain this notice in substantial copies or derived versions.
 | Problem solved | Merges a SME-provided multi-program flow/list into one compact program-set core review without losing any requested program. Full transaction-flow analysis remains available only when explicitly requested. |
 | Input | Approved inventory, relevant program analyses or central delivery artifact paths, trigger context, runtime clues, screen/report evidence, and SME notes. |
 | Output | For SME-provided program-flow/core merge requests, `program-set-sme-core-review.md` only. For separately requested full transaction-flow analysis, `flow-<FLOW-SLUG>.md`. |
-| Core prompt strategy | Reuse remote-main central program artifacts first, aggregate compact core artifacts, preserve SME order as navigation evidence, and expose missing programs/sections in a completeness ledger. |
+| Core prompt strategy | Resolve every SME-provided program to current program-analysis evidence first: reuse complete/current approved remote-main artifacts when available, analyze unresolved programs, aggregate compact core artifacts, preserve SME order as navigation evidence, and expose missing programs/sections in a completeness ledger. |
 | Upstream skill | `legacy-ibmi-program-analyzer` and `legacy-ibmi-inventory`. |
 | Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and capability/spec preparation. |
 | Validation standard | All called programs and files map to inventory IDs, trigger model is declared, and unresolved branches are not hidden. |
@@ -46,31 +46,40 @@ cross-program/cross-boundary call map. It is not a statement-level
 flowchart. It should preserve the transaction's program and external
 dependency structure while keeping full call details in tables.
 
-This skill supports **central artifact reuse** before any source scan. If the
-central delivery documents repo remote `main` already contains an exact
-program folder for a program named by the user or discovered in the flow, load
-that program's compact artifacts from the remote-main sparse checkout or a
-fresh cache verified against `origin/main`; do not rescan the program and do
-not read from an unverified local copy. Only programs with
-`central_lookup_result: not_found_on_remote_main` are routed to
-`legacy-ibmi-program-analyzer`.
+The default field workflow is **program-evidence first**. For every program
+named by the SME in the program flow, first try to reuse complete/current
+approved program-analysis artifacts from delivery repo remote `main`. For any
+program not resolved by approved reuse, use the source inventory cache to
+locate and classify the source, run `legacy-ibmi-program-analyzer` with the
+appropriate normal, complex, or large strategy, and write the program-level
+artifacts to the delivery working branch. Only after every SME-provided program
+has enough routine evidence should this skill assemble
+`program-set-sme-core-review.md`.
 
-For programs not found on delivery repo remote `main`, this skill uses the
-source repo inventory cache before doing expensive source discovery. By
-default it checks `<source-root>/outputs/repo-scan/program-list.csv` and
+This skill supports **central artifact reuse** as part of the default evidence
+resolution path. Load reused compact artifacts from the remote-main sparse
+checkout or a fresh cache verified against `origin/main`; do not read from an
+unverified local copy. If a remote-main artifact is missing required core
+files, stale, or not deep enough for the SME review, route only that program
+back through program analysis or record a precise SME waiver.
+
+Before analyzing unresolved programs from source, this skill uses the source
+repo inventory cache. By default it checks
+`<source-root>/outputs/repo-scan/program-list.csv` and
 `<source-root>/outputs/repo-scan/scan-summary.yaml`. If the cache exists and
 `scan-summary.yaml.source_revision_key` matches the current clean Git source
-HEAD, reuse the inventory to locate source path and size tier for targeted
-program scan. If the cache is missing, stale, or the source worktree has
-uncommitted source changes, rerun `legacy-ibmi-inventory` repo-level scan
-first.
+HEAD, reuse the inventory to locate source path and size tier. If the cache is
+missing, stale, or the source worktree has uncommitted source changes, rerun
+`legacy-ibmi-inventory` repo-level scan first.
 
 This skill supports these assembly modes:
 
 - **`core_review_only` (default for SME-provided program-flow input)** — user
   provides an ordered or partial program flow/list; the analyzer produces
-  `program-set-sme-core-review.md` by merging compact program-analysis
-  artifacts. Do not produce `flow-<FLOW-SLUG>.md` in this mode.
+  `program-set-sme-core-review.md` by first resolving every SME-provided
+  program to approved remote-main artifacts or completed working-branch
+  program-analysis artifacts, then merging those compact artifacts. Do not
+  produce `flow-<FLOW-SLUG>.md` in this mode.
 - **`orchestrated`** — start from a trigger / entry program, discover the
   involved programs, run or route missing per-program analysis first, then
   assemble a full transaction flow from the generated compact artifacts. Use
@@ -80,16 +89,21 @@ This skill supports these assembly modes:
   missing artifacts when possible. Use only when the user explicitly asks for
   full flow analysis.
 
-This skill does **not** re-analyze individual program semantics inline. Every
-program in the program set must have program analysis evidence from remote
-`main` or from a newly routed source scan. Core
-artifacts are `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-logic-details.yaml`, and `message-inventory.yaml`; optional sidecars
-such as `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-`sql-inventory.yaml` are required only when program-analyzer triggers produced
-them or when the flow claim needs file I/O, persisted mutation, or SQL
-evidence. If required core artifacts or claim-specific optional artifacts are
-missing, route only that program back to
+This skill does **not** re-analyze individual program semantics during the
+assembly step. Every program in the program set must first have program
+analysis evidence from a complete/current approved remote-main artifact or from
+a current working-branch scan. Core artifacts are `program-analysis.md`,
+`program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.md`, `routine-logic-details.yaml`, and
+`message-inventory.yaml`; optional sidecars such as `file-io-inventory.yaml`,
+`field-mutation-matrix.yaml`, and `sql-inventory.yaml` are required only when
+program-analyzer triggers produced them or when the flow claim needs file I/O,
+persisted mutation, or SQL evidence. Complex and large programs must retain
+enough deep-read evidence, such as `deep-read-plan.md`,
+`all-routine-coverage-ledger.md`, and
+`routine-logic-details/deep-read-batch-*.md`, to make handoff stable under weak
+LLM constraints. If required core artifacts or claim-specific optional
+artifacts are missing, route only that program back to
 `legacy-ibmi-program-analyzer` instead of concatenating full Markdown analyses
 or restarting the whole flow.
 
@@ -130,14 +144,14 @@ Accept:
   source inventory cache, delivery remote-main snapshot, working branch, and PR
   when they belong to the same SME batch. Do not merge unrelated business flows
   into one `program-set-sme-core-review.md`.
-- **Central delivery artifact root / repo** — optional GitHub repo, local
-  checkout, or `delivery_artifact_lookup_profile` for
-  `legacy-modernization-delivery` or an equivalent delivery documents repo. The
-  accepted artifact source of truth is GitHub remote `main`; local checkouts
-  are caches only after freshness is verified against `origin/main`. The repo
-  name, branch, module roots, and program folder patterns are configurable.
-  Search the remote-current snapshot before asking to rescan source. For other
-  teams, start from `templates/delivery-profile.yaml`.
+- **Central delivery artifact root / repo** — GitHub repo, local checkout, or
+  `delivery_artifact_lookup_profile` for approved artifact reuse and
+  force-refresh runs. The accepted artifact source of truth is GitHub remote
+  `main`; local checkouts are caches only after freshness is verified against
+  `origin/main`. The repo name, branch, module roots, and program folder
+  patterns are configurable. Reuse only complete/current approved
+  program-analysis artifacts. For other teams, start from
+  `templates/delivery-profile.yaml`.
 - **Delivery workspace profile** — optional `delivery_workspace_profile`
   describing where new scan output is written in the delivery repo. The current
   default is `branch_mode: use_or_create_provided` with a provided
@@ -169,10 +183,9 @@ Accept:
 - **Central lookup result per program** — record one row per requested or
   discovered program:
   `found_on_remote_main`, `not_found_on_remote_main`, or
-  `remote_unavailable`. Do not scan every program in a provided flow just
-  because one node is missing; scan only programs with
-  `not_found_on_remote_main`. For `found_on_remote_main`, read the compact
-  artifacts from the remote-main checkout/cache used for the lookup.
+  `remote_unavailable`. For `found_on_remote_main`, read the compact artifacts
+  from the remote-main checkout/cache used for the lookup after confirming the
+  required program-analysis artifacts are complete enough for the SME review.
 - Optional: **Force rescan requests** for programs that have a remote-main
   artifact but the SME intentionally wants a refreshed draft. Require a named
   reason per program. Route those programs through `legacy-ibmi-program-analyzer`
@@ -484,32 +497,36 @@ to the orchestrator.
      branch and PR.
    - Load the team/project delivery profile when supplied. If no team profile is
      supplied, use `templates/delivery-profile.yaml` as the editable starting
-     shape. Keep the lookup profile and workspace profile separate: lookup reads
-     remote `main`; output writes to the provided delivery working branch.
-   - Run **central artifact reuse** before routing any program to source scan:
-     resolve the remote-current snapshot using Git method 2:
-     `git ls-remote` followed by a temporary shallow clone / sparse checkout
-     of `main`, or an already-fresh local cache verified against `origin/main`.
-     Do not use GitHub API tooling, a stale local checkout, or a feature branch
-     to conclude that a program artifact is absent.
-   - Use the profile's `program_folder_patterns` to find each program. The
-     current lending-card default supports exact `modules/*/{PROGRAM}` folder
-     matching and preserves leading `@`, so `@CU118` and `CU118` are distinct
-     programs. Other departments can override the repo name, branch,
-     `module_roots`, folder patterns, artifact filenames, and alias rules.
-   - Search remote-current central artifacts for each program named by the SME,
-     discovered from the entry program, or present in inventory relationships.
-     Match by exact program/member name first, then `OBJ-*`, module/CAP-ID,
-     source library/member, and source ref when available.
-   - Record `central_lookup_result` for every program:
-     `found_on_remote_main`, `not_found_on_remote_main`, or
-     `remote_unavailable`.
-   - Do not rescan programs with `found_on_remote_main`; tell the user they
-     have already been scanned, then read their compact artifacts from the
-     remote-main sparse checkout or fresh cache and use those rows in
-     `program-set-sme-core-review.md`. Scan only programs with
-     `not_found_on_remote_main`. If any lookup is `remote_unavailable`, ask for
-     access/context instead of assuming missing.
+     shape. Keep the lookup profile and workspace profile separate: approved
+     reuse reads remote `main`; new or refreshed output writes to the provided
+     delivery working branch.
+   - For the default SME program-flow workflow, run **program-evidence first**:
+     try to resolve every SME-provided program from approved remote-main
+     program-analysis artifacts, then route only unresolved or force-refreshed
+     programs through `legacy-ibmi-program-analyzer` before program-set
+     assembly.
+   - Preserve exact program/member identity. The current lending-card default
+     preserves leading `@`, so `@CU118` and `CU118` are distinct programs.
+     Other departments can override folder patterns, artifact filenames, and
+     alias rules.
+   - For every SME-provided program, generate or verify current program-level
+     artifacts before assembly: `program-analysis.md`,
+     `program-analysis-summary.yaml`, `source-index.yaml`,
+     `routine-logic-details.md`, `routine-logic-details.yaml`, and
+     `message-inventory.yaml`, plus triggered optional sidecars. For complex or
+     large programs, retain deep-read batches and coverage ledgers when needed
+     for stable handoff.
+   - Resolve the remote-current snapshot using Git method 2 (`git ls-remote`
+     followed by a temporary shallow clone / sparse checkout of `main`, or an
+     already-fresh local cache verified against `origin/main`) and record
+     `central_lookup_result` as `found_on_remote_main`,
+     `not_found_on_remote_main`, or `remote_unavailable`.
+   - Do not rescan programs with `found_on_remote_main` when their remote-main
+     artifacts include the required core files and enough routine evidence for
+     this SME review. Scan only programs with `not_found_on_remote_main`,
+     incomplete/stale artifacts, or explicit force-rescan requests. If any
+     lookup is `remote_unavailable`, ask for access/context instead of assuming
+     missing.
    - Exception: if the SME explicitly provides a force-rescan request with a
      reason for a `found_on_remote_main` program, do not use the old remote-main
      artifact as this run's review source. Route that program to
@@ -517,38 +534,40 @@ to the orchestrator.
      write the refreshed draft to the delivery working branch, and rerun the
      program-set builder with `--force-rescan-file` and `--working-root` so the
      manifest points at the working-branch artifact.
-   - Before source scanning any `not_found_on_remote_main` program, check the
-     source inventory cache. Default path:
+   - Before source scanning any unresolved program, check the source inventory
+     cache. Default path:
      `<source-root>/outputs/repo-scan/program-list.csv` plus
      `<source-root>/outputs/repo-scan/scan-summary.yaml`. Reuse it only when
      the source revision in `scan-summary.yaml` matches the current clean Git
      source HEAD. If missing, stale, or dirty, rerun repo-level
      `legacy-ibmi-inventory` first, then use `program-list.csv` to locate each
-     missing program's source path and tier for targeted program analysis.
-   - When new source scan output is needed, write it to the delivery repo
+     program's source path and tier for targeted program analysis.
+   - Write new or refreshed program analysis output to the delivery repo
      working branch named by the user/profile, normally `develop-<person>`. If
      that branch does not exist, create it from `origin/main`; if it exists,
-     update it before writing. This working branch is a draft workspace only and
-     must not be used as the approved reuse lookup source.
-   - Write newly scanned program artifacts under
+     update it before writing. This working branch is a draft workspace only
+     and must not be treated as approved remote-main reuse.
+   - Write program artifacts under
      `delivery_workspace_profile.program_tier_roots` by size tier. Write
      `program-set-sme-core-review.md` under
      `delivery_workspace_profile.program_set_review_parent/{REVIEW_SLUG}/`.
-   - For `core_review_only`, run the deterministic builder before the LLM fills
-     the review:
+   - For `core_review_only`, run the deterministic builder after every program
+     analysis artifact is complete and before the LLM fills the review:
      Windows:
-     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person>`.
+     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot-or-empty-dir> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
      macOS/Linux:
-     `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person>`.
+     `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --delivery-root <remote-main-snapshot-or-empty-dir> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
      The builder writes `program-set-core-input-manifest.yaml` plus a fixed
      `program-set-sme-core-review.md` skeleton. Treat the manifest as the
-     control input for all subsequent summarization. The manifest records
-     delivery remote-main lookup results and source inventory cache freshness.
+     control input for all subsequent summarization. In program-evidence-first
+     mode, the manifest records `found_on_remote_main` for approved reused
+     artifacts and `not_found_on_remote_main` with `artifact_source:
+     delivery_working_branch` for newly analyzed artifacts.
      `--source-root` enables the default `<source-root>/outputs/repo-scan`
      lookup; `--inventory-dir` may override that cache path for teams with a
-     different layout. `--working-root` is optional before missing programs are
-     scanned; after scans complete, pass it so newly scanned artifacts can be
-     included while preserving `central_lookup_result: not_found_on_remote_main`.
+     different layout. `--working-root` is required for newly analyzed or
+     force-refreshed programs because their program-level artifacts should
+     already exist there.
      If any program has an explicit force-rescan request, pass
      `--force-rescan-file <programs-to-refresh.txt>` where each row is
      `PROGRAM|reason`; the builder will bypass remote-main reuse for those

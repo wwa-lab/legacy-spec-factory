@@ -21,13 +21,13 @@ artifact root, compact artifact availability, delivery lookup profile, and
 delivery workspace profile. It also records source inventory cache status under
 `source_inventory`: the checked cache directory, `program-list.csv` /
 `scan-summary.yaml` presence, freshness/action, current source revision,
-inventory revision, and per-program source-path/tier hints for programs not
-found on delivery remote `main`. The LLM or agent may summarize from the
-manifest and listed compact artifacts, but must not silently add or remove
-programs. When source scans were needed in the current run, the builder may
-also receive `--working-root <delivery-working-branch-checkout>` so the
-manifest can include newly scanned artifacts while preserving
-`central_lookup_result: not_found_on_remote_main`.
+inventory revision, and per-program source-path/tier hints. The LLM or agent
+may summarize from the manifest and listed compact artifacts, but must not
+silently add or remove programs. In the default program-evidence-first flow,
+the builder should receive `--program-first --working-root
+<delivery-working-branch-checkout>` so the manifest can combine approved
+remote-main artifacts with newly analyzed working-branch artifacts before
+assembly.
 
 ```markdown
 # Program Set SME Core Review: [Program Set Name]
@@ -133,16 +133,16 @@ each folder has its own manifest, Sources table, Core Completeness Ledger, and
 validator result. Do not combine unrelated business flows into one
 `program-set-sme-core-review.md`.
 
-This artifact uses central artifact reuse / lookup first. For every requested
-or discovered program, record `central_lookup_result` as
-`found_on_remote_main`, `not_found_on_remote_main`, or `remote_unavailable`.
-Only programs with `not_found_on_remote_main` are routed back to
-`legacy-ibmi-program-analyzer`; a found remote-main folder means the program
-has already been scanned and should not be rescanned. For
-`found_on_remote_main`, read `program-analysis-summary.yaml`,
-`routine-logic-details.yaml`, `message-inventory.yaml`, and needed optional
-sidecars from the remote-main sparse checkout or already-fresh verified cache
-used for lookup.
+The default field workflow is program-evidence first. Central artifact reuse
+remains the first resolution path for every requested program: reuse complete
+and current approved remote-main artifacts when available; otherwise analyze
+the program from source and write the program-level artifacts to the delivery
+working branch. Record `central_lookup_result` as `found_on_remote_main`,
+`not_found_on_remote_main`, or `remote_unavailable`. Only unresolved programs
+with `not_found_on_remote_main`, incomplete/stale artifacts, or explicit
+force-rescan requests are routed back to `legacy-ibmi-program-analyzer`. For
+`found_on_remote_main`, read compact artifacts from the remote-main sparse
+checkout or already-fresh verified cache used for lookup.
 
 If the SME explicitly requests a refresh of a `found_on_remote_main` program,
 record a force-rescan reason and do not use the old remote-main artifact for

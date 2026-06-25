@@ -45,24 +45,25 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("The delivery repo name is configurable", skill_text)
         self.assertIn("Do not run deterministic source indexing", skill_text)
 
-    def test_flow_analyzer_reuses_existing_program_artifacts_for_sme_flow_input(self) -> None:
+    def test_flow_analyzer_defaults_to_program_evidence_first_with_remote_reuse(self) -> None:
         skill_text = FLOW_ANALYZER.read_text(encoding="utf-8")
         contract_text = FLOW_OUTPUT_CONTRACT.read_text(encoding="utf-8")
 
         for text in (skill_text, contract_text):
+            self.assertIn("program-evidence first", text)
             self.assertIn("central artifact reuse", text.lower())
-            self.assertIn("SME provides a program flow", text)
             self.assertIn("central_lookup_result", text)
             self.assertIn("found_on_remote_main", text)
             self.assertIn("not_found_on_remote_main", text)
             self.assertIn("Core Completeness Ledger", text)
-            self.assertIn("GitHub remote `main`", text)
-            self.assertIn("delivery_artifact_lookup_profile", text)
-            self.assertIn("delivery_workspace_profile", text)
-            self.assertIn("templates/delivery-profile.yaml", text)
             self.assertIn("program-set-sme-core-review.md", text)
-            self.assertIn("remote-main sparse checkout", text)
+            self.assertIn("remote-main", text)
+            self.assertIn("sparse", text)
             self.assertNotIn("reuse_approved_artifact", text)
+
+        self.assertIn("delivery_artifact_lookup_profile", skill_text)
+        self.assertIn("delivery_workspace_profile", skill_text)
+        self.assertIn("templates/delivery-profile.yaml", skill_text)
 
     def test_sme_core_review_template_tracks_omissions_without_full_flow_sections(self) -> None:
         template_text = SME_CORE_TEMPLATE.read_text(encoding="utf-8")
