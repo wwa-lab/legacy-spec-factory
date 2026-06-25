@@ -68,7 +68,7 @@ directly.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
 - Run the program-analysis validator before marking a row complete.
 - Generate the final program-set review only after every requested row is
-  classified as completed, reused, skipped, blocked, or failed.
+  classified as completed, skipped, blocked, or failed.
 
 ## Standard Output Layout
 
