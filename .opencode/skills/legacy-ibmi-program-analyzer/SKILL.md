@@ -221,8 +221,11 @@ field-level rules. The summary below is normative for this skill.
   - `normal_program`: fewer than 10,000 lines and no density trigger. Produce
     lightweight SME review plus core artifacts:
     `program-analysis.md`, `program-analysis-summary.yaml`,
-    `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
-    `routine-logic-details.yaml`, and `message-inventory.yaml`.
+    `source-index.yaml`, `routine-index.md`, and `message-inventory.yaml`.
+    Do not create `routine-logic-details.md`,
+    `routine-logic-details.yaml`, `deep-read-plan.md`, or retained batch
+    files unless density changes the tier or the user explicitly continues a
+    deep-read pass.
   - `complex_normal_program`: under large thresholds but dense enough to need
     extra evidence surfaces, for example more than 10 routines, more than 5
     recommended deep-read windows, dense file I/O, dense messages, dense SQL,
@@ -438,9 +441,10 @@ to the orchestrator.
      Use the same launcher order for all temporary consistency checks, YAML
      readability checks, Markdown sanity checks, and one-off helper scripts.
    - Use `source-index.yaml`, `program-analysis-summary.yaml`,
-     `program-analysis.md`, `routine-index.md`, `routine-logic-details.md`,
-     `routine-logic-details.yaml`, and `message-inventory.yaml` as the normal
-     deterministic pre-analysis index. Add `all-routine-coverage-ledger.md`,
+     `program-analysis.md`, `routine-index.md`, and `message-inventory.yaml`
+     as the normal deterministic pre-analysis index. Add
+     `routine-logic-details.md`, `routine-logic-details.yaml`,
+     `all-routine-coverage-ledger.md`,
      `deep-read-plan.md`, `message-inventory.md`,
      `file-io-inventory.md` / `file-io-inventory.yaml`,
      `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and
@@ -475,9 +479,11 @@ Run this gate before delivering `program-analysis.md` /
   omitted.
 - `program-analysis-summary.yaml` is the compact machine-readable program
   summary and sidecar index. Core sidecars declared there must exist:
-  `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
-  `routine-logic-details.yaml`, and `message-inventory.yaml`. Optional
-  sidecars are required only when declared `present` or `optional_triggered`.
+  `source-index.yaml`, `routine-index.md`, and `message-inventory.yaml`.
+  `routine-logic-details.md` and `routine-logic-details.yaml` are conditional:
+  normal programs leave them `not_written_by_default`; complex/large or
+  explicit deep-read runs declare them `present`. Optional sidecars are
+  required only when declared `present` or `optional_triggered`.
 - `routine-logic-details.yaml` is the RLOG coverage source of truth.
   `routine-logic-details/part-*.md` or
   `routine-logic-details/deep-read-batch-*.md` files are retained deep-read

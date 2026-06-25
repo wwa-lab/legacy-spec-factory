@@ -43,8 +43,6 @@ REQUIRED_PROGRAM_SECTIONS = (
 CORE_SIDECAR_KEYS = (
     "source_index",
     "routine_index",
-    "routine_logic_details",
-    "routine_logic_details_yaml",
     "message_inventory_yaml",
 )
 

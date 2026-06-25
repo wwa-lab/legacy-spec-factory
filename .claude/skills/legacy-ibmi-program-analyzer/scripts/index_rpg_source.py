@@ -1925,6 +1925,10 @@ def requires_routine_batch_files(index: dict[str, Any]) -> bool:
     return index.get("program_size_tier") == "large_extreme_program"
 
 
+def requires_routine_detail_sidecars(index: dict[str, Any]) -> bool:
+    return index.get("program_size_tier") in {"complex_normal_program", "large_extreme_program"}
+
+
 def routine_batch_path(batch_number: int) -> str:
     return f"routine-logic-details/deep-read-batch-{batch_number:03d}.md"
 
@@ -1948,12 +1952,13 @@ def routine_batch_groups(index: dict[str, Any]) -> list[list[dict[str, Any]]]:
 
 def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
     triggers = index["optional_sidecar_triggers"]
+    routine_details_status = "present" if requires_routine_detail_sidecars(index) else "not_written_by_default"
     sidecars = {
         "program_analysis": {"path": "program-analysis.md", "status": "present"},
         "source_index": {"path": "source-index.yaml", "status": "present"},
         "routine_index": {"path": "routine-index.md", "status": "present"},
-        "routine_logic_details": {"path": "routine-logic-details.md", "status": "present"},
-        "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": "present"},
+        "routine_logic_details": {"path": "routine-logic-details.md", "status": routine_details_status},
+        "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": routine_details_status},
         "message_inventory_yaml": {"path": "message-inventory.yaml", "status": "present"},
         "message_inventory": {
             "path": "message-inventory.md",
@@ -2497,10 +2502,15 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
         (out_dir / "source-index.yaml", to_yaml(index) + "\n"),
         (out_dir / "program-analysis-summary.yaml", render_program_analysis_summary_yaml(index)),
         (out_dir / "routine-index.md", render_routine_index(index)),
-        (out_dir / "routine-logic-details.md", render_routine_logic_details(index)),
-        (out_dir / "routine-logic-details.yaml", render_routine_logic_details_yaml(index)),
         (out_dir / "message-inventory.yaml", render_message_inventory_yaml(index)),
     ]
+    if requires_routine_detail_sidecars(index):
+        files.extend(
+            [
+                (out_dir / "routine-logic-details.md", render_routine_logic_details(index)),
+                (out_dir / "routine-logic-details.yaml", render_routine_logic_details_yaml(index)),
+            ]
+        )
     triggers = index["optional_sidecar_triggers"]
     if triggers["coverage_ledger"]["write"]:
         files.append((out_dir / "all-routine-coverage-ledger.md", render_coverage_ledger(index)))

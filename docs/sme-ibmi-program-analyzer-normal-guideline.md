@@ -69,9 +69,12 @@ Required output:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+Do not create `routine-logic-details.md`, `routine-logic-details.yaml`,
+`deep-read-plan.md`, or retained batch files for a normal program unless a
+density trigger promotes the row to `complex_normal_program` /
+`large_extreme_program` or the SME explicitly asks for deep-read continuation.
 ```
 
 中文 Prompt:
@@ -102,9 +105,12 @@ SME 这次关心的问题:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+普通程序默认不要创建 `routine-logic-details.md`、
+`routine-logic-details.yaml`、`deep-read-plan.md` 或 retained batch files；
+只有密集度触发升级到 `complex_normal_program` / `large_extreme_program`，或
+SME 明确要求继续 deep-read 时才创建。
 ```
 
 Output Checkpoint:
@@ -113,8 +119,10 @@ Output Checkpoint:
 - `source-index.yaml` exists and records `normal_program` unless a trigger
   changes the tier.
 - `program-analysis-summary.yaml` exists.
-- `routine-index.md`, `routine-logic-details.md`, and
-  `routine-logic-details.yaml` exist.
+- `routine-index.md` exists.
+- `routine-logic-details.md` and `routine-logic-details.yaml` are absent for
+  lightweight `normal_program`, unless a density trigger or explicit deep-read
+  continuation is recorded.
 - `message-inventory.yaml` exists, even if no messages are observed.
 - No full source body is copied into the analysis output.
 
@@ -128,7 +136,6 @@ Check the normal_program output layout.
 Review these files:
 - program-analysis.md
 - program-analysis-summary.yaml
-- routine-logic-details.yaml
 - message-inventory.yaml
 
 Confirm that program-analysis.md is concise and uses a stable SME review
@@ -154,7 +161,6 @@ List any missing section, duplicated section, or unsupported business claim.
 检查这些文件:
 - program-analysis.md
 - program-analysis-summary.yaml
-- routine-logic-details.yaml
 - message-inventory.yaml
 
 确认 program-analysis.md 简洁，并使用稳定的 SME review layout:
@@ -296,7 +302,6 @@ Use:
 - program-analysis.md
 - program-analysis-summary.yaml
 - source-index.yaml
-- routine-logic-details.yaml
 - message-inventory.yaml
 
 Decide one status:
@@ -324,7 +329,6 @@ Show:
 - program-analysis.md
 - program-analysis-summary.yaml
 - source-index.yaml
-- routine-logic-details.yaml
 - message-inventory.yaml
 
 请选择一个状态:

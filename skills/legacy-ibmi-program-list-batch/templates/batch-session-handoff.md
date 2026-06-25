@@ -17,8 +17,8 @@
 - Required source reads:
   - {{required_source_read}}
 - Required artifact updates:
-  - routine-logic-details.md
-  - routine-logic-details.yaml
+  - routine-logic-details.md / routine-logic-details.yaml only when this row
+    is complex_normal_program, large_extreme_program, or explicit deep-read
   - program-analysis-summary.yaml
   - message-inventory.yaml
   - batch-scan-manifest.yaml
@@ -37,14 +37,15 @@ Resume from these durable files:
 - Program status list: {{program_list_status}}
 - Original program list: {{program_list}}
 - Source root: {{source_root}}
-- Delivery working root: {{delivery_working_root}}
-- Delivery profile: {{delivery_profile}}
+- Output root: {{output_root}}
 
 Rules:
 - Do not rely on previous chat history.
 - Trust only durable files and validator results.
 - Continue from the next unfinished row named in this handoff.
-- Validate existing completed outputs before trusting them.
+- Do not skip a selected row only because its output directory already exists.
+  When rerunning a row, overwrite that program's generated analysis artifacts
+  with the current skill output.
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml after the program.
 - If validation passes and this session can safely continue, proceed to the

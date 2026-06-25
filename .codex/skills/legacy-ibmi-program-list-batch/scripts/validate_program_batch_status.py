@@ -12,11 +12,9 @@ from pathlib import Path
 ALLOWED_STATUSES = {
     "queued",
     "in_progress",
-    "reused_remote_main",
     "completed",
     "completed_with_warnings",
     "blocked_missing_source",
-    "blocked_remote_unavailable",
     "failed_validator",
     "failed_runtime",
     "skipped_not_program",
@@ -27,9 +25,13 @@ REQUIRED_ARTIFACTS = {
     "source-index.yaml",
     "program-analysis-summary.yaml",
     "routine-index.md",
+    "message-inventory.yaml",
+}
+
+ROUTINE_DETAIL_REQUIRED_TIERS = {"complex_normal_program", "large_extreme_program"}
+ROUTINE_DETAIL_ARTIFACTS = {
     "routine-logic-details.md",
     "routine-logic-details.yaml",
-    "message-inventory.yaml",
 }
 
 
@@ -93,7 +95,7 @@ def validate(args: argparse.Namespace) -> int:
         if status == "in_progress" and not row.get("owner") and not row.get("session_id"):
             warnings.append(f"Row {index} {member}: in_progress without owner/session_id")
 
-        if status in {"blocked_missing_source", "blocked_remote_unavailable", "failed_validator", "failed_runtime"}:
+        if status in {"blocked_missing_source", "failed_validator", "failed_runtime"}:
             if not row.get("last_error"):
                 findings.append(f"Row {index} {member}: {status} requires last_error")
             if not row.get("next_action"):
@@ -120,7 +122,10 @@ def validate(args: argparse.Namespace) -> int:
             if not output_path.is_dir():
                 findings.append(f"Row {index} {member}: output_dir does not exist: {output_path}")
                 continue
-            missing = sorted(name for name in REQUIRED_ARTIFACTS if not (output_path / name).is_file())
+            required_artifacts = set(REQUIRED_ARTIFACTS)
+            if row.get("size_tier", "") in ROUTINE_DETAIL_REQUIRED_TIERS:
+                required_artifacts.update(ROUTINE_DETAIL_ARTIFACTS)
+            missing = sorted(name for name in required_artifacts if not (output_path / name).is_file())
             if missing:
                 findings.append(f"Row {index} {member}: missing required artifacts: {', '.join(missing)}")
 

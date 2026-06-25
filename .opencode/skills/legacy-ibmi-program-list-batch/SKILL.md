@@ -21,7 +21,7 @@ Retain this notice in substantial copies or derived versions.
 | Field | Notes |
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program work queue with durable status files. |
-| Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, delivery root, profile, and remote-main snapshot. |
+| Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root and output root. |
 | Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`. |
 | Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
@@ -99,6 +99,9 @@ outputs/program-list-batch/
    - Open a fresh chat.
    - Paste the next prompt file.
    - Let `legacy-ibmi-program-analyzer` analyze only that program.
+   - If the program output directory already contains artifacts from an older
+     run, overwrite that program's generated analysis artifacts with the
+     current skill output. Do not treat old artifacts as a cache.
    - Validate the output directory.
    - Update the plan, status CSV, and manifest.
 
@@ -106,8 +109,9 @@ outputs/program-list-batch/
    - In any new session, read durable files first.
    - Continue from the first row with `queued`, `in_progress`,
      `failed_runtime`, `failed_validator`, or a now-resolved blocker.
-   - Do not rescan `completed` rows with validator pass.
-   - Do not rescan `reused_remote_main` rows without explicit force-rescan.
+   - A `completed` row may be rerun intentionally when the operator wants the
+     current skill behavior; reruns overwrite that program's generated
+     artifacts and must pass validation again before staying `completed`.
 
 4. **Finish the batch**
    - Validate status consistency.

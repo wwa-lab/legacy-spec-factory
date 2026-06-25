@@ -1,4 +1,8 @@
-Use skill: legacy-ibmi-program-analyzer
+/legacy-ibmi-program-analyzer
+
+If this slash command is unavailable in the current Copilot Chat environment,
+follow skills/legacy-ibmi-program-analyzer/SKILL.md.
+
 Task: analyze one IBM i program from a program-list batch.
 
 Do not rely on previous chat history.
@@ -19,9 +23,16 @@ Output directory: {{output_dir}}
 Rules:
 - Build deterministic indexes first.
 - Analyze only this program.
+- If the output directory already contains prior analysis artifacts for this
+  program, overwrite this program's generated analysis artifacts with the
+  current skill output. Do not skip the row solely because old artifacts exist.
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
 - Keep normal_program output lightweight unless density triggers appear.
+- For normal_program, do not create routine-logic-details.md,
+  routine-logic-details.yaml, deep-read-plan.md, or batch deep-read files
+  unless a density trigger changes the tier to complex_normal_program or
+  large_extreme_program.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Write required artifacts to the output directory.
@@ -34,9 +45,15 @@ Required output:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+Conditional output:
+- routine-logic-details.md and routine-logic-details.yaml only for
+  complex_normal_program, large_extreme_program, or explicit deep-read
+  continuation.
+- deep-read-plan.md, all-routine-coverage-ledger.md, and
+  routine-logic-details/deep-read-batch-*.md only when triggered by
+  complex/large tier or retained batch evidence.
 
 Validation:
 {{python_launcher}} scripts/validate-program-analysis-contract.py --analysis-dir "{{output_dir}}"

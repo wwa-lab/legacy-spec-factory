@@ -21,8 +21,8 @@ Use this guideline when:
 - You already have a program list from repo scan or inventory.
 - The list contains columns such as `member`, `object_type`, `source_kind`,
   `path`, `total_lines`, `size_tier`, and `tier_reason`.
-- You want to scan missing programs, reuse already accepted central artifacts,
-  and then generate one SME-facing program-set review.
+- You want to prepare one Copilot Chat prompt per program, scan each program
+  independently, and then generate one SME-facing program-set review.
 
 Do not use this guideline when:
 
@@ -31,7 +31,8 @@ Do not use this guideline when:
   `docs/sme-ibmi-program-analyzer-complex-guideline.md`, or
   `docs/sme-ibmi-program-analyzer-large-guideline.md`.
 - The source has not been redacted or approved for analysis.
-- The delivery remote-main snapshot cannot be checked.
+- You need approved central artifact reuse from delivery remote `main`; use the
+  flow/program-set guidance for that heavier workflow instead.
 
 ## Skill Routing
 
@@ -89,13 +90,10 @@ per-program artifacts.
 Input:
 - Program list: <path to program-list.csv>
 - Source root: <path to source repository root>
-- Delivery working root: <path to delivery repo working checkout>
-- Delivery remote-main snapshot: <path to verified remote-main snapshot>
-- Delivery profile: <path to delivery-profile.yaml>
-- Delivery working branch: <develop-name>
+- Output root: <path to generated per-program artifacts>
 - Review name: <business-friendly review name>
 - Intent: standalone_exploratory
-- Output mode: scan_missing_only
+- Output mode: Copilot Chat-only one-program prompt queue
 
 Program list columns:
 - member
@@ -114,14 +112,8 @@ Execution rules:
 - Use source_kind as the language hint.
 - Use size_tier as the initial program tier, but allow
   legacy-ibmi-program-analyzer to reclassify if density triggers appear.
-- Before scanning each program, check the central delivery remote-main
-  snapshot.
-- If central_lookup_result = found_on_remote_main, reuse the existing central
-  artifact and skip source scan.
-- If central_lookup_result = not_found_on_remote_main, run
-  legacy-ibmi-program-analyzer for that program.
-- If central_lookup_result = remote_unavailable, stop and report access or
-  context needed.
+- Do not check out or inspect a delivery remote-main snapshot in this mode.
+- Run legacy-ibmi-program-analyzer for each queued program row.
 - Do not combine multiple programs into one program-analysis.md.
 - Each program must have its own output folder.
 - Read at most 5 routine bodies per program-analysis turn.
@@ -191,7 +183,6 @@ py -3 scripts\validate-program-set-core-review.py `
 
 Final response:
 - Report total programs requested.
-- Report programs reused from remote main.
 - Report programs newly scanned.
 - Report programs skipped or blocked.
 - Report failed programs with reason.
@@ -212,13 +203,10 @@ Final response:
 输入:
 - Program list: <program-list.csv 路径>
 - Source root: <source repo 根目录>
-- Delivery working root: <delivery repo 工作分支 checkout 路径>
-- Delivery remote-main snapshot: <已验证的 remote main snapshot 路径>
-- Delivery profile: <delivery-profile.yaml 路径>
-- Delivery working branch: <develop-name>
+- Output root: <每个 program 分析产物的输出根目录>
 - Review name: <业务可读的 review 名称>
 - Intent: standalone_exploratory
-- Output mode: scan_missing_only
+- Output mode: Copilot Chat-only one-program prompt queue
 
 Program list 字段:
 - member
@@ -237,13 +225,8 @@ Program list 字段:
 - 使用 source_kind 作为语言提示。
 - 使用 size_tier 作为初始 program tier，但允许
   legacy-ibmi-program-analyzer 根据密集度触发重新分类。
-- 每个 program 扫描前，先检查 central delivery remote-main snapshot。
-- 如果 central_lookup_result = found_on_remote_main，复用已有 central
-  artifact，跳过 source scan。
-- 如果 central_lookup_result = not_found_on_remote_main，对该 program 执行
-  legacy-ibmi-program-analyzer。
-- 如果 central_lookup_result = remote_unavailable，停止并报告需要访问权限或
-  上下文。
+- 这个模式下不要 checkout 或检查 delivery remote-main snapshot。
+- 对每个 queued program row 执行 legacy-ibmi-program-analyzer。
 - 不要把多个 program 合并进同一个 program-analysis.md。
 - 每个 program 必须有自己的输出目录。
 - 每一轮 program-analysis 最多读取 5 个 routine body。
@@ -310,7 +293,6 @@ py -3 scripts\validate-program-set-core-review.py `
 
 最终回复:
 - 报告本次请求的 program 总数。
-- 报告从 remote main 复用的 programs。
 - 报告本次新扫描的 programs。
 - 报告 skipped 或 blocked 的 programs。
 - 报告 failed programs 及失败原因。
@@ -330,8 +312,7 @@ batch_id: normal-program-scan-001
 review_name: normal program batch
 program_list: outputs/repo-scan/program-list.csv
 source_root: /path/to/source-repo
-delivery_working_root: /path/to/delivery-work
-delivery_remote_main_snapshot: /tmp/delivery-main
+output_root: /path/to/generated-artifacts
 status: in_progress
 programs:
   - member: "@CC080"
@@ -340,7 +321,6 @@ programs:
     source_path: HCCILERPG/@CC080.RPGLE
     initial_size_tier: normal_program
     final_size_tier: normal_program
-    central_lookup_result: not_found_on_remote_main
     scan_status: completed
     validator_status: pass
     output_dir: modules/CAP-ID-0003-normal_program/@CC080
@@ -352,7 +332,6 @@ programs:
     source_path: HCCILERPG/@CC081.RPGLE
     initial_size_tier: normal_program
     final_size_tier: null
-    central_lookup_result: not_found_on_remote_main
     scan_status: blocked_missing_source
     validator_status: not_run
     output_dir: null
@@ -365,11 +344,9 @@ Allowed program states:
 
 | State | Meaning |
 | --- | --- |
-| `reused_remote_main` | Accepted central artifact exists and was reused. |
 | `completed` | Source scan finished and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, but review warnings or non-blocking TBDs remain. |
 | `blocked_missing_source` | The source path could not be resolved. |
-| `blocked_remote_unavailable` | Remote-main lookup could not be checked. |
 | `failed_validator` | Files were generated but validation failed. |
 | `failed_runtime` | Tooling or runtime failed before a valid artifact could be produced. |
 | `skipped_not_program` | Row was ignored because `object_type` was not `program`. |
@@ -383,10 +360,8 @@ Durable resume inputs:
 
 - `batch-scan-manifest.yaml`
 - Original `program-list.csv`
-- Delivery profile
 - Source root
-- Delivery working root
-- Delivery remote-main snapshot or a freshly verified replacement snapshot
+- Output root
 - Existing per-program output folders
 - Existing `program-set-core-input-manifest.yaml` and
   `program-set-sme-core-review.md`, if already generated
@@ -395,20 +370,18 @@ Resume rules:
 
 - Read `batch-scan-manifest.yaml` first.
 - Reconcile the manifest against the original program list.
-- Re-check that each `completed` program has required artifacts and a passing
-  validator result. If validation status is missing or stale, rerun validation.
-- Do not rescan programs with `reused_remote_main` unless an explicit
-  force-rescan request and reason is provided.
-- Do not rescan programs with `completed` and `validator_status: pass`.
+- Default resume starts from unfinished or failed rows.
+- If an operator intentionally reruns a `completed` row, overwrite that
+  program's generated analysis artifacts with the current skill output and
+  rerun validation before keeping the row `completed`.
 - Resume at the first row whose status is missing, `in_progress`,
   `failed_runtime`, `failed_validator`, or any blocker that has now been
   resolved.
 - If a row is `blocked_missing_source`, retry only when the source path or
   source root has changed.
-- If a row is `blocked_remote_unavailable`, refresh or recreate the
-  remote-main snapshot before continuing.
-- If a program output folder exists but the manifest does not record it, inspect
-  and validate it before deciding whether to mark it complete or rescan.
+- If a program output folder exists but the manifest does not record it, do not
+  treat it as authoritative cache. Rerun the selected program and overwrite the
+  generated analysis artifacts.
 - After all rows are classified, regenerate or refresh the program-set review
   from the manifest and compact artifacts.
 
@@ -583,15 +556,15 @@ Resume from these durable files:
 - Batch manifest: <path to batch-scan-manifest.yaml>
 - Original program list: <path to program-list.csv>
 - Source root: <path>
-- Delivery working root: <path>
-- Delivery remote-main snapshot: <path>
-- Delivery profile: <path>
+- Output root: <path>
 
 Rules:
 - Do not rely on previous chat history.
 - Trust only the durable files and validator results.
 - Continue from the next unfinished row named in this handoff.
-- Validate existing completed outputs before trusting them.
+- Do not skip a selected row only because its output directory already exists.
+  When rerunning a row, overwrite that program's generated analysis artifacts
+  with the current skill output.
 - Update the manifest after each program.
 - If validation passes and this session can safely continue, proceed to the
   next bounded batch.
@@ -769,7 +742,6 @@ Recommended `program-list-status.csv` columns:
 | `size_tier` | Initial tier from repo scan. |
 | `tier_reason` | Initial tier reason from repo scan. |
 | `batch_status` | Current row status. |
-| `central_lookup_result` | `found_on_remote_main`, `not_found_on_remote_main`, or `remote_unavailable`. |
 | `validator_status` | `not_run`, `pass`, `pass_with_warnings`, or `failed`. |
 | `output_dir` | Per-program output folder. |
 | `owner` | Person/session currently working the row. |
@@ -786,11 +758,9 @@ Allowed `batch_status` values:
 | --- | --- |
 | `queued` | Not started. |
 | `in_progress` | Claimed by an operator/session. |
-| `reused_remote_main` | Accepted central artifact was reused. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
 | `blocked_missing_source` | Source path cannot be resolved. |
-| `blocked_remote_unavailable` | Remote-main lookup cannot be verified. |
 | `failed_validator` | Validator failed. |
 | `failed_runtime` | Runtime/tooling failed before valid output. |
 | `skipped_not_program` | Row is not a program. |
@@ -813,9 +783,8 @@ Recommended `program-batch-plan.md` shape:
 - Program list: <path to original program-list.csv>
 - Status list: <path to program-list-status.csv>
 - Manifest: <path to batch-scan-manifest.yaml>
-- Delivery profile: <path to delivery-profile.yaml>
 - Source root: <path>
-- Delivery working root: <path>
+- Output root: <path>
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress
@@ -824,7 +793,6 @@ Recommended `program-batch-plan.md` shape:
 | --- | ---: |
 | queued | <N> |
 | in_progress | <N> |
-| reused_remote_main | <N> |
 | completed | <N> |
 | completed_with_warnings | <N> |
 | blocked | <N> |
@@ -875,23 +843,19 @@ Resume inputs:
 - Batch manifest: <path to batch-scan-manifest.yaml>
 - Original program list: <path to program-list.csv>
 - Source root: <path to source repository root>
-- Delivery working root: <path to delivery repo working checkout>
-- Delivery remote-main snapshot: <path to verified remote-main snapshot>
-- Delivery profile: <path to delivery-profile.yaml>
+- Output root: <path to generated per-program artifacts>
 - Review name: <business-friendly review name>
 
 Resume rules:
 - Do not rely on previous chat history.
 - Treat batch-scan-manifest.yaml as the durable execution state.
 - Reconcile the manifest against the original program list.
-- Validate existing completed program folders before trusting them.
-- Do not rescan reused_remote_main programs.
-- Do not rescan completed programs with validator_status = pass.
+- Default resume starts from unfinished or failed rows.
+- If rerunning a completed row, overwrite that program's generated analysis
+  artifacts with the current skill output and rerun validation.
 - Continue from the first row whose status is missing, in_progress,
   failed_runtime, failed_validator, or resolved blocker.
 - For blocked_missing_source rows, retry only if source root or path has changed.
-- For blocked_remote_unavailable rows, refresh the remote-main snapshot before
-  continuing.
 - Update the manifest after each program.
 - When all rows are classified, rebuild or refresh the program-set SME review
   and run the program-set validator.
@@ -916,22 +880,19 @@ Final response:
 - Batch manifest: <batch-scan-manifest.yaml 路径>
 - Original program list: <program-list.csv 路径>
 - Source root: <source repo 根目录>
-- Delivery working root: <delivery repo 工作分支 checkout 路径>
-- Delivery remote-main snapshot: <已验证的 remote-main snapshot 路径>
-- Delivery profile: <delivery-profile.yaml 路径>
+- Output root: <每个 program 分析产物的输出根目录>
 - Review name: <业务可读的 review 名称>
 
 恢复规则:
 - 不要依赖上一段 chat history。
 - 把 batch-scan-manifest.yaml 当成 durable execution state。
 - 先把 manifest 和原始 program list 对齐检查。
-- 已存在的 completed program folder 必须重新验证后才能信任。
-- 不要重新扫描 reused_remote_main 的 program。
-- 不要重新扫描 validator_status = pass 的 completed program。
+- 默认从未完成或失败的 row 继续。
+- 如果选择重跑 completed row，用当前 skill 输出覆盖该 program 的生成分析产物，
+  并重新运行 validator 后才能继续标记为 completed。
 - 从第一个 status 缺失、in_progress、failed_runtime、failed_validator、
   或 blocker 已解决的 row 继续。
 - blocked_missing_source 只有在 source root 或 path 改过时才重试。
-- blocked_remote_unavailable 必须先刷新 remote-main snapshot 再继续。
 - 每完成一个 program 后立即更新 manifest。
 - 所有 row 都分类完成后，重新生成或刷新 program-set SME review，并运行
   program-set validator。

@@ -14,7 +14,6 @@ from typing import Any
 
 STATUS_COLUMNS = [
     "batch_status",
-    "central_lookup_result",
     "validator_status",
     "output_dir",
     "prompt_path",
@@ -159,7 +158,6 @@ def render_plan(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
-    delivery_profile: str | None,
 ) -> str:
     counts = Counter(row.get("batch_status", "") for row in rows)
     blocked_count = sum(counts[value] for value in counts if value.startswith("blocked_"))
@@ -180,9 +178,8 @@ def render_plan(
 - Program list: {program_list}
 - Status list: {out_dir / "program-list-status.csv"}
 - Manifest: {out_dir / "batch-scan-manifest.yaml"}
-- Delivery profile: {delivery_profile or ""}
 - Source root: {source_root or ""}
-- Delivery working root: {delivery_root or ""}
+- Output root: {delivery_root or ""}
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress
@@ -191,7 +188,6 @@ def render_plan(
 | --- | ---: |
 | queued | {counts["queued"]} |
 | in_progress | {counts["in_progress"]} |
-| reused_remote_main | {counts["reused_remote_main"]} |
 | completed | {counts["completed"]} |
 | completed_with_warnings | {counts["completed_with_warnings"]} |
 | blocked | {blocked_count} |
@@ -228,8 +224,6 @@ def build_manifest(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
-    delivery_profile: str | None,
-    delivery_main_snapshot: str | None,
 ) -> dict[str, Any]:
     timestamp = now_iso()
     return {
@@ -239,9 +233,7 @@ def build_manifest(
         "status_list": str(out_dir / "program-list-status.csv"),
         "program_batch_plan": str(out_dir / "program-batch-plan.md"),
         "source_root": source_root,
-        "delivery_working_root": delivery_root,
-        "delivery_remote_main_snapshot": delivery_main_snapshot,
-        "delivery_profile": delivery_profile,
+        "output_root": delivery_root,
         "created_at": timestamp,
         "updated_at": timestamp,
         "status": "initialized",
@@ -255,7 +247,6 @@ def build_manifest(
                 "initial_size_tier": row.get("size_tier", ""),
                 "tier_reason": row.get("tier_reason", ""),
                 "batch_status": row.get("batch_status", ""),
-                "central_lookup_result": row.get("central_lookup_result", ""),
                 "validator_status": row.get("validator_status", ""),
                 "output_dir": row.get("output_dir", ""),
                 "prompt_path": row.get("prompt_path", ""),
@@ -310,7 +301,6 @@ def initialize(args: argparse.Namespace) -> None:
         normalized.update(
             {
                 "batch_status": batch_status,
-                "central_lookup_result": "not_checked",
                 "validator_status": "not_run",
                 "output_dir": output_dir,
                 "prompt_path": prompt_path,
@@ -348,7 +338,6 @@ def initialize(args: argparse.Namespace) -> None:
             rows=status_rows,
             source_root=args.source_root,
             delivery_root=args.delivery_root,
-            delivery_profile=args.delivery_profile,
         ),
         encoding="utf-8",
     )
@@ -359,8 +348,6 @@ def initialize(args: argparse.Namespace) -> None:
         rows=status_rows,
         source_root=args.source_root,
         delivery_root=args.delivery_root,
-        delivery_profile=args.delivery_profile,
-        delivery_main_snapshot=args.delivery_main_snapshot,
     )
     (out_dir / "batch-scan-manifest.yaml").write_text(to_yaml(manifest) + "\n", encoding="utf-8")
     print(f"Initialized program batch: {out_dir}")
@@ -372,9 +359,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--program-list", required=True, help="Input program-list.csv")
     parser.add_argument("--out-dir", required=True, help="Output batch directory")
     parser.add_argument("--source-root", help="Source repository root")
-    parser.add_argument("--delivery-root", help="Delivery working checkout root")
-    parser.add_argument("--delivery-profile", help="Delivery profile YAML path")
-    parser.add_argument("--delivery-main-snapshot", help="Verified delivery remote-main snapshot")
+    parser.add_argument("--delivery-root", help="Output root for generated per-program artifacts; no checkout is required")
+    parser.add_argument("--delivery-profile", help=argparse.SUPPRESS)
+    parser.add_argument("--delivery-main-snapshot", help=argparse.SUPPRESS)
     parser.add_argument("--review-name", default="program list batch", help="Human-readable batch name")
     parser.add_argument("--intent", default="standalone_exploratory")
     parser.add_argument("--python-launcher", default="py -3")

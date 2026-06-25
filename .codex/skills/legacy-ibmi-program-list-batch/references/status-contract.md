@@ -34,7 +34,6 @@ Add these columns to `program-list-status.csv`:
 | Column | Meaning |
 | --- | --- |
 | `batch_status` | Current row status. |
-| `central_lookup_result` | `not_checked`, `found_on_remote_main`, `not_found_on_remote_main`, or `remote_unavailable`. |
 | `validator_status` | `not_run`, `pass`, `pass_with_warnings`, or `failed`. |
 | `output_dir` | Unique per-program output folder. |
 | `prompt_path` | Prompt queue file for this program. |
@@ -52,11 +51,9 @@ Add these columns to `program-list-status.csv`:
 | --- | --- |
 | `queued` | Not started. |
 | `in_progress` | Claimed by an operator/session. |
-| `reused_remote_main` | Accepted central artifact was reused. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
 | `blocked_missing_source` | Source path cannot be resolved. |
-| `blocked_remote_unavailable` | Remote-main lookup cannot be verified. |
 | `failed_validator` | Validator failed. |
 | `failed_runtime` | Runtime/tooling failed before valid output. |
 | `skipped_not_program` | Row is not a program. |
@@ -70,13 +67,20 @@ contain:
 - `source-index.yaml`
 - `program-analysis-summary.yaml`
 - `routine-index.md`
-- `routine-logic-details.md`
-- `routine-logic-details.yaml`
 - `message-inventory.yaml`
+
+For `normal_program`, `routine-logic-details.md` and
+`routine-logic-details.yaml` are not required and should not be created by
+default. They are required only when the program is promoted to
+`complex_normal_program`, `large_extreme_program`, or an explicit deep-read
+continuation.
 
 ## Update Rules
 
 - Update state files after every program before starting another.
+- If a selected row's output directory already exists, overwrite that
+  program's generated analysis artifacts with the current skill output. Do not
+  mark the row complete from old files alone.
 - Do not mark a row `completed` unless the validator passed.
 - Do not mark a row `completed_with_warnings` unless required artifacts exist.
 - Put missing source in `blocked_missing_source`, not `failed_runtime`.
@@ -105,9 +109,7 @@ contain:
 - `program_list`
 - `status_list`
 - `source_root`
-- `delivery_working_root`
-- `delivery_remote_main_snapshot`
-- `delivery_profile`
+- `output_root`
 - `created_at`
 - `updated_at`
 - `status`
