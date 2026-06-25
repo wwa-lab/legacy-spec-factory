@@ -38,17 +38,18 @@ Do not use this guideline when:
 Use these skill names explicitly in GitHub Copilot prompts:
 
 ```text
-Use skill: legacy-ibmi-flow-analyzer
-Task: program-list driven batch scan and program-set SME review.
+Use skill: legacy-ibmi-program-list-batch
+Task: program-list driven batch scan and Copilot Chat prompt queue orchestration.
 
 For each program row, use skill: legacy-ibmi-program-analyzer
 Purpose: analyze one IBM i program at a time and generate evidence-backed
 per-program artifacts.
 ```
 
-The batch workflow is responsible for orchestration, reuse lookup, manifest
-tracking, and final SME review. The program analyzer remains responsible for
-the actual per-program analysis.
+The program-list batch skill is responsible for orchestration, prompt queue
+generation, status tracking, manifest tracking, and resume/handoff control.
+The program analyzer remains responsible for the actual per-program analysis.
+Final program-set SME review is a downstream step after rows are classified.
 
 ## Input List Contract
 
@@ -78,8 +79,8 @@ Input checks before scanning:
 ## English Copilot Prompt
 
 ```text
-Use skill: legacy-ibmi-flow-analyzer
-Task: program-list driven batch scan and program-set SME review.
+Use skill: legacy-ibmi-program-list-batch
+Task: program-list driven batch scan and Copilot Chat prompt queue orchestration.
 
 For each program row, use skill: legacy-ibmi-program-analyzer
 Purpose: analyze one IBM i program at a time and generate evidence-backed
@@ -201,8 +202,8 @@ Final response:
 ## 中文 Copilot Prompt
 
 ```text
-使用 skill: legacy-ibmi-flow-analyzer
-任务: 按 program list 批量执行 program scan，并生成 program-set SME review。
+使用 skill: legacy-ibmi-program-list-batch
+任务: 按 program list 批量执行 program scan，并编排 Copilot Chat prompt queue。
 
 每处理一行 program 时，使用 skill: legacy-ibmi-program-analyzer
 目的: 一次分析一个 IBM i program，并为每个 program 生成有 evidence 支撑的
@@ -573,7 +574,7 @@ Recommended handoff content:
 
 ## Copy-Ready Resume Prompt
 
-Use skill: legacy-ibmi-flow-analyzer
+Use skill: legacy-ibmi-program-list-batch
 Task: resume an interrupted program-list driven batch scan.
 
 For each unfinished program row, use skill: legacy-ibmi-program-analyzer.
@@ -865,7 +866,7 @@ starting another program.
 ### English Resume Prompt
 
 ```text
-Use skill: legacy-ibmi-flow-analyzer
+Use skill: legacy-ibmi-program-list-batch
 Task: resume an interrupted program-list driven batch scan.
 
 For each unfinished program row, use skill: legacy-ibmi-program-analyzer.
@@ -906,7 +907,7 @@ Final response:
 ### 中文恢复 Prompt
 
 ```text
-使用 skill: legacy-ibmi-flow-analyzer
+使用 skill: legacy-ibmi-program-list-batch
 任务: 恢复一个中断的 program-list 批量 scan。
 
 对于每一个未完成的 program row，使用 skill: legacy-ibmi-program-analyzer。
