@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory's scored reverse-modernization family currently tracks 22
+Legacy Spec Factory's scored reverse-modernization family currently tracks 23
 skills. They are not equally connected — some are called every run, some only
 at boundaries, some only when reviewing. This document groups the scored Legacy
 skills into **families** so callers (humans and orchestrators) know which
@@ -23,11 +23,12 @@ including supplemental skills outside this scored family map.
 | Routing | 1 | At any decision point — picks the next skill |
 | Module-first context intake | 2 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
+| Layer 1 — batch operations | 1 | Copilot Chat-friendly control plane for many per-program analyses |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total tracked here** | **22** | |
+| **Total tracked here** | **23** | |
 
 ---
 
@@ -130,6 +131,22 @@ classification; sensitivity tagging; SME review gate.
 **Anti-pattern**: running a full source-first excavation when a RAG-backed
 module package is already sufficient. Use Layer 1 to answer specific evidence,
 impact, or contradiction questions.
+
+---
+
+## 2A. Layer 1 — Batch Operations
+
+**Purpose**: Control many per-program analysis runs without weakening the
+one-program evidence contract. This family is operational: it manages queues,
+status, prompts, and handoff for constrained chat environments.
+
+| Skill | Reads | Writes | Position |
+| --- | --- | --- | --- |
+| [`legacy-ibmi-program-list-batch`](../skills/legacy-ibmi-program-list-batch/SKILL.md) | `program-list.csv` / Excel export from repo scan or inventory | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md` | Before and around repeated `legacy-ibmi-program-analyzer` runs in Copilot Chat-only operations |
+
+**Anti-pattern**: treating the batch skill as a source analyzer. It does not
+read RPG/CL/COBOL behavior or approve business meaning; it prepares and tracks
+safe one-program analyzer sessions.
 
 ---
 

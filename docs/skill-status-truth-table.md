@@ -40,6 +40,7 @@ Last regenerated: 2026-06-05
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
 | `legacy-ibmi-program-analyzer` | v0.2.5 | 9.66 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-program-analyzer-v0.2.5-scorecard.md) |
+| `legacy-ibmi-program-list-batch` | v0.1.0 | 9.34 | repo-ready | synced | synced | synced | 2026-06-25 | [link](reviews/legacy-ibmi-program-list-batch-v0.1.0-scorecard.md) |
 | `legacy-ibmi-data-model-analyzer` | v0.1.0 | 9.32 | repo-ready | passed | synced | passed | 2026-05-16 | [link](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-flow-analyzer` | v0.2.2 | 9.62 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md) |
@@ -61,9 +62,9 @@ Last regenerated: 2026-06-05
 | Decision | Count |
 | --- | ---: |
 | `field-pilot ready` (all three runtimes `passed`) | 9 |
-| `repo-ready` / `repo-ready (provisional)` (runtime cap or partial coverage) | 13 |
+| `repo-ready` / `repo-ready (provisional)` (runtime cap or partial coverage) | 14 |
 
-**22 skills total** in canonical source; **33 superseded scorecards** kept
+**23 skills total** in canonical source; **33 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification
