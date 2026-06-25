@@ -120,8 +120,7 @@ Execution rules:
 - Keep normal_program output lightweight unless a density trigger appears.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
-- Record skipped, reused, scanned, failed, and blocked programs in a batch
-  manifest.
+- Record skipped, scanned, failed, and blocked programs in a batch manifest.
 - Continue from the next unprocessed row if interrupted or resumed.
 
 Per-program required output:
@@ -129,13 +128,16 @@ Per-program required output:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+Conditional per-program output:
+- routine-logic-details.md and routine-logic-details.yaml only for
+  complex_normal_program, large_extreme_program, or explicit deep-read
+  continuation.
 
 Batch required output:
 - batch-scan-manifest.yaml
-- skipped/reused/scanned/failed summary
+- skipped/scanned/failed summary
 - program-set-core-input-manifest.yaml
 - program-set-sme-core-review.md
 
@@ -164,7 +166,7 @@ Quality gates:
 - Unresolved message/status/code descriptions must be listed as TBDs or
   blockers.
 - The batch is complete only when every requested program is classified as
-  reused, scanned, skipped, failed, or blocked, and the final program-set review
+  scanned, skipped, failed, or blocked, and the final program-set review
   validator passes.
 
 Validation commands:
@@ -233,8 +235,7 @@ Program list 字段:
 - 如果是 normal_program，且没有密集度触发，保持轻量输出。
 - 不要在输出中粘贴大段真实 source code。
 - 不要把 indexed_only routines 当成 confirmed business logic。
-- 在 batch manifest 中记录 skipped、reused、scanned、failed、blocked 的
-  program。
+- 在 batch manifest 中记录 skipped、scanned、failed、blocked 的 program。
 - 如果执行中断或恢复，从下一个未处理的 program 继续。
 
 每个 program 必须产出:
@@ -242,13 +243,16 @@ Program list 字段:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+条件性产出:
+- routine-logic-details.md 和 routine-logic-details.yaml 只在
+  complex_normal_program、large_extreme_program 或明确 deep-read continuation
+  时产出。
 
 批量执行必须产出:
 - batch-scan-manifest.yaml
-- skipped/reused/scanned/failed summary
+- skipped/scanned/failed summary
 - program-set-core-input-manifest.yaml
 - program-set-sme-core-review.md
 
@@ -273,9 +277,9 @@ Program list 字段:
   dynamic call、没有证据支持的 business meaning，都必须标记为 TBD 或
   blocker。
 - 未解析的 message/status/code description 必须列为 TBD 或 blocker。
-- 只有当每个请求的 program 都被分类为 reused、scanned、skipped、
-  failed 或 blocked，并且最终 program-set review validator 通过时，batch
-  才算 complete。
+- 只有当每个请求的 program 都被分类为 scanned、skipped、failed 或
+  blocked，并且最终 program-set review validator 通过时，batch 才算
+  complete。
 
 验证命令:
 - 公司 Windows 11 Copilot 环境只使用 `py -3`。
@@ -410,8 +414,9 @@ Additional safeguards:
   compact state files.
 - Treat these files as the memory layer:
   `batch-scan-manifest.yaml`, `program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-index.md`, `routine-logic-details.yaml`,
-  `message-inventory.yaml`, deep-read checkpoint files, and validator output.
+  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
+  conditional `routine-logic-details.yaml`, deep-read checkpoint files, and
+  validator output.
 - After every successful batch, update the manifest and the relevant compact
   sidecars before doing more reading.
 - Before continuing, run the smallest useful validation or consistency check.
@@ -443,8 +448,8 @@ checkpoint:
     - source_path: HCCILERPG/@CC081.RPGLE
       line_range: "16659-17400"
   required_updates:
-    - routine-logic-details.md
-    - routine-logic-details.yaml
+    - routine-logic-details.md / routine-logic-details.yaml only when this is
+      complex_normal_program, large_extreme_program, or explicit deep-read
     - program-analysis-summary.yaml
     - message-inventory.yaml
     - batch-scan-manifest.yaml
@@ -539,8 +544,8 @@ Recommended handoff content:
 - Required source reads:
   - <source path>:<line range>
 - Required artifact updates:
-  - routine-logic-details.md
-  - routine-logic-details.yaml
+  - routine-logic-details.md / routine-logic-details.yaml only when this is
+    complex_normal_program, large_extreme_program, or explicit deep-read
   - program-analysis-summary.yaml
   - message-inventory.yaml
   - batch-scan-manifest.yaml
@@ -664,9 +669,12 @@ Required output:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
-- routine-logic-details.md
-- routine-logic-details.yaml
 - message-inventory.yaml
+
+Conditional output:
+- routine-logic-details.md and routine-logic-details.yaml only for
+  complex_normal_program, large_extreme_program, or explicit deep-read
+  continuation.
 
 Validation:
 py -3 scripts\validate-program-analysis-contract.py `
@@ -910,8 +918,8 @@ Final response:
 Before marking the batch complete:
 
 - Every requested program row is represented in the manifest.
-- Every `object_type = program` row is classified as reused, scanned, skipped,
-  failed, or blocked.
+- Every `object_type = program` row is classified as scanned, skipped, failed,
+  or blocked.
 - Every scanned program has its own output folder.
 - No output folder mixes multiple programs.
 - Required per-program artifacts exist for each completed scan.

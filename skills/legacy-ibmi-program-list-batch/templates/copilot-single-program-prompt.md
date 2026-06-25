@@ -30,9 +30,11 @@ Rules:
 - Read at most 5 routine bodies per turn.
 - Keep normal_program output lightweight unless density triggers appear.
 - For normal_program, do not create routine-logic-details.md,
-  routine-logic-details.yaml, deep-read-plan.md, or batch deep-read files
-  unless a density trigger changes the tier to complex_normal_program or
-  large_extreme_program.
+  routine-logic-details.yaml, deep-read-plan.md, or batch deep-read files.
+  Write the concise analysis and stop once required artifacts validate.
+- Create routine-logic-details.md and routine-logic-details.yaml only when a
+  density trigger changes the tier to complex_normal_program or
+  large_extreme_program, or when the user explicitly asks for deep-read.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Write required artifacts to the output directory.
