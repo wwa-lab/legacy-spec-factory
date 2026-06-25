@@ -160,13 +160,13 @@ C                   SETON                                        LR
                 "source-index.yaml",
                 "program-analysis-summary.yaml",
                 "routine-index.md",
-                "routine-logic-details.md",
-                "routine-logic-details.yaml",
                 "message-inventory.yaml",
             }
             expected_absent = {
                 "all-routine-coverage-ledger.md",
                 "deep-read-plan.md",
+                "routine-logic-details.md",
+                "routine-logic-details.yaml",
                 "message-inventory.md",
                 "file-io-inventory.md",
                 "file-io-inventory.yaml",
@@ -184,15 +184,14 @@ C                   SETON                                        LR
             source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
             summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
-            routine_details = (output_dir / "routine-logic-details.md").read_text(encoding="utf-8")
             self.assertIn("program_size_tier: normal_program", source_index)
             self.assertIn("default_output_profile: lightweight_program_review", summary)
             self.assertIn("program_analysis:", summary)
+            self.assertIn("routine_logic_details:", summary)
             self.assertIn("not_written_by_default", summary)
             self.assertIn("validate-program-analysis-contract.py", summary)
             self.assertIn("## Calculation Logic", program_analysis)
             self.assertIn("## Review Checklist", program_analysis)
-            self.assertIn("RLOG coverage source of truth", routine_details)
 
     def test_cli_reuses_central_artifact_before_source_scan(self) -> None:
         source = """H DFTACTGRP(*NO)

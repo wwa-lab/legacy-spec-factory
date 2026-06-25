@@ -69,6 +69,7 @@ def summary_yaml(
     optional_file_io_status: str = "not_written_by_default",
     program_size_tier: str = "normal_program",
     line_count: int = 100,
+    routine_detail_status: str = "present",
 ) -> str:
     return f"""schema_version: "0.1"
 generated_by: index_rpg_source.py
@@ -88,10 +89,10 @@ sidecars:
     status: present
   routine_logic_details:
     path: routine-logic-details.md
-    status: present
+    status: {routine_detail_status}
   routine_logic_details_yaml:
     path: routine-logic-details.yaml
-    status: present
+    status: {routine_detail_status}
   message_inventory_yaml:
     path: message-inventory.yaml
     status: present
@@ -281,6 +282,20 @@ def write_common_artifacts(path: Path) -> None:
 
 
 class ProgramAnalysisContractValidatorTests(unittest.TestCase):
+    def test_passes_lightweight_normal_without_routine_detail_sidecars(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            (analysis_dir / "program-analysis-summary.yaml").write_text(
+                summary_yaml(routine_detail_status="not_written_by_default"),
+                encoding="utf-8",
+            )
+            (analysis_dir / "source-index.yaml").write_text("program: CU650\n", encoding="utf-8")
+            (analysis_dir / "routine-index.md").write_text("# Routine Index\n", encoding="utf-8")
+            (analysis_dir / "message-inventory.yaml").write_text("program: CU650\n", encoding="utf-8")
+            (analysis_dir / "program-analysis.md").write_text(full_program_analysis(), encoding="utf-8")
+
+            self.assertEqual(VALIDATOR.validate(analysis_dir), [])
+
     def test_passes_complete_wrapper_and_rlog_coverage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             analysis_dir = Path(temp_dir)

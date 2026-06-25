@@ -6,9 +6,8 @@
 - Program list: {{program_list}}
 - Status list: {{program_list_status}}
 - Manifest: {{batch_manifest}}
-- Delivery profile: {{delivery_profile}}
 - Source root: {{source_root}}
-- Delivery working root: {{delivery_working_root}}
+- Output root: {{output_root}}
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress
@@ -17,7 +16,6 @@
 | --- | ---: |
 | queued | {{queued_count}} |
 | in_progress | {{in_progress_count}} |
-| reused_remote_main | {{reused_remote_main_count}} |
 | completed | {{completed_count}} |
 | completed_with_warnings | {{completed_with_warnings_count}} |
 | blocked | {{blocked_count}} |
