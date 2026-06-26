@@ -45,23 +45,27 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("The delivery repo name is configurable", skill_text)
         self.assertIn("Do not run deterministic source indexing", skill_text)
 
-    def test_flow_analyzer_defaults_to_program_evidence_first_with_remote_reuse(self) -> None:
+    def test_flow_analyzer_defaults_to_program_evidence_first_without_cross_run_reuse(self) -> None:
         skill_text = FLOW_ANALYZER.read_text(encoding="utf-8")
         contract_text = FLOW_OUTPUT_CONTRACT.read_text(encoding="utf-8")
 
         for text in (skill_text, contract_text):
+            normalized_text = " ".join(text.lower().split())
             self.assertIn("program-evidence first", text)
-            self.assertIn("central artifact reuse", text.lower())
-            self.assertIn("central_lookup_result", text)
-            self.assertIn("found_on_remote_main", text)
-            self.assertIn("not_found_on_remote_main", text)
+            self.assertIn("no cross-run reuse", normalized_text)
+            self.assertIn("run_resolution", text)
+            self.assertIn("analyzed_this_run", text)
+            self.assertIn("reused_same_run", text)
+            self.assertIn("pending_source", text)
+            self.assertIn("blocked_missing_source", text)
             self.assertIn("Core Completeness Ledger", text)
             self.assertIn("program-set-sme-core-review.md", text)
-            self.assertIn("remote-main", text)
-            self.assertIn("sparse", text)
+            self.assertNotIn("central_lookup_result", text)
+            self.assertNotIn("found_on_remote_main", text)
+            self.assertNotIn("not_found_on_remote_main", text)
             self.assertNotIn("reuse_approved_artifact", text)
 
-        self.assertIn("delivery_artifact_lookup_profile", skill_text)
+        self.assertIn("program_artifact_resolution_profile", contract_text)
         self.assertIn("delivery_workspace_profile", skill_text)
         self.assertIn("templates/delivery-profile.yaml", skill_text)
 
@@ -74,6 +78,8 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("Exception Handling", template_text)
         self.assertIn("Message Inventory", template_text)
         self.assertIn("No program may be omitted", template_text)
+        self.assertIn("self-contained SME reading surfaces", template_text)
+        self.assertIn("traceability only", template_text)
         self.assertNotIn("## Nodes", template_text)
         self.assertNotIn("## Edges", template_text)
         self.assertNotIn("## Flow Replay Path", template_text)
@@ -106,7 +112,7 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         quickstart_text = DELIVERY_PROFILE_QUICKSTART.read_text(encoding="utf-8")
 
         for text in (profile_text, quickstart_text):
-            self.assertIn("delivery_artifact_lookup_profile", text)
+            self.assertIn("program_artifact_resolution_profile", text)
             self.assertIn("delivery_workspace_profile", text)
             self.assertIn("program_folder_patterns", text)
             self.assertIn("modules/*/{PROGRAM}", text)
@@ -121,9 +127,12 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
             self.assertIn("complex_normal_program", text)
             self.assertIn("normal_program", text)
 
-        self.assertIn("found_on_remote_main: read_from_remote_main_checkout", profile_text)
-        self.assertIn("not_found_on_remote_main: scan_source_then_write_to_working_branch", profile_text)
-        self.assertIn("remote_unavailable: stop_for_access_context", profile_text)
+        self.assertIn("analyzed_this_run: read_from_working_root", profile_text)
+        self.assertIn("reused_same_run: read_same_run_artifact", profile_text)
+        self.assertIn("pending_source: scan_source_then_write_to_working_branch", profile_text)
+        self.assertIn("blocked_missing_source: record_blocker_tbd", profile_text)
+        self.assertNotIn("found_on_remote_main: read_from_remote_main_checkout", profile_text)
+        self.assertNotIn("not_found_on_remote_main: scan_source_then_write_to_working_branch", profile_text)
 
 
 if __name__ == "__main__":

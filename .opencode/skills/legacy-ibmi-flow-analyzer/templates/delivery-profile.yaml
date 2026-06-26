@@ -1,8 +1,31 @@
 # Copy this file into a project/team config location and edit the values for
-# that delivery repository. Keep lookup and write targets separate:
-# - lookup reads remote main only
+# that delivery repository.
+# Program-flow core review uses current-run artifacts only:
+# - program_artifact_resolution_profile resolves folder/name patterns under the
+#   current working root
 # - output writes to the named working branch
+# - no remote-main or prior-run artifact satisfies the default flow run
 
+program_artifact_resolution_profile:
+  repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
+  module_roots:
+    - modules/*
+  program_folder_patterns:
+    - modules/*/{PROGRAM}
+  artifact_file_patterns:
+    - program-analysis.md
+    - program-analysis-*.md
+    - program-analysis-summary.yaml
+    - routine-logic-details.yaml
+    - message-inventory.yaml
+  program_name_normalization:
+    case: upper
+    preserve_prefixes:
+      - "@"
+    exact_folder_name_match: true
+
+# Optional compatibility section for single-program analyzer central preflight.
+# The program-flow builder prefers program_artifact_resolution_profile above.
 delivery_artifact_lookup_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
   branch: main
@@ -29,7 +52,6 @@ delivery_artifact_lookup_profile:
 
 delivery_workspace_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
-  base_branch_for_reuse_lookup: main
   branch_mode: use_or_create_provided
   working_branch_required: true
   working_branch_pattern: develop-{PERSON}
@@ -51,9 +73,10 @@ delivery_workspace_profile:
   review_slug_collision_strategy: append_sequence
 
   output_rules:
-    found_on_remote_main: read_from_remote_main_checkout
-    not_found_on_remote_main: scan_source_then_write_to_working_branch
-    remote_unavailable: stop_for_access_context
+    analyzed_this_run: read_from_working_root
+    reused_same_run: read_same_run_artifact
+    pending_source: scan_source_then_write_to_working_branch
+    blocked_missing_source: record_blocker_tbd
 
 source_inventory_profile:
   default_cache_dir: outputs/repo-scan

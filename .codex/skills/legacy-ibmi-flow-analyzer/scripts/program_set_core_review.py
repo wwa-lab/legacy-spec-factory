@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Build and validate program-set SME core review scaffolds.
 
-The builder is intentionally deterministic: it discovers program artifact
-folders from a delivery repo remote-main checkout/cache, writes a manifest, and
-renders a fixed review skeleton. The validator checks structure and coverage;
-it does not judge whether the LLM-written summaries are semantically correct.
+The builder is intentionally deterministic: it reads current-run program
+analysis artifact folders from the delivery working branch or output root,
+writes a manifest, and renders a fixed review skeleton. It does not reuse
+remote-main or prior-run artifacts. The validator checks structure and
+coverage; it does not judge whether the LLM-written summaries are
+semantically correct.
 """
 
 from __future__ import annotations
@@ -51,8 +53,11 @@ FORBIDDEN_FULL_FLOW_SECTIONS = (
 
 REQUIRED_COMPACT_ARTIFACTS = (
     "program-analysis-summary.yaml",
-    "routine-logic-details.yaml",
     "message-inventory.yaml",
+)
+
+CONDITIONAL_COMPACT_ARTIFACTS = (
+    "routine-logic-details.yaml",
 )
 
 OPTIONAL_COMPACT_ARTIFACTS = (
@@ -62,9 +67,10 @@ OPTIONAL_COMPACT_ARTIFACTS = (
     "sql-inventory.yaml",
 )
 
-LOOKUP_FOUND = "found_on_remote_main"
-LOOKUP_NOT_FOUND = "not_found_on_remote_main"
-LOOKUP_REMOTE_UNAVAILABLE = "remote_unavailable"
+RUN_ANALYZED = "analyzed_this_run"
+RUN_REUSED = "reused_same_run"
+RUN_PENDING = "pending_source"
+RUN_BLOCKED = "blocked_missing_source"
 
 DEFAULT_SOURCE_INVENTORY_DIR = Path("outputs") / "repo-scan"
 DEFAULT_PROGRAM_LIST_FILENAME = "program-list.csv"
@@ -82,15 +88,12 @@ class ProgramEntry:
     input_name: str
     normalized_name: str
     order: int
-    central_lookup_result: str
+    run_resolution: str
     artifact_root: str | None
     artifact_source: str
     tier: str | None
     compact_artifacts: dict[str, ArtifactStatus]
     follow_up: str
-    force_rescan: bool = False
-    rescan_reason: str | None = None
-    remote_main_artifact_root: str | None = None
 
 
 def load_yaml(path: Path) -> Any:
@@ -125,25 +128,6 @@ def read_programs_file(path: Path) -> list[str]:
     return programs
 
 
-def read_force_rescan_file(path: Path) -> dict[str, str]:
-    requests: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        for delimiter in ("|", ",", ":"):
-            if delimiter in stripped:
-                program, reason = stripped.split(delimiter, 1)
-                break
-        else:
-            program, reason = stripped, "explicit SME refresh requested"
-        program = program.strip()
-        reason = reason.strip() or "explicit SME refresh requested"
-        if program:
-            requests[program] = reason
-    return requests
-
-
 def normalize_program_name(program: str, profile: dict[str, Any]) -> str:
     normalization = profile.get("program_name_normalization", {}) or {}
     normalized = program.strip()
@@ -153,7 +137,11 @@ def normalize_program_name(program: str, profile: dict[str, Any]) -> str:
 
 
 def profile_lookup(config: dict[str, Any]) -> dict[str, Any]:
-    return config.get("delivery_artifact_lookup_profile", {}) or {}
+    if "program_artifact_resolution_profile" in config:
+        value = config.get("program_artifact_resolution_profile")
+        return value if isinstance(value, dict) else {}
+    value = config.get("delivery_artifact_lookup_profile")
+    return value if isinstance(value, dict) else {}
 
 
 def profile_workspace(config: dict[str, Any]) -> dict[str, Any]:
@@ -245,17 +233,17 @@ def artifact_key(filename: str) -> str:
     return filename.replace("-", "_").replace(".", "_")
 
 
-def collect_artifact_statuses(delivery_root: Path, artifact_root: str | None) -> dict[str, ArtifactStatus]:
+def collect_artifact_statuses(root: Path, artifact_root: str | None) -> dict[str, ArtifactStatus]:
     statuses: dict[str, ArtifactStatus] = {}
-    root_path = delivery_root / artifact_root if artifact_root else None
-    for filename in REQUIRED_COMPACT_ARTIFACTS + OPTIONAL_COMPACT_ARTIFACTS:
+    root_path = root / artifact_root if artifact_root else None
+    for filename in REQUIRED_COMPACT_ARTIFACTS + CONDITIONAL_COMPACT_ARTIFACTS + OPTIONAL_COMPACT_ARTIFACTS:
         key = artifact_key(filename)
         if root_path is None:
             statuses[key] = ArtifactStatus(path=filename, status="missing")
             continue
         candidate = root_path / filename
         statuses[key] = ArtifactStatus(
-            path=relative_path(delivery_root, candidate),
+            path=relative_path(root, candidate),
             status="present" if candidate.is_file() else "missing",
         )
     return statuses
@@ -278,7 +266,7 @@ def infer_tier(artifact_root: str | None, workspace: dict[str, Any]) -> str | No
 
 
 def find_program_artifact_root(
-    delivery_root: Path,
+    root: Path,
     program: str,
     lookup: dict[str, Any],
 ) -> tuple[str | None, list[str]]:
@@ -286,109 +274,79 @@ def find_program_artifact_root(
     matches: list[Path] = []
     for pattern in patterns:
         resolved_pattern = str(pattern).replace("{PROGRAM}", program)
-        matches.extend(path for path in delivery_root.glob(resolved_pattern) if path.is_dir())
-    relative_matches = sorted({relative_path(delivery_root, path) for path in matches})
+        matches.extend(path for path in root.glob(resolved_pattern) if path.is_dir())
+    relative_matches = sorted({relative_path(root, path) for path in matches})
     return (relative_matches[0] if relative_matches else None, relative_matches)
 
 
 def build_program_entries(
     programs: list[str],
-    delivery_root: Path,
+    artifact_root: Path,
     config: dict[str, Any],
-    working_root: Path | None = None,
-    force_rescan_requests: dict[str, str] | None = None,
 ) -> tuple[list[ProgramEntry], list[str]]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
-    normalized_force_requests = {
-        normalize_program_name(program, lookup): reason
-        for program, reason in (force_rescan_requests or {}).items()
-    }
     entries: list[ProgramEntry] = []
     warnings: list[str] = []
-    seen: dict[str, str] = {}
+    seen: dict[str, ProgramEntry] = {}
     for index, program in enumerate(programs, start=1):
         normalized = normalize_program_name(program, lookup)
         if normalized in seen:
+            first = seen[normalized]
+            has_current_artifact = first.artifact_root is not None
             warnings.append(
-                f"Duplicate normalized program name {normalized!r} from {seen[normalized]!r} and {program!r}"
-            )
-        seen[normalized] = program
-        force_rescan = normalized in normalized_force_requests
-        rescan_reason = normalized_force_requests.get(normalized)
-        remote_artifact_root, matches = find_program_artifact_root(delivery_root, normalized, lookup)
-        if len(matches) > 1:
-            warnings.append(
-                f"Program {normalized} matched multiple artifact folders; using {remote_artifact_root}: "
-                + ", ".join(matches)
-            )
-        artifact_root: str | None = None
-        if force_rescan:
-            if working_root:
-                artifact_root, working_matches = find_program_artifact_root(working_root, normalized, lookup)
-                if len(working_matches) > 1:
-                    warnings.append(
-                        f"Program {normalized} matched multiple working-branch artifact folders; "
-                        f"using {artifact_root}: " + ", ".join(working_matches)
-                    )
-            result = LOOKUP_FOUND if remote_artifact_root else LOOKUP_NOT_FOUND
-            if artifact_root:
-                source = "delivery_working_branch"
-                follow_up = "none - forced rescan completed in working branch"
-                artifact_status_root = working_root if working_root else delivery_root
-            else:
-                source = "source_scan_required"
-                follow_up = "force rescan requested - scan this program"
-                artifact_status_root = delivery_root
-            if not remote_artifact_root:
-                warnings.append(
-                    f"Program {normalized} was marked force_rescan but no remote-main artifact was found; "
-                    "treating it as a normal source scan request"
+                f"Duplicate normalized program name {normalized!r}; "
+                + (
+                    f"reusing current-run artifact from order {first.order}"
+                    if has_current_artifact
+                    else f"will scan once from order {first.order} before reuse"
                 )
-        elif remote_artifact_root:
-            artifact_root = remote_artifact_root
-            result = LOOKUP_FOUND
-            source = "remote_main"
-            follow_up = "none"
-            artifact_status_root = delivery_root
-        elif working_root:
-            artifact_root, working_matches = find_program_artifact_root(working_root, normalized, lookup)
-            if len(working_matches) > 1:
-                warnings.append(
-                    f"Program {normalized} matched multiple working-branch artifact folders; "
-                    f"using {artifact_root}: " + ", ".join(working_matches)
-                )
-            if artifact_root:
-                result = LOOKUP_NOT_FOUND
-                source = "delivery_working_branch"
-                follow_up = "none - source scan completed in working branch"
-                artifact_status_root = working_root
-            else:
-                result = LOOKUP_NOT_FOUND
-                source = "source_scan_required"
-                follow_up = "scan this program"
-                artifact_status_root = delivery_root
-        else:
-            result = LOOKUP_NOT_FOUND
-            source = "source_scan_required"
-            follow_up = "scan this program"
-            artifact_status_root = delivery_root
-        entries.append(
-            ProgramEntry(
+            )
+            entry = ProgramEntry(
                 input_name=program,
                 normalized_name=normalized,
                 order=index,
-                central_lookup_result=result,
-                artifact_root=artifact_root,
-                artifact_source=source,
-                tier=infer_tier(artifact_root, workspace),
-                compact_artifacts=collect_artifact_statuses(artifact_status_root, artifact_root),
-                follow_up=follow_up,
-                force_rescan=force_rescan,
-                rescan_reason=rescan_reason,
-                remote_main_artifact_root=remote_artifact_root,
+                run_resolution=RUN_REUSED if has_current_artifact else RUN_PENDING,
+                artifact_root=first.artifact_root,
+                artifact_source=first.artifact_source if has_current_artifact else "source_scan_required",
+                tier=first.tier,
+                compact_artifacts=first.compact_artifacts,
+                follow_up=(
+                    "none - reused earlier in this run"
+                    if has_current_artifact
+                    else "scan this program once in current run"
+                ),
             )
+            entries.append(entry)
+            continue
+
+        found_artifact_root, matches = find_program_artifact_root(artifact_root, normalized, lookup)
+        if len(matches) > 1:
+            warnings.append(
+                f"Program {normalized} matched multiple current-run artifact folders; using {found_artifact_root}: "
+                + ", ".join(matches)
+            )
+        if found_artifact_root:
+            run_resolution = RUN_ANALYZED
+            source = "delivery_working_branch"
+            follow_up = "none - analysis artifact present in current run"
+        else:
+            run_resolution = RUN_PENDING
+            source = "source_scan_required"
+            follow_up = "scan this program in current run"
+        entry = ProgramEntry(
+            input_name=program,
+            normalized_name=normalized,
+            order=index,
+            run_resolution=run_resolution,
+            artifact_root=found_artifact_root,
+            artifact_source=source,
+            tier=infer_tier(found_artifact_root, workspace),
+            compact_artifacts=collect_artifact_statuses(artifact_root, found_artifact_root),
+            follow_up=follow_up,
         )
+        entries.append(entry)
+        seen[normalized] = entry
     return entries, warnings
 
 
@@ -479,12 +437,12 @@ def inventory_program_statuses(
     statuses: list[dict[str, Any]] = []
     targeted_scan_allowed = freshness == "fresh"
     for entry in entries:
-        if entry.central_lookup_result == LOOKUP_FOUND and not entry.force_rescan:
+        if entry.run_resolution in {RUN_ANALYZED, RUN_REUSED}:
             statuses.append(
                 {
                     "program": entry.normalized_name,
-                    "central_lookup_result": entry.central_lookup_result,
-                    "inventory_status": "not_needed_remote_main_reuse",
+                    "run_resolution": entry.run_resolution,
+                    "inventory_status": "not_needed_current_artifact_present",
                     "source_path": None,
                     "size_tier": entry.tier,
                     "targeted_scan_allowed": False,
@@ -504,7 +462,7 @@ def inventory_program_statuses(
         statuses.append(
             {
                 "program": entry.normalized_name,
-                "central_lookup_result": entry.central_lookup_result,
+                "run_resolution": entry.run_resolution,
                 "inventory_status": inventory_status,
                 "source_path": row.get("path") if row else None,
                 "source_kind": row.get("source_kind") if row else None,
@@ -595,7 +553,7 @@ def entry_to_dict(entry: ProgramEntry) -> dict[str, Any]:
         "input_name": entry.input_name,
         "normalized_name": entry.normalized_name,
         "order": entry.order,
-        "central_lookup_result": entry.central_lookup_result,
+        "run_resolution": entry.run_resolution,
         "artifact_root": entry.artifact_root,
         "artifact_source": entry.artifact_source,
         "tier": entry.tier,
@@ -604,9 +562,6 @@ def entry_to_dict(entry: ProgramEntry) -> dict[str, Any]:
             for key, status in entry.compact_artifacts.items()
         },
         "follow_up": entry.follow_up,
-        "force_rescan": entry.force_rescan,
-        "rescan_reason": entry.rescan_reason,
-        "remote_main_artifact_root": entry.remote_main_artifact_root,
     }
 
 
@@ -614,26 +569,19 @@ def build_manifest(
     *,
     review_name: str,
     programs: list[str],
-    delivery_root: Path,
+    artifact_root: Path,
     config: dict[str, Any],
     working_branch: str | None,
-    working_root: Path | None = None,
     source_root: Path | None = None,
     inventory_dir: Path | None = None,
-    force_rescan_requests: dict[str, str] | None = None,
+    program_first: bool = False,
 ) -> dict[str, Any]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
-    normalized_force_requests = {
-        normalize_program_name(program, lookup): reason
-        for program, reason in (force_rescan_requests or {}).items()
-    }
     entries, warnings = build_program_entries(
         programs,
-        delivery_root,
+        artifact_root,
         config,
-        working_root,
-        force_rescan_requests=normalized_force_requests,
     )
     source_inventory = build_source_inventory_status(
         entries=entries,
@@ -647,13 +595,14 @@ def build_manifest(
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "review_name": review_name,
         "review_slug": slugify(review_name),
-        "delivery_repo": {
+        "run_profile": {
             "repo": lookup.get("repo") or workspace.get("repo"),
-            "lookup_branch": lookup.get("branch", "main"),
             "working_branch": working_branch,
-            "working_root_used": working_root is not None,
+            "artifact_root": str(artifact_root),
+            "program_first": program_first,
+            "cross_run_reuse": False,
         },
-        "lookup_profile": {
+        "program_resolution_profile": {
             "program_folder_patterns": lookup.get("program_folder_patterns", ["modules/*/{PROGRAM}"]),
             "program_name_normalization": lookup.get("program_name_normalization", {}),
         },
@@ -663,7 +612,6 @@ def build_manifest(
             "write_to_main": workspace.get("write_to_main", False),
         },
         "source_inventory": source_inventory,
-        "force_rescan_requests": normalized_force_requests,
         "programs": [entry_to_dict(entry) for entry in entries],
         "warnings": warnings,
     }
@@ -676,12 +624,34 @@ def artifact_summary(entry: dict[str, Any]) -> str:
         key = artifact_key(filename)
         status = (compact.get(key) or {}).get("status", "missing")
         labels.append(f"{filename}={status}")
+    labels.append(f"routine-logic-details.yaml={routine_detail_status(entry)}")
     return "; ".join(labels)
 
 
+def is_normal_program(entry: dict[str, Any]) -> bool:
+    return entry.get("tier") == "normal_program"
+
+
+def routine_detail_status(entry: dict[str, Any]) -> str:
+    compact = entry.get("compact_artifacts", {}) or {}
+    status = (compact.get(artifact_key("routine-logic-details.yaml")) or {}).get(
+        "status", "missing"
+    )
+    if status == "present":
+        return "present"
+    if is_normal_program(entry):
+        return "optional_not_required"
+    return "missing_when_needed"
+
+
 def present_missing(entry: dict[str, Any], artifact_filename: str) -> str:
-    if entry.get("central_lookup_result") != LOOKUP_FOUND:
+    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED}:
         return "N/A"
+    if artifact_filename == "routine-logic-details.yaml":
+        status = routine_detail_status(entry)
+        if status == "optional_not_required":
+            return "optional_not_required"
+        return "present" if status == "present" else "missing"
     status = ((entry.get("compact_artifacts", {}) or {}).get(artifact_key(artifact_filename)) or {}).get(
         "status", "missing"
     )
@@ -690,53 +660,49 @@ def present_missing(entry: dict[str, Any], artifact_filename: str) -> str:
 
 def render_sources_table(programs: list[dict[str, Any]]) -> str:
     lines = [
-        "| Program | Analysis Directory | Central Lookup Result | Tier | Force Rescan | Compact Artifacts Used | Follow-up |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Program | Analysis Directory | Run Resolution | Tier | Compact Artifacts Used | Follow-up |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for entry in programs:
-        program = entry["normalized_name"]
+        program = entry.get("normalized_name") or ""
         artifact_root = entry.get("artifact_root") or "pending source scan"
-        result = entry["central_lookup_result"]
+        resolution = entry.get("run_resolution") or "legacy_manifest_missing_run_resolution"
         tier = entry.get("tier") or "unknown"
-        force = "yes" if entry.get("force_rescan") else "no"
-        if entry.get("rescan_reason"):
-            force = f"{force}: {entry.get('rescan_reason')}"
         lines.append(
-            f"| {program} | {artifact_root} | {result} | {tier} | {force} | {artifact_summary(entry)} | {entry.get('follow_up', '')} |"
+            f"| {program} | {artifact_root} | {resolution} | {tier} | {artifact_summary(entry)} | {entry.get('follow_up', '')} |"
         )
     return "\n".join(lines)
 
 
 def render_completeness_table(programs: list[dict[str, Any]]) -> str:
     lines = [
-        "| Program | Expected In Scope From | Central Lookup Result | Calculation Logic | Validation Logic | Exception Handling | Message Inventory | Missing / Targeted Follow-up |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Program | Expected In Scope From | Run Resolution | Routine Logic Evidence | Message Inventory | Missing / Targeted Follow-up |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for entry in programs:
-        program = entry["normalized_name"]
-        result = entry["central_lookup_result"]
-        logic = present_missing(entry, "routine-logic-details.yaml")
-        validation = present_missing(entry, "routine-logic-details.yaml")
-        exception = present_missing(entry, "routine-logic-details.yaml")
+        program = entry.get("normalized_name") or ""
+        resolution = entry.get("run_resolution") or "legacy_manifest_missing_run_resolution"
+        routine_logic = present_missing(entry, "routine-logic-details.yaml")
         messages = present_missing(entry, "message-inventory.yaml")
         lines.append(
-            f"| {program} | SME-provided flow | {result} | {logic} | {validation} | {exception} | {messages} | {entry.get('follow_up', '')} |"
+            f"| {program} | SME-provided flow | {resolution} | {routine_logic} | {messages} | {entry.get('follow_up', '')} |"
         )
     return "\n".join(lines)
 
 
-def render_lookup_profile(manifest: dict[str, Any]) -> str:
-    delivery_repo = manifest.get("delivery_repo", {}) or {}
-    lookup = manifest.get("lookup_profile", {}) or {}
+def render_run_profile(manifest: dict[str, Any]) -> str:
+    run_profile = manifest.get("run_profile", {}) or {}
+    resolution_profile = manifest.get("program_resolution_profile", {}) or {}
     workspace = manifest.get("workspace_profile", {}) or {}
-    patterns = ", ".join(str(pattern) for pattern in lookup.get("program_folder_patterns", []))
+    patterns = ", ".join(str(pattern) for pattern in resolution_profile.get("program_folder_patterns", []))
     return "\n".join(
         [
             "| Field | Value |",
             "| --- | --- |",
-            f"| Repo | {delivery_repo.get('repo') or ''} |",
-            f"| Lookup Branch | {delivery_repo.get('lookup_branch') or 'main'} |",
-            f"| Working Branch | {delivery_repo.get('working_branch') or ''} |",
+            f"| Repo | {run_profile.get('repo') or ''} |",
+            f"| Working Branch | {run_profile.get('working_branch') or ''} |",
+            f"| Artifact Root | {run_profile.get('artifact_root') or ''} |",
+            f"| Cross-Run Reuse | {str(run_profile.get('cross_run_reuse', False)).lower()} |",
             f"| Program Folder Patterns | {patterns} |",
             f"| Program Set Review Parent | {workspace.get('program_set_review_parent') or ''} |",
         ]
@@ -766,7 +732,7 @@ def render_source_inventory(manifest: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "| Program | Central Lookup Result | Inventory Status | Source Path | Tier | Targeted Scan Allowed |",
+            "| Program | Run Resolution | Inventory Status | Source Path | Tier | Targeted Scan Allowed |",
             "| --- | --- | --- | --- | --- | --- |",
         ]
     )
@@ -774,7 +740,7 @@ def render_source_inventory(manifest: dict[str, Any]) -> str:
         lines.append(
             "| {program} | {lookup} | {status} | {path} | {tier} | {allowed} |".format(
                 program=row.get("program") or "",
-                lookup=row.get("central_lookup_result") or "",
+                lookup=row.get("run_resolution") or "",
                 status=row.get("inventory_status") or "",
                 path=row.get("source_path") or "",
                 tier=row.get("size_tier") or "",
@@ -788,9 +754,9 @@ def render_review_skeleton(manifest: dict[str, Any]) -> str:
     programs = manifest.get("programs", []) or []
     return f"""# Program Set SME Core Review: {manifest["review_name"]}
 
-Lookup Profile:
+Run Profile:
 
-{render_lookup_profile(manifest)}
+{render_run_profile(manifest)}
 
 Source Inventory Cache:
 
@@ -806,28 +772,32 @@ Core Completeness Ledger:
 
 ## Calculation Logic
 
-<!-- Fill from manifest-listed compact artifacts only. Keep rows by Program and Routine. -->
+<!-- Self-contained SME view: write the actual calculation/assignment logic here.
+Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
 | Program | Routine | Calculation / Assignment | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Validation Logic
 
-<!-- Fill from manifest-listed compact artifacts only. Preserve exact statuses, return codes, and messages. -->
+<!-- Self-contained SME view: write the actual validation condition, status/code, carrier, and outcome here.
+Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
 | Program | Routine | Message / Status / Outcome | Description | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Exception Handling
 
-<!-- Fill from manifest-listed compact artifacts only. Preserve local exception closure and program outcome. -->
+<!-- Self-contained SME view: write the actual error path, detection, handling action, and outcome here.
+Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
 | Program | Routine | Exception / Error Path | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Message Inventory
 
-<!-- Include every exact message/status/literal observed across participating program analyses. -->
+<!-- Self-contained SME view: include exact message/status/literal text and meaning here.
+Use Detail Refs for traceability only, not as a substitute for the explanation. -->
 
 | Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -884,41 +854,48 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     programs = manifest.get("programs")
     if not isinstance(programs, list) or not programs:
         return ["manifest has no programs[] entries"]
-    seen: set[str] = set()
+    by_name: dict[str, list[dict[str, Any]]] = {}
     for entry in programs:
         name = str(entry.get("normalized_name") or "")
         if not name:
             findings.append("program entry missing normalized_name")
             continue
-        if name in seen:
-            findings.append(f"duplicate normalized program in manifest: {name}")
-        seen.add(name)
-        result = entry.get("central_lookup_result")
-        if result not in {LOOKUP_FOUND, LOOKUP_NOT_FOUND, LOOKUP_REMOTE_UNAVAILABLE}:
-            findings.append(f"{name} has invalid central_lookup_result: {result}")
-        force_rescan = bool(entry.get("force_rescan"))
-        if result == LOOKUP_FOUND and not entry.get("artifact_root") and not force_rescan:
-            findings.append(f"{name} found_on_remote_main missing artifact_root")
-        if (
-            result == LOOKUP_FOUND
-            and entry.get("artifact_source") != "remote_main"
-            and not force_rescan
-        ):
-            findings.append(f"{name} found_on_remote_main must use artifact_source remote_main")
-        if force_rescan and not entry.get("rescan_reason"):
-            findings.append(f"{name} force_rescan missing rescan_reason")
-        if force_rescan and result == LOOKUP_FOUND:
-            if entry.get("artifact_source") not in {"delivery_working_branch", "source_scan_required"}:
-                findings.append(
-                    f"{name} force_rescan with found_on_remote_main must use "
-                    "artifact_source delivery_working_branch or source_scan_required"
-                )
-        if result == LOOKUP_NOT_FOUND and entry.get("artifact_root"):
-            if entry.get("artifact_source") != "delivery_working_branch":
-                findings.append(
-                    f"{name} not_found_on_remote_main with artifact_root must use "
-                    "artifact_source delivery_working_branch"
-                )
+        by_name.setdefault(name, []).append(entry)
+        if "run_resolution" not in entry and "central_lookup_result" in entry:
+            findings.append(
+                f"{name} uses legacy central_lookup_result; rebuild the manifest with the no-cross-run-reuse builder"
+            )
+            continue
+        resolution = entry.get("run_resolution")
+        if resolution not in {RUN_ANALYZED, RUN_REUSED, RUN_PENDING, RUN_BLOCKED}:
+            findings.append(f"{name} has invalid run_resolution: {resolution}")
+        if resolution in {RUN_ANALYZED, RUN_REUSED} and not entry.get("artifact_root"):
+            findings.append(f"{name} {resolution} missing artifact_root")
+        if resolution == RUN_ANALYZED and entry.get("artifact_source") != "delivery_working_branch":
+            findings.append(f"{name} analyzed_this_run must use artifact_source delivery_working_branch")
+        if resolution == RUN_REUSED and entry.get("artifact_source") != "delivery_working_branch":
+            findings.append(f"{name} reused_same_run has invalid artifact_source")
+        if resolution in {RUN_PENDING, RUN_BLOCKED} and entry.get("artifact_root"):
+            findings.append(f"{name} {resolution} must not have artifact_root")
+    for name, duplicates in by_name.items():
+        if len(duplicates) <= 1:
+            continue
+        first = duplicates[0]
+        first_resolution = first.get("run_resolution")
+        first_artifact_root = first.get("artifact_root")
+        for duplicate in duplicates[1:]:
+            resolution = duplicate.get("run_resolution")
+            artifact_root = duplicate.get("artifact_root")
+            if first_artifact_root:
+                if resolution != RUN_REUSED:
+                    findings.append(f"{name} duplicate with current-run artifact must use reused_same_run")
+                if artifact_root != first_artifact_root:
+                    findings.append(f"{name} duplicate artifact_root must match the first current-run artifact")
+            elif first_resolution in {RUN_PENDING, RUN_BLOCKED}:
+                if resolution not in {RUN_PENDING, RUN_BLOCKED}:
+                    findings.append(f"{name} duplicate without a current-run artifact must remain pending/blocked")
+                if artifact_root:
+                    findings.append(f"{name} duplicate pending/blocked entry must not have artifact_root")
     return findings
 
 
@@ -951,9 +928,9 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
             findings.append(f"{program} missing from Sources table")
         if program not in ledger_rows:
             findings.append(f"{program} missing from Core Completeness Ledger")
-        result = str(entry.get("central_lookup_result") or "")
-        if result and program in ledger_rows and result not in ledger_rows[program]:
-            findings.append(f"{program} lookup result {result} missing from Core Completeness Ledger")
+        resolution = str(entry.get("run_resolution") or "")
+        if resolution and program in ledger_rows and resolution not in ledger_rows[program]:
+            findings.append(f"{program} run_resolution {resolution} missing from Core Completeness Ledger")
     return findings
 
 
@@ -976,23 +953,32 @@ def build_command(args: argparse.Namespace) -> int:
     programs = read_programs_file(args.programs_file)
     if not programs:
         raise SystemExit("programs file has no program names")
-    force_rescan_requests = (
-        read_force_rescan_file(args.force_rescan_file)
-        if args.force_rescan_file is not None
-        else {}
-    )
+    if args.force_rescan_file is not None:
+        raise SystemExit(
+            "--force-rescan-file is no longer supported for program-flow core review. "
+            "Rebuild with no cross-run reuse and analyze the program in the current run."
+        )
+    if args.delivery_root is not None:
+        raise SystemExit(
+            "--delivery-root is no longer supported for program-flow core review. "
+            "Use --working-root <delivery-working-checkout> as the current-run artifact root."
+        )
+    artifact_root = args.working_root or args.output_root or args.delivery_root
+    if artifact_root is None:
+        raise SystemExit("provide --working-root or --output-root for current-run artifacts")
+    if not artifact_root.is_dir():
+        raise SystemExit(f"current-run artifact root not found or not a directory: {artifact_root}")
     if args.source_root is not None and not args.source_root.is_dir():
         raise SystemExit(f"source root not found or not a directory: {args.source_root}")
     manifest = build_manifest(
         review_name=args.review_name,
         programs=programs,
-        delivery_root=args.delivery_root,
+        artifact_root=artifact_root,
         config=config,
         working_branch=args.working_branch,
-        working_root=args.working_root,
         source_root=args.source_root,
         inventory_dir=args.inventory_dir,
-        force_rescan_requests=force_rescan_requests,
+        program_first=args.program_first,
     )
     manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
     print(f"Wrote {manifest_path}")
@@ -1017,14 +1003,27 @@ def build_parser() -> argparse.ArgumentParser:
     build = subparsers.add_parser("build", help="Build manifest and review skeleton")
     build.add_argument("--review-name", required=True)
     build.add_argument("--programs-file", type=Path, required=True)
-    build.add_argument("--delivery-root", type=Path, required=True)
-    build.add_argument("--working-root", type=Path)
-    build.add_argument("--source-root", type=Path)
-    build.add_argument("--inventory-dir", type=Path)
+    build.add_argument("--working-root", type=Path, help="Delivery working checkout or current-run artifact root")
+    build.add_argument("--output-root", type=Path, help="Alias for current-run artifact root")
+    build.add_argument(
+        "--delivery-root",
+        type=Path,
+        help="Deprecated; no longer supported for program-flow core review",
+    )
     build.add_argument(
         "--force-rescan-file",
         type=Path,
-        help="Optional file with PROGRAM|reason rows that should bypass remote-main reuse",
+        help="Deprecated; no longer supported for program-flow core review",
+    )
+    build.add_argument("--source-root", type=Path)
+    build.add_argument("--inventory-dir", type=Path)
+    build.add_argument(
+        "--program-first",
+        action="store_true",
+        help=(
+            "Compatibility marker recorded in run_profile; the default workflow is already "
+            "program-evidence first and does not reuse remote-main or prior-run artifacts."
+        ),
     )
     build.add_argument("--profile", type=Path, required=True)
     build.add_argument("--output-dir", type=Path, required=True)

@@ -15,11 +15,13 @@ Each team needs two repos:
 
 ```text
 source repo    = read-only legacy code evidence
-delivery repo  = generated analysis artifacts, SME review, PR review, reuse
+delivery repo  = generated analysis artifacts, SME review, PR review
 ```
 
-Only delivery repo remote `main` is treated as approved reusable knowledge.
-Working branches such as `develop-leo` are draft workspaces.
+For the default program-flow workflow, every distinct SME-provided program is
+analyzed for the current run. Working branches such as `develop-leo` are draft
+workspaces and the program-set builder reads current-run artifacts from that
+working branch only.
 
 ## 1. Create Delivery Repo Folders
 
@@ -50,9 +52,8 @@ skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml
 Save it in the team's normal config location, then edit:
 
 ```yaml
-delivery_artifact_lookup_profile:
+program_artifact_resolution_profile:
   repo: <ORG>/<DELIVERY_REPO>
-  branch: main
   program_folder_patterns:
     - modules/*/{PROGRAM}
   program_name_normalization:
@@ -93,7 +94,6 @@ this every run; the team sets it once.
 The operator or agent needs:
 
 - read access to the source repo
-- read access to delivery repo remote `main`
 - write access to the delivery working branch
 - permission to open a PR back to delivery repo `main`
 
@@ -127,16 +127,15 @@ Programs:
 
 Then follow [`flow-skill-e2e-guideline.md`](flow-skill-e2e-guideline.md).
 The skill first checks `<source-repo>/outputs/repo-scan/program-list.csv` and
-`scan-summary.yaml` for programs not found on delivery remote `main`. If that
-cache is missing or stale, run `legacy-ibmi-inventory` once for the source repo
-and then continue with targeted per-program scans.
+`scan-summary.yaml` to locate each program and determine its tier. If that cache
+is missing or stale, run `legacy-ibmi-inventory` once for the source repo and
+then continue with targeted per-program scans.
 
 The first run should prove:
 
-- central repo lookup works against remote `main`
 - source inventory cache freshness is recorded
-- existing program artifacts are reused
-- missing programs are scanned from source
+- every distinct SME-provided program is analyzed from source for the current run
+- repeated programs in the same batch reuse the current-run artifact
 - program artifacts land in the configured tier folders
 - the program-set review lands under `program_set_review_parent`
 - validator passes before SME handoff
@@ -189,23 +188,24 @@ modules/CAP-ID-0004-program_set_reviews/manual_adjustment_core_review/
 Open one PR for the batch. Include:
 
 - SME-provided program list
-- lookup result summary
-- programs reused from remote `main`
-- programs newly scanned
+- run_resolution summary
+- programs analyzed this run
+- repeated programs reused from the same run/batch
 - output folders touched
 - validator result
 - SME review focus
 
-After review and merge to `main`, those artifacts become reusable by future
-flow scans.
+After review and merge to `main`, those artifacts become durable delivery
+history. Future program-flow runs still analyze their own current-run artifacts
+by default; differences are reviewed through Git/PR.
 
 ## Common Mistakes
 
-- Using a stale local delivery checkout as proof that a program is missing.
-- Treating `develop-<person>` as approved reuse source.
+- Treating older delivery artifacts as completion evidence for this run.
 - Stripping `@` from program names when the profile says exact match.
 - Creating one delivery branch per program scan.
 - Combining unrelated SME flow blocks into one program-set review.
 - Putting a program-set review inside one program tier folder instead of the
   configured `program_set_review_parent`.
-- Letting the LLM omit a requested program because its artifact was missing.
+- Letting the LLM omit a requested program because its current-run artifact was
+  missing.
