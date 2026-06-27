@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3189.9349999999995 357.4" width="3189.9349999999995" height="357.4" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="upstream" data-label="Upstream Program Flow Map repo (TBD)">
+  <rect x="547.4939999999999" y="121.80000000000001" width="464.005" height="113.80000000000001" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="547.4939999999999" y="121.80000000000001" width="464.005" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="559.4939999999999" y="135.8" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Upstream Program Flow Map repo (TBD)</text>
+</g>
+<g class="subgraph" data-id="lens" data-label="Atlas Phoenix Lens
+Legacy Spec Factory repository">
+  <rect x="1071.4989999999998" y="60.97500000000001" width="1610.0059999999999" height="233.00000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="1071.4989999999998" y="60.97500000000001" width="1610.0059999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1083.4989999999998" y="74.97500000000001" font-size="12" font-weight="600" fill="var(--_text-sec)"><tspan x="1083.4989999999998" dy="-3.6000000000000014">Atlas Phoenix Lens</tspan><tspan x="1083.4989999999998" dy="15.600000000000001">Legacy Spec Factory repository</tspan></text>
+</g>
+<g class="subgraph" data-id="evidence" data-label="Structured modernization evidence">
+  <rect x="2741.5049999999997" y="40" width="408.42999999999995" height="277.40000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="2741.5049999999997" y="40" width="408.42999999999995" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="2753.5049999999997" y="54" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Structured modernization evidence</text>
+</g>
+<polyline class="edge" data-from="legacy" data-to="xref" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="238.30099999999996,225.36666666666667 262.30099999999993,225.36666666666667 262.30099999999993,192.70000000000002 286.30099999999993,192.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="legacy" data-to="source" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="238.30099999999996,225.36666666666667 262.30099999999993,225.36666666666667 262.30099999999993,290.5 778.558,290.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="xref" data-to="neo4j" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="493.4939999999999,192.70000000000002 563.4939999999999,192.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="flowapp" data-to="flowinput" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="996.866,192.70000000000002 1053.4989999999998,192.70000000000002 1053.4989999999998,213.67500000000004 1100.4664999999998,213.67500000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="source" data-to="program" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1016.132,290.5 1641.3159999999998,290.5 1641.3159999999998,251.07500000000002 1665.3159999999998,251.07500000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="program" data-to="observed" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1899.1849999999997,251.07500000000002 1923.1849999999997,251.07500000000002 1923.1849999999997,274.5 2763.9269999999997,274.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="flow" data-to="observed" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2169.198,203.6916666666667 2193.1979999999994,203.6916666666667 2193.1979999999994,274.5 2763.9269999999997,274.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="module" data-to="rules" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2427.3549999999996,185.2416666666667 2451.3549999999996,185.2416666666667 2451.3549999999996,192.70000000000002 2763.4329999999995,192.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="brd" data-to="outputs" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2665.5049999999997,166.79166666666669 2723.5049999999997,166.79166666666669 2723.5049999999997,110.9 2763.9269999999997,110.89999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="neo4j" data-to="flowapp" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="729.1909999999999,192.70000000000002 778.558,192.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="flowinput" data-to="batch" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1353.6014999999998,213.67500000000004 1371.11775,213.67500000000004 1371.11775,232.62500000000003 1388.6339999999998,232.62500000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="batch" data-to="program" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1617.3159999999998,232.62500000000003 1641.3159999999998,232.62500000000003 1641.3159999999998,251.07500000000002 1665.3159999999998,251.07500000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="program" data-to="flow" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1899.1849999999997,251.07500000000002 1923.1849999999997,251.07500000000002 1923.1849999999997,203.6916666666667 1947.1849999999997,203.6916666666667" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="flow" data-to="module" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2169.198,203.6916666666667 2193.1979999999994,203.6916666666667 2193.1979999999994,185.2416666666667 2217.1979999999994,185.2416666666667" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="module" data-to="brd" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2427.3549999999996,185.2416666666667 2451.3549999999996,185.2416666666667 2451.3549999999996,166.79166666666669 2475.3549999999996,166.79166666666669" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="flowinput" data-to="flow" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1353.6014999999998,213.67500000000004 1371.11775,213.67500000000004 1371.11775,203.6916666666667 1947.1849999999997,203.6916666666667" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="observed" data-to="questions" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2920.7319999999995,274.5 2973.8779999999997,274.5 2973.8779999999997,233.60000000000002 3000.8419999999996,233.60000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="rules" data-to="questions" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2946.9139999999993,192.70000000000002 2973.8779999999997,192.70000000000002 2973.8779999999997,233.60000000000002 3000.8419999999996,233.60000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="node" data-id="legacy" data-label="IBM i / AS400 legacy estate
+RPG, CL, COBOL, DDS" data-shape="rectangle">
+  <rect x="40" y="198.46666666666667" width="198.30099999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="139.15049999999997" y="225.36666666666667" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="139.15049999999997" dy="-3.9000000000000012">IBM i / AS400 legacy estate</tspan><tspan x="139.15049999999997" dy="16.900000000000002">RPG, CL, COBOL, DDS</tspan></text>
+</g>
+<g class="node" data-id="xref" data-label="ARCAD REF / XREF exports
+program calls, objects, fields" data-shape="rectangle">
+  <rect x="286.30099999999993" y="165.8" width="207.19299999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="389.8974999999999" y="192.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="389.8974999999999" dy="-3.9000000000000012">ARCAD REF / XREF exports</tspan><tspan x="389.8974999999999" dy="16.900000000000002">program calls, objects, fields</tspan></text>
+</g>
+<g class="node" data-id="source" data-label="Source repositories
+RPG / CL / COBOL / DDS members" data-shape="rectangle">
+  <rect x="778.558" y="263.6" width="237.57399999999993" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="897.3449999999999" y="290.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="897.3449999999999" dy="-3.9000000000000012">Source repositories</tspan><tspan x="897.3449999999999" dy="16.900000000000002">RPG / CL / COBOL / DDS members</tspan></text>
+</g>
+<g class="node" data-id="neo4j" data-label="Neo4j graph store
+CALLS relationships" data-shape="rectangle">
+  <rect x="563.4939999999999" y="165.8" width="165.697" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="646.3425" y="192.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="646.3425" dy="-3.9000000000000012">Neo4j graph store</tspan><tspan x="646.3425" dy="16.900000000000002">CALLS relationships</tspan></text>
+</g>
+<g class="node" data-id="flowapp" data-label="Program Flow Map application
+flow visualization and exports" data-shape="rectangle">
+  <rect x="778.558" y="165.8" width="218.30799999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="887.712" y="192.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="887.712" dy="-3.9000000000000012">Program Flow Map application</tspan><tspan x="887.712" dy="16.900000000000002">flow visualization and exports</tspan></text>
+</g>
+<g class="node" data-id="flowinput" data-label="Program Flow outputs
+selected flow, program list, field trace" data-shape="rectangle">
+  <rect x="1100.4664999999998" y="186.77500000000003" width="253.13499999999993" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1227.0339999999997" y="213.67500000000004" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1227.0339999999997" dy="-3.9000000000000012">Program Flow outputs</tspan><tspan x="1227.0339999999997" dy="16.900000000000002">selected flow, program list, field trace</tspan></text>
+</g>
+<g class="node" data-id="batch" data-label="legacy-ibmi-program-list-batch
+prompt queue and scan tracking" data-shape="rectangle">
+  <rect x="1388.6339999999998" y="205.72500000000002" width="228.68199999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1502.9749999999997" y="232.62500000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1502.9749999999997" dy="-3.9000000000000012">legacy-ibmi-program-list-batch</tspan><tspan x="1502.9749999999997" dy="16.900000000000002">prompt queue and scan tracking</tspan></text>
+</g>
+<g class="node" data-id="program" data-label="legacy-ibmi-program-analyzer
+single-program source evidence" data-shape="rectangle">
+  <rect x="1665.3159999999998" y="224.175" width="233.86899999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1782.2504999999999" y="251.07500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1782.2504999999999" dy="-3.9000000000000012">legacy-ibmi-program-analyzer</tspan><tspan x="1782.2504999999999" dy="16.900000000000002">single-program source evidence</tspan></text>
+</g>
+<g class="node" data-id="flow" data-label="legacy-ibmi-flow-analyzer
+cross-program behavior chain" data-shape="rectangle">
+  <rect x="1947.1849999999997" y="176.79166666666669" width="222.01299999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2058.1915" y="203.6916666666667" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2058.1915" dy="-3.9000000000000012">legacy-ibmi-flow-analyzer</tspan><tspan x="2058.1915" dy="16.900000000000002">cross-program behavior chain</tspan></text>
+</g>
+<g class="node" data-id="module" data-label="legacy-ibmi-module-analyzer
+module context assembly" data-shape="rectangle">
+  <rect x="2217.1979999999994" y="158.3416666666667" width="210.15699999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2322.2764999999995" y="185.2416666666667" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2322.2764999999995" dy="-3.9000000000000012">legacy-ibmi-module-analyzer</tspan><tspan x="2322.2764999999995" dy="16.900000000000002">module context assembly</tspan></text>
+</g>
+<g class="node" data-id="brd" data-label="legacy-brd-writer
+reviewable BRD package" data-shape="rectangle">
+  <rect x="2475.3549999999996" y="139.89166666666668" width="190.14999999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2570.4299999999994" y="166.79166666666669" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2570.4299999999994" dy="-3.9000000000000012">legacy-brd-writer</tspan><tspan x="2570.4299999999994" dy="16.900000000000002">reviewable BRD package</tspan></text>
+</g>
+<g class="node" data-id="validator" data-label="legacy-step-validator
+gate and contract validation" data-shape="rectangle">
+  <rect x="1100.4664999999998" y="104.97500000000001" width="201.26499999999993" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1201.0989999999997" y="131.875" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1201.0989999999997" dy="-3.9000000000000012">legacy-step-validator</tspan><tspan x="1201.0989999999997" dy="16.900000000000002">gate and contract validation</tspan></text>
+</g>
+<g class="node" data-id="observed" data-label="Observed behavior
+BEH-*" data-shape="rectangle">
+  <rect x="2763.9269999999997" y="247.60000000000002" width="156.805" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2842.3295" y="274.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2842.3295" dy="-3.9000000000000012">Observed behavior</tspan><tspan x="2842.3295" dy="16.900000000000002">BEH-*</tspan></text>
+</g>
+<g class="node" data-id="rules" data-label="Business rule seeds
+BR-* needs SME review" data-shape="rectangle">
+  <rect x="2763.4329999999995" y="165.8" width="183.48099999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2855.1734999999994" y="192.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2855.1734999999994" dy="-3.9000000000000012">Business rule seeds</tspan><tspan x="2855.1734999999994" dy="16.900000000000002">BR-* needs SME review</tspan></text>
+</g>
+<g class="node" data-id="questions" data-label="Open questions
+TBD-*" data-shape="rectangle">
+  <rect x="3000.8419999999996" y="206.70000000000002" width="133.09300000000002" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="3067.3884999999996" y="233.60000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="3067.3884999999996" dy="-3.9000000000000012">Open questions</tspan><tspan x="3067.3884999999996" dy="16.900000000000002">TBD-*</tspan></text>
+</g>
+<g class="node" data-id="outputs" data-label="BRD / spec / handoff inputs
+after approval gates" data-shape="rectangle">
+  <rect x="2763.9269999999997" y="84" width="195.33699999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="2861.5954999999994" y="110.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2861.5954999999994" dy="-3.9000000000000012">BRD / spec / handoff inputs</tspan><tspan x="2861.5954999999994" dy="16.900000000000002">after approval gates</tspan></text>
+</g>
+</svg>

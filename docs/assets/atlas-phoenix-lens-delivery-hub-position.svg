@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2420.2239999999997 379.20000000000005" width="2420.2239999999997" height="379.20000000000005" style="--bg:#0d1117;--fg:#e6edf3;--line:#3d444d;--accent:#4493f8;--muted:#9198a1;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="hub" data-to="m1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="264.977,148.70000000000002 312.977,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m1" data-to="g1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="449.775,148.70000000000002 497.775,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g1" data-to="m2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="557.775,148.70000000000002 605.775,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m2" data-to="g2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="754.429,148.70000000000002 802.429,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g2" data-to="m3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="862.429,148.70000000000002 910.429,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m3" data-to="g3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1066.493,148.70000000000002 1078.493,148.70000000000002 1078.493,66.9 1090.493,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g3" data-to="m4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1150.493,66.9 1198.493,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m4" data-to="g4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1361.2259999999999,66.9 1389.5384999999999,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g4" data-to="m5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1449.5384999999999,66.9 1517.2259999999999,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m5" data-to="g5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1656.2469999999998,66.9 1704.2469999999998,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g5" data-to="m6" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1764.2469999999998,66.9 1812.2469999999998,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m6" data-to="g6" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1961.6419999999998,66.9 2009.6419999999998,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="g6" data-to="m7" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2069.642,66.9 2117.642,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m7" data-to="g7" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2272.2239999999997,66.9 2320.2239999999997,66.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="m3" data-to="lens" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1066.493,148.70000000000002 1078.493,148.70000000000002 1078.493,230.50000000000003 1090.493,230.50000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="lens" data-to="flow" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1345.8509999999999,230.50000000000003 1367.6947499999999,230.50000000000003 1367.6947499999999,148.70000000000002 1389.5384999999999,148.70000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="lens" data-to="scan" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1345.8509999999999,230.50000000000003 1367.6947499999999,230.50000000000003 1367.6947499999999,230.50000000000003 1389.5384999999999,230.50000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="lens" data-to="evidence" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1345.8509999999999,230.50000000000003 1367.6947499999999,230.50000000000003 1367.6947499999999,312.3 1389.5384999999999,312.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="node" data-id="hub" data-label="Atlas Engineering Delivery Hub
+Seven Mountains SDLC" data-shape="rectangle">
+  <rect x="40" y="121.80000000000001" width="224.97699999999995" height="53.800000000000004" rx="0" ry="0" fill="#071933" stroke="#20c8ff" stroke-width="2px" />
+  <text x="152.4885" y="148.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="152.4885" dy="-3.9000000000000012">Atlas Engineering Delivery Hub</tspan><tspan x="152.4885" dy="16.900000000000002">Seven Mountains SDLC</tspan></text>
+</g>
+<g class="node" data-id="m1" data-label="M1 Planning
+scope and intent" data-shape="rectangle">
+  <rect x="312.977" y="121.80000000000001" width="136.798" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="381.376" y="148.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="381.376" dy="-3.9000000000000012">M1 Planning</tspan><tspan x="381.376" dy="16.900000000000002">scope and intent</tspan></text>
+</g>
+<g class="node" data-id="m2" data-label="M2 Estimation
+size and feasibility" data-shape="rectangle">
+  <rect x="605.775" y="121.80000000000001" width="148.654" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="680.102" y="148.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="680.102" dy="-3.9000000000000012">M2 Estimation</tspan><tspan x="680.102" dy="16.900000000000002">size and feasibility</tspan></text>
+</g>
+<g class="node" data-id="m3" data-label="M3 Discovery
+Atlas Phoenix Lens" data-shape="rectangle">
+  <rect x="910.429" y="121.80000000000001" width="156.06400000000002" height="53.800000000000004" rx="0" ry="0" fill="#153a2f" stroke="#4bd39c" stroke-width="3px" />
+  <text x="988.461" y="148.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="988.461" dy="-3.9000000000000012">M3 Discovery</tspan><tspan x="988.461" dy="16.900000000000002">Atlas Phoenix Lens</tspan></text>
+</g>
+<g class="node" data-id="m4" data-label="M4 Build
+target implementation" data-shape="rectangle">
+  <rect x="1198.493" y="40" width="162.73300000000003" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="1279.8595" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1279.8595" dy="-3.9000000000000012">M4 Build</tspan><tspan x="1279.8595" dy="16.900000000000002">target implementation</tspan></text>
+</g>
+<g class="node" data-id="m5" data-label="M5 Testing
+quality validation" data-shape="rectangle">
+  <rect x="1517.2259999999999" y="40" width="139.02100000000002" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="1586.7365" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1586.7365" dy="-3.9000000000000012">M5 Testing</tspan><tspan x="1586.7365" dy="16.900000000000002">quality validation</tspan></text>
+</g>
+<g class="node" data-id="m6" data-label="M6 Deployment
+controlled release" data-shape="rectangle">
+  <rect x="1812.2469999999998" y="40" width="149.395" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="1886.9444999999998" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1886.9444999999998" dy="-3.9000000000000012">M6 Deployment</tspan><tspan x="1886.9444999999998" dy="16.900000000000002">controlled release</tspan></text>
+</g>
+<g class="node" data-id="m7" data-label="M7 Maintenance
+operate and evolve" data-shape="rectangle">
+  <rect x="2117.642" y="40" width="154.582" height="53.800000000000004" rx="0" ry="0" fill="#10243f" stroke="#7aa7d9" stroke-width="0.75" />
+  <text x="2194.933" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="2194.933" dy="-3.9000000000000012">M7 Maintenance</tspan><tspan x="2194.933" dy="16.900000000000002">operate and evolve</tspan></text>
+</g>
+<g class="node" data-id="g1" data-label="G1" data-shape="rectangle">
+  <rect x="497.775" y="130.25" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="527.775" y="148.7" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G1</text>
+</g>
+<g class="node" data-id="g2" data-label="G2" data-shape="rectangle">
+  <rect x="802.429" y="130.25" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="832.429" y="148.7" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G2</text>
+</g>
+<g class="node" data-id="g3" data-label="G3" data-shape="rectangle">
+  <rect x="1090.493" y="48.45" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="1120.493" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G3</text>
+</g>
+<g class="node" data-id="g4" data-label="G4" data-shape="rectangle">
+  <rect x="1389.5384999999999" y="48.45" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="1419.5384999999999" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G4</text>
+</g>
+<g class="node" data-id="g5" data-label="G5" data-shape="rectangle">
+  <rect x="1704.2469999999998" y="48.45" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="1734.2469999999998" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G5</text>
+</g>
+<g class="node" data-id="g6" data-label="G6" data-shape="rectangle">
+  <rect x="2009.6419999999998" y="48.45" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="2039.6419999999998" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G6</text>
+</g>
+<g class="node" data-id="g7" data-label="G7" data-shape="rectangle">
+  <rect x="2320.2239999999997" y="48.45" width="60" height="36.900000000000006" rx="0" ry="0" fill="#4b1d16" stroke="#f4a83a" stroke-width="0.75" />
+  <text x="2350.2239999999997" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff" dy="4.55">G7</text>
+</g>
+<g class="node" data-id="lens" data-label="Discovery capability
+RPG code to modernization evidence" data-shape="rectangle">
+  <rect x="1090.493" y="203.60000000000002" width="255.35799999999995" height="53.800000000000004" rx="0" ry="0" fill="#153a2f" stroke="#4bd39c" stroke-width="3px" />
+  <text x="1218.172" y="230.50000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1218.172" dy="-3.9000000000000012">Discovery capability</tspan><tspan x="1218.172" dy="16.900000000000002">RPG code to modernization evidence</tspan></text>
+</g>
+<g class="node" data-id="flow" data-label="Program Flow Map
+Neo4j upstream repo" data-shape="rectangle">
+  <rect x="1389.5384999999999" y="121.80000000000001" width="163.474" height="53.800000000000004" rx="0" ry="0" fill="#182238" stroke="#20c8ff" stroke-width="0.75" />
+  <text x="1471.2755" y="148.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1471.2755" dy="-3.9000000000000012">Program Flow Map</tspan><tspan x="1471.2755" dy="16.900000000000002">Neo4j upstream repo</tspan></text>
+</g>
+<g class="node" data-id="scan" data-label="Legacy Spec Factory skills
+source-code scan" data-shape="rectangle">
+  <rect x="1389.5384999999999" y="203.60000000000002" width="204.22899999999993" height="53.800000000000004" rx="0" ry="0" fill="#182238" stroke="#20c8ff" stroke-width="0.75" />
+  <text x="1491.6529999999998" y="230.50000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1491.6529999999998" dy="-3.9000000000000012">Legacy Spec Factory skills</tspan><tspan x="1491.6529999999998" dy="16.900000000000002">source-code scan</tspan></text>
+</g>
+<g class="node" data-id="evidence" data-label="Structured modernization evidence
+BEH-* / BR-* / TBD-*" data-shape="rectangle">
+  <rect x="1389.5384999999999" y="285.40000000000003" width="247.94799999999998" height="53.800000000000004" rx="0" ry="0" fill="#182238" stroke="#20c8ff" stroke-width="0.75" />
+  <text x="1513.5124999999998" y="312.3" text-anchor="middle" font-size="13" font-weight="500" fill="#ffffff"><tspan x="1513.5124999999998" dy="-3.9000000000000012">Structured modernization evidence</tspan><tspan x="1513.5124999999998" dy="16.900000000000002">BEH-* / BR-* / TBD-*</tspan></text>
+</g>
+</svg>
