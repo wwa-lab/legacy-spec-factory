@@ -16,23 +16,22 @@ program-set-sme-core-review.md
 ```
 
 `program-set-core-input-manifest.yaml` is the control input. It records the
-SME-supplied program order, normalized program identity, central lookup result,
-artifact root, compact artifact availability, delivery lookup profile, and
-delivery workspace profile. It also records source inventory cache status under
-`source_inventory`: the checked cache directory, `program-list.csv` /
-`scan-summary.yaml` presence, freshness/action, current source revision,
-inventory revision, and per-program source-path/tier hints. The LLM or agent
-may summarize from the manifest and listed compact artifacts, but must not
-silently add or remove programs. In the default program-evidence-first flow,
-the builder should receive `--program-first --working-root
-<delivery-working-branch-checkout>` so the manifest can combine approved
-remote-main artifacts with newly analyzed working-branch artifacts before
-assembly.
+SME-supplied program order, normalized program identity, current-run
+`run_resolution`, artifact root, compact artifact availability, program
+resolution profile, and delivery workspace profile. It also records source
+inventory cache status under `source_inventory`: the checked cache directory,
+`program-list.csv` / `scan-summary.yaml` presence, freshness/action, current
+source revision, inventory revision, and per-program source-path/tier hints.
+The LLM or agent may summarize from the manifest and listed compact artifacts,
+but must not silently add or remove programs. In the default
+program-evidence-first flow, the builder should receive `--program-first
+--working-root <delivery-working-branch-checkout>`. The builder does not read
+remote-main or prior-run artifacts for program-flow assembly.
 
 ```markdown
 # Program Set SME Core Review: [Program Set Name]
 
-Lookup Profile:
+Run Profile:
 Source Inventory Cache:
 Sources:
 Core Completeness Ledger:
@@ -63,7 +62,7 @@ python3 scripts/validate-program-set-core-review.py \
 
 The validator must pass before SME handoff. It checks required core sections,
 per-program coverage in Sources and Core Completeness Ledger, legal
-`central_lookup_result` values, and absence of full-flow sections such as
+`run_resolution` values, and absence of full-flow sections such as
 Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and
 SME Checklist.
 
@@ -104,8 +103,8 @@ Use this only when full transaction-flow analysis is explicitly requested:
 ## SME Core Review Artifact
 
 When the user asks to merge multiple existing program-analysis results, or when
-the SME provides a program flow that should reuse existing central artifacts
-before any scan, produce:
+the SME provides a program flow that should first analyze each named program
+for the current run, produce:
 
 - `program-set-sme-core-review.md`
 
@@ -133,28 +132,17 @@ each folder has its own manifest, Sources table, Core Completeness Ledger, and
 validator result. Do not combine unrelated business flows into one
 `program-set-sme-core-review.md`.
 
-The default field workflow is program-evidence first. Central artifact reuse
-remains the first resolution path for every requested program: reuse complete
-and current approved remote-main artifacts when available; otherwise analyze
-the program from source and write the program-level artifacts to the delivery
-working branch. Record `central_lookup_result` as `found_on_remote_main`,
-`not_found_on_remote_main`, or `remote_unavailable`. Only unresolved programs
-with `not_found_on_remote_main`, incomplete/stale artifacts, or explicit
-force-rescan requests are routed back to `legacy-ibmi-program-analyzer`. For
-`found_on_remote_main`, read compact artifacts from the remote-main sparse
-checkout or already-fresh verified cache used for lookup.
+The default field workflow is program-evidence first with **no cross-run
+reuse**. Every distinct SME-provided program must be analyzed from the current
+source repo for this run before assembly. If the same normalized program appears
+again later in the same SME batch, reuse only the artifact already produced
+earlier in this run. Record `run_resolution` as `analyzed_this_run`,
+`reused_same_run`, `pending_source`, or `blocked_missing_source`. Remote-main,
+prior-run, and other analysts' artifacts may be compared later through Git/PR
+review, but they do not satisfy this run's evidence gate.
 
-If the SME explicitly requests a refresh of a `found_on_remote_main` program,
-record a force-rescan reason and do not use the old remote-main artifact for
-the current review. Run `legacy-ibmi-program-analyzer` with
-`--force-rescan --rescan-reason "<why>"`, write the new draft artifacts to the
-delivery working branch, and pass `--force-rescan-file <file>` to the
-program-set builder. The force-rescan file uses one `PROGRAM|reason` row per
-program. The manifest must preserve the prior `remote_main_artifact_root`,
-`force_rescan: true`, and the reason.
-
-For programs with `not_found_on_remote_main`, check the source repo inventory
-cache before source discovery. Default path:
+Before source discovery for any program that is not already complete in the
+current-run artifact root, check the source repo inventory cache. Default path:
 `<source-root>/outputs/repo-scan/program-list.csv` and
 `<source-root>/outputs/repo-scan/scan-summary.yaml`. Reuse `program-list.csv`
 only when `scan-summary.yaml.source_revision_key` matches the current clean Git
@@ -162,24 +150,17 @@ source HEAD. If the cache is missing, stale, or the source worktree has
 uncommitted source changes, run repo-level `legacy-ibmi-inventory` first, then
 use the refreshed `program-list.csv` for targeted program analysis.
 
-The accepted central artifact source of truth is the
-`legacy-modernization-delivery` GitHub remote `main` branch. A local checkout
-may be used only after a freshness check against `origin/main`; do not use a
-stale local checkout or feature branch to prove that an artifact is missing.
-Use Git method 2 (`git ls-remote` plus temporary shallow clone / sparse
-checkout, or an already-fresh verified cache), not GitHub API tooling.
 When another department uses a different delivery repo or folder structure,
-the run must provide a `delivery_artifact_lookup_profile` with configurable
-`repo`, `branch`, `module_roots`, `program_folder_patterns`, and artifact file
-patterns. The current lending-card default uses exact `modules/*/{PROGRAM}`
-matching and preserves leading `@`; `@CU118` and `CU118` remain different
-programs unless a department-specific profile explicitly defines aliases.
-Use `templates/delivery-profile.yaml` as the editable profile shape. Its
-`delivery_workspace_profile` controls where new scan output is written: the
-working branch is normally `develop-<person>` and may be created from
-`origin/main`; program artifacts go under tier-specific roots; cross-tier
+the run must provide a `program_artifact_resolution_profile` with configurable
+`repo`, `module_roots`, `program_folder_patterns`, artifact file patterns, and
+program-name normalization. The current lending-card default uses exact
+`modules/*/{PROGRAM}` matching and preserves leading `@`; `@CU118` and `CU118`
+remain different programs unless a department-specific profile explicitly
+defines aliases. Use `templates/delivery-profile.yaml` as the editable profile
+shape. Its `delivery_workspace_profile` controls where current-run output is
+written: the working branch is normally `develop-<person>` and may be created
+from `origin/main`; program artifacts go under tier-specific roots; cross-tier
 program-set reviews go under `program_set_review_parent/{REVIEW_SLUG}/`.
-Never use the working branch as the approved reuse source.
 
 This artifact must contain only source/coverage control surfaces plus the four
 core SME sections:
@@ -187,7 +168,7 @@ core SME sections:
 ```markdown
 # SME Core Review: [Flow or Program Set Name]
 
-Lookup Profile:
+Run Profile:
 Source Inventory Cache:
 Sources:
 Core Completeness Ledger:
@@ -201,16 +182,25 @@ Core Completeness Ledger:
 **Rules:**
 - Use `templates/sme-core-review.md` as the starting structure.
 - Prefer `scripts/build-program-set-core-review.py` to create the manifest and
-  skeleton whenever a delivery remote-main snapshot/cache is available.
+  skeleton after current-run program artifacts have been written or explicitly
+  marked pending/blocked.
 - Pass `--source-root <source-repo>` so the builder can check the default
   `outputs/repo-scan` inventory cache; pass `--inventory-dir` only when the
   team's cache is outside the configured default location.
 - Aggregate from compact program artifacts first:
-  `program-analysis-summary.yaml`, `routine-logic-details.yaml`,
-  `message-inventory.yaml`, and claim-specific optional sidecars.
+  `program-analysis-summary.yaml`, `message-inventory.yaml`,
+  `routine-logic-details.yaml` when present or required by tier/deep-read, and
+  claim-specific optional sidecars.
+- The four core SME sections must be self-contained. Each row must carry the
+  merged logic, condition, carrier, outcome, handling action, or exact
+  message/status meaning needed for SME review. Supporting detail references
+  are required for traceability but must not replace the explanation.
 - Populate the Core Completeness Ledger from the SME-provided program flow,
-  central delivery artifact lookup, inventory relationships, and discovered
-  call evidence. No program may be omitted because its artifact is missing.
+  current-run artifact resolution, inventory relationships, and discovered call
+  evidence. No program may be omitted because its artifact is missing. The
+  ledger reports artifact evidence availability, not final SME section quality:
+  use `Routine Logic Evidence` for `routine-logic-details.yaml` availability
+  and `Message Inventory` for `message-inventory.yaml` availability.
 - Use `program-analysis.md` only for targeted human-readable clarification.
 - Do not include Metadata, Nodes, Edges, Transaction Call Map, Replay,
   Persistence, Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables,
@@ -251,9 +241,13 @@ evidence.
 - Include only calculations/assignments that materially affect the flow outcome,
   outbound payload, persisted state, downstream call, approval/decline status,
   settlement/reversal amount, audit record, or exception path.
+- Write the calculation or assignment in the row itself, including the target,
+  operands/carriers, guard, and effect. Do not make the reader open
+  per-program artifacts to understand what is being calculated.
 - Link every row to upstream compact artifacts (`program-analysis-summary.yaml`,
-  `routine-logic-details.yaml`, `source-index.yaml`,
-  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
+  `message-inventory.yaml`, `source-index.yaml`, `routine-logic-details.yaml`
+  when present or required by tier/deep-read, `file-io-inventory.yaml`,
+  `field-mutation-matrix.yaml`,
   `sql-inventory.yaml`) or flow IDs such as `DATA-*`, `LINEAGE-*`,
   `PERSIST-*`, or `TBD-*`.
 - Do not invent calculations at flow level. If the program-level detail is
@@ -281,6 +275,9 @@ programs in the flow.
 - Include cross-program validation outcomes, response codes, return codes,
   SQLSTATE / CPF / MCH / RNX / CPD messages, shop-local message IDs, indicator
   outcomes, generic catch-all outcomes, and externally visible status values.
+- Write the validation condition, exact status/code, carrier/destination, and
+  outcome in the row itself. Evidence refs supplement the row; they do not
+  replace it.
 - Preserve exact source codes/literals and link to program-level `MSG-*`,
   `RLOG-*`, and flow-level `EXCHAIN-*` / `DATA-*` evidence.
 - If multiple programs touch the same outcome, show the producing node and the
@@ -309,6 +306,9 @@ flow-level outcomes.
   external status.
 - State whether the flow returns, rolls back, skips downstream work, continues,
   aborts, logs, or leaves a pending operator/manual action.
+- Write the detection mechanism, fields/messages set, handling action, and
+  resulting behavior in the row itself. Evidence refs supplement the row; they
+  do not replace it.
 - Do not infer specific message IDs from generic handlers.
 
 ---
@@ -331,6 +331,9 @@ Detailed per-program message occurrences remain in each program's
 **Requirements:**
 - Create one summary row per exact flow-relevant message/code/literal. Do not
   group message families.
+- Write the message/status/literal meaning and effect in the row itself. Detail
+  refs are for traceability and must not require the SME to open another file to
+  understand the message.
 - Aggregate from program-level `message-inventory.yaml` sidecars. If the
   description is unavailable, keep `unresolved - message description not
   available` and create an Open Item / TBD.
@@ -500,8 +503,9 @@ Flow scan mode: `orchestrated` | `assemble_existing`
   `assemble_existing` when the user provides existing per-program analysis
   directories to combine.
 - Every Node must have approved program analysis evidence. Core node inputs are
-  `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-logic-details.yaml`, and `message-inventory.yaml`, with
+  `program-analysis-summary.yaml`, `source-index.yaml`, and
+  `message-inventory.yaml`, plus `routine-logic-details.yaml` when present or
+  required by tier/deep-read, with
   `program-analysis-<OBJ-ID>.md` used for human-readable confirmation when
   needed.
 - `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
@@ -521,8 +525,9 @@ Flow scan mode: `orchestrated` | `assemble_existing`
   `blocked` gaps that affect flow readiness.
 - For program-analysis v0.2.5 and later, every Node must expose whether
   the flow consumed compact upstream sidecars (`program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-logic-details.yaml`,
-  `message-inventory.yaml`, `file-io-inventory.yaml`,
+  `source-index.yaml`, `message-inventory.yaml`,
+  `routine-logic-details.yaml` when present or required by tier/deep-read,
+  `file-io-inventory.yaml`,
   `field-mutation-matrix.yaml`, `sql-inventory.yaml`) for Call Evidence,
   Logic Decomposition Ledger,
   Routine Logic Details, routine-local field lineage / carrier rows,
@@ -898,7 +903,8 @@ Same conventions as program-analyzer. Group by:
 - **Pending Source** — missing program-analysis, missing DSPF, missing
   copybook
 - **Missing Program Artifact** — missing `program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-logic-details.yaml`, `message-inventory.yaml`,
+  `source-index.yaml`, `message-inventory.yaml`, `routine-logic-details.yaml`
+  when required by tier/deep-read,
   `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
   `sql-inventory.yaml`, or human-readable program analysis needed to support a
   flow claim

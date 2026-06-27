@@ -1,0 +1,71 @@
+sample_id: atlas-phoenix-lens-mini-output
+sample_type: synthetic
+flow:
+  id: FLOW-CARD-STATUS-UPDATE
+  name: Card account status update
+  source_system: IBM i / AS400
+  upstream_program_flow_map_repo: "TBD: internal Neo4j Program Flow Map repo"
+  source_snapshot: synthetic-sample
+programs:
+  - name: AMHMAIN
+    role: entry
+    source_hint: QRPGLESRC/AMHMAIN
+  - name: AMHVALR
+    role: validation
+    source_hint: QRPGLESRC/AMHVALR
+  - name: AMHUPDR
+    role: persistence
+    source_hint: QRPGLESRC/AMHUPDR
+  - name: AMHAUDR
+    role: audit
+    source_hint: QRPGLESRC/AMHAUDR
+observed_behaviors:
+  - id: BEH-CARD-STATUS-001
+    summary: Reads the current account status before applying an update.
+    evidence:
+      - AMHUPDR.rpgle:42-58
+    confidence: high
+  - id: BEH-CARD-STATUS-002
+    summary: Rejects updates when the account is already closed.
+    evidence:
+      - AMHUPDR.rpgle:61-76
+    confidence: medium
+  - id: BEH-CARD-STATUS-003
+    summary: Updates CARDACCT.STATUS when validation has passed.
+    evidence:
+      - AMHUPDR.rpgle:91-108
+      - ARCAD-XREF-0004
+    confidence: high
+  - id: BEH-CARD-STATUS-004
+    summary: Calls AMHAUDR after a successful status update.
+    evidence:
+      - AMHUPDR.rpgle:112-118
+      - ARCAD-XREF-0003
+    confidence: high
+business_rule_seeds:
+  - id: BR-CARD-STATUS-001
+    summary: Closed accounts cannot be moved back to active status by this flow.
+    status: needs_sme_review
+    derived_from:
+      - BEH-CARD-STATUS-002
+  - id: BR-CARD-STATUS-002
+    summary: Every successful status change requires an audit record.
+    status: needs_sme_review
+    derived_from:
+      - BEH-CARD-STATUS-004
+open_questions:
+  - id: TBD-CARD-STATUS-001
+    question: Is closed-account rejection a business policy or a technical safeguard?
+    resolver: Card operations SME
+    blocking: true
+  - id: TBD-CARD-STATUS-002
+    question: Are there override paths outside this flow?
+    resolver: IBM i SME
+    blocking: false
+downstream_readiness:
+  brd_ready: false
+  reason: SME review is required before candidate business rules can be promoted.
+  next_steps:
+    - Review BEH-* observed behaviors with IBM i SME.
+    - Resolve blocking TBD-* questions.
+    - Promote confirmed business rules into BRD source context.

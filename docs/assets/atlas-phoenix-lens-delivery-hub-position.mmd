@@ -1,0 +1,37 @@
+flowchart LR
+  hub["Atlas Engineering Delivery Hub<br/>Seven Mountains SDLC"]
+
+  m1["M1 Planning<br/>scope and intent"]
+  m2["M2 Estimation<br/>size and feasibility"]
+  m3["M3 Discovery<br/>Atlas Phoenix Lens"]
+  m4["M4 Build<br/>target implementation"]
+  m5["M5 Testing<br/>quality validation"]
+  m6["M6 Deployment<br/>controlled release"]
+  m7["M7 Maintenance<br/>operate and evolve"]
+
+  g1["G1"]
+  g2["G2"]
+  g3["G3"]
+  g4["G4"]
+  g5["G5"]
+  g6["G6"]
+  g7["G7"]
+
+  hub --> m1 --> g1 --> m2 --> g2 --> m3 --> g3 --> m4 --> g4 --> m5 --> g5 --> m6 --> g6 --> m7 --> g7
+
+  m3 --> lens["Discovery capability<br/>RPG code to modernization evidence"]
+  lens --> flow["Program Flow Map<br/>Neo4j upstream repo"]
+  lens --> scan["Legacy Spec Factory skills<br/>source-code scan"]
+  lens --> evidence["Structured modernization evidence<br/>BEH-* / BR-* / TBD-*"]
+
+  classDef hub fill:#071933,stroke:#20c8ff,color:#ffffff,stroke-width:2px
+  classDef stage fill:#10243f,stroke:#7aa7d9,color:#ffffff
+  classDef discovery fill:#153a2f,stroke:#4bd39c,color:#ffffff,stroke-width:3px
+  classDef gate fill:#4b1d16,stroke:#f4a83a,color:#ffffff
+  classDef output fill:#182238,stroke:#20c8ff,color:#ffffff
+
+  class hub hub
+  class m1,m2,m4,m5,m6,m7 stage
+  class m3,lens discovery
+  class g1,g2,g3,g4,g5,g6,g7 gate
+  class flow,scan,evidence output

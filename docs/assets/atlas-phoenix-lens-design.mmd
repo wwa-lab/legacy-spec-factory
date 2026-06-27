@@ -1,0 +1,44 @@
+flowchart LR
+  legacy["IBM i / AS400 legacy estate<br/>RPG, CL, COBOL, DDS"]
+  xref["ARCAD REF / XREF exports<br/>program calls, objects, fields"]
+  source["Source repositories<br/>RPG / CL / COBOL / DDS members"]
+
+  subgraph upstream["Upstream Program Flow Map repo (TBD)"]
+    neo4j["Neo4j graph store<br/>CALLS relationships"]
+    flowapp["Program Flow Map application<br/>flow visualization and exports"]
+  end
+
+  subgraph lens["Atlas Phoenix Lens<br/>Legacy Spec Factory repository"]
+    flowinput["Program Flow outputs<br/>selected flow, program list, field trace"]
+    batch["legacy-ibmi-program-list-batch<br/>prompt queue and scan tracking"]
+    program["legacy-ibmi-program-analyzer<br/>single-program source evidence"]
+    flow["legacy-ibmi-flow-analyzer<br/>cross-program behavior chain"]
+    module["legacy-ibmi-module-analyzer<br/>module context assembly"]
+    brd["legacy-brd-writer<br/>reviewable BRD package"]
+    validator["legacy-step-validator<br/>gate and contract validation"]
+  end
+
+  subgraph evidence["Structured modernization evidence"]
+    observed["Observed behavior<br/>BEH-*"]
+    rules["Business rule seeds<br/>BR-* needs SME review"]
+    questions["Open questions<br/>TBD-*"]
+    outputs["BRD / spec / handoff inputs<br/>after approval gates"]
+  end
+
+  legacy --> xref
+  legacy --> source
+  xref --> neo4j --> flowapp --> flowinput
+  source --> program
+  flowinput --> batch --> program --> flow --> module --> brd
+  flowinput --> flow
+  program --> observed
+  flow --> observed
+  module --> rules
+  brd --> outputs
+  validator -. validates .- batch
+  validator -. validates .- program
+  validator -. validates .- flow
+  validator -. validates .- module
+  validator -. validates .- brd
+  observed --> questions
+  rules --> questions

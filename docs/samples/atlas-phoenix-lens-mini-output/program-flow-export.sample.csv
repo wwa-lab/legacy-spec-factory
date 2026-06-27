@@ -1,0 +1,6 @@
+flow_id,flow_name,sequence,caller,callee,relationship_type,evidence_ref,source_member_hint,notes
+FLOW-CARD-STATUS-UPDATE,Card account status update,1,AMHMAIN,AMHVALR,CALLS,ARCAD-XREF-0001,QRPGLESRC/AMHMAIN,"Entry program calls validation routine"
+FLOW-CARD-STATUS-UPDATE,Card account status update,2,AMHVALR,AMHUPDR,CALLS,ARCAD-XREF-0002,QRPGLESRC/AMHVALR,"Validation passes approved account updates forward"
+FLOW-CARD-STATUS-UPDATE,Card account status update,3,AMHUPDR,AMHAUDR,CALLS,ARCAD-XREF-0003,QRPGLESRC/AMHUPDR,"Update program writes audit trail after status change"
+FLOW-CARD-STATUS-UPDATE,Card account status update,4,AMHUPDR,CARDACCT,UPDATES,ARCAD-XREF-0004,PF/CARDACCT,"Card account master status is updated"
+FLOW-CARD-STATUS-UPDATE,Card account status update,5,AMHAUDR,CARDAUD,WRITES,ARCAD-XREF-0005,PF/CARDAUD,"Audit record is written for traceability"

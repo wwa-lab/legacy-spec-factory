@@ -13,8 +13,9 @@ single or batched SME program-flow run, see
 Use the source repo as the read-only code evidence source.
 
 Use the delivery repo for generated analysis artifacts, SME reviews, PR review,
-and future reuse. Only delivery repo remote `main` is treated as the approved
-central artifact source.
+and durable history. For the default program-flow workflow, do not use
+remote-main or prior-run artifacts as completion evidence. The current run
+creates its own program artifacts on the delivery working branch.
 
 ## One Profile
 
@@ -27,15 +28,22 @@ skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml
 Edit these team-owned values once:
 
 ```yaml
-delivery_artifact_lookup_profile:
+program_artifact_resolution_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
-  branch: main
   program_folder_patterns:
     - modules/*/{PROGRAM}
+  program_name_normalization:
+    case: upper
+    preserve_prefixes:
+      - "@"
+    exact_folder_name_match: true
 
 delivery_workspace_profile:
   branch_mode: use_or_create_provided
   working_branch_pattern: develop-{PERSON}
+  allowed_branch_patterns:
+    - develop-*
+  create_from: origin/main
   write_to_main: false
   program_set_review_parent: modules/CAP-ID-0004-program_set_reviews
   program_tier_roots:
@@ -49,6 +57,15 @@ source_inventory_profile:
   scan_summary_filename: scan-summary.yaml
   freshness_policy: clean_git_head_must_match
 ```
+
+`program_artifact_resolution_profile` controls program folder/name resolution
+inside the current-run artifact root. It is not a remote-main lookup step.
+
+If the same profile is also used by older single-program analyzer workflows
+that still perform central preflight, keep their
+`delivery_artifact_lookup_profile` section in the team config. The program-flow
+builder prefers `program_artifact_resolution_profile` and falls back only for
+folder/name compatibility.
 
 ## Runtime Inputs
 
@@ -67,20 +84,6 @@ Programs:
 The tool may create `develop-leo` from `origin/main` if it does not exist.
 New outputs are written to `develop-leo`, never directly to `main`.
 
-## Prepare Remote Main Snapshot
-
-Lookup must use delivery repo remote `main`, not a stale local branch. The
-agent may prepare a temporary sparse checkout/cache with Git method 2:
-
-```bash
-git ls-remote <DELIVERY_REPO_URL> refs/heads/main
-git clone --depth 1 --branch main --filter=blob:none --sparse <DELIVERY_REPO_URL> /tmp/legacy-modernization-delivery-main
-git -C /tmp/legacy-modernization-delivery-main sparse-checkout set modules
-```
-
-Use that path as `--delivery-root` for the builder. If a cache already exists,
-refresh and verify it against `origin/main` before use.
-
 ## Build Program-Set Review Inputs
 
 The field deployment environment is Windows. Use `py -3` there. Use
@@ -94,17 +97,18 @@ CU257F
 CC050
 ```
 
-Then build the deterministic manifest and review skeleton on Windows:
+Then build the deterministic manifest and review skeleton on Windows after the
+current-run program artifacts exist or have precise pending/blocked states:
 
 ```powershell
 py -3 scripts\build-program-set-core-review.py `
   --review-name "card auth posting core review" `
   --programs-file programs.txt `
-  --delivery-root C:\tmp\legacy-modernization-delivery-main `
   --working-root C:\path\to\legacy-modernization-delivery `
   --source-root C:\path\to\source-repo `
   --profile C:\path\to\delivery-profile.yaml `
   --working-branch develop-leo `
+  --program-first `
   --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
 ```
 
@@ -114,58 +118,23 @@ macOS/Linux:
 python3 scripts/build-program-set-core-review.py \
   --review-name "card auth posting core review" \
   --programs-file programs.txt \
-  --delivery-root /tmp/legacy-modernization-delivery-main \
   --working-root /path/to/legacy-modernization-delivery \
   --source-root /path/to/source-repo \
   --profile path/to/delivery-profile.yaml \
   --working-branch develop-leo \
+  --program-first \
   --output-dir /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review
 ```
 
-`--delivery-root` is the remote-main snapshot/cache used for approved reuse
-lookup. `--working-root` is optional during the first preflight; after missing
-programs are scanned into `develop-leo`, pass the working-branch checkout so
-the final manifest can include those new artifacts without marking them as
-remote-main approved.
-
-For a direct single-program analyzer run, use the same lookup profile and
-remote-main snapshot:
-
-```powershell
-py -3 scripts\index-rpg-source.py C:\path\to\source\CU257F.RPGLE `
-  --program CU257F `
-  --out-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0002-complex_normal_program\CU257F `
-  --delivery-root C:\tmp\legacy-modernization-delivery-main `
-  --delivery-profile C:\path\to\delivery-profile.yaml
-```
-
-When the helper prints `central_lookup_result: found_on_remote_main`, do not
-scan source. Return the reported central `artifact_root` to the SME. When it
-prints `central_lookup_result: not_found_on_remote_main`, the helper continues
-and writes the normal draft analysis seed to `--out-dir`.
-
-To intentionally refresh an existing approved artifact, add a reasoned override:
-
-```powershell
-py -3 scripts\index-rpg-source.py C:\path\to\source\CU257F.RPGLE `
-  --program CU257F `
-  --out-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0002-complex_normal_program\CU257F `
-  --delivery-root C:\tmp\legacy-modernization-delivery-main `
-  --delivery-profile C:\path\to\delivery-profile.yaml `
-  --force-rescan `
-  --rescan-reason "SME requested refresh after major source or rule change"
-```
-
-Use this only when the SME deliberately wants a new draft for review. The
-output records the remote-main artifact that was bypassed; it still needs the
-normal delivery branch review before becoming reusable from `main`.
+`--working-root` is the current-run artifact root. Do not pass
+`--delivery-root` for the default program-flow workflow.
 
 `--source-root` enables automatic source inventory cache lookup at
 `<source-root>/outputs/repo-scan/`. If `program-list.csv` and
 `scan-summary.yaml` exist and `scan-summary.yaml.source_revision_key` matches
 the current clean Git source HEAD, the builder marks the cache `fresh` and the
-skill uses it to target only missing programs. If the cache is missing, stale,
-or the source worktree has uncommitted source changes, rerun repo inventory on
+skill uses it to target program analysis. If the cache is missing, stale, or
+the source worktree has uncommitted source changes, rerun repo inventory on
 Windows:
 
 ```powershell
@@ -191,7 +160,8 @@ program-set-sme-core-review.md
 ```
 
 Fill `program-set-sme-core-review.md` from the manifest-listed compact
-artifacts only.
+artifacts only. The manifest records `run_resolution`, not central lookup
+status.
 
 ## Validate Before SME Handoff
 
@@ -216,12 +186,13 @@ review rows/sections instead of deleting programs from the manifest.
 
 ## Routing Rules
 
-Lookup always reads delivery repo remote `main`:
+Program-flow routing uses current-run resolution:
 
 ```text
-found_on_remote_main      -> read compact artifacts from remote-main checkout
-not_found_on_remote_main  -> scan source repo and write output to develop-*
-remote_unavailable        -> stop for access/context
+analyzed_this_run      -> read compact artifacts from working-root
+reused_same_run        -> reuse an artifact produced earlier in the same run
+pending_source         -> locate source and run program analysis
+blocked_missing_source -> record blocker/TBD; do not fake completion
 ```
 
 Program artifacts are stored by tier:
@@ -249,8 +220,8 @@ explicitly wants separate PRs.
 
 - `@CU118` and `CU118` are different program identities unless the profile
   explicitly defines aliases.
-- A working branch such as `develop-leo` is draft output only; it is not an
-  approved reuse source.
+- A working branch such as `develop-leo` is the current-run artifact workspace.
 - `program_set_review_parent` is a parent folder. Each SME flow/review writes
   to a child `{review_slug}` folder beneath it.
-- PR merge to `main` promotes artifacts into the central reusable snapshot.
+- PR review compares current-run artifacts with older delivery history; the
+  default program-flow run does not silently reuse older artifacts.

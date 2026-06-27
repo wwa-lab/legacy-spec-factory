@@ -44,7 +44,11 @@ BUILDER = load_program_set_builder()
 def write_compact_artifacts(artifact_root: Path, missing: set[str] | None = None) -> None:
     missing = missing or set()
     artifact_root.mkdir(parents=True)
-    all_artifacts = BUILDER.REQUIRED_COMPACT_ARTIFACTS + BUILDER.OPTIONAL_COMPACT_ARTIFACTS
+    all_artifacts = (
+        BUILDER.REQUIRED_COMPACT_ARTIFACTS
+        + BUILDER.CONDITIONAL_COMPACT_ARTIFACTS
+        + BUILDER.OPTIONAL_COMPACT_ARTIFACTS
+    )
     for filename in all_artifacts:
         if filename in missing:
             continue
@@ -145,15 +149,15 @@ def write_inventory_cache(source_root: Path, source_revision_key: str | None = N
 
 
 def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]]:
-    delivery_root = temp_root / "delivery-main"
+    working_root = temp_root / "delivery-work"
     output_dir = temp_root / "delivery-work" / "modules" / "CAP-ID-0004-program_set_reviews" / "card_auth"
     programs_file = temp_root / "programs.txt"
 
     write_compact_artifacts(
-        delivery_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
+        working_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
     )
     write_compact_artifacts(
-        delivery_root / "modules" / "CAP-ID-0003-normal_program" / "CC050",
+        working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050",
         missing={"routine-logic-details.yaml"},
     )
     programs_file.write_text("@CU118\nCU118\nCC050\nCU257F\n", encoding="utf-8")
@@ -162,7 +166,7 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
     manifest = BUILDER.build_manifest(
         review_name="Card Auth Posting Core Review",
         programs=BUILDER.read_programs_file(programs_file),
-        delivery_root=delivery_root,
+        artifact_root=working_root,
         config=config,
         working_branch="develop-leo",
     )
@@ -171,7 +175,7 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
 
 
 class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
-    def test_builder_reuses_remote_main_artifacts_and_preserves_program_identity(self) -> None:
+    def test_builder_uses_current_run_artifacts_and_preserves_program_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             manifest_path, review_path, manifest = build_review_fixture(Path(temp_dir))
 
@@ -180,33 +184,41 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 for entry in manifest["programs"]  # type: ignore[index]
             }
 
-            self.assertEqual(programs["@CU118"]["central_lookup_result"], "found_on_remote_main")
-            self.assertEqual(programs["@CU118"]["artifact_source"], "remote_main")
+            self.assertEqual(programs["@CU118"]["run_resolution"], "analyzed_this_run")
+            self.assertEqual(programs["@CU118"]["artifact_source"], "delivery_working_branch")
             self.assertEqual(
                 programs["@CU118"]["artifact_root"],
                 "modules/CAP-ID-0001-large_extreme_program/@CU118",
             )
             self.assertEqual(programs["@CU118"]["tier"], "large_extreme_program")
 
-            self.assertEqual(programs["CU118"]["central_lookup_result"], "not_found_on_remote_main")
+            self.assertEqual(programs["CU118"]["run_resolution"], "pending_source")
             self.assertIsNone(programs["CU118"]["artifact_root"])
-            self.assertEqual(programs["CU118"]["follow_up"], "scan this program")
+            self.assertEqual(programs["CU118"]["follow_up"], "scan this program in current run")
 
-            self.assertEqual(programs["CC050"]["central_lookup_result"], "found_on_remote_main")
+            self.assertEqual(programs["CC050"]["run_resolution"], "analyzed_this_run")
             self.assertEqual(programs["CC050"]["tier"], "normal_program")
             self.assertEqual(
                 programs["CC050"]["compact_artifacts"]["routine_logic_details_yaml"]["status"],
                 "missing",
             )
-            self.assertEqual(programs["CU257F"]["central_lookup_result"], "not_found_on_remote_main")
+            self.assertEqual(programs["CU257F"]["run_resolution"], "pending_source")
 
             review_text = review_path.read_text(encoding="utf-8")
-            self.assertIn("Lookup Profile:", review_text)
+            self.assertIn("Run Profile:", review_text)
             self.assertIn("Source Inventory Cache:", review_text)
             self.assertIn("Core Completeness Ledger:", review_text)
+            self.assertIn("Routine Logic Evidence", review_text)
+            self.assertIn("| Cross-Run Reuse | false |", review_text)
             self.assertIn("| @CU118 |", review_text)
             self.assertIn("| CU118 |", review_text)
-            self.assertIn("routine-logic-details.yaml=missing", review_text)
+            self.assertIn("routine-logic-details.yaml=optional_not_required", review_text)
+            self.assertNotIn(
+                "| Program | Expected In Scope From | Run Resolution | Calculation Logic | Validation Logic | Exception Handling |",
+                review_text,
+            )
+            self.assertNotIn("central_lookup_result", BUILDER.dump_yaml(manifest))
+            self.assertNotIn("found_on_remote_main", review_text)
             self.assertIn("## Calculation Logic", review_text)
             self.assertIn("## Validation Logic", review_text)
             self.assertIn("## Exception Handling", review_text)
@@ -240,14 +252,10 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 findings,
             )
 
-    def test_builder_uses_working_root_for_newly_scanned_programs(self) -> None:
+    def test_builder_marks_duplicate_program_as_reused_same_run(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
             working_root = temp_root / "delivery-working"
-            write_compact_artifacts(
-                delivery_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
-            )
             write_compact_artifacts(
                 working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
             )
@@ -255,37 +263,116 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             config = BUILDER.load_yaml(PROFILE_TEMPLATE)
             manifest = BUILDER.build_manifest(
                 review_name="Card Auth Posting Core Review",
-                programs=["@CU118", "CU257F"],
-                delivery_root=delivery_root,
-                working_root=working_root,
+                programs=["CU257F", "CU257F"],
+                artifact_root=working_root,
                 config=config,
                 working_branch="develop-leo",
             )
-            programs = {
-                str(entry["normalized_name"]): entry
-                for entry in manifest["programs"]  # type: ignore[index]
-            }
+            first, second = manifest["programs"]  # type: ignore[index]
 
-            self.assertEqual(programs["@CU118"]["central_lookup_result"], "found_on_remote_main")
-            self.assertEqual(programs["@CU118"]["artifact_source"], "remote_main")
-            self.assertEqual(programs["CU257F"]["central_lookup_result"], "not_found_on_remote_main")
-            self.assertEqual(programs["CU257F"]["artifact_source"], "delivery_working_branch")
+            self.assertEqual(first["run_resolution"], "analyzed_this_run")
+            self.assertEqual(second["run_resolution"], "reused_same_run")
             self.assertEqual(
-                programs["CU257F"]["artifact_root"],
+                second["artifact_root"],
                 "modules/CAP-ID-0002-complex_normal_program/CU257F",
             )
-            self.assertEqual(programs["CU257F"]["tier"], "complex_normal_program")
-            self.assertEqual(programs["CU257F"]["follow_up"], "none - source scan completed in working branch")
-            self.assertTrue(manifest["delivery_repo"]["working_root_used"])  # type: ignore[index]
+            self.assertIn("Duplicate normalized program name", manifest["warnings"][0])  # type: ignore[index]
 
-    def test_program_first_reuses_remote_and_uses_working_for_not_found_programs(self) -> None:
+    def test_builder_keeps_duplicate_pending_when_no_current_run_artifact_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
             working_root = temp_root / "delivery-working"
-            write_compact_artifacts(
-                delivery_root / "modules" / "CAP-ID-0003-normal_program" / "CU257F"
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CU257F", "CU257F"],
+                artifact_root=working_root,
+                config=config,
+                working_branch="develop-leo",
             )
+            first, second = manifest["programs"]  # type: ignore[index]
+
+            self.assertEqual(first["run_resolution"], "pending_source")
+            self.assertEqual(second["run_resolution"], "pending_source")
+            self.assertIsNone(second["artifact_root"])
+            self.assertEqual(second["artifact_source"], "source_scan_required")
+            self.assertIn("will scan once", manifest["warnings"][0])  # type: ignore[index]
+
+    def test_validator_reports_legacy_manifest_without_keyerror(self) -> None:
+        manifest = {
+            "programs": [
+                {
+                    "normalized_name": "CU257F",
+                    "central_lookup_result": "found_on_remote_main",
+                }
+            ]
+        }
+
+        findings = BUILDER.validate_manifest(manifest)
+
+        self.assertTrue(
+            any("legacy central_lookup_result" in finding for finding in findings),
+            findings,
+        )
+
+    def test_validator_rejects_invalid_duplicate_program_resolution(self) -> None:
+        manifest = {
+            "programs": [
+                {
+                    "normalized_name": "CU257F",
+                    "run_resolution": "analyzed_this_run",
+                    "artifact_root": "modules/CAP-ID-0002-complex_normal_program/CU257F",
+                    "artifact_source": "delivery_working_branch",
+                },
+                {
+                    "normalized_name": "CU257F",
+                    "run_resolution": "pending_source",
+                    "artifact_root": None,
+                    "artifact_source": "source_scan_required",
+                },
+            ]
+        }
+
+        findings = BUILDER.validate_manifest(manifest)
+
+        self.assertTrue(
+            any(
+                "duplicate with current-run artifact must use reused_same_run" in finding
+                for finding in findings
+            ),
+            findings,
+        )
+
+    def test_validator_rejects_duplicate_reuse_with_different_artifact_root(self) -> None:
+        manifest = {
+            "programs": [
+                {
+                    "normalized_name": "CU257F",
+                    "run_resolution": "analyzed_this_run",
+                    "artifact_root": "modules/CAP-ID-0002-complex_normal_program/CU257F",
+                    "artifact_source": "delivery_working_branch",
+                },
+                {
+                    "normalized_name": "CU257F",
+                    "run_resolution": "reused_same_run",
+                    "artifact_root": "modules/CAP-ID-0003-normal_program/CU257F",
+                    "artifact_source": "same_run_previous_program",
+                },
+            ]
+        }
+
+        findings = BUILDER.validate_manifest(manifest)
+
+        self.assertTrue(
+            any("duplicate artifact_root must match" in finding for finding in findings),
+            findings,
+        )
+
+    def test_program_first_uses_only_current_run_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            working_root = temp_root / "delivery-working"
             write_compact_artifacts(
                 working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CC050"
             )
@@ -294,8 +381,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             manifest = BUILDER.build_manifest(
                 review_name="Card Auth Posting Core Review",
                 programs=["CU257F", "CC050"],
-                delivery_root=delivery_root,
-                working_root=working_root,
+                artifact_root=working_root,
                 config=config,
                 working_branch="develop-leo",
                 program_first=True,
@@ -305,100 +391,21 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 for entry in manifest["programs"]  # type: ignore[index]
             }
 
-            self.assertEqual(programs["CU257F"]["central_lookup_result"], "found_on_remote_main")
-            self.assertEqual(programs["CU257F"]["artifact_source"], "remote_main")
-            self.assertEqual(
-                programs["CU257F"]["artifact_root"],
-                "modules/CAP-ID-0003-normal_program/CU257F",
-            )
-            self.assertEqual(programs["CC050"]["central_lookup_result"], "not_found_on_remote_main")
+            self.assertEqual(programs["CU257F"]["run_resolution"], "pending_source")
+            self.assertEqual(programs["CU257F"]["artifact_source"], "source_scan_required")
+            self.assertIsNone(programs["CU257F"]["artifact_root"])
+            self.assertEqual(programs["CC050"]["run_resolution"], "analyzed_this_run")
             self.assertEqual(programs["CC050"]["artifact_source"], "delivery_working_branch")
             self.assertEqual(
                 programs["CC050"]["artifact_root"],
                 "modules/CAP-ID-0002-complex_normal_program/CC050",
             )
-            self.assertTrue(manifest["delivery_repo"]["program_first"])  # type: ignore[index]
-
-    def test_builder_force_rescan_bypasses_remote_main_until_working_artifact_exists(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
-            source_root = temp_root / "source"
-            init_clean_git_source_root(source_root)
-            write_inventory_cache(source_root)
-            write_compact_artifacts(
-                delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
-            )
-
-            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
-            manifest = BUILDER.build_manifest(
-                review_name="Card Auth Posting Core Review",
-                programs=["CU257F"],
-                delivery_root=delivery_root,
-                source_root=source_root,
-                config=config,
-                working_branch="develop-leo",
-                force_rescan_requests={"CU257F": "SME requested refresh"},
-            )
-            program = manifest["programs"][0]  # type: ignore[index]
-            inventory_program = manifest["source_inventory"]["programs"][0]  # type: ignore[index]
-
-            self.assertEqual(program["central_lookup_result"], "found_on_remote_main")
-            self.assertTrue(program["force_rescan"])
-            self.assertEqual(program["artifact_source"], "source_scan_required")
-            self.assertIsNone(program["artifact_root"])
-            self.assertEqual(
-                program["remote_main_artifact_root"],
-                "modules/CAP-ID-0002-complex_normal_program/CU257F",
-            )
-            self.assertEqual(program["follow_up"], "force rescan requested - scan this program")
-            self.assertEqual(inventory_program["inventory_status"], "found")
-            self.assertTrue(inventory_program["targeted_scan_allowed"])
-
-    def test_builder_force_rescan_uses_working_root_after_refresh(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
-            working_root = temp_root / "delivery-working"
-            output_dir = temp_root / "review-output"
-            write_compact_artifacts(
-                delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
-            )
-            write_compact_artifacts(
-                working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
-            )
-
-            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
-            manifest = BUILDER.build_manifest(
-                review_name="Card Auth Posting Core Review",
-                programs=["CU257F"],
-                delivery_root=delivery_root,
-                working_root=working_root,
-                config=config,
-                working_branch="develop-leo",
-                force_rescan_requests={"CU257F": "SME requested refresh"},
-            )
-            manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
-            program = manifest["programs"][0]  # type: ignore[index]
-
-            self.assertEqual(program["central_lookup_result"], "found_on_remote_main")
-            self.assertTrue(program["force_rescan"])
-            self.assertEqual(program["artifact_source"], "delivery_working_branch")
-            self.assertEqual(
-                program["artifact_root"],
-                "modules/CAP-ID-0002-complex_normal_program/CU257F",
-            )
-            self.assertEqual(program["follow_up"], "none - forced rescan completed in working branch")
-            self.assertEqual(BUILDER.validate(manifest_path, review_path), [])
-            self.assertIn(
-                "| CU257F | modules/CAP-ID-0002-complex_normal_program/CU257F | found_on_remote_main | complex_normal_program | yes: SME requested refresh |",
-                review_path.read_text(encoding="utf-8"),
-            )
+            self.assertTrue(manifest["run_profile"]["program_first"])  # type: ignore[index]
 
     def test_builder_reuses_fresh_source_inventory_cache_for_missing_programs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
+            working_root = temp_root / "delivery-working"
             source_root = temp_root / "source"
             init_clean_git_source_root(source_root)
             write_inventory_cache(source_root)
@@ -407,7 +414,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             manifest = BUILDER.build_manifest(
                 review_name="Card Auth Posting Core Review",
                 programs=["CU257F"],
-                delivery_root=delivery_root,
+                artifact_root=working_root,
                 source_root=source_root,
                 config=config,
                 working_branch="develop-leo",
@@ -419,6 +426,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(source_inventory["program_list"]["status"], "present")
             self.assertEqual(source_inventory["scan_summary"]["status"], "present")
             self.assertEqual(source_inventory["programs"][0]["inventory_status"], "found")
+            self.assertEqual(source_inventory["programs"][0]["run_resolution"], "pending_source")
             self.assertEqual(source_inventory["programs"][0]["source_path"], "QRPGLESRC/CU257F.RPGLE")
             self.assertEqual(source_inventory["programs"][0]["size_tier"], "complex_normal_program")
             self.assertTrue(source_inventory["programs"][0]["targeted_scan_allowed"])
@@ -426,7 +434,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
     def test_builder_marks_inventory_stale_when_source_revision_mismatches(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            delivery_root = temp_root / "delivery-main"
+            working_root = temp_root / "delivery-working"
             source_root = temp_root / "source"
             init_clean_git_source_root(source_root)
             write_inventory_cache(source_root, source_revision_key="git:old")
@@ -435,7 +443,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             manifest = BUILDER.build_manifest(
                 review_name="Card Auth Posting Core Review",
                 programs=["CU257F"],
-                delivery_root=delivery_root,
+                artifact_root=working_root,
                 source_root=source_root,
                 config=config,
                 working_branch="develop-leo",
@@ -466,7 +474,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                     "Card Auth Posting Core Review",
                     "--programs-file",
                     str(programs_file),
-                    "--delivery-root",
+                    "--working-root",
                     str(delivery_root),
                     "--profile",
                     str(PROFILE_TEMPLATE),
@@ -493,6 +501,99 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 text=True,
                 capture_output=True,
             )
+
+    def test_build_wrapper_rejects_missing_working_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            output_dir = temp_root / "review-output"
+            programs_file = temp_root / "programs.txt"
+            programs_file.write_text("CU257F\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILD_WRAPPER),
+                    "--review-name",
+                    "Card Auth Posting Core Review",
+                    "--programs-file",
+                    str(programs_file),
+                    "--working-root",
+                    str(temp_root / "missing-working-root"),
+                    "--profile",
+                    str(PROFILE_TEMPLATE),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("current-run artifact root not found", result.stderr)
+
+    def test_build_wrapper_rejects_deprecated_delivery_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            output_dir = temp_root / "review-output"
+            programs_file = temp_root / "programs.txt"
+            programs_file.write_text("CU257F\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILD_WRAPPER),
+                    "--review-name",
+                    "Card Auth Posting Core Review",
+                    "--programs-file",
+                    str(programs_file),
+                    "--delivery-root",
+                    str(temp_root / "delivery-main"),
+                    "--profile",
+                    str(PROFILE_TEMPLATE),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("--delivery-root is no longer supported", result.stderr)
+
+    def test_build_wrapper_rejects_deprecated_force_rescan_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            working_root = temp_root / "delivery-working"
+            output_dir = temp_root / "review-output"
+            programs_file = temp_root / "programs.txt"
+            rescan_file = temp_root / "rescan.txt"
+            working_root.mkdir()
+            programs_file.write_text("CU257F\n", encoding="utf-8")
+            rescan_file.write_text("CU257F\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILD_WRAPPER),
+                    "--review-name",
+                    "Card Auth Posting Core Review",
+                    "--programs-file",
+                    str(programs_file),
+                    "--working-root",
+                    str(working_root),
+                    "--force-rescan-file",
+                    str(rescan_file),
+                    "--profile",
+                    str(PROFILE_TEMPLATE),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("--force-rescan-file is no longer supported", result.stderr)
 
 
 if __name__ == "__main__":
