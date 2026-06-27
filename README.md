@@ -41,7 +41,7 @@ Atlas Phoenix Lens sits under the Atlas Engineering Delivery Hub as the
 Discovery-stage lens between early planning/estimation and downstream build,
 testing, deployment, and maintenance work.
 
-![Atlas Engineering Delivery Hub Discovery desktop visual](docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png)
+![Atlas Engineering Delivery Hub Seven Mountains SDLC static visual](docs/assets/atlas-engineering-delivery-hub-static.png)
 
 ![Atlas Phoenix Lens position in Atlas Engineering Delivery Hub](docs/assets/atlas-phoenix-lens-delivery-hub-position.svg)
 

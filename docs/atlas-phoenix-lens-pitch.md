@@ -99,8 +99,8 @@ evidence.
 
 Visual:
 
-Use `docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png` for the
-Delivery Hub narrative, or `docs/assets/atlas-phoenix-lens-promo.png` for a
+Use `docs/assets/atlas-engineering-delivery-hub-static.png` for the Delivery
+Hub narrative, or `docs/assets/atlas-phoenix-lens-promo.png` for a
 more focused capability visual.
 
 Speaker note:
@@ -130,7 +130,7 @@ evidence generation.
 
 Visual:
 
-Use `docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png` first
+Use `docs/assets/atlas-engineering-delivery-hub-static.png` first
 for the desktop narrative, then
 `docs/assets/atlas-phoenix-lens-delivery-hub-position.svg` and
 `docs/assets/atlas-phoenix-lens-design.svg` for structure and implementation
@@ -177,7 +177,7 @@ Key points:
 Use this sequence when walking through the repo:
 
 1. Open `README.md` and show the capability statement.
-2. Show `docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png` and
+2. Show `docs/assets/atlas-engineering-delivery-hub-static.png` and
    explain the Seven Mountains SDLC / M3 Discovery positioning.
 3. Show `docs/assets/atlas-phoenix-lens-delivery-hub-position.svg` and position
    the capability under M3 Discovery.

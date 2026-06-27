@@ -59,7 +59,7 @@ If you only have a few minutes:
 | Asset | Purpose |
 | --- | --- |
 | [Promotional visual](assets/atlas-phoenix-lens-promo.png) | README hero / internal showcase visual |
-| [Delivery Hub desktop visual](assets/atlas-engineering-delivery-hub-discovery-desktop.png) | Wide desktop image showing Atlas Phoenix Lens as M3 Discovery in the Delivery Hub narrative |
+| [Delivery Hub static visual](assets/atlas-engineering-delivery-hub-static.png) | Static frame restored from the Atlas Engineering Delivery Hub animated visual for README positioning |
 | [Delivery Hub positioning SVG](assets/atlas-phoenix-lens-delivery-hub-position.svg) | Shows Atlas Phoenix Lens as M3 Discovery under Atlas Engineering Delivery Hub |
 | [Delivery Hub positioning Mermaid source](assets/atlas-phoenix-lens-delivery-hub-position.mmd) | Editable source for the positioning diagram |
 | [Implementation design SVG](assets/atlas-phoenix-lens-design.svg) | Architecture/design diagram |

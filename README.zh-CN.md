@@ -36,7 +36,7 @@ Atlas Phoenix Lens 位于 Atlas Engineering Delivery Hub 的 Discovery 阶段，
 连接前置 planning/estimation 和后续 build、testing、deployment、
 maintenance 工作。
 
-![Atlas Engineering Delivery Hub Discovery desktop visual](docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png)
+![Atlas Engineering Delivery Hub Seven Mountains SDLC static visual](docs/assets/atlas-engineering-delivery-hub-static.png)
 
 ![Atlas Phoenix Lens position in Atlas Engineering Delivery Hub](docs/assets/atlas-phoenix-lens-delivery-hub-position.svg)
 
