@@ -266,6 +266,8 @@ Start with:
   for the current RPG source-code scan E2E path.
 - [docs/EXAMPLE-tutorial/](docs/EXAMPLE-tutorial/) for a populated minimal
   example.
+- [docs/review-workspace.md](docs/review-workspace.md) for the interactive
+  review workspace shape used by the example tutorial.
 
 Useful validation commands:
 

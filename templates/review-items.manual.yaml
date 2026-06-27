@@ -1,0 +1,9 @@
+# Optional manual augmentation file for docs/<project>/08_review_workspace/.
+#
+# Use this when the generated review workspace needs sharper reviewer-facing
+# wording or a business question that cannot yet be safely derived from the
+# current artifacts. This file is intentionally optional.
+
+overrides: []
+
+items: []

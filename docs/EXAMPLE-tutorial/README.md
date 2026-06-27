@@ -29,6 +29,7 @@ Walk the files in pipeline order — each one consumes the previous:
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/spec.yaml`](05_specs/CAP-PRICE-CALCULATION/spec.yaml) | Machine-readable contract for forward SDLC |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/spec.md`](05_specs/CAP-PRICE-CALCULATION/spec.md) | Human-readable spec |
 | 3f → 8c | [`05_specs/CAP-PRICE-CALCULATION/traceability.md`](05_specs/CAP-PRICE-CALCULATION/traceability.md) | Rule → evidence → test mapping |
+| review | `08_review_workspace/review-items.json` + `08_review_workspace/index.html` | Question-first human review surface derived from the source artifacts |
 
 Cross-project files:
 
@@ -48,9 +49,18 @@ py -3 scripts/check-workflow-state.py docs/EXAMPLE-tutorial/workflow-state.yaml
 # Re-render the STATUS snapshot
 py -3 scripts/generate-status.py docs/EXAMPLE-tutorial/
 
+# Build the human review workspace
+python3 scripts/build-review-workspace.py docs/EXAMPLE-tutorial/
+
+# Validate the generated review workspace
+python3 scripts/check-review-workspace.py docs/EXAMPLE-tutorial/
+
 # List this project alongside any others
 py -3 scripts/list-projects.py
 ```
+
+Open `docs/EXAMPLE-tutorial/08_review_workspace/index.html` directly in the
+browser to inspect the generated review workspace.
 
 ## What's NOT in this example
 

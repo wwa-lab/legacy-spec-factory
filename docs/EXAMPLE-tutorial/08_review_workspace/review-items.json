@@ -1,0 +1,713 @@
+{
+  "schema_version": "0.1",
+  "project": {
+    "name": "EXAMPLE-tutorial",
+    "project_root": "docs/EXAMPLE-tutorial",
+    "capability_id": "CAP-PRICE-CALCULATION",
+    "status": "approved",
+    "source_commit": "2b1d429",
+    "generated_at": "2026-05-21T16:33:23+00:00"
+  },
+  "summary": {
+    "item_count": 11,
+    "status_counts": {
+      "blocked": 1,
+      "contradicted": 1,
+      "needs_sme_review": 1,
+      "needs_review": 1,
+      "ready_to_approve": 1,
+      "approved": 5,
+      "deferred": 1
+    },
+    "group_counts": {
+      "Must Resolve": 2,
+      "Needs SME": 1,
+      "Needs Review": 1,
+      "Ready To Approve": 1,
+      "Closed": 6
+    },
+    "action_counts": {
+      "mark_blocked": 1,
+      "route_to_sme": 2,
+      "request_more_evidence": 1,
+      "approve": 6,
+      "defer": 1
+    },
+    "evidence_cards": 11
+  },
+  "review_items": [
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-100",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Blocked sample",
+      "question": "Should this blocked example stay blocked until the missing source is restored?",
+      "sub_questions": [
+        "Can reviewers inspect the intended behavior without the source file?",
+        "Should this remain blocked until the evidence is available?"
+      ],
+      "status": "blocked",
+      "priority": "high",
+      "confidence": "low",
+      "decision_basis": "source_only",
+      "current_conclusion": "Evidence is missing from the workspace.",
+      "evidence": [],
+      "contradictions": [],
+      "gaps": [
+        "Source artifact intentionally omitted for this sample"
+      ],
+      "impacts": [],
+      "review_action": "mark_blocked",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify blocked rendering."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-101",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Contradicted sample",
+      "question": "Does the runtime evidence contradict the source behavior here?",
+      "sub_questions": [
+        "Which artifact should the reviewer trust?",
+        "Does the contradiction require SME clarification?"
+      ],
+      "status": "contradicted",
+      "priority": "high",
+      "confidence": "medium",
+      "decision_basis": "source_runtime_sme",
+      "current_conclusion": "Source says one thing, runtime note says another.",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Contradicted sample",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "     C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false
+          }
+        }
+      ],
+      "contradictions": [
+        "Runtime note says a different fallback path is used."
+      ],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-001"
+      ],
+      "review_action": "route_to_sme",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml",
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify contradicted rendering."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-102",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "open_question_review",
+      "theme": "Needs SME sample",
+      "question": "Does the silent promo fallback need SME confirmation?",
+      "sub_questions": [
+        "Is the silent behavior intentional business logic?",
+        "Should unknown promo codes be documented as a deliberate rule?"
+      ],
+      "status": "needs_sme_review",
+      "priority": "medium",
+      "confidence": "low",
+      "decision_basis": "source_plus_sme",
+      "current_conclusion": "Behavior is documented but still worth SME confirmation in review.",
+      "evidence": [
+        {
+          "id": "EV-SME-001",
+          "type": "sme_note",
+          "title": "Pricing Rules SME Walkthrough",
+          "supports": "Silent fallback confirmation",
+          "source": "notes/pricing-rules-walkthrough.md",
+          "strength": "approved_evidence",
+          "artifact_path": "notes/pricing-rules-walkthrough.md",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "file_type": "md",
+            "total_lines": 18,
+            "lines": [
+              "# Pricing Rules SME Walkthrough",
+              "",
+              "**Topic:** Tier discount + promotion stacking rules",
+              "",
+              "5. **Silent fallback**: unknown promo codes return 0% discount with no error.",
+              "",
+              "## Confirmation"
+            ],
+            "truncated": false
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [
+        "SME has not re-approved this item inside the workspace"
+      ],
+      "impacts": [
+        "BR-PRICE-002"
+      ],
+      "review_action": "route_to_sme",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify SME rendering."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-103",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "open_question_review",
+      "theme": "Needs review sample",
+      "question": "Is the evidence preview readable enough for a normal review pass?",
+      "sub_questions": [
+        "Can the reviewer inspect the file content without leaving the page?",
+        "Does the preview help instead of hiding behind metadata?"
+      ],
+      "status": "needs_review",
+      "priority": "medium",
+      "confidence": "low",
+      "decision_basis": "source_only",
+      "current_conclusion": "This is a UI validation item for the review workspace.",
+      "evidence": [
+        {
+          "id": "EV-DDS-001",
+          "type": "dds",
+          "title": "PRICEFL.PF",
+          "supports": "Evidence preview UI validation",
+          "source": "dds/PRICEFL.PF",
+          "strength": "approved_evidence",
+          "artifact_path": "dds/PRICEFL.PF",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "file_type": "pf",
+            "total_lines": 4,
+            "lines": [
+              "A          R PRICEFLR                  PFILE(PRICEFL)",
+              "     A            PRCPRD      10A         COLHDG('Product')",
+              "     A            PRCTIE       3P 0       COLHDG('Tier')",
+              "     A            PRCPRC       9P 2       COLHDG('Price')"
+            ],
+            "truncated": false
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [
+        "Needs a manual review pass"
+      ],
+      "impacts": [
+        "ERR-PRICE-001"
+      ],
+      "review_action": "request_more_evidence",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify preview readability."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-104",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Ready to approve sample",
+      "question": "Should this already-approved conclusion be shown as ready to approve?",
+      "sub_questions": [
+        "Is the review action aligned with the status?",
+        "Can the reviewer approve immediately?"
+      ],
+      "status": "ready_to_approve",
+      "priority": "low",
+      "confidence": "high",
+      "decision_basis": "source_only",
+      "current_conclusion": "The formula matches the spec and evidence is available.",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Ready to approve sample",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "     C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-001"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml",
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify ready-to-approve rendering."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-003",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "error_behavior_review",
+      "theme": "ERR-PRICE-001",
+      "question": "How should the legacy system behave when Item / tier combination not found in PRICEFL?",
+      "sub_questions": [
+        "Is the returned status or error outcome explicit enough for downstream implementation?",
+        "Is there enough evidence to preserve this failure behavior without reinterpretation?"
+      ],
+      "status": "approved",
+      "priority": "high",
+      "confidence": "confirmed",
+      "decision_basis": "source_only",
+      "current_conclusion": "status_code='1', final_price=0",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Item / tier combination not found in PRICEFL",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": false,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "ERR-PRICE-001"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml"
+      ],
+      "source_excerpt": {
+        "acceptance_criteria": "Caller receives status='1' and price=0; no exception thrown"
+      },
+      "updated_at": "2026-05-21T16:33:23+00:00"
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-900",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "traceability_review",
+      "theme": "Traceability coverage",
+      "question": "Is every approved rule traceable to evidence and a reviewable verification path?",
+      "sub_questions": [
+        "Does each approved rule have at least one evidence link?",
+        "Does each approved rule point to a verification path reviewers can audit?",
+        "Are there any open coverage gaps or orphaned references?"
+      ],
+      "status": "approved",
+      "priority": "high",
+      "confidence": "confirmed",
+      "decision_basis": "source_plus_sme",
+      "current_conclusion": "Coverage checks in traceability.md are complete.",
+      "evidence": [
+        {
+          "id": "EV-SME-001",
+          "type": "sme_note",
+          "title": "SME walkthrough of tier discount + promotion stacking rules",
+          "supports": "Traceability coverage",
+          "source": "notes/pricing-rules-walkthrough.md",
+          "strength": "approved_evidence",
+          "artifact_path": "notes/pricing-rules-walkthrough.md",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": true,
+            "file_type": "md",
+            "total_lines": 18,
+            "lines": [
+              "# Pricing Rules SME Walkthrough",
+              "",
+              "**Date:** 2026-05-16",
+              "**SME:** Jane Doe (Pricing team lead)",
+              "**Topic:** Tier discount + promotion stacking rules",
+              "",
+              "## Key Understandings",
+              "",
+              "1. **Tier discount** is applied first, based on customer tier (A/B/C).",
+              "2. **Promo code** is applied second, on top of the tier-discounted price.",
+              "3. The promo codes SUMMR and WINTR both give 5%.",
+              "4. VIP customers (tier A) also get an additional 10% via VIP10 code.",
+              "5. **Silent fallback**: unknown promo codes return 0% discount with no error.",
+              "",
+              "## Confirmation",
+              "",
+              "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.",
+              "- Promo code stacking is additive, not multiplicative."
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        },
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Traceability coverage",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": false,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-001",
+        "BR-PRICE-002",
+        "ERR-PRICE-001"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "coverage_check": "Every spec rule is backed by ≥ 1 `evidence_id`. ✓ | Every `inferred_business_rule` would need SME confirmation — there are | Every approved rule has `acceptance_criteria`. ✓ | No open `TBD-*`. ✓"
+      },
+      "updated_at": "2026-05-21T16:33:23+00:00"
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-002",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Promo code stacking",
+      "question": "How should promo code handling behave, and is the silent fallback intentional?",
+      "sub_questions": [
+        "Does evidence support BR-PRICE-002 exactly as written?",
+        "Are the acceptance criteria specific enough to verify the legacy behavior?",
+        "Is the silent fallback an intentional business rule or a defensive implementation detail?"
+      ],
+      "status": "approved",
+      "priority": "medium",
+      "confidence": "confirmed",
+      "decision_basis": "source_plus_sme",
+      "current_conclusion": "Promo discount mapping: SUMMR / WINTR → 5% VIP10 → 10% anything else → 0% (silent — no error)",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Promo code stacking",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": false,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        },
+        {
+          "id": "EV-SME-001",
+          "type": "sme_note",
+          "title": "SME walkthrough of tier discount + promotion stacking rules",
+          "supports": "Promo code stacking",
+          "source": "notes/pricing-rules-walkthrough.md",
+          "strength": "approved_evidence",
+          "artifact_path": "notes/pricing-rules-walkthrough.md",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": true,
+            "file_type": "md",
+            "total_lines": 18,
+            "lines": [
+              "# Pricing Rules SME Walkthrough",
+              "",
+              "**Date:** 2026-05-16",
+              "**SME:** Jane Doe (Pricing team lead)",
+              "**Topic:** Tier discount + promotion stacking rules",
+              "",
+              "## Key Understandings",
+              "",
+              "1. **Tier discount** is applied first, based on customer tier (A/B/C).",
+              "2. **Promo code** is applied second, on top of the tier-discounted price.",
+              "3. The promo codes SUMMR and WINTR both give 5%.",
+              "4. VIP customers (tier A) also get an additional 10% via VIP10 code.",
+              "5. **Silent fallback**: unknown promo codes return 0% discount with no error.",
+              "",
+              "## Confirmation",
+              "",
+              "- The formula `final_price = round(base * qty * (1-tier) * (1-promo), 2)` matches the code.",
+              "- Promo code stacking is additive, not multiplicative."
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-002"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml",
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "trace_row": "`program-analysis.md` row P4; SME walkthrough",
+        "acceptance_tests": "spec.yaml acceptance row 4–7"
+      },
+      "updated_at": "2026-05-21T16:33:23+00:00"
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-001",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Final price formula",
+      "question": "Should the pricing formula, discount order, and rounding behavior be accepted as the legacy truth?",
+      "sub_questions": [
+        "Does evidence support BR-PRICE-001 exactly as written?",
+        "Are the acceptance criteria specific enough to verify the legacy behavior?"
+      ],
+      "status": "approved",
+      "priority": "medium",
+      "confidence": "confirmed",
+      "decision_basis": "source_only",
+      "current_conclusion": "final_price = round( base_price × qty × (1 - tier_discount/100) × (1 - promo_discount/100), 2dp )",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Final price formula",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "is_text": false,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false,
+            "truncated_note": ""
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-001"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml",
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "trace_row": "`program-analysis.md` rows P2–P5",
+        "acceptance_tests": "spec.yaml acceptance row 1–3"
+      },
+      "updated_at": "2026-05-21T16:33:23+00:00"
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-105",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "rule_review",
+      "theme": "Approved sample",
+      "question": "Does the approved formula still look correct in the final queue?",
+      "sub_questions": [
+        "Can reviewers see the final approved evidence clearly?",
+        "Does the item render as a closed decision?"
+      ],
+      "status": "approved",
+      "priority": "low",
+      "confidence": "confirmed",
+      "decision_basis": "source_plus_sme",
+      "current_conclusion": "final_price = round(base × qty × discounts, 2dp)",
+      "evidence": [
+        {
+          "id": "EV-SRC-001",
+          "type": "source",
+          "title": "PRICECALC.RPGLE",
+          "supports": "Approved sample",
+          "source": "source/PRICECALC.RPGLE",
+          "strength": "approved_evidence",
+          "artifact_path": "source/PRICECALC.RPGLE",
+          "approval": "approved",
+          "excerpt": {
+            "available": true,
+            "file_type": "rpgle",
+            "total_lines": 4,
+            "lines": [
+              "     C     *IN61          IFEQ      *OFF",
+              "     C                   Z-ADD     PRCPRC        FINALPRC",
+              "     C                   LEAVE",
+              "     C                   ENDIF"
+            ],
+            "truncated": false
+          }
+        }
+      ],
+      "contradictions": [],
+      "gaps": [],
+      "impacts": [
+        "BR-PRICE-001"
+      ],
+      "review_action": "approve",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml",
+        "05_specs/CAP-PRICE-CALCULATION/traceability.md"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify approved rendering."
+      }
+    },
+    {
+      "id": "RI-CAP-PRICE-CALCULATION-106",
+      "capability_id": "CAP-PRICE-CALCULATION",
+      "type": "open_question_review",
+      "theme": "Deferred sample",
+      "question": "Should this UI-only validation item be deferred after the preview is verified?",
+      "sub_questions": [
+        "Is there any product impact left here?",
+        "Should this be hidden from the active review queue?"
+      ],
+      "status": "deferred",
+      "priority": "low",
+      "confidence": "low",
+      "decision_basis": "source_only",
+      "current_conclusion": "No further decision is needed after preview validation.",
+      "evidence": [],
+      "contradictions": [],
+      "gaps": [
+        "Only used to verify deferred rendering"
+      ],
+      "impacts": [],
+      "review_action": "defer",
+      "source_artifacts": [
+        "05_specs/CAP-PRICE-CALCULATION/spec.yaml"
+      ],
+      "source_excerpt": {
+        "note": "This item exists to verify deferred rendering."
+      }
+    }
+  ],
+  "evidence_index": {
+    "EV-SRC-001": {
+      "evidence_id": "EV-SRC-001",
+      "type": "source",
+      "member": "PRICECALC.RPGLE",
+      "relative_path": "source/PRICECALC.RPGLE",
+      "sensitivity": "redacted",
+      "redaction_note": "Customer account numbers replaced with C0001..C9999",
+      "sme_approval": {
+        "decision": "approved",
+        "at": "2026-05-16",
+        "by": "Jane Doe"
+      }
+    },
+    "EV-DDS-001": {
+      "evidence_id": "EV-DDS-001",
+      "type": "dds",
+      "member": "PRICEFL.PF",
+      "relative_path": "dds/PRICEFL.PF",
+      "sensitivity": false,
+      "sme_approval": {
+        "decision": "approved",
+        "at": "2026-05-16",
+        "by": "Jane Doe"
+      }
+    },
+    "EV-SME-001": {
+      "evidence_id": "EV-SME-001",
+      "type": "sme_note",
+      "relative_path": "notes/pricing-rules-walkthrough.md",
+      "sensitivity": false,
+      "sme_approval": {
+        "decision": "approved",
+        "at": "2026-05-16",
+        "by": "Jane Doe"
+      },
+      "note": "SME walkthrough of tier discount + promotion stacking rules"
+    }
+  }
+}
