@@ -8,6 +8,8 @@
 - Manifest: {{batch_manifest}}
 - Source root: {{source_root}}
 - Output root: {{output_root}}
+- Reference paths: {{reference_paths}}
+- Control files: {{control_files}}
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress

@@ -91,6 +91,8 @@ Input:
 - Program list: <path to program-list.csv>
 - Source root: <path to source repository root>
 - Output root: <path to generated per-program artifacts>
+- Reference paths: <optional reference pack, dictionary, message catalog paths>
+- Control files: <optional control file, code table, lookup file paths>
 - Review name: <business-friendly review name>
 - Intent: standalone_exploratory
 - Output mode: Copilot Chat-only one-program prompt queue
@@ -113,6 +115,12 @@ Execution rules:
 - Use size_tier as the initial program tier, but allow
   legacy-ibmi-program-analyzer to reclassify if density triggers appear.
 - Do not check out or inspect a delivery remote-main snapshot in this mode.
+- Include the provided reference paths and control file paths in every
+  generated prompt-queue item because each program runs in a fresh Copilot Chat
+  session.
+- Read reference and control inputs when they are relevant to observed
+  messages, statuses, control-file lookups, field meanings, or validation
+  rules. Treat them as supporting evidence only.
 - Run legacy-ibmi-program-analyzer for each queued program row.
 - Do not combine multiple programs into one program-analysis.md.
 - Each program must have its own output folder.
@@ -206,6 +214,8 @@ Final response:
 - Program list: <program-list.csv 路径>
 - Source root: <source repo 根目录>
 - Output root: <每个 program 分析产物的输出根目录>
+- Reference paths: <可选 reference pack、dictionary、message catalog 路径>
+- Control files: <可选 control file、code table、lookup file 路径>
 - Review name: <业务可读的 review 名称>
 - Intent: standalone_exploratory
 - Output mode: Copilot Chat-only one-program prompt queue
@@ -228,6 +238,12 @@ Program list 字段:
 - 使用 size_tier 作为初始 program tier，但允许
   legacy-ibmi-program-analyzer 根据密集度触发重新分类。
 - 这个模式下不要 checkout 或检查 delivery remote-main snapshot。
+- 把提供的 reference paths 和 control file paths 写入每一个
+  prompt-queue item，因为每个 program 都会在新的 Copilot Chat session
+  中独立运行。
+- 当这些 reference/control inputs 和当前 program 观察到的 message、
+  status、control-file lookup、field meaning 或 validation rule 有关时，
+  读取它们作为 supporting evidence。
 - 对每个 queued program row 执行 legacy-ibmi-program-analyzer。
 - 不要把多个 program 合并进同一个 program-analysis.md。
 - 每个 program 必须有自己的输出目录。
@@ -317,6 +333,11 @@ review_name: normal program batch
 program_list: outputs/repo-scan/program-list.csv
 source_root: /path/to/source-repo
 output_root: /path/to/generated-artifacts
+reference_paths:
+  - /path/to/reference-pack.md
+  - /path/to/message-catalog.csv
+control_files:
+  - /path/to/status-code-table.csv
 status: in_progress
 programs:
   - member: "@CC080"
@@ -366,6 +387,8 @@ Durable resume inputs:
 - Original `program-list.csv`
 - Source root
 - Output root
+- Reference paths, if used by the batch
+- Control files, if used by the batch
 - Existing per-program output folders
 - Existing `program-set-core-input-manifest.yaml` and
   `program-set-sme-core-review.md`, if already generated
@@ -562,6 +585,10 @@ Resume from these durable files:
 - Original program list: <path to program-list.csv>
 - Source root: <path>
 - Output root: <path>
+- Reference paths:
+  - <path to reference pack or message catalog>
+- Control files:
+  - <path to control file or code table>
 
 Rules:
 - Do not rely on previous chat history.
@@ -651,9 +678,18 @@ Initial size tier: <size_tier>
 Intent: standalone_exploratory
 Output directory: <delivery-root>/<tier-root>/<member>
 
+Reference and control inputs:
+- Reference paths:
+  - <path to reference pack or message catalog>
+- Control files:
+  - <path to control file or code table>
+
 Rules:
 - Build deterministic indexes first.
 - Analyze only this program.
+- Read the listed reference and control inputs when they are relevant to this
+  program's observed messages, status values, control-file lookups, field
+  meanings, or validation rules. Treat them as supporting evidence only.
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
 - Keep normal_program output lightweight unless density triggers appear.
@@ -793,6 +829,8 @@ Recommended `program-batch-plan.md` shape:
 - Manifest: <path to batch-scan-manifest.yaml>
 - Source root: <path>
 - Output root: <path>
+- Reference paths: <paths or none>
+- Control files: <paths or none>
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress
@@ -834,6 +872,8 @@ Per-program prompt files should include the plan and status paths:
 Program batch plan: <path to program-batch-plan.md>
 Program status list: <path to program-list-status.csv>
 Batch manifest: <path to batch-scan-manifest.yaml>
+Reference paths: <paths or none>
+Control files: <paths or none>
 
 After this program is validated or blocked, update all three files before
 starting another program.
@@ -852,6 +892,10 @@ Resume inputs:
 - Original program list: <path to program-list.csv>
 - Source root: <path to source repository root>
 - Output root: <path to generated per-program artifacts>
+- Reference paths:
+  - <path to reference pack or message catalog>
+- Control files:
+  - <path to control file or code table>
 - Review name: <business-friendly review name>
 
 Resume rules:
@@ -889,6 +933,10 @@ Final response:
 - Original program list: <program-list.csv 路径>
 - Source root: <source repo 根目录>
 - Output root: <每个 program 分析产物的输出根目录>
+- Reference paths:
+  - <reference pack 或 message catalog 路径>
+- Control files:
+  - <control file 或 code table 路径>
 - Review name: <业务可读的 review 名称>
 
 恢复规则:

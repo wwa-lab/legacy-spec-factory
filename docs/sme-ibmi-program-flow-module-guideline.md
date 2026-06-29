@@ -26,7 +26,10 @@ For the current SME-provided program-flow workflow, use
 new team from zero, use
 [`new-team-flow-scan-quickstart.md`](new-team-flow-scan-quickstart.md).
 For copy-ready internal testing prompts, use
-[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md)
+for Codex / Claude Code style agents, or
+[`flow-analysis-copilot-chat-e2e-guideline.md`](flow-analysis-copilot-chat-e2e-guideline.md)
+for GitHub Copilot Chat segmented execution.
 For interrupted runs or cross-session handoff, use
 [`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
 

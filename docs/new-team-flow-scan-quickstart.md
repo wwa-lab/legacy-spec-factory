@@ -2,8 +2,11 @@
 
 Use this when a new department wants to adopt the source-repo plus delivery-repo
 program-flow workflow from zero.
-For internal prompt testing, see
-[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+For internal prompt testing, use
+[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md)
+with Codex / Claude Code style agents, or
+[`flow-analysis-copilot-chat-e2e-guideline.md`](flow-analysis-copilot-chat-e2e-guideline.md)
+with GitHub Copilot Chat.
 
 ![Program Flow Skill E2E](assets/program-flow-skill-e2e-flow.png)
 

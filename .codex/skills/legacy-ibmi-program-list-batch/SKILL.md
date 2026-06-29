@@ -21,7 +21,7 @@ Retain this notice in substantial copies or derived versions.
 | Field | Notes |
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program work queue with durable status files. |
-| Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root and output root. |
+| Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
 | Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`. |
 | Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
@@ -62,6 +62,12 @@ directly.
   concurrently.
 - Do not carry source excerpts, prior program summaries, or chat history into
   the next program.
+- If reference packs, dictionaries, message catalogs, code tables, or control
+  files are provided, include their paths in every per-program prompt so each
+  fresh Copilot Chat session can inspect the same supporting inputs.
+- Treat reference and control inputs as supporting evidence only. They may
+  clarify messages, statuses, field meanings, and validation rules, but they
+  do not replace source evidence or SME approval.
 - After every program, update all durable state files before starting another:
   `program-batch-plan.md`, `program-list-status.csv`, and
   `batch-scan-manifest.yaml`.
@@ -94,6 +100,8 @@ outputs/program-list-batch/
    - Create `program-batch-plan.md` as the human-readable queue.
    - Create `batch-scan-manifest.yaml` as the durable machine state.
    - Create `prompt-queue/*.md` per `object_type = program` row.
+   - Carry any provided reference paths and control file paths into the batch
+     plan, manifest, and every generated prompt.
 
 2. **Run one program in Copilot Chat**
    - Open a fresh chat.
@@ -136,6 +144,9 @@ py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py 
   --out-dir outputs\program-list-batch `
   --source-root C:\path\to\source-repo `
   --delivery-root C:\path\to\delivery-work `
+  --reference-path C:\path\to\reference-pack.md `
+  --reference-path C:\path\to\message-catalog.csv `
+  --control-file C:\path\to\status-code-table.csv `
   --review-name "normal program batch"
 ```
 

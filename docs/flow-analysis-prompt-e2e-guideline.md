@@ -1,8 +1,14 @@
-# Flow Analysis Prompt E2E Guideline
+# Flow Analysis Agent Prompt E2E Guideline
 
-Use this guide to test `legacy-ibmi-flow-analyzer` internally with realistic
-SME inputs. The default test path is the compact SME program-set core review,
-not a full transaction-flow artifact.
+Use this guide to test `legacy-ibmi-flow-analyzer` internally with agent
+runtimes that can keep state, run tools, inspect files, and continue through
+multiple gates in one conversation, such as Codex or Claude Code.
+
+For GitHub Copilot Chat, use the segmented guide instead:
+[`flow-analysis-copilot-chat-e2e-guideline.md`](flow-analysis-copilot-chat-e2e-guideline.md).
+
+The default test path is the compact SME program-set core review, not a full
+transaction-flow artifact.
 
 For interrupted runs or new-session handoff, use
 [`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
@@ -50,6 +56,23 @@ source_inventory_profile
 For program-flow core review, do not provide or use a remote-main snapshot,
 prior-run cache, or force-rescan file. If an older artifact matters, let Git
 diff/PR review compare it after this run creates the current-run artifact.
+
+Runtime trigger note:
+
+- This guide assumes an agent runtime such as Codex or Claude Code.
+- Give the complete prompt to the agent once.
+- The phases inside the prompt are ordered gates inside one agent run, not
+  separate user prompts.
+- For Copilot Chat, do not use this document as a single prompt; use the
+  segmented Copilot guide.
+
+Parameter naming note:
+
+- `legacy-ibmi-program-list-batch` may still use `--delivery-root` to mean the
+  output root for generated per-program artifacts.
+- `scripts/build-program-set-core-review.py` must not use `--delivery-root`.
+  For the program-set builder, use `--working-root` as the current-run artifact
+  root.
 
 When the prompt asks the agent/operator to run a Python script in the company
 Windows environment, use `py -3`, for example
@@ -139,9 +162,9 @@ Phase 1 - build the current-run program worklist:
 
 Phase 2 - analyze every distinct program:
 7. Use legacy-ibmi-program-list-batch when there is more than one distinct
-   program or when Copilot Chat is the runtime; each queue item delegates one
-   fresh chat to legacy-ibmi-program-analyzer. For a single distinct program,
-   legacy-ibmi-program-analyzer may be used directly.
+   program and the runtime cannot safely process all programs in one continuous
+   agent run. Otherwise, route each distinct program through
+   legacy-ibmi-program-analyzer directly as needed.
 8. Write artifacts to the delivery working branch under the tier folder from
    the delivery profile.
 9. Build source-index.yaml first, then analyze the entry/mainline, validation,
@@ -166,9 +189,13 @@ Phase 2 - analyze every distinct program:
     batch is needed.
 13. Reject placeholder-only program artifacts. If a program artifact only says
     lightweight scan, no CALL literal, no obvious messages, or otherwise lacks
-    business logic rows, go back to that program's source-index and deep-read
-    the routines needed to explain calculation, validation, exception handling,
-    messages, and state changes.
+    business logic rows, first check whether the program is normal_program and
+    whether the required lightweight artifacts validate with precise evidence
+    scope. Do not force routine-logic-details or retained deep-read files for a
+    normal_program solely because it is lightweight. Promote or continue
+    deep-read only when density triggers appear, the program is complex/large,
+    the user explicitly requests deep-read, or the four SME core sections cannot
+    be filled with evidence-backed rows or precise per-program TBDs.
 14. Do not proceed to program-set assembly while any program needed by the SME
     flow only has index-level or placeholder-level analysis. If evidence is
     genuinely unavailable, record a precise per-program TBD and reason.
@@ -181,7 +208,8 @@ Phase 3 - build and fill the program-set review:
       program-set-sme-core-review.md
     Do not write the review directly under
     modules/CAP-ID-0004-program_set_reviews/.
-    Use the builder with --program-first and --working-root only.
+    Use the program-set builder with --program-first and --working-root only.
+    Do not pass --delivery-root to the program-set builder.
 16. Confirm the manifest uses run_resolution values:
     analyzed_this_run, reused_same_run, pending_source, or
     blocked_missing_source. It must not contain central_lookup_result or
@@ -293,10 +321,9 @@ Phase 1 - 建本次 program worklist:
    complex_normal_program 或 large_extreme_program。
 
 Phase 2 - 分析每一个 distinct program:
-7. 如果有多个 distinct program，或运行环境是 GitHub Copilot Chat，使用
-   legacy-ibmi-program-list-batch 生成 one-program-per-chat 队列；每个队列项
-   再委托 legacy-ibmi-program-analyzer。只有单个 distinct program 时，可以
-   直接运行 legacy-ibmi-program-analyzer。
+7. 如果有多个 distinct program，且当前 runtime 不能在一个连续 agent run 里稳定
+   处理所有 program，则使用 legacy-ibmi-program-list-batch 生成队列；否则按需
+   直接把每个 distinct program 路由给 legacy-ibmi-program-analyzer。
 8. 按 delivery profile 的 tier folder 写入 delivery working branch。
 9. 先生成 source-index.yaml，然后分析这个 SME flow 需要的 entry/mainline、
    validation、calculation、file I/O 或 SQL update、exception/message、
@@ -319,8 +346,12 @@ Phase 2 - 分析每一个 distinct program:
     routine-logic-details/deep-read-batch-*.md。
 13. 拒绝 placeholder-only program artifacts。如果某个 program artifact 只写了
     lightweight scan、no CALL literal、no obvious messages，或没有业务逻辑行，
-    回到该 program 的 source-index，继续 deep-read 能解释 calculation、
-    validation、exception handling、messages 和 state changes 的 routines。
+    先判断它是否是 normal_program，且 required lightweight artifacts 是否已经
+    validate，并且 evidence scope 是否写清楚。不要仅仅因为 normal_program 是
+    lightweight，就强制生成 routine-logic-details 或 retained deep-read 文件。
+    只有出现 density trigger、program 是 complex/large、用户明确要求 deep-read，
+    或四个 SME 核心区无法用 evidence-backed rows / 精确 per-program TBD 填写时，
+    才 promote 或继续 deep-read。
 14. 只要 SME flow 需要的任何 program 还只有 index-level 或 placeholder-level
     analysis，就不要进入 program-set assembly。如果证据确实拿不到，必须记录
     精确的 per-program TBD 和原因。
@@ -332,7 +363,8 @@ Phase 3 - build 并填完整 program-set review:
       program-set-core-input-manifest.yaml
       program-set-sme-core-review.md
     不要直接写到 modules/CAP-ID-0004-program_set_reviews/ 根目录。
-    运行 builder 时只使用 --program-first 和 --working-root。
+    运行 program-set builder 时只使用 --program-first 和 --working-root。
+    不要把 --delivery-root 传给 program-set builder。
 16. 确认 manifest 使用 run_resolution:
     analyzed_this_run、reused_same_run、pending_source、
     blocked_missing_source。manifest 里不能有 central_lookup_result 或
@@ -422,10 +454,10 @@ Expected behavior:
    preserving each flow's SME order for assembly.
 3. Reuse one source inventory cache for all flows.
 4. Reuse one delivery working branch, develop-leo, for the batch.
-5. Analyze each distinct program once through legacy-ibmi-program-list-batch in
-   Copilot Chat-limited runs, or directly with legacy-ibmi-program-analyzer for
-   a single distinct program, and write its program-level artifacts to the
-   correct tier folder.
+5. Analyze each distinct program once, using legacy-ibmi-program-list-batch
+   only when the runtime needs durable queue control; otherwise route programs
+   directly through legacy-ibmi-program-analyzer as needed. Write each
+   program-level artifact set to the correct tier folder.
 6. For repeated programs such as CU257F, reuse the newly generated current-run
    program-analysis artifact when assembling each flow; do not rescan it just
    because it appears in a second flow.
@@ -450,14 +482,17 @@ Report:
 ## Prompt 3: Source Inventory Cache Gate Test
 
 Use this when testing the rule that repo-level inventory should not rerun when
-`outputs/repo-scan` is fresh.
+`outputs/repo-scan` is fresh. This is a preflight-only smoke test; it is not a
+completed SME program-set review test.
 
 ```text
 Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Run source inventory cache preflight for this program flow before any source
-scan. Do not check remote main or prior-run artifacts.
+scan. Do not check remote main or prior-run artifacts. This test may stop after
+reporting source_inventory and next action; Prompt 1 is the completed-review
+test.
 
 Runtime inputs:
 - Delivery working checkout: /path/to/legacy-modernization-delivery
@@ -617,6 +652,7 @@ Capture these results for each test run:
 | Cross-run reuse is off | Manifest has `run_profile.cross_run_reuse: false` and no `central_lookup_result` |
 | Multiple flows remain separate | One `{review_slug}` folder per flow |
 | Review shape is compact | Only Calculation, Validation, Exception, Message sections after control tables |
+| Completeness ledger uses current columns | Core Completeness Ledger includes `Routine Logic Evidence` and `Message Inventory`, not the old `Calculation Logic / Validation Logic / Exception Handling` ledger columns |
 | Review is complete enough for SME handoff | Four core sections contain evidence-backed rows or precise per-program TBD rows |
 | Placeholder output is rejected | Generic lightweight-scan/no-CALL/no-message statements are replaced by routine-level evidence or named gaps |
 | Output placement is scoped | Review is written under `program_set_review_parent/{review_slug}/`, not the parent folder |

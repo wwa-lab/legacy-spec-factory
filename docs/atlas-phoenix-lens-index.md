@@ -41,6 +41,8 @@ If you only have a few minutes:
 | [Program Flow Map export contract](program-flow-map-export-contract.md) | Expected upstream Neo4j Program Flow Map handoff package |
 | [RPG code scan E2E guideline](rpg-code-scan-e2e-guideline.md) | Current RPG source-code scan E2E path |
 | [New team flow scan quickstart](new-team-flow-scan-quickstart.md) | Adoption path for teams starting flow scanning |
+| [Flow analysis agent prompt E2E guideline](flow-analysis-prompt-e2e-guideline.md) | Single-prompt E2E test path for Codex / Claude Code style agents |
+| [Flow analysis Copilot Chat E2E guideline](flow-analysis-copilot-chat-e2e-guideline.md) | Segmented one-program-per-chat flow test path for GitHub Copilot Chat |
 | [Skill card index](skill-card-index.md) | Overview of available skills |
 | [Skill families](skill-families.md) | Skill family map and relationships |
 

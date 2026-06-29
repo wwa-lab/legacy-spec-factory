@@ -248,6 +248,10 @@ outputs/      生成结果或本地运行输出
 - [QUICKSTART.md](QUICKSTART.md)：短 walkthrough。
 - [docs/new-team-flow-scan-quickstart.md](docs/new-team-flow-scan-quickstart.md)：
   flow-scan adoption path。
+- [docs/flow-analysis-prompt-e2e-guideline.md](docs/flow-analysis-prompt-e2e-guideline.md)：
+  Codex / Claude Code flow prompt 测试。
+- [docs/flow-analysis-copilot-chat-e2e-guideline.md](docs/flow-analysis-copilot-chat-e2e-guideline.md)：
+  GitHub Copilot Chat 分段式 flow 测试。
 - [docs/rpg-code-scan-e2e-guideline.md](docs/rpg-code-scan-e2e-guideline.md)：
   当前 RPG source-code scan 端到端流程。
 - [docs/EXAMPLE-tutorial/](docs/EXAMPLE-tutorial/)：完整 minimal example。
