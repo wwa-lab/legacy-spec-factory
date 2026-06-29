@@ -20,9 +20,17 @@ Initial size tier: {{size_tier}}
 Intent: {{intent}}
 Output directory: {{output_dir}}
 
+Reference and control inputs:
+{{reference_paths}}
+{{control_files}}
+
 Rules:
 - Build deterministic indexes first.
 - Analyze only this program.
+- Read the listed reference and control inputs when they are relevant to this
+  program's observed messages, status values, control-file lookups, field
+  meanings, or validation rules. Treat them as supporting evidence only; do not
+  invent behavior that is absent from source or SME-approved evidence.
 - If the output directory already contains prior analysis artifacts for this
   program, overwrite this program's generated analysis artifacts with the
   current skill output. Do not skip the row solely because old artifacts exist.

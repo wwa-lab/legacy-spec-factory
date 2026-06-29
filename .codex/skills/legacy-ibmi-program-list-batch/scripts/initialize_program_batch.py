@@ -107,6 +107,15 @@ def source_display(source_root: str | None, source_path: str) -> str:
     return f"<source-root>/{source_path}"
 
 
+def bullet_list(label: str, values: list[str] | None) -> str:
+    cleaned = [value.strip() for value in values or [] if value.strip()]
+    if not cleaned:
+        return f"- {label}: none provided"
+    lines = [f"- {label}:"]
+    lines.extend(f"  - {value}" for value in cleaned)
+    return "\n".join(lines)
+
+
 def tier_root(size_tier: str) -> str:
     return TIER_ROOTS.get(size_tier.strip(), TIER_ROOTS["normal_program"])
 
@@ -121,6 +130,8 @@ def render_prompt(
     delivery_root: str | None,
     intent: str,
     python_launcher: str,
+    reference_paths: list[str] | None,
+    control_files: list[str] | None,
 ) -> str:
     replacements = {
         "program_list": str(program_list),
@@ -134,6 +145,8 @@ def render_prompt(
         "intent": intent,
         "output_dir": row.get("output_dir", ""),
         "python_launcher": python_launcher,
+        "reference_paths": bullet_list("Reference paths", reference_paths),
+        "control_files": bullet_list("Control files", control_files),
     }
     rendered = template
     for key, value in replacements.items():
@@ -158,6 +171,8 @@ def render_plan(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
+    reference_paths: list[str] | None,
+    control_files: list[str] | None,
 ) -> str:
     counts = Counter(row.get("batch_status", "") for row in rows)
     blocked_count = sum(counts[value] for value in counts if value.startswith("blocked_"))
@@ -180,6 +195,8 @@ def render_plan(
 - Manifest: {out_dir / "batch-scan-manifest.yaml"}
 - Source root: {source_root or ""}
 - Output root: {delivery_root or ""}
+- Reference paths: {", ".join(reference_paths or []) if reference_paths else "none provided"}
+- Control files: {", ".join(control_files or []) if control_files else "none provided"}
 - Mode: Copilot Chat-only / one program per chat
 
 ## Progress
@@ -224,6 +241,8 @@ def build_manifest(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
+    reference_paths: list[str] | None,
+    control_files: list[str] | None,
 ) -> dict[str, Any]:
     timestamp = now_iso()
     return {
@@ -234,6 +253,8 @@ def build_manifest(
         "program_batch_plan": str(out_dir / "program-batch-plan.md"),
         "source_root": source_root,
         "output_root": delivery_root,
+        "reference_paths": reference_paths or [],
+        "control_files": control_files or [],
         "created_at": timestamp,
         "updated_at": timestamp,
         "status": "initialized",
@@ -325,6 +346,8 @@ def initialize(args: argparse.Namespace) -> None:
                     delivery_root=args.delivery_root,
                     intent=args.intent,
                     python_launcher=args.python_launcher,
+                    reference_paths=args.reference_path,
+                    control_files=args.control_file,
                 ),
                 encoding="utf-8",
             )
@@ -338,6 +361,8 @@ def initialize(args: argparse.Namespace) -> None:
             rows=status_rows,
             source_root=args.source_root,
             delivery_root=args.delivery_root,
+            reference_paths=args.reference_path,
+            control_files=args.control_file,
         ),
         encoding="utf-8",
     )
@@ -348,6 +373,8 @@ def initialize(args: argparse.Namespace) -> None:
         rows=status_rows,
         source_root=args.source_root,
         delivery_root=args.delivery_root,
+        reference_paths=args.reference_path,
+        control_files=args.control_file,
     )
     (out_dir / "batch-scan-manifest.yaml").write_text(to_yaml(manifest) + "\n", encoding="utf-8")
     print(f"Initialized program batch: {out_dir}")
@@ -360,6 +387,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--out-dir", required=True, help="Output batch directory")
     parser.add_argument("--source-root", help="Source repository root")
     parser.add_argument("--delivery-root", help="Output root for generated per-program artifacts; no checkout is required")
+    parser.add_argument(
+        "--reference-path",
+        action="append",
+        default=[],
+        help="Reference pack, dictionary, message catalog, or other supporting context path to include in every prompt",
+    )
+    parser.add_argument(
+        "--control-file",
+        action="append",
+        default=[],
+        help="Control file, code table, or lookup file path to include in every prompt",
+    )
     parser.add_argument("--delivery-profile", help=argparse.SUPPRESS)
     parser.add_argument("--delivery-main-snapshot", help=argparse.SUPPRESS)
     parser.add_argument("--review-name", default="program list batch", help="Human-readable batch name")

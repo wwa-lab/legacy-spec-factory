@@ -110,6 +110,8 @@ continuation.
 - `status_list`
 - `source_root`
 - `output_root`
+- `reference_paths`
+- `control_files`
 - `created_at`
 - `updated_at`
 - `status`

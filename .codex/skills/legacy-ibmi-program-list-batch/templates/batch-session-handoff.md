@@ -5,6 +5,8 @@
 - Batch manifest: {{batch_manifest}}
 - Program status list: {{program_list_status}}
 - Program list: {{program_list}}
+- Reference paths: {{reference_paths}}
+- Control files: {{control_files}}
 - Last completed program: {{last_completed_program}}
 - Last validator status: {{last_validator_status}}
 - Current blocker: {{current_blocker}}
@@ -38,6 +40,8 @@ Resume from these durable files:
 - Original program list: {{program_list}}
 - Source root: {{source_root}}
 - Output root: {{output_root}}
+- Reference paths: {{reference_paths}}
+- Control files: {{control_files}}
 
 Rules:
 - Do not rely on previous chat history.
