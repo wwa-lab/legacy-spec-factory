@@ -51,6 +51,22 @@ For program-flow core review, do not provide or use a remote-main snapshot,
 prior-run cache, or force-rescan file. If an older artifact matters, let Git
 diff/PR review compare it after this run creates the current-run artifact.
 
+Runtime trigger note:
+
+- Codex / Claude Code can usually route from `Use legacy-ibmi-flow-analyzer.`
+- In GitHub Copilot Chat, prefer the slash form if available:
+  `/legacy-ibmi-flow-analyzer`
+- If the slash command is unavailable, paste or follow
+  `skills/legacy-ibmi-flow-analyzer/SKILL.md` explicitly.
+
+Parameter naming note:
+
+- `legacy-ibmi-program-list-batch` may still use `--delivery-root` to mean the
+  output root for generated per-program artifacts.
+- `scripts/build-program-set-core-review.py` must not use `--delivery-root`.
+  For the program-set builder, use `--working-root` as the current-run artifact
+  root.
+
 When the prompt asks the agent/operator to run a Python script in the company
 Windows environment, use `py -3`, for example
 `py -3 scripts\validate-program-set-core-review.py ...`. Use `python3` only on
@@ -67,7 +83,10 @@ three separate user questions.
 ### English
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Run one SME-provided program flow all the way to a completed compact SME
@@ -166,9 +185,13 @@ Phase 2 - analyze every distinct program:
     batch is needed.
 13. Reject placeholder-only program artifacts. If a program artifact only says
     lightweight scan, no CALL literal, no obvious messages, or otherwise lacks
-    business logic rows, go back to that program's source-index and deep-read
-    the routines needed to explain calculation, validation, exception handling,
-    messages, and state changes.
+    business logic rows, first check whether the program is normal_program and
+    whether the required lightweight artifacts validate with precise evidence
+    scope. Do not force routine-logic-details or retained deep-read files for a
+    normal_program solely because it is lightweight. Promote or continue
+    deep-read only when density triggers appear, the program is complex/large,
+    the user explicitly requests deep-read, or the four SME core sections cannot
+    be filled with evidence-backed rows or precise per-program TBDs.
 14. Do not proceed to program-set assembly while any program needed by the SME
     flow only has index-level or placeholder-level analysis. If evidence is
     genuinely unavailable, record a precise per-program TBD and reason.
@@ -181,7 +204,8 @@ Phase 3 - build and fill the program-set review:
       program-set-sme-core-review.md
     Do not write the review directly under
     modules/CAP-ID-0004-program_set_reviews/.
-    Use the builder with --program-first and --working-root only.
+    Use the program-set builder with --program-first and --working-root only.
+    Do not pass --delivery-root to the program-set builder.
 16. Confirm the manifest uses run_resolution values:
     analyzed_this_run, reused_same_run, pending_source, or
     blocked_missing_source. It must not contain central_lookup_result or
@@ -227,7 +251,10 @@ Report:
 ### 中文
 
 ```text
-请使用 legacy-ibmi-flow-analyzer。
+/legacy-ibmi-flow-analyzer
+
+如果当前环境没有这个 slash command，请显式遵循
+skills/legacy-ibmi-flow-analyzer/SKILL.md。
 
 目标:
 请把一个 SME 提供的 program flow 完整跑完，产出一份可交给 SME review 的
@@ -319,8 +346,12 @@ Phase 2 - 分析每一个 distinct program:
     routine-logic-details/deep-read-batch-*.md。
 13. 拒绝 placeholder-only program artifacts。如果某个 program artifact 只写了
     lightweight scan、no CALL literal、no obvious messages，或没有业务逻辑行，
-    回到该 program 的 source-index，继续 deep-read 能解释 calculation、
-    validation、exception handling、messages 和 state changes 的 routines。
+    先判断它是否是 normal_program，且 required lightweight artifacts 是否已经
+    validate，并且 evidence scope 是否写清楚。不要仅仅因为 normal_program 是
+    lightweight，就强制生成 routine-logic-details 或 retained deep-read 文件。
+    只有出现 density trigger、program 是 complex/large、用户明确要求 deep-read，
+    或四个 SME 核心区无法用 evidence-backed rows / 精确 per-program TBD 填写时，
+    才 promote 或继续 deep-read。
 14. 只要 SME flow 需要的任何 program 还只有 index-level 或 placeholder-level
     analysis，就不要进入 program-set assembly。如果证据确实拿不到，必须记录
     精确的 per-program TBD 和原因。
@@ -332,7 +363,8 @@ Phase 3 - build 并填完整 program-set review:
       program-set-core-input-manifest.yaml
       program-set-sme-core-review.md
     不要直接写到 modules/CAP-ID-0004-program_set_reviews/ 根目录。
-    运行 builder 时只使用 --program-first 和 --working-root。
+    运行 program-set builder 时只使用 --program-first 和 --working-root。
+    不要把 --delivery-root 传给 program-set builder。
 16. 确认 manifest 使用 run_resolution:
     analyzed_this_run、reused_same_run、pending_source、
     blocked_missing_source。manifest 里不能有 central_lookup_result 或
@@ -379,7 +411,10 @@ Use this to test whether the skill can process multiple SME flow blocks without
 mixing them together.
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Process multiple SME-provided program flows as a single working-branch batch.
@@ -450,14 +485,20 @@ Report:
 ## Prompt 3: Source Inventory Cache Gate Test
 
 Use this when testing the rule that repo-level inventory should not rerun when
-`outputs/repo-scan` is fresh.
+`outputs/repo-scan` is fresh. This is a preflight-only smoke test; it is not a
+completed SME program-set review test.
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Run source inventory cache preflight for this program flow before any source
-scan. Do not check remote main or prior-run artifacts.
+scan. Do not check remote main or prior-run artifacts. This test may stop after
+reporting source_inventory and next action; Prompt 1 is the completed-review
+test.
 
 Runtime inputs:
 - Delivery working checkout: /path/to/legacy-modernization-delivery
@@ -494,7 +535,10 @@ Use this to test that an older delivery artifact does not short-circuit the
 program-flow run.
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Create a compact SME program-set core review while ignoring any older
@@ -541,7 +585,10 @@ Report:
 Use this after the reviews are generated and filled.
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Validate generated program-set SME core reviews and prepare a PR-ready summary.
@@ -574,7 +621,10 @@ Use this only when the internal test intentionally wants the full
 `flow-<FLOW-SLUG>.md` artifact. This is not the default SME core-review path.
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+/legacy-ibmi-flow-analyzer
+
+If this slash command is unavailable, follow
+skills/legacy-ibmi-flow-analyzer/SKILL.md.
 
 Goal:
 Create a full transaction-flow analysis for one business event.
@@ -617,6 +667,7 @@ Capture these results for each test run:
 | Cross-run reuse is off | Manifest has `run_profile.cross_run_reuse: false` and no `central_lookup_result` |
 | Multiple flows remain separate | One `{review_slug}` folder per flow |
 | Review shape is compact | Only Calculation, Validation, Exception, Message sections after control tables |
+| Completeness ledger uses current columns | Core Completeness Ledger includes `Routine Logic Evidence` and `Message Inventory`, not the old `Calculation Logic / Validation Logic / Exception Handling` ledger columns |
 | Review is complete enough for SME handoff | Four core sections contain evidence-backed rows or precise per-program TBD rows |
 | Placeholder output is rejected | Generic lightweight-scan/no-CALL/no-message statements are replaced by routine-level evidence or named gaps |
 | Output placement is scoped | Review is written under `program_set_review_parent/{review_slug}/`, not the parent folder |
