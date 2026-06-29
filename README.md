@@ -262,6 +262,10 @@ Start with:
 - [QUICKSTART.md](QUICKSTART.md) for a short walkthrough.
 - [docs/new-team-flow-scan-quickstart.md](docs/new-team-flow-scan-quickstart.md)
   for a flow-scan adoption path.
+- [docs/flow-analysis-prompt-e2e-guideline.md](docs/flow-analysis-prompt-e2e-guideline.md)
+  for Codex / Claude Code flow prompt testing.
+- [docs/flow-analysis-copilot-chat-e2e-guideline.md](docs/flow-analysis-copilot-chat-e2e-guideline.md)
+  for GitHub Copilot Chat segmented flow testing.
 - [docs/rpg-code-scan-e2e-guideline.md](docs/rpg-code-scan-e2e-guideline.md)
   for the current RPG source-code scan E2E path.
 - [docs/EXAMPLE-tutorial/](docs/EXAMPLE-tutorial/) for a populated minimal

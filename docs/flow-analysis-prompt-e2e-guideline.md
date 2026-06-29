@@ -1,8 +1,14 @@
-# Flow Analysis Prompt E2E Guideline
+# Flow Analysis Agent Prompt E2E Guideline
 
-Use this guide to test `legacy-ibmi-flow-analyzer` internally with realistic
-SME inputs. The default test path is the compact SME program-set core review,
-not a full transaction-flow artifact.
+Use this guide to test `legacy-ibmi-flow-analyzer` internally with agent
+runtimes that can keep state, run tools, inspect files, and continue through
+multiple gates in one conversation, such as Codex or Claude Code.
+
+For GitHub Copilot Chat, use the segmented guide instead:
+[`flow-analysis-copilot-chat-e2e-guideline.md`](flow-analysis-copilot-chat-e2e-guideline.md).
+
+The default test path is the compact SME program-set core review, not a full
+transaction-flow artifact.
 
 For interrupted runs or new-session handoff, use
 [`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
@@ -53,11 +59,12 @@ diff/PR review compare it after this run creates the current-run artifact.
 
 Runtime trigger note:
 
-- Codex / Claude Code can usually route from `Use legacy-ibmi-flow-analyzer.`
-- In GitHub Copilot Chat, prefer the slash form if available:
-  `/legacy-ibmi-flow-analyzer`
-- If the slash command is unavailable, paste or follow
-  `skills/legacy-ibmi-flow-analyzer/SKILL.md` explicitly.
+- This guide assumes an agent runtime such as Codex or Claude Code.
+- Give the complete prompt to the agent once.
+- The phases inside the prompt are ordered gates inside one agent run, not
+  separate user prompts.
+- For Copilot Chat, do not use this document as a single prompt; use the
+  segmented Copilot guide.
 
 Parameter naming note:
 
@@ -83,10 +90,7 @@ three separate user questions.
 ### English
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Run one SME-provided program flow all the way to a completed compact SME
@@ -158,9 +162,9 @@ Phase 1 - build the current-run program worklist:
 
 Phase 2 - analyze every distinct program:
 7. Use legacy-ibmi-program-list-batch when there is more than one distinct
-   program or when Copilot Chat is the runtime; each queue item delegates one
-   fresh chat to legacy-ibmi-program-analyzer. For a single distinct program,
-   legacy-ibmi-program-analyzer may be used directly.
+   program and the runtime cannot safely process all programs in one continuous
+   agent run. Otherwise, route each distinct program through
+   legacy-ibmi-program-analyzer directly as needed.
 8. Write artifacts to the delivery working branch under the tier folder from
    the delivery profile.
 9. Build source-index.yaml first, then analyze the entry/mainline, validation,
@@ -251,10 +255,7 @@ Report:
 ### 中文
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-如果当前环境没有这个 slash command，请显式遵循
-skills/legacy-ibmi-flow-analyzer/SKILL.md。
+请使用 legacy-ibmi-flow-analyzer。
 
 目标:
 请把一个 SME 提供的 program flow 完整跑完，产出一份可交给 SME review 的
@@ -320,10 +321,9 @@ Phase 1 - 建本次 program worklist:
    complex_normal_program 或 large_extreme_program。
 
 Phase 2 - 分析每一个 distinct program:
-7. 如果有多个 distinct program，或运行环境是 GitHub Copilot Chat，使用
-   legacy-ibmi-program-list-batch 生成 one-program-per-chat 队列；每个队列项
-   再委托 legacy-ibmi-program-analyzer。只有单个 distinct program 时，可以
-   直接运行 legacy-ibmi-program-analyzer。
+7. 如果有多个 distinct program，且当前 runtime 不能在一个连续 agent run 里稳定
+   处理所有 program，则使用 legacy-ibmi-program-list-batch 生成队列；否则按需
+   直接把每个 distinct program 路由给 legacy-ibmi-program-analyzer。
 8. 按 delivery profile 的 tier folder 写入 delivery working branch。
 9. 先生成 source-index.yaml，然后分析这个 SME flow 需要的 entry/mainline、
    validation、calculation、file I/O 或 SQL update、exception/message、
@@ -411,10 +411,7 @@ Use this to test whether the skill can process multiple SME flow blocks without
 mixing them together.
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Process multiple SME-provided program flows as a single working-branch batch.
@@ -457,10 +454,10 @@ Expected behavior:
    preserving each flow's SME order for assembly.
 3. Reuse one source inventory cache for all flows.
 4. Reuse one delivery working branch, develop-leo, for the batch.
-5. Analyze each distinct program once through legacy-ibmi-program-list-batch in
-   Copilot Chat-limited runs, or directly with legacy-ibmi-program-analyzer for
-   a single distinct program, and write its program-level artifacts to the
-   correct tier folder.
+5. Analyze each distinct program once, using legacy-ibmi-program-list-batch
+   only when the runtime needs durable queue control; otherwise route programs
+   directly through legacy-ibmi-program-analyzer as needed. Write each
+   program-level artifact set to the correct tier folder.
 6. For repeated programs such as CU257F, reuse the newly generated current-run
    program-analysis artifact when assembling each flow; do not rescan it just
    because it appears in a second flow.
@@ -489,10 +486,7 @@ Use this when testing the rule that repo-level inventory should not rerun when
 completed SME program-set review test.
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Run source inventory cache preflight for this program flow before any source
@@ -535,10 +529,7 @@ Use this to test that an older delivery artifact does not short-circuit the
 program-flow run.
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Create a compact SME program-set core review while ignoring any older
@@ -585,10 +576,7 @@ Report:
 Use this after the reviews are generated and filled.
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Validate generated program-set SME core reviews and prepare a PR-ready summary.
@@ -621,10 +609,7 @@ Use this only when the internal test intentionally wants the full
 `flow-<FLOW-SLUG>.md` artifact. This is not the default SME core-review path.
 
 ```text
-/legacy-ibmi-flow-analyzer
-
-If this slash command is unavailable, follow
-skills/legacy-ibmi-flow-analyzer/SKILL.md.
+Use legacy-ibmi-flow-analyzer.
 
 Goal:
 Create a full transaction-flow analysis for one business event.

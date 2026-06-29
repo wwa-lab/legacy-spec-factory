@@ -2,8 +2,11 @@
 
 Use this guide when an SME provides one or more program flows/lists and expects
 reviewable output that merges the core logic across each flow's programs.
-For copy-ready internal test prompts, see
-[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md).
+For copy-ready internal test prompts, use the runtime-specific guides:
+[`flow-analysis-prompt-e2e-guideline.md`](flow-analysis-prompt-e2e-guideline.md)
+for Codex / Claude Code style agents, and
+[`flow-analysis-copilot-chat-e2e-guideline.md`](flow-analysis-copilot-chat-e2e-guideline.md)
+for GitHub Copilot Chat segmented execution.
 For interrupted runs or new-session handoff, see
 [`flow-analysis-resume-guideline.md`](flow-analysis-resume-guideline.md).
 
