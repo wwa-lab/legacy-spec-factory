@@ -73,6 +73,11 @@ Parameter naming note:
 - `scripts/build-program-set-core-review.py` must not use `--delivery-root`.
   For the program-set builder, use `--working-root` as the current-run artifact
   root.
+- When reporting Windows paths in Markdown, wrap full paths in backticks or
+  fenced code blocks. A raw `\@` can render as `@`, hiding the separator before
+  program names such as `@CU400P`; output directories must be path-joined as
+  `...\normal_program\@CU400P`, not concatenated as
+  `...\normal_program@CU400P`.
 
 When the prompt asks the agent/operator to run a Python script in the company
 Windows environment, use `py -3`, for example

@@ -95,16 +95,32 @@ def safe_filename(value: str) -> str:
     return cleaned or "program"
 
 
+def looks_like_windows_path(value: str) -> bool:
+    return "\\" in value or bool(re.match(r"^[A-Za-z]:", value))
+
+
 def join_display(root: str | None, *parts: str) -> str:
+    cleaned_parts = [part.strip("/\\") for part in parts if part]
     if root:
-        return str(Path(root, *parts))
-    return "/".join(["<delivery-root>", *parts])
+        cleaned_root = root.rstrip("/\\")
+        if looks_like_windows_path(root):
+            return "\\".join([cleaned_root, *[part.replace("/", "\\") for part in cleaned_parts]])
+        return "/".join([cleaned_root, *[part.replace("\\", "/") for part in cleaned_parts]])
+    return "/".join(["<delivery-root>", *[part.replace("\\", "/") for part in cleaned_parts]])
 
 
 def source_display(source_root: str | None, source_path: str) -> str:
     if source_root:
-        return str(Path(source_root, source_path))
-    return f"<source-root>/{source_path}"
+        return join_display(source_root, source_path)
+    cleaned_source_path = source_path.strip("/\\")
+    return f"<source-root>/{cleaned_source_path}"
+
+
+def markdown_code(value: str) -> str:
+    text = value or ""
+    if not text:
+        return ""
+    return "`" + text.replace("`", "\\`") + "`"
 
 
 def bullet_list(label: str, values: list[str] | None) -> str:
@@ -156,10 +172,10 @@ def render_prompt(
 
 def markdown_table_row(index: int, row: dict[str, str]) -> str:
     return (
-        f"| {index} | {row.get('member', '')} | {row.get('path', '')} | "
+        f"| {index} | {row.get('member', '')} | {markdown_code(row.get('path', ''))} | "
         f"{row.get('size_tier', '')} | {row.get('batch_status', '')} | "
         f"{row.get('validator_status', '')} | {row.get('owner', '')} | "
-        f"{row.get('output_dir', '')} | {row.get('next_action', '')} |"
+        f"{markdown_code(row.get('output_dir', ''))} | {row.get('next_action', '')} |"
     )
 
 
@@ -216,7 +232,7 @@ def render_plan(
 - Current program: none
 - Current owner/session: none
 - Next program: {next_row.get("member", "") if next_row else "none"}
-- Next prompt: {next_row.get("prompt_path", "") if next_row else "none"}
+- Next prompt: {markdown_code(next_row.get("prompt_path", "")) if next_row else "none"}
 - Next action: {next_row.get("next_action", "none") if next_row else "none"}
 
 ## Program Queue

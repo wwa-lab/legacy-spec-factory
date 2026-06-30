@@ -71,6 +71,18 @@ Parameter naming warning:
 - `scripts/build-program-set-core-review.py` must not use `--delivery-root`.
   For the program-set builder, use `--working-root`.
 
+Windows path rendering warning:
+
+- Keep Windows paths in code spans or fenced code blocks when reporting them.
+- Markdown can render raw `\@` as `@`, hiding the separator before program names
+  such as `@CU400P`.
+- A planned output directory for an `@` program must keep the separator:
+  `C:\sandbox\project\legacy-modernization-delivery\modules\CAP-ID-0003-normal_program\@CU400P`
+- Treat this as wrong because the tier folder and program folder were
+  concatenated:
+  `C:\sandbox\project\legacy-modernization-delivery\modules\CAP-ID-0003-normal_program@CU400P`
+- Build output paths by joining path components, not by string concatenation.
+
 Company Windows environment:
 
 - Use `py -3` for Python commands.
@@ -160,6 +172,8 @@ Rules:
    normal_program, complex_normal_program, or large_extreme_program.
 7. Prepare one-program-per-chat queue inputs for
    legacy-ibmi-program-list-batch or equivalent manual queue files.
+8. When reporting planned output directories, wrap the full path in backticks
+   and keep the separator before any program beginning with @.
 
 Return:
 - ordered SME flow
@@ -206,7 +220,7 @@ Source repo:
 <SOURCE_REPO>
 
 Output directory:
-<PROGRAM_OUTPUT_DIR_IN_DELIVERY_WORKING_CHECKOUT>
+`<PROGRAM_OUTPUT_DIR_IN_DELIVERY_WORKING_CHECKOUT>`
 
 Rules:
 1. Build deterministic indexes first.

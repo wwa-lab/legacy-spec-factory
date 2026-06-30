@@ -8,17 +8,17 @@ Task: analyze one IBM i program from a program-list batch.
 Do not rely on previous chat history.
 This is a fresh Copilot Chat session for one program only.
 
-Program list: {{program_list}}
-Program batch plan: {{program_batch_plan}}
-Program status list: {{program_list_status}}
-Batch manifest: {{batch_manifest}}
+Program list: `{{program_list}}`
+Program batch plan: `{{program_batch_plan}}`
+Program status list: `{{program_list_status}}`
+Batch manifest: `{{batch_manifest}}`
 
 Program: {{member}}
-Source path: {{source_path}}
+Source path: `{{source_path}}`
 Language: {{source_kind}}
 Initial size tier: {{size_tier}}
 Intent: {{intent}}
-Output directory: {{output_dir}}
+Output directory: `{{output_dir}}`
 
 Reference and control inputs:
 {{reference_paths}}
@@ -72,3 +72,6 @@ Company Windows 11 note:
 - Use `py -3` as the Python launcher.
 - Do not fall back to `python` unless the team explicitly allows it for this
   run.
+- Keep Windows paths in code spans or fenced code blocks when reporting them.
+  In Markdown, a raw `\@` can render as `@`, hiding the separator before
+  program names such as `@CU400P`.
