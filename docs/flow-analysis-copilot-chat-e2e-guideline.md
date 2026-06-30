@@ -55,6 +55,21 @@ SME program flow:
 - <PROGRAM-C>
 ```
 
+Save the SME program flow to a small `programs.txt` file before Phase 1, for
+example:
+
+```text
+<PROGRAM-A> -> <PROGRAM-B> -> <PROGRAM-C>
+```
+
+or:
+
+```text
+<PROGRAM-A>
+<PROGRAM-B>
+<PROGRAM-C>
+```
+
 If the team does not yet have a delivery profile, copy:
 
 ```text
@@ -131,7 +146,9 @@ Return:
 
 ## Phase 1: Flow Worklist And Inventory Preflight
 
-Use one Copilot Chat session for this phase.
+Use one Copilot Chat session for this phase. The goal is to create a durable
+one-program-per-chat prompt queue; after this phase, the operator should copy
+the generated `prompt-queue/*.md` files into fresh Copilot Chat sessions.
 
 ```text
 /legacy-ibmi-flow-analyzer
@@ -171,9 +188,31 @@ Rules:
 6. Determine each distinct program's source path and size tier:
    normal_program, complex_normal_program, or large_extreme_program.
 7. Prepare one-program-per-chat queue inputs for
-   legacy-ibmi-program-list-batch or equivalent manual queue files.
+   legacy-ibmi-program-list-batch or equivalent manual queue files. Prefer the
+   batch initializer so the operator can copy generated prompt files instead of
+   hand-writing each program prompt.
 8. When reporting planned output directories, wrap the full path in backticks
    and keep the separator before any program beginning with @.
+
+Batch prompt generation command on Windows:
+
+py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
+  --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
+  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
+  --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG> `
+  --source-root <SOURCE_REPO> `
+  --delivery-root <DELIVERY_WORKING_CHECKOUT> `
+  --review-name "<REVIEW_NAME>"
+
+macOS/Linux:
+
+python3 skills/legacy-ibmi-program-list-batch/scripts/initialize_program_batch.py \
+  --program-list <SOURCE_REPO>/outputs/repo-scan/program-list.csv \
+  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> \
+  --out-dir <DELIVERY_WORKING_CHECKOUT>/outputs/program-list-batch/<REVIEW_SLUG> \
+  --source-root <SOURCE_REPO> \
+  --delivery-root <DELIVERY_WORKING_CHECKOUT> \
+  --review-name "<REVIEW_NAME>"
 
 Return:
 - ordered SME flow
@@ -181,7 +220,8 @@ Return:
 - source path and tier for each program
 - source_inventory freshness/action
 - output directory planned for each program
-- next prompt/file to use for each program-analysis chat
+- prompt queue folder
+- next prompt/file to copy for each program-analysis chat
 ```
 
 ## Phase 2: Analyze One Program Per Fresh Chat

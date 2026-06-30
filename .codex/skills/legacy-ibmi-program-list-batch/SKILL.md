@@ -45,6 +45,8 @@ The original `program-list.csv` should remain the source export. Create
 Use this skill when:
 
 - The user has a program list and wants to process it row by row.
+- The user has a SME-provided program flow/list and wants generated prompt
+  files only for those selected programs, in that order.
 - The team can only use Copilot Chat and cannot run a true agent batch worker.
 - Context limits require one program per session.
 - The team needs resumable progress across sessions.
@@ -141,6 +143,7 @@ Initialize a Copilot Chat queue:
 ```powershell
 py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
   --program-list outputs\repo-scan\program-list.csv `
+  --programs-file programs.txt `
   --out-dir outputs\program-list-batch `
   --source-root C:\path\to\source-repo `
   --delivery-root C:\path\to\delivery-work `
@@ -149,6 +152,11 @@ py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py 
   --control-file C:\path\to\status-code-table.csv `
   --review-name "normal program batch"
 ```
+
+`--programs-file` is optional. Use it when an SME provides a program flow such
+as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C` and you want generated prompt files
+only for those distinct programs. Without it, the initializer creates prompts
+for every `object_type = program` row in the input `program-list.csv`.
 
 Validate batch state:
 

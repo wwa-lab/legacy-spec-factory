@@ -82,6 +82,53 @@ def read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
         return list(reader.fieldnames or []), rows
 
 
+def read_programs_file(path: Path) -> list[str]:
+    programs: list[str] = []
+    seen: set[str] = set()
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith(("-", "*")):
+            line = line[1:].strip()
+        for token in line.replace("=>", "->").split("->"):
+            program = token.strip().strip(",;")
+            if not program:
+                continue
+            key = program.upper()
+            if key not in seen:
+                seen.add(key)
+                programs.append(program)
+    return programs
+
+
+def filter_rows_by_programs(
+    rows: list[dict[str, str]],
+    programs: list[str],
+) -> list[dict[str, str]]:
+    by_member: dict[str, dict[str, str]] = {}
+    for row in rows:
+        member = (row.get("member") or "").strip()
+        if member:
+            by_member.setdefault(member.upper(), row)
+
+    filtered: list[dict[str, str]] = []
+    missing: list[str] = []
+    for program in programs:
+        row = by_member.get(program.upper())
+        if row is None:
+            missing.append(program)
+        else:
+            filtered.append(row)
+
+    if missing:
+        raise SystemExit(
+            "programs-file contains programs not found in program-list.csv: "
+            + ", ".join(missing)
+        )
+    return filtered
+
+
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -310,6 +357,13 @@ def initialize(args: argparse.Namespace) -> None:
     fieldnames, rows = read_csv(program_list)
     if "member" not in fieldnames:
         raise SystemExit("program-list.csv must include a 'member' column")
+    if args.programs_file:
+        requested_programs = read_programs_file(Path(args.programs_file).resolve())
+        if not requested_programs:
+            raise SystemExit("programs file has no program names")
+        rows = filter_rows_by_programs(rows, requested_programs)
+        program_list = out_dir / "flow-program-list.csv"
+        write_csv(program_list, fieldnames, rows)
 
     status_fieldnames = list(fieldnames)
     for column in STATUS_COLUMNS:
@@ -400,6 +454,13 @@ def initialize(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--program-list", required=True, help="Input program-list.csv")
+    parser.add_argument(
+        "--programs-file",
+        help=(
+            "Optional SME program flow/list. When provided, generate prompt queue "
+            "only for these distinct programs in the supplied order."
+        ),
+    )
     parser.add_argument("--out-dir", required=True, help="Output batch directory")
     parser.add_argument("--source-root", help="Source repository root")
     parser.add_argument("--delivery-root", help="Output root for generated per-program artifacts; no checkout is required")
