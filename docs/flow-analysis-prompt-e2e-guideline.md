@@ -42,6 +42,11 @@ Delivery working branch: develop-<person>
 Delivery working checkout: /path/to/legacy-modernization-delivery
 Source repo: /path/to/source-repo
 Delivery profile: /path/to/delivery-profile.yaml
+Reference paths, optional:
+- /path/to/reference-pack.md
+- /path/to/message-catalog.csv
+Control files, optional:
+- /path/to/status-code-table.csv
 ```
 
 Team setup is not repeated in every prompt. It should already live in the
@@ -78,6 +83,11 @@ Parameter naming note:
   program names such as `@CU400P`; output directories must be path-joined as
   `...\normal_program\@CU400P`, not concatenated as
   `...\normal_program@CU400P`.
+- Pass reference packs, dictionaries, message catalogs, code tables, and
+  control files into per-program analysis prompts with `--reference-path` /
+  `--control-file` when using program-list-batch. Treat them as supporting
+  evidence for message/status/control-table meanings; they do not replace
+  source evidence or SME approval.
 
 When the prompt asks the agent/operator to run a Python script in the company
 Windows environment, use `py -3`, for example
@@ -124,6 +134,11 @@ Runtime inputs:
 - Delivery working branch: develop-leo
 - Source repo: /path/to/source-repo
 - Delivery profile: /path/to/delivery-profile.yaml
+- Reference paths, optional:
+  - /path/to/reference-pack.md
+  - /path/to/message-catalog.csv
+- Control files, optional:
+  - /path/to/status-code-table.csv
 
 Review name:
 card auth posting core review
@@ -201,12 +216,16 @@ Phase 2 - analyze every distinct program:
     deep-read only when density triggers appear, the program is complex/large,
     the user explicitly requests deep-read, or the four SME core sections cannot
     be filled with evidence-backed rows or precise per-program TBDs.
-14. Do not proceed to program-set assembly while any program needed by the SME
+14. Read reference/control inputs when they are relevant to observed messages,
+    status values, control-file lookups, field meanings, or validation rules.
+    Treat them as supporting evidence only; do not invent behavior absent from
+    source or SME-approved evidence.
+15. Do not proceed to program-set assembly while any program needed by the SME
     flow only has index-level or placeholder-level analysis. If evidence is
     genuinely unavailable, record a precise per-program TBD and reason.
 
 Phase 3 - build and fill the program-set review:
-15. After every distinct SME-provided program has current-run completed
+16. After every distinct SME-provided program has current-run completed
     artifacts or a precise blocked/pending state, build or rebuild:
     modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/
       program-set-core-input-manifest.yaml
@@ -215,17 +234,17 @@ Phase 3 - build and fill the program-set review:
     modules/CAP-ID-0004-program_set_reviews/.
     Use the program-set builder with --program-first and --working-root only.
     Do not pass --delivery-root to the program-set builder.
-16. Confirm the manifest uses run_resolution values:
+17. Confirm the manifest uses run_resolution values:
     analyzed_this_run, reused_same_run, pending_source, or
     blocked_missing_source. It must not contain central_lookup_result or
     found_on_remote_main.
-17. Fill program-set-sme-core-review.md from the current-run per-program
+18. Fill program-set-sme-core-review.md from the current-run per-program
     artifacts. Prefer compact artifacts, and use program-analysis.md only for
     targeted clarification. Keep rows grouped by the SME program order.
-18. The review must be self-contained for SME reading: do not make the SME jump
+19. The review must be self-contained for SME reading: do not make the SME jump
     to per-program documents to understand Calculation Logic, Validation Logic,
     Exception Handling, or Message Inventory.
-19. The four core sections must contain evidence-backed rows:
+20. The four core sections must contain evidence-backed rows:
     - Calculation Logic: assignments, derived values, counters, totals, dates,
       flags, or explicit "no calculation observed" TBD rows with evidence scope
     - Validation Logic: checks, reject conditions, statuses, return codes, and
@@ -234,16 +253,16 @@ Phase 3 - build and fill the program-set review:
       rollback/continue/stop behavior, and unresolved paths
     - Message Inventory: every exact message ID, status, return code, SQLSTATE,
       CPF/MCH/RNX/CPD code, operator text, literal, or shop-local token observed
-20. Each core row must include the actual logic, condition, carrier, outcome,
+21. Each core row must include the actual logic, condition, carrier, outcome,
     and message/status text needed to understand the behavior inside
     program-set-sme-core-review.md. Evidence IDs, source lines, and artifact
     names may appear in Supporting Detail / Detail Refs, but they must not
     replace the explanation.
-21. If a section truly has no observed evidence for a program, add a precise
+22. If a section truly has no observed evidence for a program, add a precise
     TBD row naming the program, routine/window inspected, missing artifact or
     evidence type, and next action. Do not replace the section with a generic
     sentence.
-22. Run scripts/validate-program-set-core-review.py. If it fails, fix the
+23. Run scripts/validate-program-set-core-review.py. If it fails, fix the
     review and rerun until it passes.
 
 Report:
@@ -287,6 +306,11 @@ Runtime inputs:
 - Delivery working branch: develop-leo
 - Source repo: /path/to/source-repo
 - Delivery profile: /path/to/delivery-profile.yaml
+- Reference paths，可选:
+  - /path/to/reference-pack.md
+  - /path/to/message-catalog.csv
+- Control files，可选:
+  - /path/to/status-code-table.csv
 
 Review name:
 card auth posting core review
@@ -357,12 +381,16 @@ Phase 2 - 分析每一个 distinct program:
     只有出现 density trigger、program 是 complex/large、用户明确要求 deep-read，
     或四个 SME 核心区无法用 evidence-backed rows / 精确 per-program TBD 填写时，
     才 promote 或继续 deep-read。
-14. 只要 SME flow 需要的任何 program 还只有 index-level 或 placeholder-level
+14. 当 reference/control inputs 与已观察到的 message、status、control-file
+    lookup、field meaning 或 validation rule 有关时，要读取它们；但它们只能作为
+    supporting evidence，不能替代 source evidence 或 SME approval，也不能用来发明
+    源码里没有的行为。
+15. 只要 SME flow 需要的任何 program 还只有 index-level 或 placeholder-level
     analysis，就不要进入 program-set assembly。如果证据确实拿不到，必须记录
     精确的 per-program TBD 和原因。
 
 Phase 3 - build 并填完整 program-set review:
-15. 每一个 distinct SME-provided program 都有本次完成的 artifacts，或有精确
+16. 每一个 distinct SME-provided program 都有本次完成的 artifacts，或有精确
     blocked/pending state 后，build 或 rebuild:
     modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review/
       program-set-core-input-manifest.yaml
@@ -370,17 +398,17 @@ Phase 3 - build 并填完整 program-set review:
     不要直接写到 modules/CAP-ID-0004-program_set_reviews/ 根目录。
     运行 program-set builder 时只使用 --program-first 和 --working-root。
     不要把 --delivery-root 传给 program-set builder。
-16. 确认 manifest 使用 run_resolution:
+17. 确认 manifest 使用 run_resolution:
     analyzed_this_run、reused_same_run、pending_source、
     blocked_missing_source。manifest 里不能有 central_lookup_result 或
     found_on_remote_main。
-17. 从 current-run per-program artifacts 填写 program-set-sme-core-review.md。
+18. 从 current-run per-program artifacts 填写 program-set-sme-core-review.md。
     优先使用 compact artifacts，只在定点澄清时打开 program-analysis.md。
     行顺序要按 SME 提供的 program flow 分组。
-18. 这个 review 必须让 SME 能直接读懂，不需要跳到各个 program 文档才能理解
+19. 这个 review 必须让 SME 能直接读懂，不需要跳到各个 program 文档才能理解
     Calculation Logic、Validation Logic、Exception Handling 或 Message
     Inventory。
-19. 四个核心区必须包含 evidence-backed rows:
+20. 四个核心区必须包含 evidence-backed rows:
     - Calculation Logic: assignments、derived values、counters、totals、dates、
       flags，或带 evidence scope 的明确 "no calculation observed" TBD 行
     - Validation Logic: checks、reject conditions、statuses、return codes 和
@@ -389,14 +417,14 @@ Phase 3 - build 并填完整 program-set review:
       paths、rollback/continue/stop behavior 和 unresolved paths
     - Message Inventory: 每个观察到的 exact message ID、status、return code、
       SQLSTATE、CPF/MCH/RNX/CPD code、operator text、literal 或 shop-local token
-20. 每个核心区的 row 都必须在 program-set-sme-core-review.md 里写出实际
+21. 每个核心区的 row 都必须在 program-set-sme-core-review.md 里写出实际
     logic、condition、carrier、outcome 和 message/status text。Evidence ID、
     source line、artifact name 可以放在 Supporting Detail / Detail Refs 里，
     但不能用它们替代正文解释。
-21. 如果某个 program 在某个 section 确实没有观察到证据，添加精确 TBD 行，
+22. 如果某个 program 在某个 section 确实没有观察到证据，添加精确 TBD 行，
     写清 program、已检查的 routine/window、缺失 artifact 或 evidence type、
     以及下一步动作。不要用泛泛一句话替代整个 section。
-22. 运行 scripts/validate-program-set-core-review.py。如果失败，修复 review
+23. 运行 scripts/validate-program-set-core-review.py。如果失败，修复 review
     并重新运行，直到通过。
 
 Report:
