@@ -385,7 +385,15 @@ SME-provided program flow, preserve this order:
 - <PROGRAM-B>
 - <PROGRAM-C>
 
-Current-run program artifact folders:
+Program batch folder from Phase 1:
+<DELIVERY_WORKING_CHECKOUT>/outputs/program-list-batch/<REVIEW_SLUG>/
+
+The batch folder must contain:
+- program-list-status.csv
+- batch-scan-manifest.yaml
+- program-batch-plan.md
+
+Only if no batch folder exists, provide a manual fallback:
 - <PROGRAM-A>: <PROGRAM_A_OUTPUT_DIR>
 - <PROGRAM-B>: <PROGRAM_B_OUTPUT_DIR>
 - <PROGRAM-C>: <PROGRAM_C_OUTPUT_DIR>
@@ -397,38 +405,43 @@ Reference and control inputs used during per-program analysis:
   - <CONTROL_FILE_OR_CODE_TABLE>
 
 Instructions:
-1. Confirm every SME-provided program appears in the current-run artifact
-   folders or has a precise blocked/pending state.
-2. Build or rebuild:
+1. Read program-list-status.csv and batch-scan-manifest.yaml from the Phase 1
+   program batch folder. Derive each current-run program artifact folder from
+   the status row's output_dir. Do not ask the operator to paste one folder per
+   program when the batch files are present.
+2. Confirm every SME-provided program appears in the batch files and either has
+   a completed/current-run artifact folder or a precise blocked/pending state.
+3. Build or rebuild:
    modules/CAP-ID-0004-program_set_reviews/<REVIEW_SLUG>/
      program-set-core-input-manifest.yaml
      program-set-sme-core-review.md
-3. Use the program-set builder with --program-first and --working-root only.
+4. Use the program-set builder with --program-first and --working-root only.
    Do not pass --delivery-root to the program-set builder.
-4. Confirm manifest run_resolution values are only:
+5. Confirm manifest run_resolution values are only:
    analyzed_this_run, reused_same_run, pending_source, blocked_missing_source.
-5. Confirm the manifest does not contain central_lookup_result,
+6. Confirm the manifest does not contain central_lookup_result,
    found_on_remote_main, force_rescan, or remote_main_artifact_root.
-6. Fill program-set-sme-core-review.md from current-run compact artifacts.
+7. Fill program-set-sme-core-review.md from current-run compact artifacts.
    Prefer program-analysis-summary.yaml, source-index.yaml,
    message-inventory.yaml, routine-logic-details.yaml when required/present,
    and optional sidecars when needed.
-7. Use program-analysis.md only for targeted clarification.
-8. Keep the review self-contained. The SME must not need to open per-program
+8. Use program-analysis.md only for targeted clarification.
+9. Keep the review self-contained. The SME must not need to open per-program
    docs to understand Calculation Logic, Validation Logic, Exception Handling,
    or Message Inventory.
-9. Use reference/control inputs only to clarify message/status/control-table
+10. Use reference/control inputs only to clarify message/status/control-table
    meanings already observed in current-run program artifacts. Do not add new
    behavior that is not backed by source evidence or SME approval.
-10. Include evidence-backed rows or precise per-program TBD rows in all four
+11. Include evidence-backed rows or precise per-program TBD rows in all four
    core sections.
-11. Keep rows grouped by SME flow order when possible.
-12. Do not include Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces,
+12. Keep rows grouped by SME flow order when possible.
+13. Do not include Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces,
    Capability Seeds, or SME Checklist.
 
 Return:
 - manifest path
 - review path
+- program batch folder used
 - run_resolution by program
 - Core Completeness Ledger status
 - remaining SME TBDs
@@ -745,7 +758,15 @@ SME 提供的 program flow，必须保留顺序：
 - <PROGRAM-B>
 - <PROGRAM-C>
 
-Current-run program artifact folders：
+Phase 1 生成的 Program batch folder：
+<DELIVERY_WORKING_CHECKOUT>/outputs/program-list-batch/<REVIEW_SLUG>/
+
+这个 batch folder 必须包含：
+- program-list-status.csv
+- batch-scan-manifest.yaml
+- program-batch-plan.md
+
+只有没有 batch folder 时，才使用手工 fallback：
 - <PROGRAM-A>: <PROGRAM_A_OUTPUT_DIR>
 - <PROGRAM-B>: <PROGRAM_B_OUTPUT_DIR>
 - <PROGRAM-C>: <PROGRAM_C_OUTPUT_DIR>
@@ -757,38 +778,43 @@ Per-program analysis 使用过的 reference/control inputs：
   - <CONTROL_FILE_OR_CODE_TABLE>
 
 执行规则：
-1. 确认 SME 提供的每个 program 都有 current-run artifact folder，或有明确的
-   blocked/pending state。
-2. Build 或 rebuild：
+1. 读取 Phase 1 program batch folder 里的 program-list-status.csv 和
+   batch-scan-manifest.yaml。每个 current-run program artifact folder 从 status
+   row 的 output_dir 推导。只要 batch files 存在，就不要要求 operator 为每个
+   program 手动复制一个 folder。
+2. 确认 SME 提供的每个 program 都出现在 batch files 里，并且有 completed
+   current-run artifact folder，或有明确的 blocked/pending state。
+3. Build 或 rebuild：
    modules/CAP-ID-0004-program_set_reviews/<REVIEW_SLUG>/
      program-set-core-input-manifest.yaml
      program-set-sme-core-review.md
-3. 使用 program-set builder 时必须带 --program-first 和 --working-root。
+4. 使用 program-set builder 时必须带 --program-first 和 --working-root。
    不要给 program-set builder 传 --delivery-root。
-4. 确认 manifest 的 run_resolution 只能是：
+5. 确认 manifest 的 run_resolution 只能是：
    analyzed_this_run、reused_same_run、pending_source、blocked_missing_source。
-5. 确认 manifest 不包含 central_lookup_result、found_on_remote_main、
+6. 确认 manifest 不包含 central_lookup_result、found_on_remote_main、
    force_rescan 或 remote_main_artifact_root。
-6. program-set-sme-core-review.md 必须从 current-run compact artifacts 填充。
+7. program-set-sme-core-review.md 必须从 current-run compact artifacts 填充。
    优先使用 program-analysis-summary.yaml、source-index.yaml、
    message-inventory.yaml、需要且存在时的 routine-logic-details.yaml，
    必要时再使用 optional sidecars。
-7. program-analysis.md 只用于 targeted clarification。
-8. review 必须 self-contained。SME 不应该为了理解 Calculation Logic、
+8. program-analysis.md 只用于 targeted clarification。
+9. review 必须 self-contained。SME 不应该为了理解 Calculation Logic、
    Validation Logic、Exception Handling 或 Message Inventory 再去打开每个
    per-program doc。
-9. reference/control inputs 只能用于澄清 current-run program artifacts 中已经
+10. reference/control inputs 只能用于澄清 current-run program artifacts 中已经
    观察到的 message/status/control-table 含义。不要加入没有 source evidence
    或 SME approval 支撑的新行为。
-10. 四个 core sections 都必须包含 evidence-backed rows，或 precise
+11. 四个 core sections 都必须包含 evidence-backed rows，或 precise
     per-program TBD rows。
-11. 尽量按 SME flow order 分组 rows。
-12. 不要包含 Nodes、Edges、Replay、Persistence、Lineage、UI Surfaces、
+12. 尽量按 SME flow order 分组 rows。
+13. 不要包含 Nodes、Edges、Replay、Persistence、Lineage、UI Surfaces、
     Capability Seeds 或 SME Checklist。
 
 返回：
 - manifest path
 - review path
+- 使用的 program batch folder
 - 每个 program 的 run_resolution
 - Core Completeness Ledger status
 - remaining SME TBDs
