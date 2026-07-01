@@ -1,0 +1,26 @@
+catalog_type: calculation_catalog
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+calculations:
+  - calculation_id: CAND-<CAPABILITY-SLUG>-C001
+    related_function_ids:
+      - CAND-<CAPABILITY-SLUG>-001
+    calculation_name: "<calculation / formula / fee / rate>"
+    category: fee | interest | limit | balance | settlement | accounting | other
+    trigger: "Not found in reviewed evidence."
+    inputs: []
+    formula_or_method: "Exact formula not found in reviewed evidence."
+    formula_details: []
+    rounding: "Not found in reviewed evidence."
+    frequency: "Not found in reviewed evidence."
+    output: "Not found in reviewed evidence."
+    parameter_sources_needed: []
+    code_analysis_required: false
+    evidence_ids: []
+    discovery_confidence: Gap
+    evidence_strength: missing
+    review_status: needs_sme_review
+    open_questions: []

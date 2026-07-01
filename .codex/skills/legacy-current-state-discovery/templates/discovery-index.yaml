@@ -1,0 +1,50 @@
+package_type: current_state_discovery
+package_version: "0.1.0"
+status: draft
+
+module:
+  module_slug: "<MODULE-SLUG>"
+  business_name: "<business/module name>"
+  scope_statement: "<scope being analyzed>"
+
+discovery:
+  discovery_slug: "<DISCOVERY-SLUG>"
+  focus_name: "<function/process/business event>"
+  discovery_mode: document_first # document_first | document_plus_code | code_gap_followup
+  created_by: "<analyst/agent>"
+  created_at: "<YYYY-MM-DD>"
+
+source_summary:
+  total_sources_selected: 0
+  reviewed_sources: 0
+  not_reviewed_sources: 0
+  source_authorization: pending # authorized | pending | blocked
+  sensitivity: unknown # public | internal | confidential | unknown
+
+outputs:
+  document_master_index: document-master-index.md
+  functional_discovery_report: functional-discovery-report.md
+  function_catalog: function-catalog.yaml
+  project_derived_feature_index: project-derived-feature-index.yaml
+  validation_catalog: validation-catalog.yaml
+  calculation_catalog: calculation-catalog.yaml
+  interface_register: interface-register.yaml
+  channel_ui_report_catalog: channel-ui-report-catalog.md
+  accounting_gl_ie_index: accounting-gl-ie-index.yaml
+  traceability_matrix: traceability-matrix.csv
+  open_questions_and_gaps: open-questions-and-gaps.md
+
+handoff:
+  sme_review_required: true
+  code_analysis_required: false
+  route_to:
+    - legacy-module-context-intake
+  blocked_reason: ""
+
+validation_summary:
+  required_files_present: false
+  all_material_claims_traced: false
+  current_state_and_project_features_separated: false
+  exact_values_evidenced_or_gapped: false
+  unreviewed_sources_visible: false
+  notes: []

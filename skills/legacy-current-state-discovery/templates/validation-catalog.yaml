@@ -1,0 +1,24 @@
+catalog_type: validation_catalog
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+validations:
+  - validation_id: VAL-<CAPABILITY-SLUG>-001
+    related_function_ids:
+      - CAND-<CAPABILITY-SLUG>-001
+    validation_name: "<validation rule or condition>"
+    category: eligibility | status | limit | authorization | security | regulatory | other
+    condition_pattern: "Not found in reviewed evidence."
+    pass_outcome: "Not found in reviewed evidence."
+    fail_outcome: "Not found in reviewed evidence."
+    exception_route: "Not found in reviewed evidence."
+    approval_check: "Not found in reviewed evidence."
+    exact_thresholds_or_codes: []
+    code_analysis_required: false
+    evidence_ids: []
+    discovery_confidence: Gap
+    evidence_strength: missing
+    review_status: needs_sme_review
+    open_questions: []

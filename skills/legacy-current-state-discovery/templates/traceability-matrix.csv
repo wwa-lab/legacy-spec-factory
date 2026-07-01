@@ -1,0 +1,2 @@
+item_id,item_type,item_name,claim_summary,source_id,source_location,evidence_id,evidence_strength,confidence,review_status,gap_id,notes
+CAND-<CAPABILITY-SLUG>-001,function,<function name>,<claim summary>,DOC-<CAPABILITY-SLUG>-001,<section/page/chunk>,EV-<CAPABILITY-SLUG>-001,missing,Gap,needs_sme_review,TBD-<CAPABILITY-SLUG>-001,
