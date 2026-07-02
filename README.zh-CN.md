@@ -230,6 +230,7 @@ outputs/      生成结果或本地运行输出
 | Skill | 用途 |
 | --- | --- |
 | `legacy-ibmi-program-list-batch` | 准备可恢复的 program-list 扫描批次和 one-program prompt 队列。 |
+| `legacy-current-state-discovery` | 从文档/RAG 证据抽取 current-state functional discovery 报告和 catalogs。 |
 | `legacy-ibmi-program-analyzer` | 分析单个 IBM i program，并提取 source-backed behavior evidence。 |
 | `legacy-ibmi-flow-analyzer` | 分析跨多个 programs 的端到端 transaction flow。 |
 | `legacy-ibmi-module-analyzer` | 将已审查的 program / flow evidence 组装成 module-level context。 |

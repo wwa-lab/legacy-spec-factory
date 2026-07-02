@@ -685,6 +685,7 @@ even if the static review score is higher.
 | --- | --- | ---: | ---: | --- | --- |
 | `legacy-module-context-intake` | [v0.1.7 scorecard](docs/reviews/legacy-module-context-intake-v0.1.7-scorecard.md) | 9.48 | 9.0 | Repo-ready (provisional) | v0.1.7 is the last reviewed scorecard; v0.1.12 is synced with updated scorecard and runtime smoke pending |
 | `legacy-document-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-document-evidence-intake-v0.1.0-scorecard.md) | 9.42 | 9.0 | Repo-ready | v0.1.0 is the last reviewed scorecard; v0.1.5 managed-Python and visual-review hardening is synced with updated scorecard and runtime smoke pending |
+| `legacy-current-state-discovery` | [v0.1.0 scorecard](docs/reviews/legacy-current-state-discovery-v0.1.0-scorecard.md) | 9.12 | 9.0 | Repo-ready (provisional) | New document-first functional discovery skill; filled golden sample, SME pilot, and three-runtime smoke pending |
 | `legacy-ibmi-evidence-intake` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) | 9.16 | 9.16 | Repo-ready | Three-runtime smoke passed 2026-05-15; static score below 9.5 keeps it repo-ready |
 | `legacy-ibmi-inventory` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) | 9.35 | 9.0 | Repo-ready | v0.1.0 is the last reviewed scorecard; v0.3.1 normalized document/context evidence-source clarification is synced with updated scorecard and runtime smoke pending |
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
@@ -871,6 +872,7 @@ full status matrix and scorecard links.
 | 21 | `legacy-modernization-decision-writer` | Governance / BRD | Existing | Field-pilot ready (v0.1.0, 9.56); optional DEC expansion package when spec decisions become large, cross-cutting, or architecture-governed |
 | 22 | `legacy-html-exporter` | Governance / publishing | Existing | Repo-ready (v0.1.0, 9.0 capped); exports stakeholder-facing Markdown docs to standalone HTML companions |
 | 23 | `legacy-document-evidence-intake` | Module-first context | New | Repo-ready: v0.1.0 reviewed; v0.1.5 synced with updated scorecard pending. Optional format intake before `legacy-module-context-intake`; run three-runtime smoke tests for multi-sheet Excel, macro-enabled workbook, legacy binary conversion, unauthorized production data, managed Python setup recovery, model-visible PDF/image visual review, and ready-manifest handoff |
+| 24 | `legacy-current-state-discovery` | Module-first context | New | Repo-ready provisional (v0.1.0, 9.0 capped); extracts document/RAG-backed current-state functional reports and catalogs; needs filled golden sample, SME pilot, and runtime smoke |
 
 Downstream Atlas skills such as requirements-to-stories, design, task, code,
 and review gates are referenced by the handoff package but are not implemented
@@ -882,7 +884,7 @@ as a placeholder. The remaining work is validation and scorecard hardening:
 1. `legacy-ibmi-runtime-evidence-miner` — optionally run integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes`.
 2. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
 3. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
-4. `legacy-document-evidence-intake`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, `legacy-spec-writer`, `legacy-sme-review-facilitator`, `legacy-step-validator`, and `legacy-modernization-orchestrator` — finish pending updated scorecards, three-runtime smoke, or expanded-route smoke.
+4. `legacy-document-evidence-intake`, `legacy-current-state-discovery`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, `legacy-spec-writer`, `legacy-sme-review-facilitator`, `legacy-step-validator`, and `legacy-modernization-orchestrator` — finish pending updated scorecards, golden samples, three-runtime smoke, or expanded-route smoke.
 
 Governance/Infrastructure skills (already implemented):
 - `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
@@ -895,6 +897,7 @@ Governance/Infrastructure skills (already implemented):
 | --- | --- | --- | --- |
 | `legacy-document-evidence-intake` | Intake and format-normalize raw legacy documents (Excel `.xlsx`/`.xlsm`/`.xls`, Word `.docx`/`.doc`, PowerPoint `.pptx`/`.ppt`, Visio `.vsdx`/`.vsd`, PDF, images, screenshots, scanned docs) into Markdown / CSV / PDF / PNG / SVG with manifests, `DOC-*`/`FRAG-*` evidence coordinates, and `ready`/`ready_with_warnings`/`blocked` quality gates before `legacy-module-context-intake`. Static-only macro policy (never executes VBA); honest-conversion policy via LibreOffice; recoverable managed Python setup; model-visible PDF/image visual review when OCR/Python tooling is unavailable; optional Docling as a non-canonical enhancer; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake`. Does not infer business rules, generate BRD/spec content, approve evidence, or classify flow views | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Repo-ready (v0.1.0 reviewed; v0.1.5 synced, updated scorecard pending) |
 | `legacy-module-context-intake` | Package document-intake outputs, source metadata, external RAG / code-knowledge-graph output, SME fragments, and human-confirmed module context into a traceable package before module analysis, with candidates framed as business signals and every carried claim classified for BRD source eligibility | `00_context_packages/<MODULE-SLUG>/` | Repo-ready (v0.1.7 reviewed; v0.1.12 synced, updated scorecard pending) |
+| `legacy-current-state-discovery` | Extract selected document/RAG evidence, SME prompts, spreadsheets, and project folders into an evidence-backed current-state functional discovery report plus structured catalogs for functions, project-derived features, validation, calculation, interfaces, channels/reports, accounting impact, traceability, and gaps. Routes exact code-level behavior to IBM i program/flow analyzers instead of inventing it from high-level docs. | `00_context_packages/<MODULE-SLUG>/current-state-discovery/<DISCOVERY-SLUG>/` | Repo-ready provisional (v0.1.0 reviewed; golden sample and runtime smoke pending) |
 
 ### Layer 1 — IBM i extraction (`legacy-ibmi-*`)
 
@@ -1732,6 +1735,7 @@ Spec Factory skill family:
 - `skills/legacy-modernization-orchestrator`
 - `skills/legacy-module-context-intake`
 - `skills/legacy-document-evidence-intake`
+- `skills/legacy-current-state-discovery`
 - `skills/legacy-ibmi-evidence-intake`
 - `skills/legacy-ibmi-inventory`
 - `skills/legacy-ibmi-runtime-evidence-miner`

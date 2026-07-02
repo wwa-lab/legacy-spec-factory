@@ -16,6 +16,7 @@ from pathlib import Path
 REQUIRED_FILES = [
     "discovery-index.yaml",
     "document-master-index.md",
+    "behavior-claim-ledger.csv",
     "functional-discovery-report.md",
     "function-catalog.yaml",
     "project-derived-feature-index.yaml",
@@ -41,6 +42,34 @@ TRACEABILITY_HEADER = [
     "review_status",
     "gap_id",
     "notes",
+]
+
+BEHAVIOR_CLAIM_HEADER = [
+    "claim_id",
+    "item_type",
+    "item_id",
+    "business_area",
+    "business_meaning",
+    "trigger_condition",
+    "system_behavior",
+    "source_id",
+    "source_location",
+    "evidence_id",
+    "evidence_strength",
+    "confidence",
+    "review_status",
+    "gap_id",
+    "next_action",
+    "notes",
+]
+
+WEAK_STANDALONE_PHRASES = [
+    "likely exists",
+    "suggests one",
+    "appears related",
+    "diagram shows one candidate",
+    "folder contains",
+    "source set includes",
 ]
 
 REPORT_HEADINGS = [
@@ -134,6 +163,82 @@ def check_traceability(package: Path) -> list[str]:
     return errors
 
 
+def check_csv_header(package: Path, name: str, expected: list[str]) -> list[str]:
+    errors: list[str] = []
+    path = package / name
+    if not path.exists():
+        return errors
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        try:
+            header = next(reader)
+        except StopIteration:
+            errors.append(f"{name} is empty")
+            return errors
+    if header != expected:
+        errors.append(f"{name} header mismatch: expected {','.join(expected)}")
+    return errors
+
+
+def check_quality_gate(package: Path) -> list[str]:
+    errors: list[str] = []
+    path = package / "behavior-claim-ledger.csv"
+    if not path.exists():
+        return errors
+
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+
+    if not rows:
+        errors.append("behavior-claim-ledger.csv has no claim rows")
+        return errors
+
+    substantive_rows = []
+    for index, row in enumerate(rows, start=2):
+        confidence = (row.get("confidence") or "").strip()
+        if confidence in {"Gap", "Not Reviewed"}:
+            if not (row.get("gap_id") or "").strip():
+                errors.append(f"behavior-claim-ledger.csv row {index} gap row missing gap_id")
+            if not (row.get("next_action") or "").strip():
+                errors.append(f"behavior-claim-ledger.csv row {index} gap row missing next_action")
+            continue
+
+        required = [
+            "business_meaning",
+            "trigger_condition",
+            "system_behavior",
+            "source_id",
+            "source_location",
+            "evidence_id",
+        ]
+        missing = [field for field in required if not (row.get(field) or "").strip()]
+        if missing:
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} non-gap claim missing: "
+                + ", ".join(missing)
+            )
+            continue
+
+        combined = " ".join(
+            row.get(field, "")
+            for field in ("business_meaning", "trigger_condition", "system_behavior")
+        ).lower()
+        weak_hits = [phrase for phrase in WEAK_STANDALONE_PHRASES if phrase in combined]
+        if weak_hits and not (row.get("next_action") or "").strip():
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} weak evidence wording "
+                f"without next_action: {', '.join(weak_hits)}"
+            )
+        substantive_rows.append(row)
+
+    if not substantive_rows:
+        errors.append(
+            "behavior-claim-ledger.csv has no non-gap behavior claims; keep status "
+            "blocked/ready_with_warnings and route retrieval, SME review, or code analysis"
+        )
+    return errors
+
+
 def check_placeholders(package: Path, allow_placeholders: bool) -> list[str]:
     if allow_placeholders:
         return []
@@ -174,6 +279,11 @@ def main() -> int:
         action="store_true",
         help="Require package status ready_for_sme_review or ready_with_warnings",
     )
+    parser.add_argument(
+        "--quality-gate",
+        action="store_true",
+        help="Require behavior-claim-ledger rows to contain SME-useful behavior claims.",
+    )
     args = parser.parse_args()
 
     package = Path(args.package)
@@ -190,8 +300,11 @@ def main() -> int:
     errors.extend(check_yaml_markers(package))
     errors.extend(check_report(package))
     errors.extend(check_traceability(package))
+    errors.extend(check_csv_header(package, "behavior-claim-ledger.csv", BEHAVIOR_CLAIM_HEADER))
     errors.extend(check_placeholders(package, args.allow_placeholders))
     errors.extend(check_ready_status(package, args.require_ready))
+    if args.quality_gate:
+        errors.extend(check_quality_gate(package))
 
     for warning in warnings:
         print(f"OK: {warning}")

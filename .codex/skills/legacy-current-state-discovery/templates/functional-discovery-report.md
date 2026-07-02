@@ -7,11 +7,17 @@
 
 ## 1. Existing Functionality
 
+| Candidate ID | Business Meaning | Trigger / Condition | Current-State Behavior | Confidence | Evidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| CAND-<CAPABILITY-SLUG>-001 | `Not found in reviewed evidence.` | `Not found in reviewed evidence.` | `Not found in reviewed evidence.` | Gap |  | TBD-<CAPABILITY-SLUG>-001 |
+
 ### Business Requirement
 
 #### Happy Path
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Step / Outcome | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-001 | `Not found in reviewed evidence.` |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 #### Unhappy Path
 
@@ -49,15 +55,21 @@
 
 ## 2. Process Flow
 
-- `Not found in reviewed evidence.`
+| Step | Actor / System | Trigger / Condition | Behavior / Handoff | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 |  | `Not found in reviewed evidence.` | `Not found in reviewed evidence.` |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 3. Upstream / Downstream Applications
 
-- `Not found in reviewed evidence.`
+| Application / Interface | Direction | Business Role | Trigger / Data / Message | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` | unknown |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 4. System Configuration / Parameter
 
-- `Not found in reviewed evidence.`
+| Parameter / Configuration | Usage | Value / Pattern | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 5. Channels
 

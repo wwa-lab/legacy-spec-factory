@@ -27,7 +27,7 @@ Retain this notice in substantial copies or derived versions.
 | Upstream skill | `legacy-document-evidence-intake`, `legacy-module-context-intake`, external RAG retrieval, or SME-provided reviewed evidence. |
 | Downstream consumer | `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-brd-writer`, final output generators, and SME review workflows. |
 | Validation standard | Every candidate fact has source provenance, confidence, and review status; unsupported exact formulas, thresholds, GL/IE accounts, transaction rules, and code-level behavior stay gaps. |
-| Known risk | Treating high-level documents as behavior ground truth or mixing current-state functions with project-derived target features. |
+| Known risk | Treating high-level documents as behavior ground truth, creating section-shaped but low-value summaries, or mixing current-state functions with project-derived target features. |
 
 ## Purpose
 
@@ -106,6 +106,7 @@ Required files:
 
 - `discovery-index.yaml`
 - `document-master-index.md`
+- `behavior-claim-ledger.csv`
 - `functional-discovery-report.md`
 - `function-catalog.yaml`
 - `project-derived-feature-index.yaml`
@@ -143,7 +144,20 @@ Package status values:
    - Mark unparsed or unsupported sources as `Not Reviewed`; do not silently
      omit them.
 
-3. **Extract Current-State Functional Candidates**
+3. **Extract Atomic Behavior Claims**
+   - Before writing the report, build `behavior-claim-ledger.csv`.
+   - Each non-gap row must state the business meaning, trigger or condition,
+     system behavior, source coordinate, evidence ID, confidence, and review
+     route.
+   - A source discovery fact such as "folder contains CU101A" or "diagram has
+     node CUG39" is not a functional behavior by itself. It may support a route
+     to code analysis, but it must not be promoted to Existing Functionality
+     unless the evidence also describes behavior.
+   - If the evidence only shows a diagram node, filename, program name, heading,
+     or document inventory item, record it as `Gap`, `Not Reviewed`, or
+     `blocked_pending_code_analysis` with a specific next action.
+
+4. **Extract Current-State Functional Candidates**
    - Identify functions/components as business capabilities or user/system
      behaviors, not as isolated fields or screens.
    - For each candidate, capture purpose, happy/unhappy paths, rules,
@@ -152,34 +166,51 @@ Package status values:
      confidence, and gaps.
    - Use `CAND-*` IDs for draft function candidates unless a project profile
      defines a different functional ID namespace.
+   - Populate candidates from behavior claims, not directly from file names,
+     diagram labels, or broad RAG snippets.
 
-4. **Separate Project-Derived Features**
+5. **Separate Project-Derived Features**
    - Put project changes, new features, migration requirements, and future-state
      design ideas in `project-derived-feature-index.yaml`.
    - Do not mix them into current-state functionality unless evidence proves the
      legacy system already behaves that way.
 
-5. **Extract Supporting Catalogs**
+6. **Extract Supporting Catalogs**
    - Create validation, calculation, interface, channel/UI/report, accounting,
      and gap artifacts from the same evidence set.
    - Exact formulas, rates, thresholds, status codes, GL accounts, IE items,
      posting rules, and transaction definitions must cite evidence. If exact
      details are absent, record only a candidate pattern plus the missing source.
 
-6. **Apply Confidence and Evidence Rules**
+7. **Apply Confidence and Evidence Rules**
    - Use the shared labels `Confirmed`, `Strongly Indicated`, `Inferred`,
      `Gap`, and `Not Reviewed`.
    - Map labels to evidence strength without treating confidence as approval.
      See `references/evidence-confidence-rules.md`.
    - Every material claim needs source coordinates or an explicit gap.
 
-7. **Write the Business-Facing Report**
+8. **Write the Business-Facing Report**
    - Use `templates/functional-discovery-report.md`.
    - Keep the report readable for SMEs and BAs; detailed catalogs carry the
      machine-oriented fields.
    - Do not hide gaps under polished prose.
+   - Every substantive report bullet must trace back to a behavior claim,
+     catalog item, or explicit gap. Avoid standalone statements like "likely
+     exists", "suggests a flow", or "appears related" unless the sentence also
+     explains the missing evidence and review route.
 
-8. **Prepare Handoff**
+9. **Run the Meaningful Output Gate**
+   - Check that the package contains specific behavior, not just a list of
+     artifacts discovered.
+   - For each populated section, ask: "Can an SME decide whether this is right,
+     wrong, incomplete, or needs code verification?" If not, rewrite it as a
+     gap or drill into the evidence.
+   - Do not mark a package `ready_for_sme_review` if the only confirmed facts
+     are source inventory, diagram nodes, or program names.
+   - A useful document-first package may still be mostly gaps, but the gaps must
+     be precise enough to drive retrieval, code analysis, or SME review.
+
+10. **Prepare Handoff**
    - If code-grounded analysis is required, list exact programs, flows, fields,
      files, or transaction/message types needed by the IBM i analyzers.
    - If SME approval is required, list review questions and candidate IDs.
@@ -206,6 +237,8 @@ Package status values:
 Before handoff, verify:
 
 - all required files exist or are explicitly marked not produced with a reason;
+- `behavior-claim-ledger.csv` contains atomic behavior claims or explicit gaps,
+  not only discovered filenames, diagram nodes, or vague summaries;
 - every candidate function has evidence, confidence, and review status;
 - current-state and project-derived features are separate;
 - exact formulas, GL/IE mappings, thresholds, and transaction definitions are
@@ -219,6 +252,15 @@ When local Python validation is available, run the bundled validator:
 
 ```bash
 python3 skills/legacy-current-state-discovery/scripts/validate_current_state_discovery_package.py \
+  00_context_packages/<MODULE-SLUG>/current-state-discovery/<DISCOVERY-SLUG>
+```
+
+Use the stricter gate before SME review:
+
+```bash
+python3 skills/legacy-current-state-discovery/scripts/validate_current_state_discovery_package.py \
+  --quality-gate \
+  --require-ready \
   00_context_packages/<MODULE-SLUG>/current-state-discovery/<DISCOVERY-SLUG>
 ```
 

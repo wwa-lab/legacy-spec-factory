@@ -18,6 +18,7 @@ business function, process, or event under review, such as `REPORT-LOST` or
 | --- | --- |
 | `discovery-index.yaml` | Package control file, source list, status, validation summary, and handoff routing. |
 | `document-master-index.md` | Human-readable index of all selected sources, including unparsed or not-reviewed items. |
+| `behavior-claim-ledger.csv` | Atomic claim ledger that separates meaningful current-state behavior from source inventory, diagram labels, and code-analysis routing hints. |
 | `functional-discovery-report.md` | SME/BA-facing report using the expected business review structure. |
 | `function-catalog.yaml` | Structured current-state function/component candidates. |
 | `project-derived-feature-index.yaml` | Features or requirements introduced by project documents, separated from legacy current state. |
@@ -58,6 +59,7 @@ Required fields for each current-state function candidate:
   source_type: current_state
   domain: "<business domain>"
   region: "<region or shared>"
+  behavior_claim_ids: []
   business_requirement:
     happy_path: []
     unhappy_path: []
@@ -86,6 +88,19 @@ Required fields for each current-state function candidate:
   review_status: draft | needs_sme_review | approved | rejected | retired
   open_questions: []
 ```
+
+## Behavior Claim Ledger Header
+
+`behavior-claim-ledger.csv` must use this exact header:
+
+```csv
+claim_id,item_type,item_id,business_area,business_meaning,trigger_condition,system_behavior,source_id,source_location,evidence_id,evidence_strength,confidence,review_status,gap_id,next_action,notes
+```
+
+Each non-gap claim must describe a behavior useful for SME review. Source
+inventory facts such as a file name, program name, diagram node, or folder
+membership can appear only when the row clearly routes to evidence retrieval,
+SME review, or code analysis.
 
 ## Traceability Matrix Header
 

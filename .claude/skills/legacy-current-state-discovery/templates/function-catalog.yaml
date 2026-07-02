@@ -10,6 +10,7 @@ functions:
     source_type: current_state
     domain: "<domain>"
     region: "<region or shared>"
+    behavior_claim_ids: []
     business_requirement:
       happy_path: []
       unhappy_path: []
