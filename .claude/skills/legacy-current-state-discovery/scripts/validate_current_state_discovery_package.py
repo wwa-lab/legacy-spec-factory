@@ -72,6 +72,8 @@ WEAK_STANDALONE_PHRASES = [
     "source set includes",
 ]
 
+GENERIC_ITEM_PREFIX = "CLM-"
+
 REPORT_HEADINGS = [
     "## 1. Existing Functionality",
     "## 2. Process Flow",
@@ -195,9 +197,30 @@ def check_quality_gate(package: Path) -> list[str]:
 
     substantive_rows = []
     for index, row in enumerate(rows, start=2):
+        claim_id = (row.get("claim_id") or "").strip()
+        item_id = (row.get("item_id") or "").strip()
+        gap_id = (row.get("gap_id") or "").strip()
+        source_location = (row.get("source_location") or "").strip()
+
+        if claim_id.startswith(GENERIC_ITEM_PREFIX):
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} uses generic CLM-* "
+                "claim_id; use BCL-* for behavior claims"
+            )
+        if item_id.startswith(GENERIC_ITEM_PREFIX):
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} uses generic CLM-* "
+                "item_id; use CAND-* or TBD-* as appropriate"
+            )
+        if gap_id.startswith(GENERIC_ITEM_PREFIX):
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} uses generic CLM-* "
+                "gap_id; use TBD-* for gaps/questions"
+            )
+
         confidence = (row.get("confidence") or "").strip()
         if confidence in {"Gap", "Not Reviewed"}:
-            if not (row.get("gap_id") or "").strip():
+            if not gap_id:
                 errors.append(f"behavior-claim-ledger.csv row {index} gap row missing gap_id")
             if not (row.get("next_action") or "").strip():
                 errors.append(f"behavior-claim-ledger.csv row {index} gap row missing next_action")
@@ -219,6 +242,12 @@ def check_quality_gate(package: Path) -> list[str]:
             )
             continue
 
+        if source_location in {"", "<section/page/chunk>", "unknown", "n/a", "N/A"}:
+            errors.append(
+                f"behavior-claim-ledger.csv row {index} non-gap claim lacks "
+                "a concrete source_location"
+            )
+
         combined = " ".join(
             row.get(field, "")
             for field in ("business_meaning", "trigger_condition", "system_behavior")
@@ -236,6 +265,24 @@ def check_quality_gate(package: Path) -> list[str]:
             "behavior-claim-ledger.csv has no non-gap behavior claims; keep status "
             "blocked/ready_with_warnings and route retrieval, SME review, or code analysis"
         )
+
+    report_path = package / "functional-discovery-report.md"
+    if report_path.exists():
+        report_text = read_text(report_path)
+        if GENERIC_ITEM_PREFIX in report_text:
+            errors.append(
+                "functional-discovery-report.md uses generic CLM-* IDs; "
+                "use BCL-* for behavior claims, CAND-* for functions, and TBD-* for gaps"
+            )
+        expected_gap_header = (
+            "| Gap ID | Area | Missing / Unclear Evidence | Impact | "
+            "Owner / Route | Next Action | Status |"
+        )
+        if expected_gap_header not in report_text:
+            errors.append(
+                "functional-discovery-report.md Gap Analysis missing the "
+                "required actionable gap table header"
+            )
     return errors
 
 

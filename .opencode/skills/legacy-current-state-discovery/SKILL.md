@@ -146,6 +146,10 @@ Package status values:
 
 3. **Extract Atomic Behavior Claims**
    - Before writing the report, build `behavior-claim-ledger.csv`.
+   - Use separate ID namespaces: `BCL-*` for behavior claims, `CAND-*`
+     for function candidates, `TBD-*` for gaps/questions, and `SRC-*` or
+     provided source IDs for evidence sources. Do not use one generic `CLM-*`
+     namespace for claims, gaps, sources, and functions.
    - Each non-gap row must state the business meaning, trigger or condition,
      system behavior, source coordinate, evidence ID, confidence, and review
      route.
@@ -194,10 +198,14 @@ Package status values:
    - Keep the report readable for SMEs and BAs; detailed catalogs carry the
      machine-oriented fields.
    - Do not hide gaps under polished prose.
-   - Every substantive report bullet must trace back to a behavior claim,
-     catalog item, or explicit gap. Avoid standalone statements like "likely
-     exists", "suggests a flow", or "appears related" unless the sentence also
-     explains the missing evidence and review route.
+   - Prefer tables for populated sections. Every material statement must show
+     the related `BCL-*` or `CAND-*`, confidence, source locator, and gap or
+     next action.
+   - Avoid standalone statements like "likely exists", "suggests a flow", or
+     "appears related" unless the sentence also explains the missing evidence
+     and review route.
+   - Gap Analysis must be actionable, with gap ID, area, missing evidence,
+     impact, owner/route, next action, and status.
 
 9. **Run the Meaningful Output Gate**
    - Check that the package contains specific behavior, not just a list of
@@ -239,6 +247,8 @@ Before handoff, verify:
 - all required files exist or are explicitly marked not produced with a reason;
 - `behavior-claim-ledger.csv` contains atomic behavior claims or explicit gaps,
   not only discovered filenames, diagram nodes, or vague summaries;
+- ID namespaces are separated (`BCL-*`, `CAND-*`, `TBD-*`, source IDs) rather
+  than collapsed into one generic claim namespace;
 - every candidate function has evidence, confidence, and review status;
 - current-state and project-derived features are separate;
 - exact formulas, GL/IE mappings, thresholds, and transaction definitions are

@@ -51,6 +51,16 @@ Use one of:
 Use `CAND-*` for draft functional candidates unless the project profile defines
 a functional ID prefix. Do not mint `BR-*` from this skill.
 
+Use these default namespaces unless a project profile defines stricter IDs:
+
+- `BCL-*`: atomic behavior claims in `behavior-claim-ledger.csv`
+- `CAND-*`: current-state function candidates
+- `TBD-*`: open questions, gaps, contradictions, and code-analysis requests
+- `SRC-*`, `DOC-*`, or provided source IDs: source artifacts and evidence
+
+Do not use one generic `CLM-*` namespace for behavior claims, gaps, functions,
+and sources in the same package.
+
 Required fields for each current-state function candidate:
 
 ```yaml
@@ -101,6 +111,18 @@ Each non-gap claim must describe a behavior useful for SME review. Source
 inventory facts such as a file name, program name, diagram node, or folder
 membership can appear only when the row clearly routes to evidence retrieval,
 SME review, or code analysis.
+
+## Functional Report Rules
+
+Use table-led sections for populated report content. At minimum, material
+statements in `functional-discovery-report.md` must expose the related behavior
+claim or candidate ID, confidence, source locator, and gap or next action.
+
+`Gap Analysis` must be a table with these fields:
+
+```text
+Gap ID | Area | Missing / Unclear Evidence | Impact | Owner / Route | Next Action | Status
+```
 
 ## Traceability Matrix Header
 

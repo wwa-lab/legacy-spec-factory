@@ -21,37 +21,53 @@
 
 #### Unhappy Path
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Failure / Exception | System Response | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-002 | `Not found in reviewed evidence.` | `Not found in reviewed evidence.` |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 #### Specific Rule / Logic
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Rule / Logic | Condition | Outcome | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-003 | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 #### Eligibility
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Eligible / Ineligible Party or Product | Condition | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-004 | `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 #### Conditions
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Condition | Applies To | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-005 | `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### Regulatory / Compliance Requirement
 
-- `Not found in reviewed evidence.`
+| Requirement / Control | Current-State Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### Non-Functional Requirement
 
 #### SLA
 
-- `Not found in reviewed evidence.`
+| Metric | Value / Pattern | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 #### TPS
 
-- `Not found in reviewed evidence.`
+| Metric | Value / Pattern | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### Exceptional Handling
 
-- `Not found in reviewed evidence.`
+| Behavior Claim ID | Exception / Error | Handling Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| BCL-<CAPABILITY-SLUG>-006 | `Not found in reviewed evidence.` |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 2. Process Flow
 
@@ -75,47 +91,63 @@
 
 ### Customer Channels
 
-- `Not found in reviewed evidence.`
+| Channel | Actor | Supported Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` | customer |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### Staff Channels
 
-- `Not found in reviewed evidence.`
+| Channel | Actor | Supported Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` | staff |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 6. Report
 
 ### User Report
 
-- `Not found in reviewed evidence.`
+| Report / Output | Purpose | Trigger / Schedule | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### Regulatory Report
 
-- `Not found in reviewed evidence.`
+| Report / Output | Purpose | Trigger / Schedule | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ### MI
 
-- `Not found in reviewed evidence.`
+| Report / Output | Purpose | Trigger / Schedule | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 7. Customer Communication, Triggers, and Associated Requirement
 
-- SMS: `Not found in reviewed evidence.`
-- Email: `Not found in reviewed evidence.`
-- Letter: `Not found in reviewed evidence.`
-- Push Notification: `Not found in reviewed evidence.`
-- Statement / Advice: `Not found in reviewed evidence.`
+| Communication Type | Trigger / Condition | Recipient | Message / Advice Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| SMS | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
+| Email | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
+| Letter | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
+| Push Notification | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
+| Statement / Advice | `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 8. Operational Procedure
 
-- `Not found in reviewed evidence.`
+| Procedure / Team | Trigger | Manual or System Behavior | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 9. Current Limitation / Pain Point
 
-- `Not found in reviewed evidence.`
+| Limitation / Pain Point | Current-State Cause | Business / Operational Impact | Evidence | Confidence | Gap / Next Action |
+| --- | --- | --- | --- | --- | --- |
+| `Not found in reviewed evidence.` |  |  |  | Gap | TBD-<CAPABILITY-SLUG>-001 |
 
 ## 10. Gap Analysis
 
-| Gap ID | Area | Missing / Unclear Detail | Impact | Owner / Route | Status |
-| --- | --- | --- | --- | --- | --- |
-| TBD-<CAPABILITY-SLUG>-001 |  |  |  | SME / code analysis / evidence retrieval | open |
+| Gap ID | Area | Missing / Unclear Evidence | Impact | Owner / Route | Next Action | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| TBD-<CAPABILITY-SLUG>-001 |  |  |  | SME / code analysis / evidence retrieval |  | open |
 
 ## 11. Cross Reference BRD
 
