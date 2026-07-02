@@ -1,0 +1,41 @@
+catalog_type: function_catalog
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+functions:
+  - candidate_id: CAND-<CAPABILITY-SLUG>-001
+    name: "<business-readable function name>"
+    source_type: current_state
+    domain: "<domain>"
+    region: "<region or shared>"
+    behavior_claim_ids: []
+    business_requirement:
+      happy_path: []
+      unhappy_path: []
+      specific_rule_logic: []
+      eligibility: []
+      conditions: []
+    process_flow: []
+    channels:
+      customer: []
+      staff: []
+    ui_reports_notifications: []
+    upstream_downstream_applications: []
+    system_configuration_parameters: []
+    validations: []
+    calculations: []
+    interfaces: []
+    accounting_gl_ie_impact: []
+    exception_handling: []
+    operational_procedure: []
+    limitations_pain_points: []
+    gap_analysis: []
+    cross_reference_brd: []
+    evidence_ids: []
+    source_documents: []
+    discovery_confidence: Gap
+    evidence_strength: missing
+    review_status: needs_sme_review
+    open_questions: []

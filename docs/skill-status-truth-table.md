@@ -11,7 +11,7 @@ the latest reviewed scorecard version; `docs/runtime-matrix.md` may list a
 newer synced runtime version only when that row explicitly says the updated
 scorecard is pending.
 
-Last regenerated: 2026-06-05
+Last regenerated: 2026-07-01
 
 ## How to Read This Table
 
@@ -36,6 +36,7 @@ Last regenerated: 2026-06-05
 | `legacy-modernization-orchestrator` | v0.2.11 | 9.56 | repo-ready (provisional) | synced | synced | synced | 2026-06-03 | [link](reviews/legacy-modernization-orchestrator-v0.2.11-scorecard.md) |
 | `legacy-module-context-intake` | v0.1.7 | 9.48 | repo-ready (provisional) | synced | synced | synced | 2026-06-03 | [link](reviews/legacy-module-context-intake-v0.1.7-scorecard.md) |
 | `legacy-document-evidence-intake` | v0.1.0 | 9.42 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-document-evidence-intake-v0.1.0-scorecard.md) |
+| `legacy-current-state-discovery` | v0.1.0 | 9.12 | repo-ready (provisional) | synced | synced | synced | 2026-07-01 | [link](reviews/legacy-current-state-discovery-v0.1.0-scorecard.md) |
 | `legacy-ibmi-evidence-intake` | v0.1.0 | 9.16 | repo-ready | passed | passed | passed | 2026-05-15 | [link](reviews/legacy-ibmi-evidence-intake-v0.1.0-scorecard.md) |
 | `legacy-ibmi-inventory` | v0.1.0 | 9.35 | repo-ready | synced | synced | synced | not-yet-tested | [link](reviews/legacy-ibmi-inventory-v0.1.0-scorecard.md) |
 | `legacy-ibmi-runtime-evidence-miner` | v0.1.0 | 9.57 | field-pilot ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) |
@@ -62,9 +63,9 @@ Last regenerated: 2026-06-05
 | Decision | Count |
 | --- | ---: |
 | `field-pilot ready` (all three runtimes `passed`) | 9 |
-| `repo-ready` / `repo-ready (provisional)` (runtime cap or partial coverage) | 14 |
+| `repo-ready` / `repo-ready (provisional)` (runtime cap or partial coverage) | 15 |
 
-**23 skills total** in canonical source; **33 superseded scorecards** kept
+**24 skills total** in canonical source; **33 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

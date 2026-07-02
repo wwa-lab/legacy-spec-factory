@@ -1,0 +1,4 @@
+interface:
+  display_name: "Legacy Current-State Discovery"
+  short_description: "Extract evidence-backed functional current state"
+  default_prompt: "Use $legacy-current-state-discovery to extract an evidence-backed functional current-state package from selected documents, RAG evidence, and SME notes."

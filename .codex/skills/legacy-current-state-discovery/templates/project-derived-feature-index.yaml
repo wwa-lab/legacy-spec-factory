@@ -1,0 +1,22 @@
+catalog_type: project_derived_feature_index
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+features:
+  - feature_id: CAND-<CAPABILITY-SLUG>-P001
+    name: "<project-derived feature or change>"
+    source_type: project_derived
+    source_project_or_document: ""
+    business_capability: ""
+    current_state_relationship: new | changed | removed | unclear
+    affected_modules_components: []
+    validation_impact: []
+    calculation_impact: []
+    interface_impact: []
+    accounting_gl_ie_impact: []
+    evidence_ids: []
+    discovery_confidence: Gap
+    review_status: needs_sme_review
+    open_questions: []

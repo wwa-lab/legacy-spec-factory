@@ -1,0 +1,25 @@
+catalog_type: interface_register
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+interfaces:
+  - interface_id: CAND-<CAPABILITY-SLUG>-I001
+    related_function_ids:
+      - CAND-<CAPABILITY-SLUG>-001
+    name: "<application / API / file / message / batch handoff>"
+    direction: inbound | outbound | bidirectional | unknown
+    upstream_system: ""
+    downstream_system: ""
+    mechanism: API | file | message | batch | queue | screen | report | manual | unknown
+    payload_or_file: ""
+    trigger_or_schedule: "Not found in reviewed evidence."
+    key_fields: []
+    error_or_retry_behavior: "Not found in reviewed evidence."
+    code_analysis_required: false
+    evidence_ids: []
+    discovery_confidence: Gap
+    evidence_strength: missing
+    review_status: needs_sme_review
+    open_questions: []

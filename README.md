@@ -245,6 +245,7 @@ Runtime-specific folders such as `.claude/`, `.opencode/`, `.agents/`, and
 | Skill | Purpose |
 | --- | --- |
 | `legacy-ibmi-program-list-batch` | Prepare resumable program-list scan batches and one-program prompt queues. |
+| `legacy-current-state-discovery` | Extract document/RAG-backed current-state functional discovery reports and catalogs. |
 | `legacy-ibmi-program-analyzer` | Analyze one IBM i program and extract source-backed behavior evidence. |
 | `legacy-ibmi-flow-analyzer` | Analyze one end-to-end transaction flow across multiple programs. |
 | `legacy-ibmi-module-analyzer` | Assemble reviewed program / flow evidence into module-level context. |

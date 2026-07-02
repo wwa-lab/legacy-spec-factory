@@ -1,6 +1,6 @@
 # Skill Families
 
-Legacy Spec Factory's scored reverse-modernization family currently tracks 23
+Legacy Spec Factory's scored reverse-modernization family currently tracks 24
 skills. They are not equally connected — some are called every run, some only
 at boundaries, some only when reviewing. This document groups the scored Legacy
 skills into **families** so callers (humans and orchestrators) know which
@@ -21,14 +21,14 @@ including supplemental skills outside this scored family map.
 | Family | Skills | When They Fire |
 | --- | ---: | --- |
 | Routing | 1 | At any decision point — picks the next skill |
-| Module-first context intake | 2 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, or module context enters the repo |
+| Module-first context intake | 3 | Default enterprise entry path when scattered documents/specs, external RAG / code-knowledge-graph output, functional discovery, or module context enters the repo |
 | Layer 1 — IBM i extraction | 8 | Selective verification path when source evidence is missing, conflicting, or high risk |
 | Layer 1 — batch operations | 1 | Copilot Chat-friendly control plane for many per-program analyses |
 | Layer 2 — synthesis | 3 | After module context or Layer 1 evidence is approved |
 | Bridge / handoff | 2 | After synthesis is approved |
 | Governance | 5 | Cross-cutting; called by other skills |
 | Verification | 1 | Before cutover / parallel-run |
-| **Total tracked here** | **23** | |
+| **Total tracked here** | **24** | |
 
 ---
 
@@ -64,6 +64,7 @@ authorization or SME approval.
 | --- | --- | --- | --- |
 | [`legacy-document-evidence-intake`](../skills/legacy-document-evidence-intake/SKILL.md) | raw Office / Visio / PDF / image documents (`.xlsx`/`.xlsm`/`.xls`, `.docx`/`.doc`, `.pptx`/`.ppt`, `.vsdx`/`.vsd`, `.pdf`, `.png`/`.jpg`/`.tif`, scanned/screenshot) that downstream skills cannot reliably read yet | `00_context_packages/<MODULE-SLUG>/document-intake/<DOCSET-SLUG>/` | Optional raw-document entry layer before `legacy-module-context-intake`; converts to Markdown/CSV/PDF/PNG/SVG with manifests and `DOC-*`/`FRAG-*` evidence coordinates when tooling allows. Static-only macro policy; routes unauthorized/unknown-sensitivity material to `legacy-ibmi-evidence-intake` |
 | [`legacy-module-context-intake`](../skills/legacy-module-context-intake/SKILL.md) | document-intake output, source metadata, RAG bundle, source snippets, dictionary mappings, contradictions, retrieval gaps, SME fragments, or reviewed module notes | `00_context_packages/<MODULE-SLUG>/` | Before `legacy-ibmi-module-analyzer` in module-first runs; may also feed `legacy-brd-writer` for explicit internal POC `poc_draft` output. Sparse/generated input remains low-confidence with source eligibility labels and carry-forward TBDs |
+| [`legacy-current-state-discovery`](../skills/legacy-current-state-discovery/SKILL.md) | selected RAG/document evidence, SME prompts, spreadsheets, project folders, and optional code anchors | `00_context_packages/<MODULE-SLUG>/current-state-discovery/<DISCOVERY-SLUG>/` | Between evidence retrieval and final handoff; extracts business-facing current-state functional reports plus structured catalogs while routing code-required details to IBM i analyzers |
 
 **Sequence**:
 
@@ -76,6 +77,11 @@ scattered docs/specs / draft context evidence / sparse module notes /
 external RAG bundle + human-confirmed module context
   └─ module-context-intake
        └─ module-analyzer (validates / synthesizes focused module package)
+selected RAG/document evidence for a specific function or business event
+  └─ current-state-discovery
+       ├─ SME-facing functional discovery report + structured catalogs
+       ├─ code-required gaps -> program-analyzer / flow-analyzer
+       └─ reviewed package -> module-context-intake / BRD preparation
 ```
 
 **Anti-pattern**: treating draft document-derived context steps, generated

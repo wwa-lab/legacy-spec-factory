@@ -1,0 +1,27 @@
+catalog_type: accounting_gl_ie_index
+catalog_version: "0.1.0"
+module_slug: "<MODULE-SLUG>"
+discovery_slug: "<DISCOVERY-SLUG>"
+status: draft
+
+accounting_impacts:
+  - accounting_id: CAND-<CAPABILITY-SLUG>-A001
+    related_function_ids:
+      - CAND-<CAPABILITY-SLUG>-001
+    transaction_or_event_type: "Not found in reviewed evidence."
+    functional_source: ""
+    accounting_impact_summary: "Not found in reviewed evidence."
+    gl_impact: []
+    ie_impact: []
+    debit_credit_pattern: "Exact debit/credit pattern not found in reviewed evidence."
+    posting_logic: "Not found in reviewed evidence."
+    settlement_or_reconciliation: "Not found in reviewed evidence."
+    control_or_balancing: "Not found in reviewed evidence."
+    exact_accounts_or_codes: []
+    code_analysis_required: false
+    finance_validation_required: true
+    evidence_ids: []
+    discovery_confidence: Gap
+    evidence_strength: missing
+    review_status: needs_sme_review
+    open_questions: []
