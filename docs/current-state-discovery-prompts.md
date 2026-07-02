@@ -26,6 +26,13 @@ Scope:
 
 请不要直接写报告。请先抽取 behavior-claim-ledger，然后再基于 behavior claims 生成 functional-discovery-report 和 supporting catalogs。
 
+ID rule:
+- behavior claim 使用 `BCL-*`
+- function candidate 使用 `CAND-*`
+- open question / gap 使用 `TBD-*`
+- source evidence 使用 `SRC-*` 或输入材料已有的 source ID
+- 不要只用一个通用 `CLM-*` 同时表示 claim、gap、source 和 function。
+
 每一条非 Gap 的 behavior claim 必须包含：
 1. business meaning：这个行为对业务意味着什么
 2. trigger / condition：什么事件、用户动作、系统条件会触发
@@ -54,6 +61,20 @@ Expected output:
 9. traceability-matrix
 10. open-questions-and-gaps
 
+Report formatting rule:
+- functional-discovery-report 的主要章节请优先使用表格，不要只用 bullet summary。
+- 每条 material statement 必须显示相关 `BCL-*` / `CAND-*`、confidence、source locator、gap 或 next action。
+- Gap Analysis 必须使用表格，至少包含 Gap ID、Area、Missing Evidence、Impact、Owner / Route、Next Action、Status。
+- 如果一个 section 只能写高层总结，请把它降级为 Gap 或 Code Analysis Required，不要写成 confirmed functional。
+
+Validation command rule:
+- 如果需要运行 Python validator，并且当前环境是 Windows / Windows 11，请优先使用 `py -3`。
+- Windows 示例：
+  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
+- Windows strict quality gate 示例：
+  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
+- 只有在 macOS / Linux 环境下才使用 `python3`。
+
 Quality gate:
 最终输出前，请检查每个 populated section：
 - SME 是否能判断这条内容是正确、错误、不完整，还是需要 code verification？
@@ -80,6 +101,13 @@ Scope:
 <region, system, product, and business scope, e.g. AMH Hong Kong credit card current state>
 
 Do not write the report directly. First extract a behavior-claim-ledger, then generate the functional-discovery-report and supporting catalogs from those behavior claims.
+
+ID rule:
+- Use `BCL-*` for behavior claims.
+- Use `CAND-*` for function candidates.
+- Use `TBD-*` for open questions and gaps.
+- Use `SRC-*` or the provided source ID for source evidence.
+- Do not use one generic `CLM-*` namespace for claims, gaps, sources, and functions.
 
 Every non-Gap behavior claim must include:
 1. business meaning: what this behavior means for the business
@@ -108,6 +136,20 @@ Expected output:
 8. accounting-gl-ie-index
 9. traceability-matrix
 10. open-questions-and-gaps
+
+Report formatting rule:
+- Use tables for the main sections in functional-discovery-report instead of bullet-only summaries.
+- Every material statement must show the related `BCL-*` / `CAND-*`, confidence, source locator, and gap or next action.
+- Gap Analysis must be a table with at least Gap ID, Area, Missing Evidence, Impact, Owner / Route, Next Action, and Status.
+- If a section can only contain a high-level summary, downgrade it to Gap or Code Analysis Required instead of writing it as confirmed functional behavior.
+
+Validation command rule:
+- If a Python validator must be run and the environment is Windows / Windows 11, use `py -3` first.
+- Windows example:
+  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
+- Windows strict quality gate example:
+  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
+- Use `python3` only on macOS / Linux.
 
 Quality gate:
 Before finalizing, check every populated section:
