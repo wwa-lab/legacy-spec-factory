@@ -14,12 +14,14 @@ For a human-oriented explanation of the same strategy, see
 Treat normal programs as concise SME review problems, complex normal programs
 as targeted-evidence problems, and 20k-30k+ line RPG programs as
 evidence-driven program-understanding problems, not large-text summarization
-problems.
+problems. The final SME artifact is still the main `program-analysis.md`;
+large-program sidecars are audit, checkpoint, and machine-readable sources, not
+the default reader journey.
 
 The analyzer must first turn the source into a compact, auditable structure:
 source index, Program Call Map, Logic Decomposition Ledger, Data Touch Map,
 Key File & Field Logic, routine cards, deep-read windows, and coverage ledger.
-Only then may it synthesize behavior.
+Only then may it synthesize behavior into a reader-first final wrapper.
 
 The goal is not to "read every line into context." The goal is to preserve the
 program's call topology, state changes, data movement, evidence, and known gaps
@@ -31,13 +33,41 @@ Use three SME-facing tiers:
 
 | Tier | When to use | Default output profile |
 | --- | --- | --- |
-| `normal_program` | Under 10,000 lines with no density trigger; recommended deep-read windows fit in one five-routine batch. | Lightweight `program-analysis.md` plus core machine-readable artifacts. |
-| `complex_normal_program` | Under large thresholds but dense in routines, file I/O, messages, SQL, field mutations, external calls, object dependencies, or recommended deep-read windows. | Lightweight SME review plus only triggered sidecars. |
-| `large_extreme_program` | Above large thresholds or cannot fit safely with evidence windows. | Full index, full sidecar set, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic five-routine loop when possible. |
+| `normal_program` | Under 10,000 lines with no density trigger; recommended deep-read windows fit in one five-routine batch. | Concise reader-first `program-analysis.md` plus core RLOG/message machine-readable artifacts. |
+| `complex_normal_program` | Under large thresholds but dense in routines, file I/O, messages, SQL, field mutations, external calls, object dependencies, or recommended deep-read windows. | Reader-first SME review plus only triggered sidecars. |
+| `large_extreme_program` | Above large thresholds or cannot fit safely with evidence windows. | Reader-first final `program-analysis.md`, full index, full sidecar set, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic five-routine loop when possible. |
+
+## Reader-First Final Wrapper Rule
+
+For every tier, including `normal_program`, the final `program-analysis.md`
+uses the same reader-first layout. Normal programs are shorter, not structurally
+different. For `large_extreme_program`, routine-dense programs, and user
+requests such as "open one file and read it without detail links", this rule is
+especially important: the final `program-analysis.md` must not be only a
+sidecar index. It must include:
+
+- `Program Reading Summary` immediately after the title
+- `Calculation Logic`, `Validation Logic`, and `Exception Handling` with
+  reader-oriented thematic overview before routine ledgers
+- `Routine Index For Calculation Logic`, `Routine Index For Validation Logic`,
+  and `Routine Index For Exception Handling`, each covering every RLOG declared
+  in `routine-logic-details.yaml`
+- `Message Inventory` synchronized with `message-inventory.yaml`
+- `Routine Logic Details` in the main file with continuous, ordered
+  `RLOG-<PROGRAM>-NNN` headings matching `routine-logic-details.yaml`
+- No pending/placeholder Program Reading Summary, routine-index detail, or
+  main-file RLOG detail; the final artifact must pass the reader-first golden
+  gate in `validate_program_analysis_contract.py`
+
+The retained sidecars still matter. They preserve audit trail, checkpoints,
+machine-readable coverage, batch progress, and downstream aggregation. They do
+not replace the final SME reading surface unless the user explicitly asks for a
+compact wrapper.
 
 ### Normal Program Defaults
 
-For `normal_program`, produce a concise SME-first review. Core artifacts are:
+For `normal_program`, produce a concise SME-first review with the same main
+layout and RLOG coverage contract as larger programs. Core artifacts are:
 
 - `program-analysis.md`
 - `program-analysis-summary.yaml`
@@ -90,7 +120,8 @@ Use large-program mode when any of these are true:
 Use `complex_normal_program` for medium programs when the program is smaller
 than these thresholds but still has dense call/data dependencies. Its
 compatibility `analysis_mode` may remain `segmented`, but the SME-facing output
-should still stay lightweight unless a sidecar trigger requires expansion.
+should still use the same reader-first main layout, with extra sidecars only
+when a trigger requires expansion.
 
 ## Operating Rule
 
@@ -232,12 +263,13 @@ create a blocking message-description TBD; do not pass final validation until a
 message file/catalog/reference pack, source literal/comment, runtime evidence,
 or SME-approved description source resolves the row.
 
-For routine-dense programs, keep front-loaded `Routine Logic Details` inside
-`program-analysis.md` as a compact summary. Store per-routine semantic detail in
+For routine-dense programs, keep `Routine Logic Details` inside
+`program-analysis.md` table-led and reader-friendly, but include every RLOG
+declared in `routine-logic-details.yaml` as a continuous, ordered main-file
+heading. Store duplicate/audit per-routine semantic detail in
 `routine-logic-details.md` and machine-readable detail in
-`routine-logic-details.yaml`; link summary rows to stable `RLOG-<PROGRAM>-NNN`
-detail IDs. When a program has more than 80 routines or more than 10,000 source
-lines, split human-authored semantic detail into
+`routine-logic-details.yaml`. When a program has more than 80 routines or more
+than 10,000 source lines, split human-authored semantic detail into
 `routine-logic-details/deep-read-batch-*.md` retained checkpoint files by
 five-routine/window batches, or `routine-logic-details/part-*.md` files by
 semantic shard such as mainline/dispatch,
@@ -257,33 +289,38 @@ source code into the batch core sections; use identifiers, normalized logic,
 source ranges, evidence IDs, and `RLOG-*` links instead.
 
 The retained batch/shard files must be consolidated after batch deep-read. The
-final `routine-logic-details.md` is the single SME review document for all
-routine detail, even for very large programs. It must contain whole-program
+final `program-analysis.md` is the primary SME review document and the final
+`routine-logic-details.md` is the consolidated audit/checkpoint document for all
+routine detail, even for very large programs. Both must cover every RLOG from
+`routine-logic-details.yaml`. The routine detail sidecar must contain whole-program
 `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
 `## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
 sections, with every routine included and every exact message/status/literal
-listed. Keep `program-analysis.md` compact; do not force SMEs to review only by
-batch/part files. Keep the batch files as checkpoints so reviewers can audit
+listed. Keep the main file readable; do not force SMEs to review only by
+sidecar, batch, or part files. Keep the batch files as checkpoints so reviewers can audit
 what was processed in each five-routine/window pass.
 
 For large and segmented programs, the final `program-analysis.md` is still the
-contracted SME wrapper. It may stay compact, but it must include every required
-section from `references/output-contract.md`, link to the sidecars declared in
-`program-analysis-summary.yaml`, and pass the Program Artifact Finalization
-Gate. Each `routine-logic-details/part-*.md` or
+contracted SME wrapper. It may stay table-led, but it must include every
+required section from `references/output-contract.md`, include reader-oriented
+core logic before routine ledgers, include the complete RLOG and message
+coverage required by the output contract, and pass the Program Artifact
+Finalization Gate. Each `routine-logic-details/part-*.md` or
 `routine-logic-details/deep-read-batch-*.md` checkpoint file must front-load SME
 core logic (`Calculation Logic`, `Validation Logic`, and `Exception Handling`)
 before per-routine detail, and the core logic must not contain fenced code
 blocks or copied RPG/CL/COBOL/SQL source snippets. Do not replace the wrapper with a compressed
-latest-batch summary. Before delivery, run:
+latest-batch summary or sidecar table of contents. Before delivery, run:
 
 ```text
 Windows: py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
-The gate checks required wrapper sections, declared sidecar files, and RLOG
-coverage from `routine-logic-details.yaml` to `routine-logic-details.md`.
+The gate checks required wrapper sections, declared sidecar files, RLOG coverage
+from `routine-logic-details.yaml` to both `program-analysis.md` and
+`routine-logic-details.md`, core logic routine-index coverage, stale deep-read
+gap wording, and message inventory synchronization.
 
 For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
 Logic` inside `program-analysis.md` as SME-readable summaries. Store complete

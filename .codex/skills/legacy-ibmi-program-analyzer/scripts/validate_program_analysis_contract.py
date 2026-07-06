@@ -16,6 +16,7 @@ from typing import Any
 
 
 REQUIRED_PROGRAM_SECTIONS = (
+    "Program Reading Summary",
     "Calculation Logic",
     "Validation Logic",
     "Exception Handling",
@@ -43,6 +44,8 @@ REQUIRED_PROGRAM_SECTIONS = (
 CORE_SIDECAR_KEYS = (
     "source_index",
     "routine_index",
+    "routine_logic_details",
+    "routine_logic_details_yaml",
     "message_inventory_yaml",
 )
 
@@ -103,6 +106,21 @@ UNRESOLVED_DESCRIPTION_STATUSES = {
     "unresolved_description",
     "pending_message_file",
 }
+STALE_DEEP_READ_GAP_PATTERNS = (
+    re.compile(r"\bRemaining routine deep-read gaps\b", re.I),
+    re.compile(r"\bnot-yet-deep-read routines\b", re.I),
+    re.compile(r"\bnot deep-read routines?\b", re.I),
+)
+READER_FIRST_PLACEHOLDER_PATTERNS = (
+    re.compile(r"\bpending reader-oriented summary\b", re.I),
+    re.compile(r"\bpending semantic deep-read\b", re.I),
+    re.compile(r"\bpending semantic detail\b", re.I),
+    re.compile(r"\bplaceholder content\b", re.I),
+    re.compile(r"\bplaceholder\b", re.I),
+    re.compile(r"\bnot-yet-deep-read\b", re.I),
+    re.compile(r"\bnot deep-read\b", re.I),
+)
+MEANINGFUL_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_#$@/-]*|[\u4e00-\u9fff]{2,}")
 
 
 def read_text(path: Path) -> str:
@@ -160,6 +178,18 @@ def heading_spans(markdown: str) -> dict[str, tuple[int, int]]:
     return spans
 
 
+def h2_section_text(markdown: str, heading: str) -> str:
+    pattern = re.compile(r"^##\s+(.+?)\s*$", re.M)
+    matches = list(pattern.finditer(markdown))
+    for index, match in enumerate(matches):
+        if match.group(1).strip() != heading:
+            continue
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        return markdown[start:end]
+    return ""
+
+
 def validate_ordered_headings(
     markdown: str,
     required_headings: tuple[str, ...],
@@ -206,6 +236,34 @@ def table_cells_or_line(line: str) -> list[str]:
             if cell and not re.fullmatch(r":?-{3,}:?", cell)
         ]
     return [stripped]
+
+
+def has_reader_first_placeholder(text: str) -> bool:
+    return any(pattern.search(text) for pattern in READER_FIRST_PLACEHOLDER_PATTERNS)
+
+
+def meaningful_word_count(text: str) -> int:
+    cleaned = re.sub(r"`[^`]*`", " ", text)
+    cleaned = RLOG_RE.sub(" ", cleaned)
+    cleaned = re.sub(r"\bSR\d{3,}\b", " ", cleaned, flags=re.I)
+    return len(MEANINGFUL_WORD_RE.findall(cleaned))
+
+
+def is_markdown_separator_row(cells: list[str]) -> bool:
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.strip()) for cell in cells)
+
+
+def markdown_table_rows(section_text: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for line in section_text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if is_markdown_separator_row(cells):
+            continue
+        rows.append(cells)
+    return rows
 
 
 def strip_inline_code_marks(text: str) -> str:
@@ -283,6 +341,39 @@ def extract_rlog_ids_from_markdown(path: Path) -> list[str]:
     return [match.group(0).upper() for match in RLOG_RE.finditer(read_text(path))]
 
 
+def extract_main_rlog_detail_headings(program_markdown: str) -> list[str]:
+    section_text = h2_section_text(program_markdown, "Routine Logic Details")
+    return [
+        match.group(1).upper()
+        for match in re.finditer(r"^###\s+(RLOG-[A-Z0-9_#$@-]+-\d{3})\b", section_text, re.I | re.M)
+    ]
+
+
+def rlog_suffix_number(rlog_id: str) -> int | None:
+    match = re.search(r"-(\d{3})$", rlog_id)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def validate_rlog_sequence(label: str, rlog_ids: list[str]) -> list[str]:
+    findings: list[str] = []
+    if not rlog_ids:
+        return findings
+    numbers = [rlog_suffix_number(rlog_id) for rlog_id in rlog_ids]
+    if any(number is None for number in numbers):
+        findings.append(f"{label} contains malformed RLOG IDs")
+        return findings
+    normalized_numbers = [number for number in numbers if number is not None]
+    expected = list(range(1, len(normalized_numbers) + 1))
+    if normalized_numbers != expected:
+        findings.append(
+            f"{label} RLOG IDs must be continuous and ordered from 001; found "
+            + ", ".join(rlog_ids)
+        )
+    return findings
+
+
 def validate_rlog_coverage(analysis_dir: Path) -> list[str]:
     findings: list[str] = []
     yaml_path = analysis_dir / "routine-logic-details.yaml"
@@ -296,6 +387,8 @@ def validate_rlog_coverage(analysis_dir: Path) -> list[str]:
         findings.append("routine-logic-details.yaml has no routine_logic_inventory.details[].detail_id values")
         return findings
 
+    findings.extend(validate_rlog_sequence("routine-logic-details.yaml", yaml_ids))
+
     missing = sorted(set(yaml_ids) - set(markdown_ids))
     if missing:
         findings.append(
@@ -303,6 +396,223 @@ def validate_rlog_coverage(analysis_dir: Path) -> list[str]:
             + ", ".join(missing)
         )
 
+    return findings
+
+
+def validate_program_rlog_coverage(program_markdown: str, analysis_dir: Path) -> list[str]:
+    yaml_path = analysis_dir / "routine-logic-details.yaml"
+    if not yaml_path.is_file():
+        return []
+
+    yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
+    if not yaml_ids:
+        return []
+
+    findings: list[str] = []
+    detail_heading_ids = extract_main_rlog_detail_headings(program_markdown)
+    if not detail_heading_ids:
+        findings.append(
+            "program-analysis.md Routine Logic Details missing RLOG detail headings declared in YAML: "
+            + ", ".join(yaml_ids)
+        )
+        return findings
+
+    missing = sorted(set(yaml_ids) - set(detail_heading_ids))
+    extra = sorted(set(detail_heading_ids) - set(yaml_ids))
+    if missing:
+        findings.append(
+            "program-analysis.md Routine Logic Details missing RLOG detail headings declared in YAML: "
+            + ", ".join(missing)
+        )
+    if extra:
+        findings.append(
+            "program-analysis.md Routine Logic Details contains extra RLOG detail headings not declared in YAML: "
+            + ", ".join(extra)
+        )
+    if detail_heading_ids != yaml_ids:
+        findings.append(
+            "program-analysis.md Routine Logic Details RLOG headings must match YAML order and count"
+        )
+    findings.extend(validate_rlog_sequence("program-analysis.md Routine Logic Details", detail_heading_ids))
+    return findings
+
+
+def validate_core_logic_routine_indexes(program_markdown: str, analysis_dir: Path) -> list[str]:
+    yaml_path = analysis_dir / "routine-logic-details.yaml"
+    if not yaml_path.is_file():
+        return []
+
+    yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
+    if not yaml_ids:
+        return []
+
+    findings: list[str] = []
+    for section in BATCH_CORE_SECTIONS:
+        section_text = h2_section_text(program_markdown, section)
+        index_heading = f"Routine Index For {section}"
+        if index_heading not in section_text:
+            findings.append(f"program-analysis.md missing {index_heading}")
+            continue
+        index_ids = [match.group(0).upper() for match in RLOG_RE.finditer(section_text)]
+        missing = sorted(set(yaml_ids) - set(index_ids))
+        if missing:
+            findings.append(
+                f"program-analysis.md {index_heading} missing RLOG rows declared in YAML: "
+                + ", ".join(missing)
+            )
+        if len(index_ids) < len(yaml_ids):
+            findings.append(
+                f"program-analysis.md {index_heading} row count is {len(index_ids)}; "
+                f"expected at least {len(yaml_ids)}"
+            )
+    return findings
+
+
+def validate_program_reading_summary_quality(program_markdown: str) -> list[str]:
+    section_text = h2_section_text(program_markdown, "Program Reading Summary")
+    if not section_text:
+        return []
+
+    findings: list[str] = []
+    if has_reader_first_placeholder(section_text) or meaningful_word_count(section_text) < 20:
+        findings.append(
+            "reader-first golden gate: Program Reading Summary must contain "
+            "reader-oriented processing context, not placeholder or pending text"
+        )
+
+    required_headers = ("Processing Layer", "Main Routines", "What To Understand First")
+    missing_headers = [header for header in required_headers if header not in section_text]
+    if missing_headers:
+        findings.append(
+            "reader-first golden gate: Program Reading Summary missing processing-layer "
+            "table headers: "
+            + ", ".join(missing_headers)
+        )
+        return findings
+
+    rows = markdown_table_rows(section_text)
+    data_rows = [
+        cells
+        for cells in rows
+        if cells
+        and cells[0] != "Processing Layer"
+        and len(cells) >= 3
+        and not has_reader_first_placeholder(" ".join(cells))
+        and meaningful_word_count(cells[2]) >= 5
+    ]
+    if not data_rows:
+        findings.append(
+            "reader-first golden gate: Program Reading Summary needs at least one "
+            "processing-layer row with reader-useful explanation"
+        )
+    return findings
+
+
+def validate_core_logic_reader_first_quality(
+    program_markdown: str,
+    analysis_dir: Path,
+) -> list[str]:
+    yaml_path = analysis_dir / "routine-logic-details.yaml"
+    if not yaml_path.is_file():
+        return []
+
+    yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
+    if not yaml_ids:
+        return []
+
+    findings: list[str] = []
+    for section in BATCH_CORE_SECTIONS:
+        section_text = h2_section_text(program_markdown, section)
+        if not section_text:
+            continue
+
+        index_heading = f"Routine Index For {section}"
+        overview_text = section_text.split(index_heading, 1)[0]
+        if has_reader_first_placeholder(overview_text) or meaningful_word_count(overview_text) < 4:
+            findings.append(
+                f"reader-first golden gate: program-analysis.md {section} must start "
+                "with reader-oriented overview content before the routine index"
+            )
+
+        if index_heading not in section_text:
+            continue
+        index_text = section_text.split(index_heading, 1)[1]
+        for rlog_id in yaml_ids:
+            row = next(
+                (line for line in index_text.splitlines() if rlog_id in line.upper()),
+                "",
+            )
+            if not row:
+                continue
+            cells = table_cells_or_line(row)
+            detail = cells[-1] if len(cells) >= 3 else row
+            if has_reader_first_placeholder(detail) or meaningful_word_count(detail) < 3:
+                findings.append(
+                    f"reader-first golden gate: program-analysis.md {index_heading} "
+                    f"{rlog_id} needs reader-useful detail, not pending/placeholder text"
+                )
+    return findings
+
+
+def extract_main_rlog_detail_blocks(program_markdown: str) -> dict[str, str]:
+    section_text = h2_section_text(program_markdown, "Routine Logic Details")
+    matches = list(
+        re.finditer(
+            r"^###\s+(RLOG-[A-Z0-9_#$@-]+-\d{3})\b.*$",
+            section_text,
+            re.I | re.M,
+        )
+    )
+    blocks: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(section_text)
+        blocks[match.group(1).upper()] = section_text[start:end]
+    return blocks
+
+
+def validate_main_rlog_detail_quality(
+    program_markdown: str,
+    analysis_dir: Path,
+) -> list[str]:
+    yaml_path = analysis_dir / "routine-logic-details.yaml"
+    if not yaml_path.is_file():
+        return []
+
+    yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
+    if not yaml_ids:
+        return []
+
+    findings: list[str] = []
+    blocks = extract_main_rlog_detail_blocks(program_markdown)
+    for rlog_id in yaml_ids:
+        body = blocks.get(rlog_id, "")
+        if not body:
+            continue
+        if has_reader_first_placeholder(body) or meaningful_word_count(body) < 12:
+            findings.append(
+                "reader-first golden gate: program-analysis.md Routine Logic Details "
+                f"{rlog_id} needs reader-useful detail, not pending/placeholder text"
+            )
+    return findings
+
+
+def validate_reader_first_golden_gate(program_markdown: str, analysis_dir: Path) -> list[str]:
+    findings: list[str] = []
+    findings.extend(validate_program_reading_summary_quality(program_markdown))
+    findings.extend(validate_core_logic_reader_first_quality(program_markdown, analysis_dir))
+    findings.extend(validate_main_rlog_detail_quality(program_markdown, analysis_dir))
+    return findings
+
+
+def validate_no_stale_gap_wording(program_markdown: str) -> list[str]:
+    findings: list[str] = []
+    for pattern in STALE_DEEP_READ_GAP_PATTERNS:
+        if pattern.search(program_markdown):
+            findings.append(
+                "program-analysis.md contains stale deep-read gap wording: "
+                + pattern.pattern.replace("\\b", "")
+            )
     return findings
 
 
@@ -502,6 +812,33 @@ def validate_message_descriptions(analysis_dir: Path) -> list[str]:
     ]
 
 
+def observed_message_codes(analysis_dir: Path) -> list[str]:
+    inventory = message_inventory_payload(analysis_dir)
+    if not inventory:
+        return []
+    codes: list[str] = []
+    for entry in message_entries(inventory):
+        value = entry.get("message") or entry.get("message_code") or entry.get("code")
+        if value:
+            codes.append(str(value))
+    return sorted(set(codes))
+
+
+def validate_message_inventory_sync(program_markdown: str, analysis_dir: Path) -> list[str]:
+    codes = observed_message_codes(analysis_dir)
+    if not codes:
+        return []
+
+    message_section = h2_section_text(program_markdown, "Message Inventory")
+    missing = [code for code in codes if code not in message_section]
+    if not missing:
+        return []
+    return [
+        "program-analysis.md Message Inventory missing observed YAML message/code values: "
+        + ", ".join(missing)
+    ]
+
+
 def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[str]:
     findings: list[str] = []
     if not analysis_dir.is_dir():
@@ -511,7 +848,13 @@ def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[s
     if program_path is None or not program_path.is_file():
         findings.append("Missing program-analysis.md or a single program-analysis-<OBJ-ID>.md")
     else:
-        findings.extend(validate_required_sections(read_text(program_path)))
+        program_markdown = read_text(program_path)
+        findings.extend(validate_required_sections(program_markdown))
+        findings.extend(validate_program_rlog_coverage(program_markdown, analysis_dir))
+        findings.extend(validate_core_logic_routine_indexes(program_markdown, analysis_dir))
+        findings.extend(validate_reader_first_golden_gate(program_markdown, analysis_dir))
+        findings.extend(validate_no_stale_gap_wording(program_markdown))
+        findings.extend(validate_message_inventory_sync(program_markdown, analysis_dir))
 
     findings.extend(validate_sidecar_set(analysis_dir))
     findings.extend(validate_rlog_coverage(analysis_dir))

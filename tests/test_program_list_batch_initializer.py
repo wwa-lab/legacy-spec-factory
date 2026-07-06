@@ -16,6 +16,13 @@ INITIALIZER = (
     / "scripts"
     / "initialize_program_batch.py"
 )
+STATUS_VALIDATOR = (
+    REPO_ROOT
+    / "skills"
+    / "legacy-ibmi-program-list-batch"
+    / "scripts"
+    / "validate_program_batch_status.py"
+)
 
 
 class ProgramListBatchInitializerTests(unittest.TestCase):
@@ -72,6 +79,9 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn(f"Output directory: `{expected_output}`", prompt_text)
+            self.assertIn("routine-logic-details.md", prompt_text)
+            self.assertIn("routine-logic-details.yaml", prompt_text)
+            self.assertNotIn("For normal_program, do not create routine-logic-details.md", prompt_text)
 
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
             self.assertIn(f"`{expected_output}`", plan_text)
@@ -171,6 +181,50 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("not found in program-list.csv: MISSING", result.stderr)
+
+    def test_status_validator_requires_routine_details_for_normal_program(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            batch_dir = temp_root / "batch"
+            output_dir = temp_root / "delivery" / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            batch_dir.mkdir()
+            output_dir.mkdir(parents=True)
+            (batch_dir / "batch-scan-manifest.yaml").write_text("programs: []\n", encoding="utf-8")
+            (batch_dir / "program-batch-plan.md").write_text("# Plan\n", encoding="utf-8")
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason,batch_status,validator_status,output_dir,prompt_path,owner,session_id,started_at,completed_at,last_error,next_action,handoff_path",
+                        "CC050,program,RPGLE,CC050.RPGLE,100,normal_program,test,completed,pass,modules/CAP-ID-0003-normal_program/CC050,,,,,,,,",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            for artifact in (
+                "program-analysis.md",
+                "source-index.yaml",
+                "program-analysis-summary.yaml",
+                "routine-index.md",
+                "message-inventory.yaml",
+            ):
+                (output_dir / artifact).write_text("ok\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(STATUS_VALIDATOR),
+                    "--batch-dir",
+                    str(batch_dir),
+                    "--delivery-root",
+                    str(temp_root / "delivery"),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("routine-logic-details.md", result.stdout)
+            self.assertIn("routine-logic-details.yaml", result.stdout)
 
 
 if __name__ == "__main__":

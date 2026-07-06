@@ -90,17 +90,26 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
         self.assertNotIn("flow-sme-core-review.md", contract_text)
 
         expected_sections = [
+            "## Program Set Reading Summary",
+            "## Cross-Program Processing Overview",
             "## Calculation Logic",
             "## Validation Logic",
             "## Exception Handling",
             "## Message Inventory",
+            "## Core Completeness Ledger",
+            "## Sources",
+            "## Run Profile",
+            "## Source Inventory Cache",
         ]
         positions = [template_text.index(section) for section in expected_sections]
         self.assertEqual(positions, sorted(positions))
 
         self.assertIn("program-analysis-summary.yaml", template_text)
+        self.assertIn("program-analysis.md", template_text)
+        self.assertIn("routine-logic-details.md", template_text)
         self.assertIn("routine-logic-details.yaml", template_text)
         self.assertIn("message-inventory.yaml", template_text)
+        self.assertIn("Processing Layer | Programs / Main Routines | What To Understand First", template_text)
         self.assertIn("Message Inventory must list every exact", template_text)
         self.assertIn("Do not include Nodes, Edges", template_text)
         self.assertNotIn("## Nodes", template_text)

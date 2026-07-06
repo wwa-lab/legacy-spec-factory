@@ -342,17 +342,23 @@ Use:
 - message-inventory.yaml
 - triggered sidecars
 
-Update program-analysis.md only at summary level.
-Do not paste batch detail or source snippets into program-analysis.md.
+Update program-analysis.md as the reader-first final wrapper.
+Do not paste raw source snippets, but do merge completed RLOG semantic detail
+into the main file so SMEs can understand the program without opening sidecar
+links. Sidecars remain audit/checkpoint sources.
 
 Show:
+- Program Reading Summary
 - confirmed calculation logic
 - confirmed validation logic
 - confirmed exception handling
 - confirmed messages
+- Routine Index For Calculation Logic / Validation Logic / Exception Handling,
+  each covering every RLOG in routine-logic-details.yaml
+- Routine Logic Details headings for every RLOG, continuous and ordered
 - confirmed file I/O / SQL behavior
 - external calls and unresolved handoffs
-- indexed_only or blocked routines
+- precise indexed_only or blocked routines, if any
 - final SME questions
 ```
 
@@ -371,26 +377,36 @@ Show:
 - message-inventory.yaml
 - 已触发的 sidecars
 
-只允许 summary-level 更新 program-analysis.md。
-不要把 batch detail 或 source snippets 粘贴进 program-analysis.md。
+请把 program-analysis.md 更新成 reader-first final wrapper。
+不要粘贴 raw source snippets，但必须把已完成的 RLOG 语义明细合并到主文件，
+让 SME 不用打开 sidecar links 也能理解 program。sidecars 只作为 audit/checkpoint 来源。
 
 请展示:
+- Program Reading Summary
 - 已确认的 calculation logic
 - 已确认的 validation logic
 - 已确认的 exception handling
 - 已确认的 messages
+- Routine Index For Calculation Logic / Validation Logic / Exception Handling，
+  每个都覆盖 routine-logic-details.yaml 里的全部 RLOG
+- Routine Logic Details headings 覆盖全部 RLOG，编号连续有序
 - 已确认的 file I/O / SQL behavior
 - external calls 和 unresolved handoffs
-- indexed_only 或 blocked routines
+- 精确的 indexed_only 或 blocked routines（如仍存在）
 - final SME questions
 ```
 
 Output Checkpoint:
 
-- `program-analysis.md` remains concise and stable.
-- Batch details remain in `routine-logic-details/deep-read-batch-*.md`.
-- `program-analysis-summary.yaml` lists remaining downstream-readiness gaps.
-- SME can review the program without opening full source.
+- `program-analysis.md` starts with Program Reading Summary and follows the
+  required H2 order.
+- Calculation / Validation / Exception routine indexes each cover every RLOG.
+- Routine Logic Details in the main file have the same RLOG count/order as
+  `routine-logic-details.yaml`.
+- Batch details remain in `routine-logic-details/deep-read-batch-*.md` as
+  audit checkpoints.
+- `program-analysis-summary.yaml` lists only precise downstream-readiness gaps.
+- SME can review the program without opening sidecars or full source.
 
 ### Step 6: Final Large Program Readiness
 
@@ -414,10 +430,14 @@ Do not mark chain_ready unless:
 
 List:
 - completed batches
-- routines/windows still indexed_only
-- blockers
+- routines/windows still indexed_only, only if coverage/source-index still
+  marks them that way
+- blockers using precise gap types such as helper contract semantics, message
+  catalog semantics, copybook/DS definitions, or inventory/source linkage
 - unresolved SME questions
 - evidence needed before chain_ready
+- confirmation that `program-analysis.md`, message inventory, and validation
+  warnings are synchronized
 ```
 
 中文 Prompt:
@@ -440,16 +460,20 @@ List:
 
 请列出:
 - 已完成的 batches
-- 仍然 indexed_only 的 routines/windows
-- blockers
+- 仍然 indexed_only 的 routines/windows（仅当 coverage/source-index 当前仍如此）
+- blockers，使用精确 gap 类型，例如 helper contract semantics、
+  message catalog semantics、copybook/DS definitions、inventory/source linkage
 - unresolved SME questions
 - chain_ready 之前还需要哪些 evidence
+- 确认 program-analysis.md、message inventory、validation warnings 已同步
 ```
 
 Output Checkpoint:
 
 - Final status is explicit.
 - `chain_ready` is not used as a default for large scans.
-- Remaining blockers are assigned to SME, message catalog, copybook, external
-  program evidence, runtime evidence, or another batch.
-- The package is reviewable without reading the full source member.
+- Remaining blockers are precise and assigned to SME, message catalog,
+  copybook/DS, helper contract, external program evidence, runtime evidence, or
+  inventory/source linkage.
+- The package is reviewable from `program-analysis.md` without reading sidecars
+  or the full source member.

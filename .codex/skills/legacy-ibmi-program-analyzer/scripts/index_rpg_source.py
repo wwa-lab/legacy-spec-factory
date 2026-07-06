@@ -574,7 +574,11 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
         "sidecar_markdown": "routine-logic-details.md",
         "sidecar_yaml": "routine-logic-details.yaml",
         "sharding_guidance": {
-            "main_document_limit": "summarize only when routines > 25",
+            "main_document_limit": (
+                "for routines > 25, keep program-analysis.md table-led but "
+                "include continuous ordered RLOG headings and reader-useful "
+                "detail for every YAML RLOG"
+            ),
             "batch_files_required_when": (
                 "program_size_tier is large_extreme_program; canonical seed files "
                 "use routine-logic-details/deep-read-batch-001.md and continue "
@@ -589,12 +593,13 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
                 "pasted source-code snippets or fenced code blocks."
             ),
             "final_consolidation_required": (
-                "After batch deep-read, merge all part files into one final "
-                "routine-logic-details.md SME review document with whole-program "
-                "Calculation Logic, Validation Logic, Exception Handling, "
-                "Message Inventory, Routine Detail Index, and all Routine "
-                "Details. Batch files are retained audit surfaces and checkpoints, "
-                "but not the final consolidated SME review surface."
+                "After batch deep-read, merge all part files into the final "
+                "program-analysis.md reader-first wrapper and one "
+                "routine-logic-details.md consolidated audit document with "
+                "whole-program Calculation Logic, Validation Logic, Exception "
+                "Handling, Message Inventory, Routine Detail Index, and all "
+                "Routine Details. Batch files are retained audit surfaces and "
+                "checkpoints, but not the final SME reading surface."
             ),
             "part_file_examples": [
                 "routine-logic-details/deep-read-batch-001.md",
@@ -857,13 +862,13 @@ def program_size_tier(
         return {
             "tier": "complex_normal_program",
             "reason": "; ".join(complex_reasons),
-            "default_output_profile": "light_review_plus_triggered_sidecars",
+            "default_output_profile": "reader_first_plus_triggered_sidecars",
         }
 
     return {
         "tier": "normal_program",
-        "reason": "normal-size program; default to lightweight SME review",
-        "default_output_profile": "lightweight_program_review",
+        "reason": "normal-size program; default to concise reader-first SME review",
+        "default_output_profile": "reader_first_lightweight_review",
     }
 
 
@@ -878,7 +883,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
             "reason": (
                 "large/complex tier or more than one five-routine batch"
                 if full or complex_normal or counts["recommended_deep_read_windows"] > 5
-                else "not needed for lightweight normal review"
+                else "not needed for concise normal review"
             ),
         },
         "coverage_ledger": {
@@ -886,7 +891,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
             "reason": (
                 "large/complex tier or batched routine coverage required"
                 if full or complex_normal or counts["recommended_deep_read_windows"] > 5
-                else "not needed for lightweight normal review"
+                else "not needed for concise normal review"
             ),
         },
         "file_io_inventory": {
@@ -925,7 +930,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
             "reason": (
                 "message inventory is dense"
                 if counts["unique_messages"] > 10
-                else "message-inventory.yaml is enough for lightweight review"
+                else "message-inventory.yaml is enough for concise reader-first review"
             ),
         },
     }
@@ -1803,10 +1808,11 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
 
     sections = [
         f"# Routine Logic Details: {index['program']}",
-        "This sidecar keeps per-routine logic detail out of the front-loaded "
-        "`program-analysis.md` summary. The static index seeds routine IDs, "
-        "line ranges, call/data evidence, and deep-read priorities; semantic "
-        "logic remains `pending_deep_read` until source windows are analyzed.",
+        "This sidecar preserves audit/checkpoint routine detail behind the "
+        "reader-first `program-analysis.md`. The static index seeds routine "
+        "IDs, line ranges, call/data evidence, and deep-read priorities; "
+        "semantic logic remains `pending_deep_read` until source windows are "
+        "analyzed.",
         "## Calculation Logic",
         "Pending semantic deep-read. This consolidated section must be populated before final delivery.",
         markdown_table(
@@ -1892,12 +1898,12 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         [
             "## Sharding Guidance",
             "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
-            "- If routines > 25, keep `program-analysis.md` as a summary and use this sidecar for details.",
+            "- If routines > 25, keep `program-analysis.md` table-led but include continuous ordered RLOG headings and reader-useful detail for every YAML RLOG.",
             "- If routines > 80 or source lines > 10,000, split semantic details into retained `routine-logic-details/deep-read-batch-*.md` checkpoint files.",
             "- Each `routine-logic-details/part-*.md` or `routine-logic-details/deep-read-batch-*.md` file must use the same top-level layout: `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, `## Scope`, `## Batch Coverage Summary`, `## Message Inventory`, `## Routine Details`.",
             "- Batch core logic sections must not contain pasted source-code snippets or fenced code blocks; use identifiers, source ranges, evidence IDs, and RLOG links.",
             "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
-            "- After batch deep-read, merge all part files into this final consolidated `routine-logic-details.md` SME review document with all routine detail.",
+            "- After batch deep-read, merge all part files into the final reader-first `program-analysis.md` and this consolidated `routine-logic-details.md` audit document.",
             "- `routine-logic-details.yaml` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
             "- Before delivery, run `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` with the repository Python launcher convention.",
         ]
@@ -1926,7 +1932,7 @@ def requires_routine_batch_files(index: dict[str, Any]) -> bool:
 
 
 def requires_routine_detail_sidecars(index: dict[str, Any]) -> bool:
-    return index.get("program_size_tier") in {"complex_normal_program", "large_extreme_program"}
+    return True
 
 
 def routine_batch_path(batch_number: int) -> str:
@@ -1952,7 +1958,7 @@ def routine_batch_groups(index: dict[str, Any]) -> list[list[dict[str, Any]]]:
 
 def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
     triggers = index["optional_sidecar_triggers"]
-    routine_details_status = "present" if requires_routine_detail_sidecars(index) else "not_written_by_default"
+    routine_details_status = "present"
     sidecars = {
         "program_analysis": {"path": "program-analysis.md", "status": "present"},
         "source_index": {"path": "source-index.yaml", "status": "present"},
@@ -2060,6 +2066,31 @@ def render_program_analysis(index: dict[str, Any]) -> str:
         ]
         for item in index["routine_logic_inventory"]["summary"]
     ] or [["-", "no routines observed", "-", "-", "-", "-"]]
+    routine_index_rows = [
+        [
+            f"{item['detail_ref']} / {item['routine']}",
+            item["role"],
+            (
+                "pending semantic deep-read; keep this row and replace with "
+                "reader-useful detail during final consolidation"
+            ),
+        ]
+        for item in index["routine_logic_inventory"]["summary"]
+    ] or [["-", "no routines observed", "-"]]
+    routine_detail_seed_sections = []
+    for item in index["routine_logic_inventory"]["summary"]:
+        routine_detail_seed_sections.extend(
+            [
+                f"### {item['detail_ref']} / {item['routine']}",
+                (
+                    "Pending semantic deep-read. Preserve this RLOG heading in "
+                    "`program-analysis.md`; replace this placeholder with "
+                    "reader-useful routine detail during final consolidation."
+                ),
+            ]
+        )
+    if not routine_detail_seed_sections:
+        routine_detail_seed_sections = ["No routines observed by static index."]
     message_rows = [
         [
             item["message"],
@@ -2170,8 +2201,18 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             f"# Program Analysis: {program} (unlinked)",
             (
                 "Draft wrapper seed generated by `index_rpg_source.py`. It fixes "
-                "the required review layout and sidecar links before semantic "
+                "the required reader-first review layout before semantic "
                 "deep-read. Do not treat pending rows as approved behavior."
+            ),
+            "## Program Reading Summary",
+            (
+                "Pending semantic deep-read. This section must explain the program "
+                "by processing layer/theme and let an IT SME read the final "
+                "`program-analysis.md` without following sidecar links."
+            ),
+            markdown_table(
+                ["Processing Layer", "Main Routines", "What To Understand First"],
+                [["pending deep read", "pending", "pending reader-oriented summary"]],
             ),
             "## Calculation Logic",
             "**Calculation logic unresolved:** pending semantic deep-read. Populate only after source windows are analyzed.",
@@ -2185,7 +2226,12 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                     "Supporting Detail Link",
                     "Evidence",
                 ],
-                [["pending deep read", "pending", "pending", "pending", "pending", "routine-logic-details.md", "source-index"]],
+                [["pending deep read", "pending", "pending", "pending", "pending", "program-analysis.md Routine Logic Details", "source-index"]],
+            ),
+            "### Routine Index For Calculation Logic",
+            markdown_table(
+                ["RLOG / Routine", "Category", "Reader-useful Detail"],
+                routine_index_rows,
             ),
             "## Validation Logic",
             "**Validation logic unresolved:** pending semantic deep-read and message/reference-pack lookup.",
@@ -2203,6 +2249,11 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                 ],
                 validation_rows,
             ),
+            "### Routine Index For Validation Logic",
+            markdown_table(
+                ["RLOG / Routine", "Category", "Reader-useful Detail"],
+                routine_index_rows,
+            ),
             "## Exception Handling",
             "**Exception handling unresolved:** pending semantic deep-read.",
             markdown_table(
@@ -2216,7 +2267,12 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                     "Supporting Detail Link",
                     "Evidence",
                 ],
-                [["pending deep read", "pending", "pending", "pending", "pending", "pending", "routine-logic-details.md", "source-index"]],
+                [["pending deep read", "pending", "pending", "pending", "pending", "pending", "program-analysis.md Routine Logic Details", "source-index"]],
+            ),
+            "### Routine Index For Exception Handling",
+            markdown_table(
+                ["RLOG / Routine", "Category", "Reader-useful Detail"],
+                routine_index_rows,
             ),
             "## Message Inventory",
             markdown_table(
@@ -2318,7 +2374,12 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             ),
             "## Routine Logic Details",
             markdown_table(["Routine", "Role", "Source Lines", "Coverage", "Semantic Status", "Detail"], routine_rows),
-            "Full routine detail belongs in `routine-logic-details.md` / `routine-logic-details.yaml`; large-program batch checkpoints live under `routine-logic-details/`.",
+            (
+                "Final `program-analysis.md` must keep one continuous, ordered "
+                "RLOG heading per `routine-logic-details.yaml` entry. Sidecars "
+                "remain audit/checkpoint and machine-readable sources."
+            ),
+            "\n\n".join(routine_detail_seed_sections),
             "## Deep Read Windows",
             markdown_table(["Window ID", "Routine / Path", "Source Lines", "Why Selected", "Coverage Outcome", "Evidence"], deep_read_rows),
             "## Entry Points & Parameters",

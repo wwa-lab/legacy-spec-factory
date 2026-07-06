@@ -26,10 +26,6 @@ REQUIRED_ARTIFACTS = {
     "program-analysis-summary.yaml",
     "routine-index.md",
     "message-inventory.yaml",
-}
-
-ROUTINE_DETAIL_REQUIRED_TIERS = {"complex_normal_program", "large_extreme_program"}
-ROUTINE_DETAIL_ARTIFACTS = {
     "routine-logic-details.md",
     "routine-logic-details.yaml",
 }
@@ -122,10 +118,7 @@ def validate(args: argparse.Namespace) -> int:
             if not output_path.is_dir():
                 findings.append(f"Row {index} {member}: output_dir does not exist: {output_path}")
                 continue
-            required_artifacts = set(REQUIRED_ARTIFACTS)
-            if row.get("size_tier", "") in ROUTINE_DETAIL_REQUIRED_TIERS:
-                required_artifacts.update(ROUTINE_DETAIL_ARTIFACTS)
-            missing = sorted(name for name in required_artifacts if not (output_path / name).is_file())
+            missing = sorted(name for name in REQUIRED_ARTIFACTS if not (output_path / name).is_file())
             if missing:
                 findings.append(f"Row {index} {member}: missing required artifacts: {', '.join(missing)}")
 

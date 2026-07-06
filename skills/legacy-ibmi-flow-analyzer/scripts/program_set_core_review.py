@@ -29,6 +29,23 @@ CORE_SECTIONS = (
     "Message Inventory",
 )
 
+READER_FIRST_SECTIONS = (
+    "Program Set Reading Summary",
+    "Cross-Program Processing Overview",
+    *CORE_SECTIONS,
+    "Core Completeness Ledger",
+    "Sources",
+    "Run Profile",
+    "Source Inventory Cache",
+)
+
+AUDIT_CONTROL_SECTIONS = (
+    "Core Completeness Ledger",
+    "Sources",
+    "Run Profile",
+    "Source Inventory Cache",
+)
+
 FORBIDDEN_FULL_FLOW_SECTIONS = (
     "Metadata",
     "Trigger Context",
@@ -39,29 +56,35 @@ FORBIDDEN_FULL_FLOW_SECTIONS = (
     "Edges (Calls Between Nodes)",
     "Common Dependencies",
     "Cross-Program Data Flow",
+    "Replay",
     "Flow Replay Path",
+    "Lineage",
     "Cross-Program Field Lineage",
+    "Persistence",
     "Flow Persistence Matrix",
     "Branch Points",
     "UI Surfaces",
     "Error Propagation & Commit Boundaries",
     "Exception Propagation Chain",
+    "Capability Seeds",
     "Business Capability Seeds",
     "Review Checklist",
     "SME Checklist",
 )
 
 REQUIRED_COMPACT_ARTIFACTS = (
+    "program-analysis.md",
     "program-analysis-summary.yaml",
+    "source-index.yaml",
+    "routine-index.md",
     "message-inventory.yaml",
-)
-
-CONDITIONAL_COMPACT_ARTIFACTS = (
+    "routine-logic-details.md",
     "routine-logic-details.yaml",
 )
 
+CONDITIONAL_COMPACT_ARTIFACTS: tuple[str, ...] = ()
+
 OPTIONAL_COMPACT_ARTIFACTS = (
-    "source-index.yaml",
     "file-io-inventory.yaml",
     "field-mutation-matrix.yaml",
     "sql-inventory.yaml",
@@ -624,7 +647,6 @@ def artifact_summary(entry: dict[str, Any]) -> str:
         key = artifact_key(filename)
         status = (compact.get(key) or {}).get("status", "missing")
         labels.append(f"{filename}={status}")
-    labels.append(f"routine-logic-details.yaml={routine_detail_status(entry)}")
     return "; ".join(labels)
 
 
@@ -639,9 +661,22 @@ def routine_detail_status(entry: dict[str, Any]) -> str:
     )
     if status == "present":
         return "present"
-    if is_normal_program(entry):
-        return "optional_not_required"
     return "missing_when_needed"
+
+
+def routine_logic_evidence_status(entry: dict[str, Any]) -> str:
+    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED}:
+        return "N/A"
+    markdown = present_missing(entry, "routine-logic-details.md")
+    yaml = present_missing(entry, "routine-logic-details.yaml")
+    if markdown == "present" and yaml == "present":
+        return "present"
+    missing = []
+    if markdown != "present":
+        missing.append("routine-logic-details.md")
+    if yaml != "present":
+        missing.append("routine-logic-details.yaml")
+    return "missing: " + ", ".join(missing)
 
 
 def present_missing(entry: dict[str, Any], artifact_filename: str) -> str:
@@ -649,8 +684,6 @@ def present_missing(entry: dict[str, Any], artifact_filename: str) -> str:
         return "N/A"
     if artifact_filename == "routine-logic-details.yaml":
         status = routine_detail_status(entry)
-        if status == "optional_not_required":
-            return "optional_not_required"
         return "present" if status == "present" else "missing"
     status = ((entry.get("compact_artifacts", {}) or {}).get(artifact_key(artifact_filename)) or {}).get(
         "status", "missing"
@@ -682,7 +715,7 @@ def render_completeness_table(programs: list[dict[str, Any]]) -> str:
     for entry in programs:
         program = entry.get("normalized_name") or ""
         resolution = entry.get("run_resolution") or "legacy_manifest_missing_run_resolution"
-        routine_logic = present_missing(entry, "routine-logic-details.yaml")
+        routine_logic = routine_logic_evidence_status(entry)
         messages = present_missing(entry, "message-inventory.yaml")
         lines.append(
             f"| {program} | SME-provided flow | {resolution} | {routine_logic} | {messages} | {entry.get('follow_up', '')} |"
@@ -754,28 +787,29 @@ def render_review_skeleton(manifest: dict[str, Any]) -> str:
     programs = manifest.get("programs", []) or []
     return f"""# Program Set SME Core Review: {manifest["review_name"]}
 
-Run Profile:
+## Program Set Reading Summary
 
-{render_run_profile(manifest)}
+<!-- Replace this placeholder with a SME-readable summary of what this program
+set does, which processing layers it covers, and whether the review is
+standalone_exploratory, draft, or chain_ready. Do not leave an artifact list as
+the summary. -->
 
-Source Inventory Cache:
+## Cross-Program Processing Overview
 
-{render_source_inventory(manifest)}
-
-Sources:
-
-{render_sources_table(programs)}
-
-Core Completeness Ledger:
-
-{render_completeness_table(programs)}
+| Processing Layer | Programs / Main Routines | What To Understand First |
+| --- | --- | --- |
+| Entry / dispatch | [programs and main routines] | [reader-first explanation] |
+| Calculation | [programs and main routines] | [reader-first explanation] |
+| Validation | [programs and main routines] | [reader-first explanation] |
+| Exception / message | [programs and main routines] | [reader-first explanation] |
+| Persistence / finalization | [programs and main routines] | [reader-first explanation] |
 
 ## Calculation Logic
 
 <!-- Self-contained SME view: write the actual calculation/assignment logic here.
 Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
-| Program | Routine | Calculation / Assignment | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Effect | Supporting Detail | Evidence Status |
+| Calculation / Assignment | Program | Routine | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Validation Logic
@@ -783,7 +817,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 <!-- Self-contained SME view: write the actual validation condition, status/code, carrier, and outcome here.
 Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
-| Program | Routine | Message / Status / Outcome | Description | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Exception Handling
@@ -791,7 +825,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 <!-- Self-contained SME view: write the actual error path, detection, handling action, and outcome here.
 Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
-| Program | Routine | Exception / Error Path | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
+| Exception / Error Path | Program | Routine | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Message Inventory
@@ -801,6 +835,22 @@ Use Detail Refs for traceability only, not as a substitute for the explanation. 
 
 | Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+## Core Completeness Ledger
+
+{render_completeness_table(programs)}
+
+## Sources
+
+{render_sources_table(programs)}
+
+## Run Profile
+
+{render_run_profile(manifest)}
+
+## Source Inventory Cache
+
+{render_source_inventory(manifest)}
 """
 
 
@@ -818,6 +868,17 @@ def h2_positions(markdown: str) -> dict[str, int]:
     for match in re.finditer(r"^##\s+(.+?)\s*$", markdown, re.M):
         positions.setdefault(match.group(1).strip(), match.start())
     return positions
+
+
+def h2_section_block(markdown: str, section: str) -> str:
+    matches = list(re.finditer(r"^##\s+(.+?)\s*$", markdown, re.M))
+    for index, match in enumerate(matches):
+        if match.group(1).strip() != section:
+            continue
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        return markdown[start:end]
+    return ""
 
 
 def text_between(markdown: str, start_label: str, end_label: str | None = None) -> str:
@@ -849,6 +910,124 @@ def markdown_table_rows_by_first_column(block: str) -> dict[str, list[str]]:
     return rows
 
 
+def strip_markdown_comments(block: str) -> str:
+    return re.sub(r"<!--.*?-->", "", block, flags=re.S)
+
+
+def is_table_separator(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped.startswith("|") or not stripped.endswith("|"):
+        return False
+    cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell or "") for cell in cells)
+
+
+def table_lines(block: str) -> list[tuple[int, list[str]]]:
+    lines: list[tuple[int, list[str]]] = []
+    for index, line in enumerate(block.splitlines()):
+        stripped = line.strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        lines.append((index, cells))
+    return lines
+
+
+def table_data_rows(block: str) -> list[list[str]]:
+    raw_lines = block.splitlines()
+    data_rows: list[list[str]] = []
+    for index, cells in table_lines(block):
+        if is_table_separator(raw_lines[index]):
+            continue
+        next_line = raw_lines[index + 1] if index + 1 < len(raw_lines) else ""
+        if is_table_separator(next_line):
+            continue
+        data_rows.append(cells)
+    return data_rows
+
+
+def table_has_headers(block: str, required_headers: tuple[str, ...]) -> bool:
+    for _index, cells in table_lines(block):
+        normalized = {cell.strip().lower() for cell in cells}
+        if all(header.lower() in normalized for header in required_headers):
+            return True
+    return False
+
+
+PLACEHOLDER_RE = re.compile(
+    r"\b(todo|tbd|pending|placeholder|fill\s+in|to\s+be\s+completed|"
+    r"artifact\s+list|reader-first explanation|programs and main routines)\b",
+    re.I,
+)
+
+ARTIFACT_REF_RE = re.compile(
+    r"\b(?:program-analysis(?:-summary)?|source-index|routine-index|"
+    r"message-inventory|routine-logic-details|file-io-inventory|"
+    r"field-mutation-matrix|sql-inventory)\.(?:md|ya?ml)\b",
+    re.I,
+)
+
+DETAIL_REF_RE = re.compile(
+    r"\b(?:RLOG|MSG|LINEAGE|PERSIST|DATA|EXCHAIN|TBD|EV)-[A-Za-z0-9_-]+\b"
+)
+
+
+def reader_words(text: str) -> list[str]:
+    without_refs = DETAIL_REF_RE.sub(" ", ARTIFACT_REF_RE.sub(" ", text))
+    without_status_noise = re.sub(r"\b(?:confirmed|inferred|unresolved|present|missing|n/a)\b", " ", without_refs, flags=re.I)
+    return re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", without_status_noise)
+
+
+def prose_and_table_detail(block: str) -> str:
+    clean = strip_markdown_comments(block)
+    raw_lines = clean.splitlines()
+    details: list[str] = []
+    for index, line in enumerate(raw_lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("|") and stripped.endswith("|"):
+            if is_table_separator(stripped):
+                continue
+            next_line = raw_lines[index + 1] if index + 1 < len(raw_lines) else ""
+            if is_table_separator(next_line):
+                continue
+            cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+            details.append(" ".join(cells))
+            continue
+        details.append(stripped)
+    return "\n".join(details)
+
+
+def has_reader_useful_detail(block: str, *, minimum_words: int = 18) -> bool:
+    detail = prose_and_table_detail(block)
+    if not detail.strip():
+        return False
+    if PLACEHOLDER_RE.search(detail):
+        return False
+    return len(reader_words(detail)) >= minimum_words
+
+
+def is_placeholder_cell(value: str) -> bool:
+    stripped = value.strip()
+    lowered = stripped.lower()
+    if not stripped:
+        return True
+    if re.fullmatch(r"\[[^\]]+\]", stripped):
+        return True
+    if lowered in {"todo", "tbd", "pending", "placeholder", "n/a"}:
+        return True
+    return any(
+        marker in lowered
+        for marker in (
+            "reader-first explanation",
+            "programs and main routines",
+            "fill in",
+            "to be completed",
+        )
+    )
+
+
 def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     findings: list[str] = []
     programs = manifest.get("programs")
@@ -877,6 +1056,18 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             findings.append(f"{name} reused_same_run has invalid artifact_source")
         if resolution in {RUN_PENDING, RUN_BLOCKED} and entry.get("artifact_root"):
             findings.append(f"{name} {resolution} must not have artifact_root")
+        if resolution in {RUN_ANALYZED, RUN_REUSED}:
+            compact = entry.get("compact_artifacts", {}) or {}
+            missing_artifacts = [
+                filename
+                for filename in REQUIRED_COMPACT_ARTIFACTS
+                if (compact.get(artifact_key(filename)) or {}).get("status") != "present"
+            ]
+            if missing_artifacts:
+                findings.append(
+                    f"{name} {resolution} missing required compact artifacts: "
+                    + ", ".join(missing_artifacts)
+                )
     for name, duplicates in by_name.items():
         if len(duplicates) <= 1:
             continue
@@ -902,22 +1093,74 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
 def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
     findings: list[str] = []
     positions = h2_positions(markdown)
-    missing_sections = [section for section in CORE_SECTIONS if section not in positions]
+    missing_sections = [section for section in READER_FIRST_SECTIONS if section not in positions]
     if missing_sections:
-        findings.append("program-set review missing required ## sections: " + ", ".join(missing_sections))
+        findings.append(
+            "program-set review missing required reader-first ## sections: "
+            + ", ".join(missing_sections)
+        )
     else:
-        ordered = [positions[section] for section in CORE_SECTIONS]
+        ordered = [positions[section] for section in READER_FIRST_SECTIONS]
         if ordered != sorted(ordered):
-            findings.append("program-set review core ## sections are out of order")
+            findings.append(
+                "program-set review reader-first core sections must appear before audit/control sections"
+            )
     for section in FORBIDDEN_FULL_FLOW_SECTIONS:
         if re.search(rf"^##\s+{re.escape(section)}\s*$", markdown, re.M):
             findings.append(f"program-set review contains forbidden full-flow section: {section}")
-    if "Sources:" not in markdown:
-        findings.append("program-set review missing Sources table")
-    if "Core Completeness Ledger:" not in markdown:
-            findings.append("program-set review missing Core Completeness Ledger")
-    sources_block = text_between(markdown, "Sources:", "Core Completeness Ledger:")
-    ledger_block = text_between(markdown, "Core Completeness Ledger:", "## Calculation Logic")
+
+    summary_block = h2_section_block(markdown, "Program Set Reading Summary")
+    if summary_block:
+        summary_detail = prose_and_table_detail(summary_block)
+        layer_terms = sum(
+            1
+            for term in (
+                "entry",
+                "dispatch",
+                "calculation",
+                "validation",
+                "exception",
+                "message",
+                "persistence",
+                "finalization",
+            )
+            if re.search(rf"\b{term}\b", summary_detail, re.I)
+        )
+        has_status = re.search(r"\b(standalone_exploratory|chain_ready|draft)\b", summary_detail, re.I)
+        if (
+            not has_reader_useful_detail(summary_block, minimum_words=25)
+            or layer_terms < 2
+            or not has_status
+            or ARTIFACT_REF_RE.search(summary_detail)
+        ):
+            findings.append(
+                "Program Set Reading Summary is placeholder/artifact-only or missing reader-useful flow context"
+            )
+
+    overview_block = h2_section_block(markdown, "Cross-Program Processing Overview")
+    if overview_block:
+        required_headers = (
+            "Processing Layer",
+            "Programs / Main Routines",
+            "What To Understand First",
+        )
+        if not table_has_headers(overview_block, required_headers):
+            findings.append("Cross-Program Processing Overview missing required table headers")
+        overview_rows = table_data_rows(overview_block)
+        if len(overview_rows) < 4:
+            findings.append("Cross-Program Processing Overview must include processing-layer rows")
+        for row in overview_rows:
+            if len(row) < 3 or any(is_placeholder_cell(cell or "") for cell in row[:3]):
+                findings.append("Cross-Program Processing Overview has placeholder processing-layer detail")
+                break
+
+    for section in CORE_SECTIONS:
+        block = h2_section_block(markdown, section)
+        if block and not has_reader_useful_detail(block):
+            findings.append(f"{section} lacks reader-useful detail")
+
+    sources_block = h2_section_block(markdown, "Sources")
+    ledger_block = h2_section_block(markdown, "Core Completeness Ledger")
     source_rows = markdown_table_rows_by_first_column(sources_block)
     ledger_rows = markdown_table_rows_by_first_column(ledger_block)
     for entry in manifest.get("programs", []) or []:
