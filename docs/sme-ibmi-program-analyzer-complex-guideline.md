@@ -245,7 +245,11 @@ English Prompt:
 Check complex_normal_program sidecar consistency.
 
 Use all generated artifacts and confirm:
-- program-analysis.md remains summary-level.
+- program-analysis.md remains reader-first and contains Program Reading Summary.
+- Calculation / Validation / Exception routine indexes cover every RLOG in
+  routine-logic-details.yaml.
+- Routine Logic Details in program-analysis.md contain continuous, ordered RLOG
+  headings for every RLOG in routine-logic-details.yaml.
 - routine-logic-details.yaml covers every deep_read routine.
 - message-inventory.yaml lists observed message/status/code values.
 - file-io-inventory.yaml covers state-changing file operations, if triggered.
@@ -262,7 +266,11 @@ List contradictions, missing IDs, missing descriptions, and unsupported claims.
 请检查 complex_normal_program sidecar consistency。
 
 使用所有已生成 artifacts，并确认:
-- program-analysis.md 仍然是 summary-level。
+- program-analysis.md 仍然是 reader-first，并包含 Program Reading Summary。
+- Calculation / Validation / Exception routine indexes 覆盖
+  routine-logic-details.yaml 中的全部 RLOG。
+- program-analysis.md 里的 Routine Logic Details headings 连续、有序，并覆盖
+  routine-logic-details.yaml 中的全部 RLOG。
 - routine-logic-details.yaml 覆盖所有 deep_read routines。
 - message-inventory.yaml 列出 observed message/status/code。
 - 如果触发 file-io-inventory.yaml，它覆盖 state-changing file operations。
@@ -278,7 +286,8 @@ Output Checkpoint:
 - Sidecars do not disagree on routine IDs, file names, field names, or message
   IDs.
 - Missing message descriptions are explicit blockers.
-- `program-analysis.md` does not duplicate full sidecar detail.
+- `program-analysis.md` is the SME reading surface; sidecars remain
+  audit/checkpoint and machine-readable evidence.
 - SME can identify whether the next action is another batch or a data/source
   gap.
 
@@ -311,6 +320,8 @@ Show:
 - unresolved message descriptions
 - blocked evidence
 - SME decisions required
+- confirmation that program-analysis.md, routine-logic-details.yaml, and
+  message-inventory.yaml are synchronized
 ```
 
 中文 Prompt:
@@ -340,6 +351,8 @@ Show:
 - 未解决的 message descriptions
 - blocked evidence
 - 需要 SME 决策的事项
+- 确认 program-analysis.md、routine-logic-details.yaml、
+  message-inventory.yaml 已同步
 ```
 
 Output Checkpoint:

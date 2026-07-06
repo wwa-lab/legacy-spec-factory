@@ -36,13 +36,12 @@ Rules:
   current skill output. Do not skip the row solely because old artifacts exist.
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
-- Keep normal_program output lightweight unless density triggers appear.
-- For normal_program, do not create routine-logic-details.md,
-  routine-logic-details.yaml, deep-read-plan.md, or batch deep-read files.
-  Write the concise analysis and stop once required artifacts validate.
-- Create routine-logic-details.md and routine-logic-details.yaml only when a
-  density trigger changes the tier to complex_normal_program or
-  large_extreme_program, or when the user explicitly asks for deep-read.
+- Keep normal_program output reader-first and compact, but still create
+  routine-logic-details.md and routine-logic-details.yaml as routine-level
+  audit/checkpoint evidence.
+- Do not create deep-read-plan.md or retained batch deep-read files for a
+  normal_program unless density triggers promote it to complex_normal_program /
+  large_extreme_program or the user explicitly asks for deep-read.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Write required artifacts to the output directory.
@@ -56,11 +55,10 @@ Required output:
 - program-analysis-summary.yaml
 - routine-index.md
 - message-inventory.yaml
+- routine-logic-details.md
+- routine-logic-details.yaml
 
 Conditional output:
-- routine-logic-details.md and routine-logic-details.yaml only for
-  complex_normal_program, large_extreme_program, or explicit deep-read
-  continuation.
 - deep-read-plan.md, all-routine-coverage-ledger.md, and
   routine-logic-details/deep-read-batch-*.md only when triggered by
   complex/large tier or retained batch evidence.

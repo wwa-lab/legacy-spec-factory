@@ -30,14 +30,152 @@ VALIDATOR = load_validator()
 
 def full_program_analysis() -> str:
     sections = "\n\n".join(
-        f"## {section}\n\nPlaceholder content."
+        program_reading_summary_section() if section == "Program Reading Summary"
+        else routine_logic_section() if section == "Routine Logic Details"
+        else message_inventory_section() if section == "Message Inventory"
+        else routine_index_section(section) if section in {
+            "Calculation Logic",
+            "Validation Logic",
+            "Exception Handling",
+        }
+        else f"## {section}\n\nPlaceholder content."
         for section in VALIDATOR.REQUIRED_PROGRAM_SECTIONS
     )
     return f"# Program Analysis: CU650 (unlinked)\n\n{sections}\n"
 
 
+def program_reading_summary_section() -> str:
+    return """## Program Reading Summary
+
+CU650 is a standalone exploratory RPG program analysis for account-cycle
+processing. The reader should start with the source-loading, validation,
+calculation, message/status, and persistence layers before drilling into
+routine-level RLOG notes in this same file.
+
+This artifact remains `standalone_exploratory` and does not assert approved
+`OBJ-*` or `EV-*` IDs.
+
+| Processing Layer | Main Routines | What To Understand First |
+| --- | --- | --- |
+| Account setup and source loading | `SR001` - `SR010` | Loads account, statement, card, and control carriers before downstream logic reads working state. |
+| Validation and message/status routing | `SR011` - `SR040` | Applies file prerequisites, business-state gates, helper returns, and status-code decisions. |
+| Calculation and persistence outputs | `SR041` - `SR093` | Derives account values, prepares final writes, and records message or exception outcomes. |
+"""
+
+
+def message_inventory_section() -> str:
+    return """## Message Inventory
+
+| Message / Code / Literal | Short Description | Type | Occurrences | Primary Routine(s) | First Seen / Set By | Trigger / Handler Summary | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UCC1852 | Authorization amount exceeds configured card control threshold | message/status | 1 | MAIN | source line 42 | threshold branch | MSG-CU650-001 |
+"""
+
+
+def routine_index_section(section: str, *, start: int = 1, end: int = 93) -> str:
+    rows = "\n".join(
+        f"| RLOG-CU650-{index:03d} / SR{index:03d} | category | {section} reader-useful detail |"
+        for index in range(start, end + 1)
+    )
+    return f"""## {section}
+
+Reader-oriented overview by theme.
+
+### Routine Index For {section}
+
+| RLOG / Routine | Category | Reader-useful Detail |
+| --- | --- | --- |
+{rows}
+"""
+
+
+def routine_logic_section(*, start: int = 1, end: int = 93) -> str:
+    rows = "\n".join(
+        f"""### RLOG-CU650-{index:03d} - SR{index:03d}
+
+- Purpose: SR{index:03d} contributes account-cycle processing for the CU650 review path.
+- Inputs / carriers: Reads source fields, working storage carriers, and prior routine state needed by this routine.
+- Processing summary: Normalizes the routine branch behavior, source-line intent, and downstream state changes for SME review.
+- Validation / exception summary: Records any message, status, return, or tolerated path connected to this routine.
+- Evidence / status: Detail is normalized for the final reader-first wrapper and aligned to RLOG-CU650-{index:03d}.
+"""
+        for index in range(start, end + 1)
+    )
+    return f"""## Routine Logic Details
+
+{rows}
+"""
+
+
+def program_analysis_without_main_rlog_detail() -> str:
+    return full_program_analysis().replace(
+        """### RLOG-CU650-042 - SR042
+
+- Purpose: SR042 contributes account-cycle processing for the CU650 review path.
+- Inputs / carriers: Reads source fields, working storage carriers, and prior routine state needed by this routine.
+- Processing summary: Normalizes the routine branch behavior, source-line intent, and downstream state changes for SME review.
+- Validation / exception summary: Records any message, status, return, or tolerated path connected to this routine.
+- Evidence / status: Detail is normalized for the final reader-first wrapper and aligned to RLOG-CU650-042.
+""",
+        "",
+    )
+
+
+def program_analysis_missing_validation_index_row() -> str:
+    return full_program_analysis().replace(
+        "| RLOG-CU650-017 / SR017 | category | Validation Logic reader-useful detail |\n",
+        "",
+        1,
+    )
+
+
+def program_analysis_with_placeholder_reading_summary() -> str:
+    return full_program_analysis().replace(
+        program_reading_summary_section(),
+        "## Program Reading Summary\n\nPending reader-oriented summary.\n",
+    )
+
+
+def program_analysis_with_placeholder_core_index_detail() -> str:
+    return full_program_analysis().replace(
+        "| RLOG-CU650-017 / SR017 | category | Validation Logic reader-useful detail |\n",
+        "| RLOG-CU650-017 / SR017 | pending | pending semantic deep-read |\n",
+        1,
+    )
+
+
+def program_analysis_with_placeholder_main_rlog_detail() -> str:
+    original = """### RLOG-CU650-042 - SR042
+
+- Purpose: SR042 contributes account-cycle processing for the CU650 review path.
+- Inputs / carriers: Reads source fields, working storage carriers, and prior routine state needed by this routine.
+- Processing summary: Normalizes the routine branch behavior, source-line intent, and downstream state changes for SME review.
+- Validation / exception summary: Records any message, status, return, or tolerated path connected to this routine.
+- Evidence / status: Detail is normalized for the final reader-first wrapper and aligned to RLOG-CU650-042.
+"""
+    return full_program_analysis().replace(
+        original,
+        "### RLOG-CU650-042 - SR042\n\nPending semantic deep-read.\n",
+    )
+
+
+def program_analysis_with_stale_gap_wording() -> str:
+    return full_program_analysis().replace(
+        "## Analysis Coverage & Scope\n\nPlaceholder content.",
+        (
+            "## Analysis Coverage & Scope\n\n"
+            "Remaining routine deep-read gaps: SR030, SR310. "
+            "Some not-yet-deep-read routines remain."
+        ),
+    )
+
+
 def compressed_program_analysis() -> str:
     return """# Program Analysis: CU650 (unlinked)
+
+## Program Reading Summary
+
+Compressed wrapper only.
 
 ## Calculation Logic
 
@@ -119,6 +257,7 @@ routine_logic_inventory:
 
 def message_yaml(
     *,
+    message: str = "UCC1852",
     description: str = "unresolved - message description not available",
     description_source: str = "missing_message_catalog_or_reference_pack",
     evidence_status: str = "unresolved_description",
@@ -128,7 +267,7 @@ program: CU650
 message_inventory:
   summary:
     -
-      message: UCC1852
+      message: {message}
       short_description: "{description}"
       description_source: "{description_source}"
       evidence_status: {evidence_status}
@@ -140,7 +279,7 @@ message_inventory:
   details:
     -
       detail_id: MSG-CU650-001
-      message: UCC1852
+      message: {message}
       short_description: "{description}"
       description_source: "{description_source}"
       evidence_status: {evidence_status}
@@ -282,7 +421,7 @@ def write_common_artifacts(path: Path) -> None:
 
 
 class ProgramAnalysisContractValidatorTests(unittest.TestCase):
-    def test_passes_lightweight_normal_without_routine_detail_sidecars(self) -> None:
+    def test_fails_normal_without_routine_detail_sidecars(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             analysis_dir = Path(temp_dir)
             (analysis_dir / "program-analysis-summary.yaml").write_text(
@@ -294,7 +433,10 @@ class ProgramAnalysisContractValidatorTests(unittest.TestCase):
             (analysis_dir / "message-inventory.yaml").write_text("program: CU650\n", encoding="utf-8")
             (analysis_dir / "program-analysis.md").write_text(full_program_analysis(), encoding="utf-8")
 
-            self.assertEqual(VALIDATOR.validate(analysis_dir), [])
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("routine_logic_details" in finding for finding in findings))
+        self.assertTrue(any("routine_logic_details_yaml" in finding for finding in findings))
 
     def test_passes_complete_wrapper_and_rlog_coverage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -304,6 +446,53 @@ class ProgramAnalysisContractValidatorTests(unittest.TestCase):
             (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
 
             self.assertEqual(VALIDATOR.validate(analysis_dir), [])
+
+    def test_fails_placeholder_program_reading_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_with_placeholder_reading_summary(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Program Reading Summary" in finding for finding in findings))
+        self.assertTrue(any("reader-first golden gate" in finding for finding in findings))
+
+    def test_fails_placeholder_core_logic_index_detail(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_with_placeholder_core_index_detail(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Routine Index For Validation Logic" in finding for finding in findings))
+        self.assertTrue(any("RLOG-CU650-017" in finding for finding in findings))
+        self.assertTrue(any("reader-useful detail" in finding for finding in findings))
+
+    def test_fails_placeholder_main_rlog_detail(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_with_placeholder_main_rlog_detail(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Routine Logic Details" in finding for finding in findings))
+        self.assertTrue(any("RLOG-CU650-042" in finding for finding in findings))
+        self.assertTrue(any("reader-useful detail" in finding for finding in findings))
 
     def test_passes_deep_read_batch_with_front_loaded_core_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -354,6 +543,59 @@ class ProgramAnalysisContractValidatorTests(unittest.TestCase):
         self.assertTrue(any("missing RLOG IDs" in finding for finding in findings))
         self.assertTrue(any("RLOG-CU650-001" in finding for finding in findings))
         self.assertTrue(any("RLOG-CU650-080" in finding for finding in findings))
+
+    def test_fails_when_main_program_analysis_missing_embedded_rlog_detail(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_without_main_rlog_detail(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                final_routine_markdown(),
+                encoding="utf-8",
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("program-analysis.md Routine Logic Details missing RLOG detail headings" in finding for finding in findings))
+        self.assertTrue(any("RLOG-CU650-042" in finding for finding in findings))
+
+    def test_fails_when_core_logic_routine_index_does_not_cover_rlog_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_missing_validation_index_row(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                final_routine_markdown(),
+                encoding="utf-8",
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Routine Index For Validation Logic" in finding for finding in findings))
+        self.assertTrue(any("RLOG-CU650-017" in finding for finding in findings))
+
+    def test_fails_stale_deep_read_gap_wording(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_with_stale_gap_wording(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                final_routine_markdown(),
+                encoding="utf-8",
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("stale deep-read gap wording" in finding for finding in findings))
 
     def test_fails_deep_read_batch_missing_exception_core(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -523,6 +765,27 @@ Per-routine detail.
             (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
 
             self.assertEqual(VALIDATOR.validate(analysis_dir), [])
+
+    def test_fails_when_message_inventory_yaml_code_is_missing_from_main_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "message-inventory.yaml").write_text(
+                message_yaml(
+                    message="W1ERCD",
+                    description="Late-round token maintenance error",
+                    description_source="reference pack: REF-AUTH-MSG/catalog#W1ERCD",
+                    evidence_status="confirmed",
+                ),
+                encoding="utf-8",
+            )
+            (analysis_dir / "program-analysis.md").write_text(full_program_analysis(), encoding="utf-8")
+            (analysis_dir / "routine-logic-details.md").write_text(routine_markdown(), encoding="utf-8")
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Message Inventory missing observed YAML message/code values" in finding for finding in findings))
+        self.assertTrue(any("W1ERCD" in finding for finding in findings))
 
 
 if __name__ == "__main__":

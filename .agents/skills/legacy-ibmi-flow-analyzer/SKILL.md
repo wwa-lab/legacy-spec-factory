@@ -88,15 +88,17 @@ This skill supports these assembly modes:
 
 This skill does **not** re-analyze individual program semantics during the
 assembly step. Every program in the program set must first have program
-analysis evidence from a current working-branch scan. Normal-program core artifacts are
+analysis evidence from a current working-branch scan. All program tiers require
 `program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-index.md`, and `message-inventory.yaml`. Complex, large, or explicitly
-deep-read programs must also include `routine-logic-details.md` and
-`routine-logic-details.yaml`; optional sidecars such as `file-io-inventory.yaml`,
-`field-mutation-matrix.yaml`, and `sql-inventory.yaml` are required only when
-program-analyzer triggers produced them or when the flow claim needs file I/O,
-persisted mutation, or SQL evidence. Complex and large programs must retain
-enough deep-read evidence, such as `deep-read-plan.md`,
+`routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`, and
+`routine-logic-details.yaml`. Routine detail sidecars are audit/checkpoint
+evidence for traceability; they do not replace the reader-first
+`program-analysis.md` and program-set review surfaces. Optional sidecars such
+as `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
+`sql-inventory.yaml` are required only when program-analyzer triggers produced
+them or when the flow claim needs file I/O, persisted mutation, or SQL
+evidence. Complex and large programs must retain enough deep-read evidence,
+such as `deep-read-plan.md`,
 `all-routine-coverage-ledger.md`, and
 `routine-logic-details/deep-read-batch-*.md`, to make handoff stable under weak
 LLM constraints. If required core artifacts or claim-specific optional
@@ -168,11 +170,9 @@ Accept:
   - API / remote (remote PGM call, MQ message, HTTP, IFS drop)
 - **Current-run program analyses** for every program in the chain. Preferred
   core inputs are compact artifacts from `legacy-ibmi-program-analyzer`:
-  `program-analysis-summary.yaml`, `source-index.yaml`,
-  `message-inventory.yaml`, and the human review `program-analysis-<OBJ-ID>.md`
-  / `program-analysis.md` when needed. `routine-logic-details.yaml` is required
-  for complex, large, or explicitly deep-read programs, and optional for
-  lightweight normal-program output.
+  `program-analysis.md`, `program-analysis-summary.yaml`,
+  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
+  `routine-logic-details.md`, and `routine-logic-details.yaml`.
   Optional sidecars (`file-io-inventory.yaml`,
   `field-mutation-matrix.yaml`, `sql-inventory.yaml`) are required only when
   present/triggered by the program tier or when the flow needs native file I/O,
@@ -187,9 +187,9 @@ Accept:
 
 Each upstream program-analysis should expose the program-chain readiness
 sections and sidecars from `legacy-ibmi-program-analyzer` v0.2.5 or later:
-`program-analysis-summary.yaml`, `source-index.yaml`,
-`message-inventory.yaml`, plus `routine-logic-details.yaml` when the tier or
-deep-read trigger requires it, and triggered optional sidecars
+`program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
+`routine-logic-details.yaml`, and triggered optional sidecars
 (`file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
 `sql-inventory.yaml`),
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
@@ -239,12 +239,16 @@ flow artifact only when the user explicitly asks for full transaction-flow
 analysis with trigger/context, edges, data flow, persistence, replay, and
 capability seeds.
 
-`program-set-sme-core-review.md` must include a **Core Completeness Ledger**
-before the four core sections. The ledger lists every program from the
+`program-set-sme-core-review.md` must be reader-first. It starts with
+**Program Set Reading Summary**, **Cross-Program Processing Overview**,
+**Calculation Logic**, **Validation Logic**, **Exception Handling**, and
+**Message Inventory**. The audit/control sections then follow:
+**Core Completeness Ledger**, **Sources**, **Run Profile**, and
+**Source Inventory Cache**. The ledger lists every program from the
 SME-provided flow, inventory relationship, or discovered call evidence; its
-`run_resolution`; required compact artifacts; missing core sections; and whether
-the next action is same-run reuse, source scan, or missing-source follow-up. No
-program may be omitted merely because its artifact is missing.
+`run_resolution`; required compact artifacts; missing core evidence; and
+whether the next action is same-run reuse, source scan, or missing-source
+follow-up. No program may be omitted merely because its artifact is missing.
 
 For multiple SME-provided program flows, produce one program-set review folder
 per flow:
@@ -313,9 +317,9 @@ field-level rules. The summary below is normative for this skill.
   artifact must be routed back to `legacy-ibmi-program-analyzer`.
 - **Required for `assemble_existing`**: user-provided program analysis
   directories or artifact list, preferably including
-  `program-analysis-summary.yaml`, `source-index.yaml`,
-  `message-inventory.yaml` for each program, plus `routine-logic-details.yaml`
-  for complex, large, or explicitly deep-read programs,
+  `program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
+  and `routine-logic-details.yaml` for each program,
   plus optional `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
   `sql-inventory.yaml` when present/triggered or needed by a flow claim.
   Missing required artifacts should be filled for only the affected program
@@ -382,8 +386,8 @@ field-level rules. The summary below is normative for this skill.
   gaps unless they prevent identifying the flow itself.
 - **Coverage propagation**: consume each upstream program's compact artifacts
   first: `program-analysis-summary.yaml`, `source-index.yaml`,
-  `message-inventory.yaml`, `routine-logic-details.yaml` when present or
-  required by tier/deep-read,
+  `routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
+  `routine-logic-details.yaml`,
   `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
   `sql-inventory.yaml`. Use full
   `program-analysis.md` / `program-analysis-<OBJ-ID>.md` only for targeted
@@ -405,9 +409,11 @@ field-level rules. The summary below is normative for this skill.
 ### Output
 
 - **Default SME program-flow artifact**: `program-set-sme-core-review.md`.
-  This artifact contains the Sources table, Core Completeness Ledger,
-  Calculation Logic, Validation Logic, Exception Handling, and Message
-  Inventory, aggregated from the participating program analyses.
+  This artifact starts with Program Set Reading Summary and Cross-Program
+  Processing Overview, then contains Calculation Logic, Validation Logic,
+  Exception Handling, and Message Inventory, followed by the audit/control
+  sections Sources, Core Completeness Ledger, Run Profile, and Source
+  Inventory Cache.
 - **Full transaction-flow artifact**: `flow-<FLOW-SLUG>.md`, only when the user
   explicitly asks for full flow analysis.
 - **Required sections**: front-loaded Calculation Logic, Validation Logic,
@@ -504,12 +510,12 @@ to the orchestrator.
      Other departments can override folder patterns, artifact filenames, and
      alias rules.
    - For every SME-provided program, generate or verify current
-     tier-appropriate program-level artifacts before assembly. Normal programs
-     require `program-analysis.md`, `program-analysis-summary.yaml`,
-     `source-index.yaml`, `routine-index.md`, and `message-inventory.yaml`.
-     Complex, large, or explicitly deep-read programs also require
-     `routine-logic-details.md` and `routine-logic-details.yaml`. Retain
-     deep-read batches and coverage ledgers when needed for stable handoff.
+     tier-appropriate program-level artifacts before assembly. Normal,
+     complex, and large programs require `program-analysis.md`,
+     `program-analysis-summary.yaml`, `source-index.yaml`, `routine-index.md`,
+     `message-inventory.yaml`, `routine-logic-details.md`, and
+     `routine-logic-details.yaml`. Retain deep-read batches and coverage
+     ledgers when needed for stable handoff.
    - Do not check remote `main`, clone a remote-main snapshot, or mark programs
      as found/not-found on remote main for the default program-flow workflow.
      Existing historical artifacts may be compared later in Git review, but they
@@ -553,9 +559,9 @@ to the orchestrator.
      existing program analysis directories and asks to combine them into one
      flow.
    - In all modes, aggregation must prefer compact artifacts:
-     `program-analysis-summary.yaml`, `source-index.yaml`,
-     `message-inventory.yaml`, `routine-logic-details.yaml` when present or
-     required by tier/deep-read,
+     `program-analysis-summary.yaml`, `source-index.yaml`, `routine-index.md`,
+     `message-inventory.yaml`, `routine-logic-details.md`,
+     `routine-logic-details.yaml`,
      `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
      `sql-inventory.yaml`.
    - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
@@ -564,11 +570,13 @@ to the orchestrator.
    - If the user asks to merge multiple program-analysis results or provides a
      SME program flow for core SME review, generate
      `program-set-sme-core-review.md` from `templates/sme-core-review.md`.
-     Include the Source table and Core Completeness Ledger, then only
-     Calculation Logic, Validation Logic, Exception Handling, and Message
-     Inventory. Do not include Nodes, Edges, Replay, Persistence, Lineage, UI
-     Surfaces, Capability Seeds, or SME Checklist in that compact core-review
-     artifact.
+     Fill Program Set Reading Summary and Cross-Program Processing Overview
+     first, then Calculation Logic, Validation Logic, Exception Handling, and
+     Message Inventory as self-contained SME reading surfaces. Put Core
+     Completeness Ledger, Sources, Run Profile, and Source Inventory Cache
+     after the reader-first core as audit/control evidence. Do not include
+     Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces, Capability Seeds,
+     or SME Checklist in that compact core-review artifact.
    - After the four core sections are filled, run
      Windows:
      `py -3 scripts\validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
@@ -612,11 +620,11 @@ to the orchestrator.
      - reference the program's `OBJ-*` (from inventory) and approved
        program-analysis artifact set
      - record artifact availability:
-       `program-analysis-summary.yaml`, `source-index.yaml`,
-       `message-inventory.yaml`, `routine-logic-details.yaml` when present or
-       required by tier/deep-read,
+       `program-analysis.md`, `program-analysis-summary.yaml`,
+       `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
+       `routine-logic-details.md`, `routine-logic-details.yaml`,
        `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
-       `sql-inventory.yaml`, and optional human-readable
+       `sql-inventory.yaml`, and optional object-ID-specific human-readable
        `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
        worker / data-access / reporter / exit)

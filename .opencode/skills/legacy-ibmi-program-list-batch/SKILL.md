@@ -77,6 +77,14 @@ directly.
 - Run the program-analysis validator before marking a row complete.
 - Generate the final program-set review only after every requested row is
   classified as completed, skipped, blocked, or failed.
+- Normal, complex, and large program rows all produce
+  `routine-logic-details.md` and `routine-logic-details.yaml` as routine-level
+  audit/checkpoint evidence. They do not replace the reader-first
+  `program-analysis.md`.
+- The final `program-set-sme-core-review.md` is also reader-first: Program Set
+  Reading Summary, Cross-Program Processing Overview, Calculation Logic,
+  Validation Logic, Exception Handling, and Message Inventory come before
+  Core Completeness Ledger, Sources, Run Profile, and Source Inventory Cache.
 
 ## Standard Output Layout
 
@@ -127,6 +135,12 @@ outputs/program-list-batch/
    - Validate status consistency.
    - Build or refresh `program-set-core-input-manifest.yaml` and
      `program-set-sme-core-review.md` using existing program-set review tools.
+   - Fill `program-set-sme-core-review.md` as a compact reader-first SME
+     review. Do not concatenate each `program-analysis.md`; do not include full
+     flow sections such as Nodes, Edges, Replay, Persistence, Lineage, UI
+     Surfaces, Capability Seeds, or SME Checklist.
+   - Keep every requested program visible in the Core Completeness Ledger,
+     including skipped, blocked, failed, or pending-source rows.
    - Validate the program-set review before SME handoff.
 
 ## Scripts

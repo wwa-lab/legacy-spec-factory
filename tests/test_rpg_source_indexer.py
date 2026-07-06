@@ -120,7 +120,7 @@ class RpgSourceIndexerTests(unittest.TestCase):
             "pending_deep_read",
         )
         self.assertEqual(source_index["program_size_tier"], "normal_program")
-        self.assertEqual(source_index["default_output_profile"], "lightweight_program_review")
+        self.assertEqual(source_index["default_output_profile"], "reader_first_lightweight_review")
         self.assertIn("optional_sidecar_triggers", source_index)
 
         sr100 = next(routine for routine in source_index["routines"] if routine["name"] == "SR100")
@@ -128,7 +128,7 @@ class RpgSourceIndexerTests(unittest.TestCase):
         self.assertTrue(sr100["recommended_deep_read"])
         self.assertIn("state-changing file operation", sr100["deep_read_reasons"])
 
-    def test_cli_keeps_simple_normal_program_lightweight(self) -> None:
+    def test_cli_keeps_simple_normal_program_reader_first_without_extra_sidecars(self) -> None:
         source = """H DFTACTGRP(*NO)
 C                   EVAL      RESULT = 'Y'
 C                   SETON                                        LR
@@ -160,13 +160,13 @@ C                   SETON                                        LR
                 "source-index.yaml",
                 "program-analysis-summary.yaml",
                 "routine-index.md",
+                "routine-logic-details.md",
+                "routine-logic-details.yaml",
                 "message-inventory.yaml",
             }
             expected_absent = {
                 "all-routine-coverage-ledger.md",
                 "deep-read-plan.md",
-                "routine-logic-details.md",
-                "routine-logic-details.yaml",
                 "message-inventory.md",
                 "file-io-inventory.md",
                 "file-io-inventory.yaml",
@@ -185,12 +185,17 @@ C                   SETON                                        LR
             summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
             program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
             self.assertIn("program_size_tier: normal_program", source_index)
-            self.assertIn("default_output_profile: lightweight_program_review", summary)
+            self.assertIn("default_output_profile: reader_first_lightweight_review", summary)
             self.assertIn("program_analysis:", summary)
             self.assertIn("routine_logic_details:", summary)
-            self.assertIn("not_written_by_default", summary)
+            self.assertIn("routine_logic_details_yaml:", summary)
+            self.assertIn("status: present", summary)
             self.assertIn("validate-program-analysis-contract.py", summary)
+            self.assertIn("## Program Reading Summary", program_analysis)
             self.assertIn("## Calculation Logic", program_analysis)
+            self.assertIn("### Routine Index For Calculation Logic", program_analysis)
+            self.assertIn("## Routine Logic Details", program_analysis)
+            self.assertIn("RLOG-SIMPLE-001", program_analysis)
             self.assertIn("## Review Checklist", program_analysis)
 
     def test_cli_reuses_central_artifact_before_source_scan(self) -> None:
@@ -711,8 +716,9 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("Batch Coverage Summary", routine_logic)
             self.assertIn("pasted source-code snippets", routine_logic)
             self.assertIn("must list every exact message/status/literal", routine_logic)
-            self.assertIn("final consolidated `routine-logic-details.md`", routine_logic)
-            self.assertIn("all routine detail", routine_logic)
+            self.assertIn("reader-first `program-analysis.md`", routine_logic)
+            self.assertIn("consolidated `routine-logic-details.md` audit document", routine_logic)
+            self.assertIn("reader-useful detail for every YAML RLOG", routine_logic)
 
             program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
             self.assertIn("Draft wrapper seed generated", program_analysis)

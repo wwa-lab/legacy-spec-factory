@@ -60,7 +60,8 @@ Rules:
 - Build deterministic indexes first.
 - Classify the program tier.
 - Read at most 5 routine bodies in this turn.
-- Keep the output lightweight if no density trigger appears.
+- Keep the output concise if no density trigger appears, but use the same
+  reader-first layout as complex and large programs.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 
@@ -69,12 +70,14 @@ Required output:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
+- routine-logic-details.md
+- routine-logic-details.yaml
 - message-inventory.yaml
 
-Do not create `routine-logic-details.md`, `routine-logic-details.yaml`,
-`deep-read-plan.md`, or retained batch files for a normal program unless a
-density trigger promotes the row to `complex_normal_program` /
-`large_extreme_program` or the SME explicitly asks for deep-read continuation.
+Do not create `deep-read-plan.md`, coverage ledgers, or retained batch files
+for a normal program unless a density trigger promotes the row to
+`complex_normal_program` / `large_extreme_program` or the SME explicitly asks
+for deep-read continuation.
 ```
 
 中文 Prompt:
@@ -96,7 +99,8 @@ SME 这次关心的问题:
 - 先建立确定性的 indexes。
 - 判断 program tier。
 - 本轮最多读取 5 个 routine body。
-- 如果没有密集度触发，保持轻量输出。
+- 如果没有密集度触发，保持内容简洁，但 layout 必须与 complex / large
+  program 一致，使用 reader-first 主文件结构。
 - 输出中不要粘贴大段真实 source code。
 - 不要把 indexed_only routines 当成 confirmed business logic。
 
@@ -105,12 +109,13 @@ SME 这次关心的问题:
 - source-index.yaml
 - program-analysis-summary.yaml
 - routine-index.md
+- routine-logic-details.md
+- routine-logic-details.yaml
 - message-inventory.yaml
 
-普通程序默认不要创建 `routine-logic-details.md`、
-`routine-logic-details.yaml`、`deep-read-plan.md` 或 retained batch files；
-只有密集度触发升级到 `complex_normal_program` / `large_extreme_program`，或
-SME 明确要求继续 deep-read 时才创建。
+普通程序默认不要创建 `deep-read-plan.md`、coverage ledgers 或 retained
+batch files；只有密集度触发升级到 `complex_normal_program` /
+`large_extreme_program`，或 SME 明确要求继续 deep-read 时才创建。
 ```
 
 Output Checkpoint:
@@ -120,9 +125,8 @@ Output Checkpoint:
   changes the tier.
 - `program-analysis-summary.yaml` exists.
 - `routine-index.md` exists.
-- `routine-logic-details.md` and `routine-logic-details.yaml` are absent for
-  lightweight `normal_program`, unless a density trigger or explicit deep-read
-  continuation is recorded.
+- `routine-logic-details.md` and `routine-logic-details.yaml` exist for
+  `normal_program` and provide the same RLOG coverage contract as other tiers.
 - `message-inventory.yaml` exists, even if no messages are observed.
 - No full source body is copied into the analysis output.
 
@@ -136,19 +140,19 @@ Check the normal_program output layout.
 Review these files:
 - program-analysis.md
 - program-analysis-summary.yaml
+- routine-logic-details.yaml
 - message-inventory.yaml
 
-Confirm that program-analysis.md is concise and uses a stable SME review
-layout with:
-- Program Overview
+Confirm that program-analysis.md is concise and uses the same reader-first SME
+review layout as other tiers:
+- Program Reading Summary
 - Calculation Logic
 - Validation Logic
 - Exception Handling
 - Message Inventory
-- File I/O and SQL
-- External Calls and Handoffs
-- Evidence Coverage
-- Open TBDs and SME Questions
+- Calculation / Validation / Exception Routine Indexes that cover every RLOG
+- Routine Logic Details headings that match routine-logic-details.yaml
+- File I/O, SQL, External Calls, Evidence Coverage, Open TBDs, and SME Questions
 
 List any missing section, duplicated section, or unsupported business claim.
 ```
@@ -161,18 +165,18 @@ List any missing section, duplicated section, or unsupported business claim.
 检查这些文件:
 - program-analysis.md
 - program-analysis-summary.yaml
+- routine-logic-details.yaml
 - message-inventory.yaml
 
-确认 program-analysis.md 简洁，并使用稳定的 SME review layout:
-- Program Overview
+确认 program-analysis.md 简洁，并使用与其他 tier 一致的 reader-first SME review layout:
+- Program Reading Summary
 - Calculation Logic
 - Validation Logic
 - Exception Handling
 - Message Inventory
-- File I/O and SQL
-- External Calls and Handoffs
-- Evidence Coverage
-- Open TBDs and SME Questions
+- Calculation / Validation / Exception Routine Indexes 覆盖全部 RLOG
+- Routine Logic Details headings 与 routine-logic-details.yaml 一致
+- File I/O、SQL、External Calls、Evidence Coverage、Open TBDs、SME Questions
 
 请列出缺失章节、重复章节、以及没有证据支持的 business claim。
 ```
@@ -182,6 +186,10 @@ Output Checkpoint:
 - The main review is readable on the first screen by an SME.
 - Calculation, validation, exception, message, and file I/O / SQL sections are
   present, even when they say no evidence observed.
+- Program Reading Summary is present.
+- Calculation / Validation / Exception routine indexes cover every RLOG.
+- Routine Logic Details in `program-analysis.md` has the same RLOG count/order
+  as `routine-logic-details.yaml`.
 - Claims cite source ranges, evidence IDs, routine IDs, runtime evidence, or
   SME approval.
 - `indexed_only` routines are not used as confirmed behavior.
@@ -208,7 +216,8 @@ Update:
 - routine-logic-details.md
 - routine-logic-details.yaml
 - program-analysis-summary.yaml
-- program-analysis.md summary sections only
+- program-analysis.md reader-first sections, including the matching RLOG
+  heading in Routine Logic Details
 - message-inventory.yaml if messages/status/code values are found
 ```
 
@@ -232,7 +241,8 @@ message/status routines。
 - routine-logic-details.md
 - routine-logic-details.yaml
 - program-analysis-summary.yaml
-- program-analysis.md 的摘要章节
+- program-analysis.md 的 reader-first sections，包括 Routine Logic Details 中匹配的
+  RLOG heading
 - 如果发现 message/status/code，更新 message-inventory.yaml
 ```
 
@@ -240,7 +250,8 @@ Output Checkpoint:
 
 - Every routine read in this step is marked `deep_read`.
 - Routines not read remain `indexed_only`.
-- `program-analysis.md` is updated at summary level only.
+- `program-analysis.md` remains the SME reading surface and is updated with
+  the completed RLOG detail.
 - No routine body is copied into `program-analysis.md`.
 - If another batch is required, the program should be reclassified as
   `complex_normal_program`.
@@ -302,6 +313,7 @@ Use:
 - program-analysis.md
 - program-analysis-summary.yaml
 - source-index.yaml
+- routine-logic-details.yaml
 - message-inventory.yaml
 
 Decide one status:
@@ -315,6 +327,8 @@ Show:
 - confirmed exception handling
 - confirmed messages
 - confirmed file I/O / SQL behavior
+- confirmation that Program Reading Summary and RLOG indexes use the same
+  layout as other tiers
 - indexed_only routines
 - unresolved TBDs
 - required SME decisions
@@ -329,6 +343,7 @@ Show:
 - program-analysis.md
 - program-analysis-summary.yaml
 - source-index.yaml
+- routine-logic-details.yaml
 - message-inventory.yaml
 
 请选择一个状态:
@@ -342,6 +357,7 @@ Show:
 - 已确认的 exception handling
 - 已确认的 messages
 - 已确认的 file I/O / SQL behavior
+- 确认 Program Reading Summary 和 RLOG indexes 使用与其他 tier 一致的 layout
 - indexed_only routines
 - unresolved TBDs
 - 需要 SME 决策的事项

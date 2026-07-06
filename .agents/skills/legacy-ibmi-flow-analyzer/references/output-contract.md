@@ -31,15 +31,16 @@ remote-main or prior-run artifacts for program-flow assembly.
 ```markdown
 # Program Set SME Core Review: [Program Set Name]
 
-Run Profile:
-Source Inventory Cache:
-Sources:
-Core Completeness Ledger:
-
+## Program Set Reading Summary
+## Cross-Program Processing Overview
 ## Calculation Logic
 ## Validation Logic
 ## Exception Handling
 ## Message Inventory
+## Core Completeness Ledger
+## Sources
+## Run Profile
+## Source Inventory Cache
 ```
 
 After the four core sections are populated, run the structural validator:
@@ -60,11 +61,13 @@ python3 scripts/validate-program-set-core-review.py \
   --review program-set-sme-core-review.md
 ```
 
-The validator must pass before SME handoff. It checks required core sections,
+The validator must pass before SME handoff. It checks the reader-first section
+order, a non-placeholder Program Set Reading Summary, the Cross-Program
+Processing Overview table, reader-useful detail in the four core sections,
 per-program coverage in Sources and Core Completeness Ledger, legal
-`run_resolution` values, and absence of full-flow sections such as
-Nodes, Edges, Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and
-SME Checklist.
+`run_resolution` values, required current-run routine logic sidecars for every
+completed program, and absence of full-flow sections such as Nodes, Edges,
+Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and SME Checklist.
 
 ---
 
@@ -162,21 +165,23 @@ written: the working branch is normally `develop-<person>` and may be created
 from `origin/main`; program artifacts go under tier-specific roots; cross-tier
 program-set reviews go under `program_set_review_parent/{REVIEW_SLUG}/`.
 
-This artifact must contain only source/coverage control surfaces plus the four
-core SME sections:
+This artifact must remain a compact core review. It contains a reader-first
+program-set orientation, the four core SME reading surfaces, and then the
+source/coverage control surfaces:
 
 ```markdown
-# SME Core Review: [Flow or Program Set Name]
+# Program Set SME Core Review: [Flow or Program Set Name]
 
-Run Profile:
-Source Inventory Cache:
-Sources:
-Core Completeness Ledger:
-
+## Program Set Reading Summary
+## Cross-Program Processing Overview
 ## Calculation Logic
 ## Validation Logic
 ## Exception Handling
 ## Message Inventory
+## Core Completeness Ledger
+## Sources
+## Run Profile
+## Source Inventory Cache
 ```
 
 **Rules:**
@@ -189,8 +194,20 @@ Core Completeness Ledger:
   team's cache is outside the configured default location.
 - Aggregate from compact program artifacts first:
   `program-analysis-summary.yaml`, `message-inventory.yaml`,
-  `routine-logic-details.yaml` when present or required by tier/deep-read, and
-  claim-specific optional sidecars.
+  `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
+  `routine-logic-details.yaml`, and claim-specific optional sidecars.
+- `routine-logic-details.md` and `routine-logic-details.yaml` are required for
+  normal, complex, and large programs. They are audit/checkpoint sidecars for
+  routine-level traceability, not the SME first reading path.
+- Program Set Reading Summary must explain the program list / flow in SME
+  language, state `standalone_exploratory`, `draft`, or `chain_ready`, and
+  cover the processing layers: entry/dispatch, calculation, validation,
+  exception/message handling, and persistence/finalization. It must not be an
+  artifact list or pending placeholder.
+- Cross-Program Processing Overview must include:
+  `Processing Layer`, `Programs / Main Routines`, and
+  `What To Understand First`. Use it to orient the SME before the detailed
+  section tables.
 - The four core SME sections must be self-contained. Each row must carry the
   merged logic, condition, carrier, outcome, handling action, or exact
   message/status meaning needed for SME review. Supporting detail references
@@ -204,7 +221,7 @@ Core Completeness Ledger:
 - Use `program-analysis.md` only for targeted human-readable clarification.
 - Do not include Metadata, Nodes, Edges, Transaction Call Map, Replay,
   Persistence, Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables,
-  or SME Checklist in the core-review artifact.
+  or SME Checklist in the compact core-review artifact.
 - Every row must identify the source Program and, when available, Routine,
   `RLOG-*` / `MSG-*`, source line, or evidence status.
 - `Message Inventory` must include every exact message ID, status value, return
@@ -245,9 +262,9 @@ evidence.
   operands/carriers, guard, and effect. Do not make the reader open
   per-program artifacts to understand what is being calculated.
 - Link every row to upstream compact artifacts (`program-analysis-summary.yaml`,
-  `message-inventory.yaml`, `source-index.yaml`, `routine-logic-details.yaml`
-  when present or required by tier/deep-read, `file-io-inventory.yaml`,
-  `field-mutation-matrix.yaml`,
+  `message-inventory.yaml`, `source-index.yaml`, `routine-index.md`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`,
+  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
   `sql-inventory.yaml`) or flow IDs such as `DATA-*`, `LINEAGE-*`,
   `PERSIST-*`, or `TBD-*`.
 - Do not invent calculations at flow level. If the program-level detail is
@@ -482,7 +499,7 @@ Flow scan mode: `orchestrated` | `assemble_existing`
 
 | Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routines=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; file_io=`file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed; mutations=`field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed; sql=`sql-inventory.yaml` present / not_applicable / missing_when_needed; human=`program-analysis-OBJ-AUTH-ONUS-001.md` | tier=normal_program; mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
+| NODE-ONUS-AUTH-01 | CU101A (OBJ-AUTH-ONUS-001) | Entry / validator | human=`program-analysis.md`; summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routine_index=`routine-index.md`; routines_md=`routine-logic-details.md`; routines_yaml=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; file_io=`file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed; mutations=`field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed; sql=`sql-inventory.yaml` present / not_applicable / missing_when_needed; object_human=`program-analysis-OBJ-AUTH-ONUS-001.md` | tier=normal_program; mode=standard; readiness=approved; routines=deep_read | none | Validates inbound payload format |
 | NODE-ONUS-AUTH-02 | CU110A (OBJ-AUTH-ONUS-002) | Credit orchestrator | summary=present; source=present; routines=present; messages=missing; file_io=present; mutations=present; sql=not_applicable | mode=segmented; readiness=warning; routines=indexed_only technical utility | TBD-ONUS-AUTH-021: missing_program_artifact message sidecar; non-blocking utility routine coverage gap | Calls credit-check sub-flow |
 | NODE-ONUS-AUTH-03 | CU111S (OBJ-AUTH-ONUS-003) | Data access (SQLRPG) | summary=present; source=present; routines=present; messages=present; file_io=present; mutations=present; sql=present | mode=large_program; readiness=blocked; routines=indexed_only state-impacting routine | TBD-ONUS-AUTH-022: credit update routine not deep-read; route to program analyzer unless named SME waiver recorded | DB2 cursor over credit-history |
 | ... | ... | ... | ... | ... | ... | ... |
@@ -503,15 +520,13 @@ Flow scan mode: `orchestrated` | `assemble_existing`
   `assemble_existing` when the user provides existing per-program analysis
   directories to combine.
 - Every Node must have approved program analysis evidence. Core node inputs are
-  `program-analysis-summary.yaml`, `source-index.yaml`, and
-  `message-inventory.yaml`, plus `routine-logic-details.yaml` when present or
-  required by tier/deep-read, with
-  `program-analysis-<OBJ-ID>.md` used for human-readable confirmation when
-  needed.
+  `program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
+  `routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`, and
+  `routine-logic-details.yaml`, with `program-analysis-<OBJ-ID>.md` used for
+  object-ID-specific human-readable confirmation when needed.
 - `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-  `sql-inventory.yaml` are optional for normal programs unless the program
-  summary marks them triggered or the flow claim needs I/O, mutation, or SQL
-  evidence.
+  `sql-inventory.yaml` are optional unless the program summary marks them
+  triggered or the flow claim needs I/O, mutation, or SQL evidence.
 - If a node lacks required core artifacts or claim-specific optional artifacts,
   create a `missing_program_artifact` TBD. Fill only the missing program
   artifact when source is available; do not concatenate complete
@@ -525,8 +540,8 @@ Flow scan mode: `orchestrated` | `assemble_existing`
   `blocked` gaps that affect flow readiness.
 - For program-analysis v0.2.5 and later, every Node must expose whether
   the flow consumed compact upstream sidecars (`program-analysis-summary.yaml`,
-  `source-index.yaml`, `message-inventory.yaml`,
-  `routine-logic-details.yaml` when present or required by tier/deep-read,
+  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
+  `routine-logic-details.md`, `routine-logic-details.yaml`,
   `file-io-inventory.yaml`,
   `field-mutation-matrix.yaml`, `sql-inventory.yaml`) for Call Evidence,
   Logic Decomposition Ledger,

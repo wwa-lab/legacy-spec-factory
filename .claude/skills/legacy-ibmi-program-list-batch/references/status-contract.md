@@ -68,12 +68,15 @@ contain:
 - `program-analysis-summary.yaml`
 - `routine-index.md`
 - `message-inventory.yaml`
+- `routine-logic-details.md`
+- `routine-logic-details.yaml`
 
-For `normal_program`, `routine-logic-details.md` and
-`routine-logic-details.yaml` are not required and should not be created by
-default. They are required only when the program is promoted to
-`complex_normal_program`, `large_extreme_program`, or an explicit deep-read
-continuation.
+For `normal_program`, routine detail sidecars are required as audit/checkpoint
+evidence with the same reader-first coverage contract as complex and large
+programs. Deep-read plans, coverage ledgers, and retained
+`routine-logic-details/deep-read-batch-*.md` files are required only when the
+program is promoted to `complex_normal_program`, `large_extreme_program`, or an
+explicit deep-read continuation.
 
 ## Update Rules
 

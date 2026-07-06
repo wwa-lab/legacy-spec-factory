@@ -157,8 +157,7 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
         working_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
     )
     write_compact_artifacts(
-        working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050",
-        missing={"routine-logic-details.yaml"},
+        working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050"
     )
     programs_file.write_text("@CU118\nCU118\nCC050\nCU257F\n", encoding="utf-8")
 
@@ -171,7 +170,80 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
         working_branch="develop-leo",
     )
     manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
+    write_reader_first_review(review_path, manifest)
     return manifest_path, review_path, manifest
+
+
+def write_reader_first_review(review_path: Path, manifest: dict[str, object]) -> None:
+    programs = manifest["programs"]  # type: ignore[index]
+    review_text = f"""# Program Set SME Core Review: {manifest["review_name"]}
+
+## Program Set Reading Summary
+
+This standalone_exploratory draft covers the SME-requested card authorization
+program set in the order supplied for review: @CU118, CU118, CC050, and CU257F.
+The set is meant to help the SME read the cross-program processing path before
+checking audit details. Current evidence covers entry/dispatch handoff,
+calculation of posting response fields, validation of account/status outcomes,
+exception/message handling, and persistence/finalization follow-up for programs
+that still need source scan.
+
+## Cross-Program Processing Overview
+
+| Processing Layer | Programs / Main Routines | What To Understand First |
+| --- | --- | --- |
+| Entry / dispatch | @CU118 MAIN; CU118 pending source scan | @CU118 is the current entry artifact; CU118 stays visible as pending source so the SME can confirm whether it is a distinct program. |
+| Calculation | @CU118 RLOG-AUTH-001; CC050 RLOG-AUTH-010 | Posting response fields are derived before validation messages are assigned. |
+| Validation | @CU118 RLOG-AUTH-002; CC050 RLOG-AUTH-011 | Account status and request completeness decide whether processing continues or returns a decline/status response. |
+| Exception / message | @CU118 RLOG-AUTH-003; CC050 RLOG-AUTH-012 | Message values are set where validation or file access fails, with the exact status literal preserved in Message Inventory. |
+| Persistence / finalization | CC050 RLOG-AUTH-013; CU257F pending source scan | Completed records are finalized only after validation passes; pending programs remain in the ledger for targeted scan. |
+
+## Calculation Logic
+
+| Calculation / Assignment | Program | Routine | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Build the authorization posting response amount and status payload from the request amount plus account controls. | @CU118 | RLOG-AUTH-001 | response amount and status fields | request amount, account status, product control values | normal posting branch after entry dispatch | passes the response payload to downstream validation/finalization logic | RLOG-AUTH-001; routine-logic-details.yaml | confirmed |
+| Carry the validated posting indicator into finalization only when the request remains eligible. | CC050 | RLOG-AUTH-010 | posting indicator carrier | validation status, request key, posting control flag | validation passed branch | allows final record update and suppresses decline response | RLOG-AUTH-010; routine-logic-details.yaml | confirmed |
+
+## Validation Logic
+
+| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| STATUS-ACTIVE-CHECK | The program checks account activity before allowing posting to continue. | @CU118 | RLOG-AUTH-002 | entry dispatch -> account status validation -> continue or decline | response status field | inactive accounts receive a decline/status response instead of finalization | RLOG-AUTH-002; MSG-AUTH-001 | confirmed |
+| STATUS-POSTING-READY | The finalization program accepts only requests that still carry a clean validation status. | CC050 | RLOG-AUTH-011 | calculation result -> validation guard -> finalization | posting indicator carrier | prevents final update when upstream validation failed | RLOG-AUTH-011; MSG-AUTH-002 | confirmed |
+
+## Exception Handling
+
+| Exception / Error Path | Program | Routine | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Missing or unreadable account record blocks posting and sets a reviewable status. | @CU118 | RLOG-AUTH-003 | file access status check after account lookup | STATUS-ACCOUNT-MISSING and response text | return with decline/status response | stops downstream finalization for this request | RLOG-AUTH-003; MSG-AUTH-003 | confirmed |
+| Final update failure leaves the request visible for operational follow-up rather than silently marking success. | CC050 | RLOG-AUTH-012 | update result check | STATUS-UPDATE-FAILED and operator message | log and return failure status | final response shows that persistence did not complete | RLOG-AUTH-012; MSG-AUTH-004 | confirmed |
+
+## Message Inventory
+
+| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| STATUS-ACTIVE-CHECK | Account activity validation status used before posting can continue. | status | @CU118 RLOG-AUTH-002 | 1 | account status validation | controls continue versus decline outcome | MSG-AUTH-001; RLOG-AUTH-002 | confirmed |
+| STATUS-ACCOUNT-MISSING | Account lookup failed and the request cannot be finalized. | status | @CU118 RLOG-AUTH-003 | 1 | file access status check | stops finalization and returns a reviewable failure | MSG-AUTH-003; RLOG-AUTH-003 | confirmed |
+| STATUS-UPDATE-FAILED | Final record update did not complete successfully. | status | CC050 RLOG-AUTH-012 | 1 | final update result check | returns failure status for operational follow-up | MSG-AUTH-004; RLOG-AUTH-012 | confirmed |
+
+## Core Completeness Ledger
+
+{BUILDER.render_completeness_table(programs)}
+
+## Sources
+
+{BUILDER.render_sources_table(programs)}
+
+## Run Profile
+
+{BUILDER.render_run_profile(manifest)}
+
+## Source Inventory Cache
+
+{BUILDER.render_source_inventory(manifest)}
+"""
+    review_path.write_text(review_text, encoding="utf-8")
 
 
 class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
@@ -200,19 +272,32 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(programs["CC050"]["tier"], "normal_program")
             self.assertEqual(
                 programs["CC050"]["compact_artifacts"]["routine_logic_details_yaml"]["status"],
-                "missing",
+                "present",
             )
             self.assertEqual(programs["CU257F"]["run_resolution"], "pending_source")
 
             review_text = review_path.read_text(encoding="utf-8")
-            self.assertIn("Run Profile:", review_text)
-            self.assertIn("Source Inventory Cache:", review_text)
-            self.assertIn("Core Completeness Ledger:", review_text)
+            expected_order = [
+                "## Program Set Reading Summary",
+                "## Cross-Program Processing Overview",
+                "## Calculation Logic",
+                "## Validation Logic",
+                "## Exception Handling",
+                "## Message Inventory",
+                "## Core Completeness Ledger",
+                "## Sources",
+                "## Run Profile",
+                "## Source Inventory Cache",
+            ]
+            positions = [review_text.index(section) for section in expected_order]
+            self.assertEqual(positions, sorted(positions))
+            self.assertIn("| Processing Layer | Programs / Main Routines | What To Understand First |", review_text)
             self.assertIn("Routine Logic Evidence", review_text)
             self.assertIn("| Cross-Run Reuse | false |", review_text)
             self.assertIn("| @CU118 |", review_text)
             self.assertIn("| CU118 |", review_text)
-            self.assertIn("routine-logic-details.yaml=optional_not_required", review_text)
+            self.assertIn("routine-logic-details.yaml=present", review_text)
+            self.assertNotIn("optional_not_required", review_text)
             self.assertNotIn(
                 "| Program | Expected In Scope From | Run Resolution | Calculation Logic | Validation Logic | Exception Handling |",
                 review_text,
@@ -228,6 +313,165 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertNotIn("flow-<FLOW-SLUG>.md", review_text)
 
             self.assertEqual(BUILDER.validate(manifest_path, review_path), [])
+
+    def test_builder_skeleton_is_reader_first_but_not_final_valid_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            working_root = temp_root / "delivery-work"
+            output_dir = temp_root / "review-output"
+            write_compact_artifacts(
+                working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CC050"],
+                artifact_root=working_root,
+                config=config,
+                working_branch="develop-leo",
+            )
+            manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
+
+            review_text = review_path.read_text(encoding="utf-8")
+            self.assertLess(
+                review_text.index("## Program Set Reading Summary"),
+                review_text.index("## Run Profile"),
+            )
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("Program Set Reading Summary" in finding for finding in findings),
+                findings,
+            )
+            self.assertTrue(
+                any("Calculation Logic" in finding and "reader-useful detail" in finding for finding in findings),
+                findings,
+            )
+
+    def test_validator_rejects_missing_program_set_reading_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path, review_path, _manifest = build_review_fixture(Path(temp_dir))
+            review_text = review_path.read_text(encoding="utf-8")
+            review_path.write_text(
+                review_text.replace("## Program Set Reading Summary\n\n", "", 1),
+                encoding="utf-8",
+            )
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("missing required reader-first ## sections: Program Set Reading Summary" in finding for finding in findings),
+                findings,
+            )
+
+    def test_validator_rejects_placeholder_summary_and_missing_processing_overview_table(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path, review_path, _manifest = build_review_fixture(Path(temp_dir))
+            review_text = review_path.read_text(encoding="utf-8")
+            bad_review = review_text.replace(
+                "This standalone_exploratory draft covers the SME-requested card authorization\n"
+                "program set in the order supplied for review: @CU118, CU118, CC050, and CU257F.\n"
+                "The set is meant to help the SME read the cross-program processing path before\n"
+                "checking audit details. Current evidence covers entry/dispatch handoff,\n"
+                "calculation of posting response fields, validation of account/status outcomes,\n"
+                "exception/message handling, and persistence/finalization follow-up for programs\n"
+                "that still need source scan.",
+                "Pending placeholder artifact list: program-analysis-summary.yaml; message-inventory.yaml.",
+                1,
+            )
+            bad_review = bad_review.replace(
+                "| Processing Layer | Programs / Main Routines | What To Understand First |\n"
+                "| --- | --- | --- |\n",
+                "| Layer | Refs |\n| --- | --- |\n",
+                1,
+            )
+            review_path.write_text(bad_review, encoding="utf-8")
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("Program Set Reading Summary is placeholder/artifact-only" in finding for finding in findings),
+                findings,
+            )
+            self.assertTrue(
+                any("Cross-Program Processing Overview missing required table headers" in finding for finding in findings),
+                findings,
+            )
+
+    def test_validator_rejects_core_sections_with_only_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path, review_path, _manifest = build_review_fixture(Path(temp_dir))
+            review_text = review_path.read_text(encoding="utf-8")
+            bad_review = review_text.replace(
+                "| Build the authorization posting response amount and status payload from the request amount plus account controls. | @CU118 | RLOG-AUTH-001 | response amount and status fields | request amount, account status, product control values | normal posting branch after entry dispatch | passes the response payload to downstream validation/finalization logic | RLOG-AUTH-001; routine-logic-details.yaml | confirmed |",
+                "| RLOG-AUTH-001 | @CU118 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | confirmed |",
+                1,
+            )
+            bad_review = bad_review.replace(
+                "| Carry the validated posting indicator into finalization only when the request remains eligible. | CC050 | RLOG-AUTH-010 | posting indicator carrier | validation status, request key, posting control flag | validation passed branch | allows final record update and suppresses decline response | RLOG-AUTH-010; routine-logic-details.yaml | confirmed |",
+                "",
+                1,
+            )
+            review_path.write_text(bad_review, encoding="utf-8")
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("Calculation Logic lacks reader-useful detail" in finding for finding in findings),
+                findings,
+            )
+
+    def test_validator_rejects_audit_sections_before_reader_first_core(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path, review_path, _manifest = build_review_fixture(Path(temp_dir))
+            review_text = review_path.read_text(encoding="utf-8")
+            run_profile = review_text[
+                review_text.index("## Run Profile") : review_text.index("## Source Inventory Cache")
+            ]
+            bad_review = review_text.replace(run_profile, "", 1)
+            bad_review = bad_review.replace(
+                "# Program Set SME Core Review: Card Auth Posting Core Review\n\n",
+                "# Program Set SME Core Review: Card Auth Posting Core Review\n\n" + run_profile + "\n",
+                1,
+            )
+            review_path.write_text(bad_review, encoding="utf-8")
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("reader-first core sections must appear before audit/control sections" in finding for finding in findings),
+                findings,
+            )
+
+    def test_validator_rejects_missing_normal_program_routine_logic_details(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            working_root = temp_root / "delivery-work"
+            output_dir = temp_root / "review-output"
+            write_compact_artifacts(
+                working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050",
+                missing={"routine-logic-details.md", "routine-logic-details.yaml"},
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Normal Program Missing Routine Detail",
+                programs=["CC050"],
+                artifact_root=working_root,
+                config=config,
+                working_branch="develop-leo",
+            )
+            manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
+            write_reader_first_review(review_path, manifest)
+
+            findings = BUILDER.validate(manifest_path, review_path)
+
+            self.assertTrue(
+                any("CC050 analyzed_this_run missing required compact artifacts" in finding for finding in findings),
+                findings,
+            )
 
     def test_validator_rejects_missing_program_rows_and_full_flow_sections(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -455,7 +699,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(source_inventory["programs"][0]["inventory_status"], "found")
             self.assertFalse(source_inventory["programs"][0]["targeted_scan_allowed"])
 
-    def test_root_wrappers_build_and_validate_program_set_review(self) -> None:
+    def test_root_wrapper_builds_reader_first_skeleton_and_validator_rejects_unfilled_review(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             delivery_root = temp_root / "delivery-main"
@@ -488,7 +732,15 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 capture_output=True,
             )
 
-            subprocess.run(
+            review_text = (output_dir / "program-set-sme-core-review.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertLess(
+                review_text.index("## Program Set Reading Summary"),
+                review_text.index("## Core Completeness Ledger"),
+            )
+
+            result = subprocess.run(
                 [
                     sys.executable,
                     str(VALIDATE_WRAPPER),
@@ -497,10 +749,11 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                     "--review",
                     str(output_dir / "program-set-sme-core-review.md"),
                 ],
-                check=True,
                 text=True,
                 capture_output=True,
             )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("reader-useful detail", result.stderr)
 
     def test_build_wrapper_rejects_missing_working_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

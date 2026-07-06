@@ -19,8 +19,8 @@
 - Required source reads:
   - {{required_source_read}}
 - Required artifact updates:
-  - routine-logic-details.md / routine-logic-details.yaml only when this row
-    is complex_normal_program, large_extreme_program, or explicit deep-read
+  - routine-logic-details.md / routine-logic-details.yaml for every
+    normal_program, complex_normal_program, and large_extreme_program row
   - program-analysis-summary.yaml
   - message-inventory.yaml
   - batch-scan-manifest.yaml
