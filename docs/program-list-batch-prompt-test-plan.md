@@ -255,8 +255,8 @@ Pass criteria:
 
 ## Test Case 7: Final Batch Readiness
 
-Purpose: confirm the batch is ready for program-set SME review only after all
-rows are classified.
+Purpose: confirm the independent scan batch is ready to close only after all
+rows are classified, without generating a program-set SME review.
 
 Prompt:
 
@@ -264,23 +264,24 @@ Prompt:
 Use skill: legacy-ibmi-program-list-batch.
 
 Review outputs/program-list-batch-test and tell me whether this batch is ready
-for program-set SME review.
+to close as an independent program scan batch.
 
 Check:
-- every program row is completed, completed_with_warnings, reused_remote_main,
+- every program row is completed, completed_with_warnings,
   skipped_not_program, blocked_*, or failed_*
 - no row is queued or in_progress
 - completed rows have validator pass
 - blocked/failed rows have last_error and next_action
 - no two completed rows share the same output directory
 
-Do not generate the program-set review unless the readiness check passes.
+Do not generate a program-set SME review. That is a later
+legacy-ibmi-flow-analyzer step for a selected flow/program set.
 ```
 
 Pass criteria:
 
-- Copilot blocks final review if unresolved queued/in-progress rows remain.
-- Copilot allows final review only when every row is classified.
+- Copilot blocks batch closure if unresolved queued/in-progress rows remain.
+- Copilot allows batch closure only when every row is classified.
 
 ## Evidence To Capture
 
