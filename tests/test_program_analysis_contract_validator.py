@@ -72,14 +72,51 @@ def message_inventory_section() -> str:
 """
 
 
-def routine_index_section(section: str, *, start: int = 1, end: int = 93) -> str:
+def overview_heading(section: str) -> str:
+    if section == "Exception Handling":
+        return "Exception Flow Overview"
+    return f"{section} Overview"
+
+
+def theme_heading(section: str) -> str:
+    if section == "Calculation Logic":
+        return "Account-Cycle Calculation Theme"
+    if section == "Validation Logic":
+        return "Business-State Validation Theme"
+    return "File And Helper Failure Theme"
+
+
+def routine_index_section(
+    section: str,
+    *,
+    start: int = 1,
+    end: int = 93,
+    include_theme_sections: bool = True,
+) -> str:
     rows = "\n".join(
         f"| RLOG-CU650-{index:03d} / SR{index:03d} | category | {section} reader-useful detail |"
         for index in range(start, end + 1)
     )
+    themed_intro = ""
+    if include_theme_sections:
+        themed_intro = f"""
+### {overview_heading(section)}
+
+Reader-oriented overview by processing theme for SME first-pass navigation.
+
+| Theme | Routine Count | Routines | Reader Cue |
+| --- | --- | --- | --- |
+| Account-cycle processing | {end - start + 1} | `SR{start:03d}` - `SR{end:03d}` | Follow this theme before routine-level detail to understand the program behavior. |
+
+### {theme_heading(section)}
+
+This theme groups routines that share account-cycle behavior, validation
+outcomes, exception closure, and downstream state effects for reviewer
+navigation before the complete RLOG index.
+"""
     return f"""## {section}
 
-Reader-oriented overview by theme.
+{themed_intro or "Reader-oriented overview by theme."}
 
 ### Routine Index For {section}
 
@@ -141,6 +178,13 @@ def program_analysis_with_placeholder_core_index_detail() -> str:
         "| RLOG-CU650-017 / SR017 | category | Validation Logic reader-useful detail |\n",
         "| RLOG-CU650-017 / SR017 | pending | pending semantic deep-read |\n",
         1,
+    )
+
+
+def program_analysis_without_core_theme_section() -> str:
+    return full_program_analysis().replace(
+        routine_index_section("Calculation Logic"),
+        routine_index_section("Calculation Logic", include_theme_sections=False),
     )
 
 
@@ -477,6 +521,24 @@ class ProgramAnalysisContractValidatorTests(unittest.TestCase):
         self.assertTrue(any("Routine Index For Validation Logic" in finding for finding in findings))
         self.assertTrue(any("RLOG-CU650-017" in finding for finding in findings))
         self.assertTrue(any("reader-useful detail" in finding for finding in findings))
+
+    def test_fails_core_logic_without_theme_subsection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            (analysis_dir / "program-analysis.md").write_text(
+                program_analysis_without_core_theme_section(),
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                routine_markdown(),
+                encoding="utf-8",
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(any("Calculation Logic" in finding for finding in findings))
+        self.assertTrue(any("theme subsection" in finding for finding in findings))
 
     def test_fails_placeholder_main_rlog_detail(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

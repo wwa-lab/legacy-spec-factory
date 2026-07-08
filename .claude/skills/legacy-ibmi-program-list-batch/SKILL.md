@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-program-list-batch
-description: Orchestrate IBM i program analysis from a program-list CSV or Excel export for Copilot Chat-limited environments. Use when the user has many RPGLE/SQLRPGLE/CLLE/COBOL programs to analyze, needs one-program-per-chat prompt queues, per-program status tracking, resumable handoff, batch manifests, or a final program-set SME review. Supplemental skill; delegates actual source analysis to legacy-ibmi-program-analyzer and final cross-program review scaffolding to legacy-ibmi-flow-analyzer/program-set review tools.
+description: Orchestrate IBM i program analysis from a program-list CSV or Excel export for Copilot Chat-limited environments. Use when the user has many RPGLE/SQLRPGLE/CLLE/COBOL programs to scan independently and needs one-program-per-chat prompt queues, per-program status tracking, resumable handoff, or batch manifests. Supplemental skill; delegates actual source analysis to legacy-ibmi-program-analyzer and leaves any later cross-program/program-set review to legacy-ibmi-flow-analyzer after a specific flow or program set is selected.
 ---
 
 <!--
@@ -20,12 +20,12 @@ Retain this notice in substantial copies or derived versions.
 
 | Field | Notes |
 | --- | --- |
-| Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program work queue with durable status files. |
+| Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program scan queue with durable status files. |
 | Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
 | Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`. |
 | Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
-| Downstream skill | `legacy-ibmi-program-analyzer` for each program; `legacy-ibmi-flow-analyzer` / program-set review builder after rows are classified. |
+| Downstream skill | `legacy-ibmi-program-analyzer` for each program; later `legacy-ibmi-flow-analyzer` only when a specific flow/program set should be assembled from completed program artifacts. |
 | Validation standard | Every row is represented, status values are legal, completed rows have required artifacts and validator status, and output folders are unique. |
 | Known risk | Treating one Copilot Chat as a concurrent batch runner; this causes context contamination and status drift. |
 
@@ -45,8 +45,8 @@ The original `program-list.csv` should remain the source export. Create
 Use this skill when:
 
 - The user has a program list and wants to process it row by row.
-- The user has a SME-provided program flow/list and wants generated prompt
-  files only for those selected programs, in that order.
+- The user has a selected program subset and wants generated prompt files only
+  for those programs, in the supplied order.
 - The team can only use Copilot Chat and cannot run a true agent batch worker.
 - Context limits require one program per session.
 - The team needs resumable progress across sessions.
@@ -75,16 +75,17 @@ directly.
   `batch-scan-manifest.yaml`.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
 - Run the program-analysis validator before marking a row complete.
-- Generate the final program-set review only after every requested row is
-  classified as completed, skipped, blocked, or failed.
+- Do not generate `program-set-sme-core-review.md` as part of this batch step.
+  This skill only prepares, tracks, and validates independent per-program
+  scans. Use `legacy-ibmi-flow-analyzer` later when an SME-provided flow or
+  other explicit program set defines a meaningful cross-program boundary.
 - Normal, complex, and large program rows all produce
   `routine-logic-details.md` and `routine-logic-details.yaml` as routine-level
   audit/checkpoint evidence. They do not replace the reader-first
   `program-analysis.md`.
-- The final `program-set-sme-core-review.md` is also reader-first: Program Set
-  Reading Summary, Cross-Program Processing Overview, Calculation Logic,
-  Validation Logic, Exception Handling, and Message Inventory come before
-  Core Completeness Ledger, Sources, Run Profile, and Source Inventory Cache.
+- A completed batch is a scan ledger, not a cross-program review. Programs in a
+  repo-wide list do not need to have business-flow relationships before they
+  can be scanned.
 
 ## Standard Output Layout
 
@@ -133,15 +134,15 @@ outputs/program-list-batch/
 
 4. **Finish the batch**
    - Validate status consistency.
-   - Build or refresh `program-set-core-input-manifest.yaml` and
-     `program-set-sme-core-review.md` using existing program-set review tools.
-   - Fill `program-set-sme-core-review.md` as a compact reader-first SME
-     review. Do not concatenate each `program-analysis.md`; do not include full
-     flow sections such as Nodes, Edges, Replay, Persistence, Lineage, UI
-     Surfaces, Capability Seeds, or SME Checklist.
-   - Keep every requested program visible in the Core Completeness Ledger,
-     including skipped, blocked, failed, or pending-source rows.
-   - Validate the program-set review before SME handoff.
+   - Treat the batch as complete when every requested row is classified as
+     `completed`, `completed_with_warnings`, `skipped_not_program`,
+     `blocked_missing_source`, `failed_validator`, or `failed_runtime`.
+   - Report completed, warning, skipped, blocked, and failed rows with paths to
+     the durable state files and per-program artifact folders.
+   - Do not build a repo-wide `program-set-sme-core-review.md` from the whole
+     batch. If a later SME flow/list or call-flow discovery identifies a
+     meaningful program set, hand the relevant completed program artifacts to
+     `legacy-ibmi-flow-analyzer`.
 
 ## Scripts
 
@@ -167,10 +168,11 @@ py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py 
   --review-name "normal program batch"
 ```
 
-`--programs-file` is optional. Use it when an SME provides a program flow such
-as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C` and you want generated prompt files
-only for those distinct programs. Without it, the initializer creates prompts
-for every `object_type = program` row in the input `program-list.csv`.
+`--programs-file` is optional. Use it when an operator or SME provides a
+selected program list, such as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C`, and you
+want generated prompt files only for those distinct programs. Without it, the
+initializer creates prompts for every `object_type = program` row in the input
+`program-list.csv`.
 
 Validate batch state:
 

@@ -22,7 +22,8 @@ Use this guideline when:
 - The list contains columns such as `member`, `object_type`, `source_kind`,
   `path`, `total_lines`, `size_tier`, and `tier_reason`.
 - You want to prepare one Copilot Chat prompt per program, scan each program
-  independently, and then generate one SME-facing program-set review.
+  independently, and produce durable per-program artifacts for later flow or
+  module work.
 
 Do not use this guideline when:
 
@@ -50,7 +51,9 @@ per-program artifacts.
 The program-list batch skill is responsible for orchestration, prompt queue
 generation, status tracking, manifest tracking, and resume/handoff control.
 The program analyzer remains responsible for the actual per-program analysis.
-Final program-set SME review is a downstream step after rows are classified.
+Program-set SME review is not part of this batch step. It is a downstream
+`legacy-ibmi-flow-analyzer` step only after a specific flow/list or discovered
+call-flow defines a meaningful program set.
 
 ## Input List Contract
 
@@ -125,7 +128,10 @@ Execution rules:
 - Do not combine multiple programs into one program-analysis.md.
 - Each program must have its own output folder.
 - Read at most 5 routine bodies per program-analysis turn.
-- Keep normal_program output lightweight unless a density trigger appears.
+- Keep normal_program output lightweight unless a density trigger appears:
+  concise main-file content and no large-program-only sidecars by default, but
+  still include reader-first Calculation / Validation / Exception overview and
+  named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Record skipped, scanned, failed, and blocked programs in a batch manifest.
@@ -137,17 +143,20 @@ Per-program required output:
 - program-analysis-summary.yaml
 - routine-index.md
 - message-inventory.yaml
+- routine-logic-details.md
+- routine-logic-details.yaml
 
 Conditional per-program output:
-- routine-logic-details.md and routine-logic-details.yaml only for
-  complex_normal_program, large_extreme_program, or explicit deep-read
-  continuation.
+- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
+  routine-logic-details/deep-read-batch-*.md only when complex/large tier or
+  explicit deep-read continuation triggers require them.
 
 Batch required output:
 - batch-scan-manifest.yaml
 - skipped/scanned/failed summary
-- program-set-core-input-manifest.yaml
-- program-set-sme-core-review.md
+- program-batch-plan.md
+- program-list-status.csv
+- prompt-queue/*.md
 
 Output folder rules:
 - normal_program outputs go under the configured normal_program tier root.
@@ -155,7 +164,6 @@ Output folder rules:
   complex_normal_program tier root.
 - large_extreme_program outputs go under the configured large_extreme_program
   tier root.
-- program-set SME review goes under the configured program_set_review_parent.
 
 Quality gates:
 - Do not mark a program complete only because files were generated.
@@ -163,8 +171,9 @@ Quality gates:
   program-analysis validator passes.
 - Validate each generated program-analysis artifact before marking that program
   complete.
-- Validate the final program-set SME review before SME handoff.
 - Do not mark the batch complete if required per-program artifacts are missing.
+- Do not generate a repo-wide program-set SME review from this whole batch.
+  Later use `legacy-ibmi-flow-analyzer` only for a selected flow/program set.
 - Every non-trivial behavior claim must cite a source range, evidence ID,
   RLOG ID, runtime evidence, reference pack, or SME approval.
 - indexed_only routines are inventory only, not confirmed behavior.
@@ -174,8 +183,8 @@ Quality gates:
 - Unresolved message/status/code descriptions must be listed as TBDs or
   blockers.
 - The batch is complete only when every requested program is classified as
-  scanned, skipped, failed, or blocked, and the final program-set review
-  validator passes.
+  completed, completed_with_warnings, skipped_not_program,
+  blocked_missing_source, failed_validator, or failed_runtime.
 
 Validation commands:
 - In the company Windows 11 Copilot environment, use `py -3` only.
@@ -186,18 +195,14 @@ Per-program validation:
 py -3 scripts\validate-program-analysis-contract.py `
   --analysis-dir <program-output-dir>
 
-Program-set validation:
-py -3 scripts\validate-program-set-core-review.py `
-  --manifest <program-set-core-input-manifest.yaml> `
-  --review <program-set-sme-core-review.md>
-
 Final response:
 - Report total programs requested.
 - Report programs newly scanned.
 - Report programs skipped or blocked.
 - Report failed programs with reason.
 - Report validator status.
-- Provide paths to the batch manifest and program-set SME review.
+- Provide paths to the batch manifest, status CSV, batch plan, prompt queue,
+  and generated per-program artifact folders.
 ```
 
 ## 中文 Copilot Prompt
@@ -260,23 +265,25 @@ Program list 字段:
 - program-analysis-summary.yaml
 - routine-index.md
 - message-inventory.yaml
+- routine-logic-details.md
+- routine-logic-details.yaml
 
 条件性产出:
-- routine-logic-details.md 和 routine-logic-details.yaml 只在
-  complex_normal_program、large_extreme_program 或明确 deep-read continuation
-  时产出。
+- deep-read-plan.md、all-routine-coverage-ledger.md，以及保留的
+  routine-logic-details/deep-read-batch-*.md 只在 complex/large tier 或明确
+  deep-read continuation 触发时产出。
 
 批量执行必须产出:
 - batch-scan-manifest.yaml
 - skipped/scanned/failed summary
-- program-set-core-input-manifest.yaml
-- program-set-sme-core-review.md
+- program-batch-plan.md
+- program-list-status.csv
+- prompt-queue/*.md
 
 输出目录规则:
 - normal_program 输出到配置里的 normal_program tier root。
 - complex_normal_program 输出到配置里的 complex_normal_program tier root。
 - large_extreme_program 输出到配置里的 large_extreme_program tier root。
-- program-set SME review 输出到配置里的 program_set_review_parent。
 
 质量门禁:
 - 不要因为文件生成了，就把 program 标记为 complete。
@@ -284,8 +291,9 @@ Program list 字段:
   该 program 才算 complete。
 - 每个 program 生成后，先验证 program-analysis artifact，再标记该
   program complete。
-- 最终 program-set SME review 在交给 SME 前必须验证。
 - 如果缺少 required per-program artifacts，不要标记 batch complete。
+- 不要从整个 repo-wide batch 直接生成 program-set SME review。后续只有在
+  已经选定具体 flow/program set 时，才交给 `legacy-ibmi-flow-analyzer` 汇总。
 - 每个非平凡 behavior claim 都必须引用 source range、evidence ID、
   RLOG ID、runtime evidence、reference pack 或 SME approval。
 - indexed_only routines 只能表示已经索引，不能表示 confirmed behavior。
@@ -293,9 +301,9 @@ Program list 字段:
   dynamic call、没有证据支持的 business meaning，都必须标记为 TBD 或
   blocker。
 - 未解析的 message/status/code description 必须列为 TBD 或 blocker。
-- 只有当每个请求的 program 都被分类为 scanned、skipped、failed 或
-  blocked，并且最终 program-set review validator 通过时，batch 才算
-  complete。
+- 只有当每个请求的 program 都被分类为 completed、
+  completed_with_warnings、skipped_not_program、blocked_missing_source、
+  failed_validator 或 failed_runtime 时，batch 才算 complete。
 
 验证命令:
 - 公司 Windows 11 Copilot 环境只使用 `py -3`。
@@ -306,18 +314,14 @@ Program list 字段:
 py -3 scripts\validate-program-analysis-contract.py `
   --analysis-dir <program-output-dir>
 
-Program-set 验证:
-py -3 scripts\validate-program-set-core-review.py `
-  --manifest <program-set-core-input-manifest.yaml> `
-  --review <program-set-sme-core-review.md>
-
 最终回复:
 - 报告本次请求的 program 总数。
 - 报告本次新扫描的 programs。
 - 报告 skipped 或 blocked 的 programs。
 - 报告 failed programs 及失败原因。
 - 报告 validator 状态。
-- 提供 batch manifest 和 program-set SME review 的路径。
+- 提供 batch manifest、status CSV、batch plan、prompt queue 和各个
+  per-program artifact folder 的路径。
 ```
 
 ## Batch Manifest Quality Standard
@@ -390,8 +394,6 @@ Durable resume inputs:
 - Reference paths, if used by the batch
 - Control files, if used by the batch
 - Existing per-program output folders
-- Existing `program-set-core-input-manifest.yaml` and
-  `program-set-sme-core-review.md`, if already generated
 
 Resume rules:
 
@@ -409,8 +411,9 @@ Resume rules:
 - If a program output folder exists but the manifest does not record it, do not
   treat it as authoritative cache. Rerun the selected program and overwrite the
   generated analysis artifacts.
-- After all rows are classified, regenerate or refresh the program-set review
-  from the manifest and compact artifacts.
+- After all rows are classified, close the batch with the status CSV, manifest,
+  and per-program artifact paths. Build a program-set review later only through
+  `legacy-ibmi-flow-analyzer` when a specific flow/program set is selected.
 
 ## Context-Budget Continuation Strategy
 
@@ -639,7 +642,8 @@ Recommended flow:
 7. Close or ignore that chat.
 8. Open a fresh Copilot Chat for the next prompt.
 9. Repeat until all rows are classified.
-10. Generate or refresh `program-set-sme-core-review.md`.
+10. Close the batch; defer any program-set review to a later flow-analyzer
+    step with an explicit flow/list.
 
 Suggested queue layout:
 
@@ -692,7 +696,10 @@ Rules:
   meanings, or validation rules. Treat them as supporting evidence only.
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
-- Keep normal_program output lightweight unless density triggers appear.
+- Keep normal_program output lightweight unless density triggers appear:
+  concise main-file content and no large-program-only sidecars by default, but
+  still include reader-first Calculation / Validation / Exception overview and
+  named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Write required artifacts to the output directory.
@@ -706,11 +713,13 @@ Required output:
 - program-analysis-summary.yaml
 - routine-index.md
 - message-inventory.yaml
+- routine-logic-details.md
+- routine-logic-details.yaml
 
 Conditional output:
-- routine-logic-details.md and routine-logic-details.yaml only for
-  complex_normal_program, large_extreme_program, or explicit deep-read
-  continuation.
+- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
+  routine-logic-details/deep-read-batch-*.md only for complex_normal_program,
+  large_extreme_program, or explicit deep-read continuation.
 
 Validation:
 py -3 scripts\validate-program-analysis-contract.py `
@@ -909,15 +918,16 @@ Resume rules:
   failed_runtime, failed_validator, or resolved blocker.
 - For blocked_missing_source rows, retry only if source root or path has changed.
 - Update the manifest after each program.
-- When all rows are classified, rebuild or refresh the program-set SME review
-  and run the program-set validator.
+- When all rows are classified, close the scan batch. Do not rebuild or refresh
+  a program-set SME review in this resume step.
 
 Final response:
 - Report which rows were already complete.
 - Report which rows were resumed.
 - Report which rows remain blocked or failed.
 - Report validator status.
-- Provide paths to the updated manifest and program-set SME review.
+- Provide paths to the updated manifest, status CSV, batch plan, and
+  per-program artifact folders.
 ```
 
 ### 中文恢复 Prompt
@@ -950,15 +960,16 @@ Final response:
   或 blocker 已解决的 row 继续。
 - blocked_missing_source 只有在 source root 或 path 改过时才重试。
 - 每完成一个 program 后立即更新 manifest。
-- 所有 row 都分类完成后，重新生成或刷新 program-set SME review，并运行
-  program-set validator。
+- 所有 row 都分类完成后，关闭本次 scan batch。不要在恢复步骤里生成或刷新
+  program-set SME review。
 
 最终回复:
 - 报告哪些 rows 已经完成。
 - 报告哪些 rows 本次恢复处理了。
 - 报告哪些 rows 仍然 blocked 或 failed。
 - 报告 validator 状态。
-- 提供更新后的 manifest 和 program-set SME review 路径。
+- 提供更新后的 manifest、status CSV、batch plan 和 per-program artifact
+  folders 路径。
 ```
 
 ## Quality Checklist
@@ -972,9 +983,6 @@ Before marking the batch complete:
 - No output folder mixes multiple programs.
 - Required per-program artifacts exist for each completed scan.
 - `validate-program-analysis-contract.py` passed for every completed scan.
-- `program-set-core-input-manifest.yaml` exists.
-- `program-set-sme-core-review.md` exists.
-- `validate-program-set-core-review.py` passed.
 - Every unsupported business claim is removed, downgraded, or converted to
   `TBD-*`.
 - Every unresolved message/status/code description is listed as a gap, TBD, or

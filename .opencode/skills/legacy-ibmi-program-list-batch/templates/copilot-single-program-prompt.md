@@ -48,6 +48,9 @@ Rules:
 - Run the program-analysis validator before marking complete.
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
+- Do not generate or refresh program-set-sme-core-review.md in this
+  single-program chat. Program-set review is a later flow-analyzer step only
+  after a specific flow or program set is selected.
 
 Required output:
 - program-analysis.md

@@ -92,6 +92,20 @@ explicit deep-read continuation.
 - Treat `@CC080` and `CC080` as different program identities unless a reviewed
   delivery profile defines aliases.
 
+## Batch Completion Boundary
+
+This contract completes the independent program-scan batch only. A batch is
+ready to close when every requested row is classified as `completed`,
+`completed_with_warnings`, `skipped_not_program`, `blocked_missing_source`,
+`failed_validator`, or `failed_runtime`, and all completed rows satisfy the
+required per-program artifact and validator rules.
+
+Do not require `program-set-core-input-manifest.yaml`,
+`program-set-sme-core-review.md`, or the program-set validator for this batch
+completion gate. Those artifacts belong to `legacy-ibmi-flow-analyzer` after a
+specific SME flow, call-flow discovery, or other meaningful program set is
+selected.
+
 ## Plan Markdown Shape
 
 `program-batch-plan.md` should include:

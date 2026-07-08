@@ -25,6 +25,19 @@ Do not use remote main, another branch, a prior-run cache, or another analyst's
 artifact as completion evidence for the default program-flow workflow. Git/PR
 review is the comparison mechanism after the current-run artifacts exist.
 
+After an all-program scan has been reviewed and merged into the document /
+delivery repo, SME-local flow assembly can use **approved document repo reuse**:
+
+1. SME clones the document/delivery repo locally.
+2. SME provides the program flow/list.
+3. The builder reads only the requested programs' approved compact artifacts
+   from the local clone with `--artifact-repo-mode approved_document_repo`.
+4. Missing programs remain visible as pending/missing rows; the builder does
+   not invent or silently skip them.
+5. If fresh source inventory finds a missing program, scan just that program and
+   refresh the document repo artifact. If fresh inventory also misses it, block
+   with SME follow-up for spelling, aliases, library/scope, or missing source.
+
 Default output:
 
 ```text
@@ -194,6 +207,32 @@ Use `--source-root` to enable the default source inventory cache lookup at
 profile or local run stores `program-list.csv` and `scan-summary.yaml` in a
 different location.
 
+Build from an approved local document repo clone on Windows:
+
+```powershell
+py -3 scripts/build-program-set-core-review.py `
+  --review-name "card auth posting core review" `
+  --programs-file programs.txt `
+  --working-root C:\path\to\legacy-modernization-delivery `
+  --profile C:\path\to\delivery-profile.yaml `
+  --working-branch main `
+  --artifact-repo-mode approved_document_repo `
+  --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
+```
+
+macOS/Linux:
+
+```bash
+python3 scripts/build-program-set-core-review.py \
+  --review-name "card auth posting core review" \
+  --programs-file programs.txt \
+  --working-root /path/to/legacy-modernization-delivery \
+  --profile path/to/delivery-profile.yaml \
+  --working-branch main \
+  --artifact-repo-mode approved_document_repo \
+  --output-dir /path/to/legacy-modernization-delivery/modules/CAP-ID-0004-program_set_reviews/card_auth_posting_core_review
+```
+
 Repo-level inventory cache, only when needed on Windows:
 
 ```powershell
@@ -247,7 +286,8 @@ modules/CAP-ID-0004-program_set_reviews/
 | --- | --- | --- |
 | `analyzed_this_run` | Current-run artifact exists in the delivery working branch. | Use compact artifacts for review fill. |
 | `reused_same_run` | The same normalized program already produced a current-run artifact earlier in this batch. | Reuse that current-run artifact for this flow/repeat. |
-| `pending_source` | No current-run artifact exists yet, and source lookup/analysis is still needed. | Use fresh inventory to locate source and run program analysis. |
+| `reused_artifact_repo` | Approved artifact exists in the local document repo clone and `artifact_repo_mode` is `approved_document_repo`. | Use compact artifacts for SME-local review fill. |
+| `pending_source` | No artifact exists yet, but source lookup/analysis is still needed or fresh inventory found the program. | Use fresh inventory to locate source and run targeted program analysis. |
 | `blocked_missing_source` | Source or required evidence is unavailable. | Record precise TBD/blocker; do not fake completion. |
 
 ## Output Placement

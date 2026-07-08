@@ -16,17 +16,21 @@ program-set-sme-core-review.md
 ```
 
 `program-set-core-input-manifest.yaml` is the control input. It records the
-SME-supplied program order, normalized program identity, current-run
-`run_resolution`, artifact root, compact artifact availability, program
-resolution profile, and delivery workspace profile. It also records source
-inventory cache status under `source_inventory`: the checked cache directory,
-`program-list.csv` / `scan-summary.yaml` presence, freshness/action, current
-source revision, inventory revision, and per-program source-path/tier hints.
+SME-supplied program order, normalized program identity, `run_resolution`,
+artifact root, compact artifact availability, program resolution profile, and
+delivery workspace profile. It also records source inventory cache status under
+`source_inventory`: the checked cache directory, `program-list.csv` /
+`scan-summary.yaml` presence, freshness/action, current source revision,
+inventory revision, and per-program source-path/tier hints.
 The LLM or agent may summarize from the manifest and listed compact artifacts,
 but must not silently add or remove programs. In the default
 program-evidence-first flow, the builder should receive `--program-first
---working-root <delivery-working-branch-checkout>`. The builder does not read
-remote-main or prior-run artifacts for program-flow assembly.
+--working-root <delivery-working-branch-checkout>`. After an all-program scan
+has been reviewed and merged into the document/delivery repo, SME-local flow
+assembly may instead use `--artifact-repo-mode approved_document_repo` with
+`--working-root <local-document-repo-clone>`. The builder does not fetch
+remote-main or silently read arbitrary prior-run artifacts for program-flow
+assembly.
 
 ```markdown
 # Program Set SME Core Review: [Program Set Name]
@@ -65,9 +69,10 @@ The validator must pass before SME handoff. It checks the reader-first section
 order, a non-placeholder Program Set Reading Summary, the Cross-Program
 Processing Overview table, reader-useful detail in the four core sections,
 per-program coverage in Sources and Core Completeness Ledger, legal
-`run_resolution` values, required current-run routine logic sidecars for every
-completed program, and absence of full-flow sections such as Nodes, Edges,
-Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and SME Checklist.
+`run_resolution` values, required routine logic sidecars for every completed or
+approved-reused program, and absence of full-flow sections such as Nodes,
+Edges, Replay, Persistence, Lineage, UI Surfaces, Capability Seeds, and SME
+Checklist.
 
 ---
 
@@ -143,6 +148,18 @@ earlier in this run. Record `run_resolution` as `analyzed_this_run`,
 `reused_same_run`, `pending_source`, or `blocked_missing_source`. Remote-main,
 prior-run, and other analysts' artifacts may be compared later through Git/PR
 review, but they do not satisfy this run's evidence gate.
+
+The approved document repo workflow is explicit and separate. After the
+all-program scan artifacts are reviewed and merged into the document/delivery
+repo, an SME may clone that repo locally and assemble a selected flow with
+`--artifact-repo-mode approved_document_repo`. In that mode, found artifacts
+record `run_resolution: reused_artifact_repo` and
+`artifact_source: approved_document_repo`; missing or incomplete programs still
+remain visible as pending/blocker rows. If a fresh source inventory finds a
+missing program, keep `run_resolution: pending_source` and allow targeted scan.
+If fresh inventory also misses it, use
+`run_resolution: blocked_missing_source`, `artifact_source:
+source_inventory_missing`, and require SME/source follow-up.
 
 Before source discovery for any program that is not already complete in the
 current-run artifact root, check the source repo inventory cache. Default path:

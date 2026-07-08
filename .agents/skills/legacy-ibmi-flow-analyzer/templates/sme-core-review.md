@@ -56,13 +56,13 @@ an artifact list, file inventory, or pending placeholder.
 
 | Program | Expected In Scope From | Run Resolution | Routine Logic Evidence | Message Inventory | Missing / Targeted Follow-up |
 | --- | --- | --- | --- | --- | --- |
-| [PROGRAM] | SME-provided flow / inventory / current-run artifact | analyzed_this_run / reused_same_run / pending_source / blocked_missing_source | present / missing / N/A | present / missing / N/A | [none / scan this program / missing source] |
+| [PROGRAM] | SME-provided flow / inventory / current-run artifact / approved document repo artifact | analyzed_this_run / reused_same_run / reused_artifact_repo / pending_source / blocked_missing_source | present / missing / N/A | present / missing / N/A | [none / scan this program / missing source] |
 
 ## Sources
 
 | Program | Analysis Directory | Run Resolution | Compact Artifacts Used | Coverage / Readiness | Notes |
 | --- | --- | --- | --- | --- | --- |
-| [PROGRAM] | [working-branch path / pending source scan] | analyzed_this_run / reused_same_run / pending_source / blocked_missing_source | program-analysis.md; program-analysis-summary.yaml; source-index.yaml; routine-index.md; message-inventory.yaml; routine-logic-details.md=present/missing; routine-logic-details.yaml=present/missing; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
+| [PROGRAM] | [working-branch path / approved document repo path / pending source scan] | analyzed_this_run / reused_same_run / reused_artifact_repo / pending_source / blocked_missing_source | program-analysis.md; program-analysis-summary.yaml; source-index.yaml; routine-index.md; message-inventory.yaml; routine-logic-details.md=present/missing; routine-logic-details.yaml=present/missing; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
 
 ## Run Profile
 
@@ -71,6 +71,8 @@ an artifact list, file inventory, or pending placeholder.
 | Repo | [owner/repo from delivery workspace profile] |
 | Working Branch | [develop-person or current delivery branch] |
 | Artifact Root | [current delivery working checkout / output root] |
+| Artifact Repo Mode | current_run / approved_document_repo |
+| Reuse Policy | current_run_only / approved_document_repo_clone |
 | Cross-Run Reuse | false |
 | Program Folder Patterns | [modules/*/{PROGRAM}; or configured patterns] |
 | Program Name Normalization | [uppercase; preserve leading @; exact folder-name match; or configured rule] |
@@ -88,7 +90,7 @@ an artifact list, file inventory, or pending placeholder.
 
 | Program | Run Resolution | Inventory Status | Source Path | Tier | Targeted Scan Allowed |
 | --- | --- | --- | --- | --- | --- |
-| [PROGRAM] | analyzed_this_run / reused_same_run / pending_source / blocked_missing_source | not_needed_current_artifact_present / found / missing_from_inventory / inventory_cache_missing | [source member path] | normal_program / complex_normal_program / large_extreme_program / unknown | yes / no |
+| [PROGRAM] | analyzed_this_run / reused_same_run / reused_artifact_repo / pending_source / blocked_missing_source | not_needed_current_artifact_present / not_needed_approved_document_repo_artifact_present / found / missing_from_inventory / inventory_cache_missing | [source member path] | normal_program / complex_normal_program / large_extreme_program / unknown | yes / no |
 
 Rules:
 
@@ -105,11 +107,12 @@ Rules:
   Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables, or SME
   Checklist.
 - No program may be omitted from the Core Completeness Ledger. Programs with no
-  current-run artifact remain in the row set as `pending_source` or
-  `blocked_missing_source`; do not satisfy them from remote-main or prior-run
-  artifacts.
+  artifact remain in the row set as `pending_source` or
+  `blocked_missing_source`; satisfy rows from existing artifacts only when the
+  manifest explicitly uses `run_profile.artifact_repo_mode:
+  approved_document_repo` and `run_resolution: reused_artifact_repo`.
 - Normal, complex, and large programs all require `routine-logic-details.md`
-  and `routine-logic-details.yaml` as current-run routine logic evidence.
+  and `routine-logic-details.yaml` as routine logic evidence.
 - For `pending_source` programs, use source inventory cache only when freshness
   is `fresh`; otherwise rerun repo-level inventory before targeted program scan.
 - Message Inventory must list every exact message/status/literal observed
