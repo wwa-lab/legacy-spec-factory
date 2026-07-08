@@ -128,7 +128,10 @@ Execution rules:
 - Do not combine multiple programs into one program-analysis.md.
 - Each program must have its own output folder.
 - Read at most 5 routine bodies per program-analysis turn.
-- Keep normal_program output lightweight unless a density trigger appears.
+- Keep normal_program output lightweight unless a density trigger appears:
+  concise main-file content and no large-program-only sidecars by default, but
+  still include reader-first Calculation / Validation / Exception overview and
+  named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Record skipped, scanned, failed, and blocked programs in a batch manifest.
@@ -693,7 +696,10 @@ Rules:
   meanings, or validation rules. Treat them as supporting evidence only.
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
-- Keep normal_program output lightweight unless density triggers appear.
+- Keep normal_program output lightweight unless density triggers appear:
+  concise main-file content and no large-program-only sidecars by default, but
+  still include reader-first Calculation / Validation / Exception overview and
+  named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
 - Write required artifacts to the output directory.
@@ -707,11 +713,13 @@ Required output:
 - program-analysis-summary.yaml
 - routine-index.md
 - message-inventory.yaml
+- routine-logic-details.md
+- routine-logic-details.yaml
 
 Conditional output:
-- routine-logic-details.md and routine-logic-details.yaml only for
-  complex_normal_program, large_extreme_program, or explicit deep-read
-  continuation.
+- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
+  routine-logic-details/deep-read-batch-*.md only for complex_normal_program,
+  large_extreme_program, or explicit deep-read continuation.
 
 Validation:
 py -3 scripts\validate-program-analysis-contract.py `

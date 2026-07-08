@@ -33,6 +33,21 @@ complete routine index. Detailed evidence remains in Routine Logic Details,
 Logic Decomposition Ledger, Key File & Field Logic, and File I/O, all inside
 this main review artifact.
 
+### Calculation Logic Overview
+
+[Summarize the calculation / assignment themes in business-readable order. Keep
+normal programs concise, but still give a theme map before routine-level detail.]
+
+| Theme | Routine Count | Routines | Reader Cue |
+| --- | --- | --- | --- |
+| [account setup / amount derivation / status assignment / persistence output] | [N] | `[MAIN]`, `[SRxxx] - [SRyyy]` | [what this theme helps the SME understand before reading RLOG detail] |
+
+### [Calculation Theme Name]
+
+[Explain this calculation theme in source-backed terms: inputs/carriers,
+assignments, branch guards, output fields, and downstream effect. Use more
+theme subsections when the program has distinct calculation areas.]
+
 | Calculation / Assignment | Target Field / Variable | Source Operands / Carriers | Guard / Branch | Output / Business Effect | Supporting Detail Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | [amount / quantity / status / key / payload / return-value calculation] | `[FIELD_NAME]` (business meaning) | `[SOURCE_FIELD]`, `[WORK_VAR]`, constants, file/parameter carriers | [always / IF / SELECT / indicator / loop / exception guard] | [persisted field, returned value, downstream call parameter, display/report/queue output, status/message set] | [Routine Logic Details -> routine + conditioned block / Logic Decomposition row / Field Mutation row] | [EV-*] |
@@ -45,6 +60,9 @@ Calculation logic rules:
   field updates.
 - Keep this section whole-program and SME-readable. Do not bury a critical
   calculation only inside a routine-local subsection or a later ledger.
+- Include `### Calculation Logic Overview` and at least one named calculation
+  theme subsection before `### Routine Index For Calculation Logic`, even for
+  `normal_program`; lightweight means concise, not theme-free.
 - Preserve source identifiers with meaning:
   ``FIELD_NAME`` (business meaning) and ``VARIABLE_NAME`` (business meaning).
 - Every row must link to the deeper section that proves the chain. If operands,
@@ -77,6 +95,22 @@ handler outcomes so IT SMEs can find them immediately after the program's
 calculation logic. Start with reader-oriented validation themes, then include a
 complete routine index. Do not hide these rows later in the document.
 
+### Validation Logic Overview
+
+[Summarize validation / status / message themes in review order. Keep normal
+programs concise, but still show how the validations group before the routine
+index.]
+
+| Theme | Routine Count | Routines | Reader Cue |
+| --- | --- | --- | --- |
+| [control prerequisite / business-state gate / helper return validation] | [N] | `[MAIN]`, `[SRxxx] - [SRyyy]` | [what this theme helps the SME validate first] |
+
+### [Validation Theme Name]
+
+[Explain this validation theme in source-backed terms: checked carriers,
+trigger conditions, message/status values, reverse trigger chains, and
+downstream effect. Use more theme subsections when validation areas differ.]
+
 | Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[CPFxxxx / UCCxxxx / literal / response 00 / status value]` | [message description from message file, source literal/comment, runtime evidence, or SME note; otherwise `unresolved - message description not available`] | validation_error / file_io_error / business_rule_error / external_call_error / data_queue_error / response_status / exception_log / unresolved | `[FIELD_NAME]` assignment, MONMSG, ON-ERROR, IF branch, lines [XX-YY] | [condition that sets or handles code] | [Routine Logic Details section + conditioned calculation block / outcome reverse trace / exception closure / source-backed TBD] | response DS / message field / status field / data queue message / exception-log file / return parameter / display-message API | [return, skip write, rollback, log, suppress downstream call, continue, abort] | confirmed / inferred / unresolved |
@@ -89,6 +123,9 @@ Validation logic rules:
 - Do not group multiple message IDs into one row and do not replace individual
   descriptions with family summaries such as "validation messages" or
   "call-specific message IDs".
+- Include `### Validation Logic Overview` and at least one named validation
+  theme subsection before `### Routine Index For Validation Logic`, even for
+  `normal_program`; this keeps small scans as readable as large scans.
 - If one branch assigns several message IDs, duplicate the branch context and
   create one validation logic row for each message ID.
 - `Message Description` must be the best available description from a message
@@ -130,6 +167,21 @@ exception summary for IT SME first-read review; the detailed closure remains in
 Routine Logic Details and the later Error Handling section. Start with
 reader-oriented exception-flow themes, then include a complete routine index.
 
+### Exception Flow Overview
+
+[Summarize exception-flow themes in review order. Keep normal programs concise,
+but still show how exception paths group before the routine index.]
+
+| Theme | Routine Count | Routines | Reader Cue |
+| --- | --- | --- | --- |
+| [business failure / file-operation failure / helper failure / tolerated path] | [N] | `[MAIN]`, `[SRxxx] - [SRyyy]` | [what this theme helps the SME confirm about closure behavior] |
+
+### [Exception Theme Name]
+
+[Explain this exception theme in source-backed terms: trigger, detection,
+fields/messages set, closure action, and downstream effect. Use more theme
+subsections when exception areas differ.]
+
 | Exception / Error Path | Trigger | Detection Mechanism | Fields / Messages Set | Handling Action | Downstream Effect | Supporting Detail Link | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [business / parameter / file I/O / SQL / external call / generic handler] | [condition, `%ERROR`, `%FOUND` false, MONMSG, ON-ERROR, return code, indicator] | [IF branch / MONITOR / MONMSG / ON-ERROR / status check / runtime evidence] | [message ID, status field, return code, error flag, log text] | RETURN / rollback / skip write / continue / abort / log / send message | [skipped update/call, rollback, output suppressed, caller response, operator message] | [Routine exception closure / Error Handling -> Exception Closure Ledger row / Validation Logic row] | [EV-*] |
@@ -139,6 +191,9 @@ Exception handling rules:
 - Include every observed exception path, including generic catch-all handlers.
 - Do not infer specific CPF/MCH/RNX/SQL or shop-local message IDs from a
   generic handler. Generic handlers get their own row with unresolved specifics.
+- Include `### Exception Flow Overview` and at least one named exception theme
+  subsection before `### Routine Index For Exception Handling`, even for
+  `normal_program`; lightweight output still needs a reader-first exception map.
 - Every row must state whether the exception is closed by return, rollback,
   skip, continue, abort, log/message output, or downstream suppression.
 - If the source shows a trigger but not the final handling effect, keep the row

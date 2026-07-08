@@ -64,6 +64,12 @@ BATCH_CORE_SECTIONS = (
     "Exception Handling",
 )
 
+CORE_SECTION_OVERVIEW_HEADINGS = {
+    "Calculation Logic": ("Calculation Logic Overview",),
+    "Validation Logic": ("Validation Logic Overview",),
+    "Exception Handling": ("Exception Flow Overview", "Exception Handling Overview"),
+}
+
 BATCH_REQUIRED_SECTIONS = (
     "Calculation Logic",
     "Validation Logic",
@@ -188,6 +194,16 @@ def h2_section_text(markdown: str, heading: str) -> str:
         end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
         return markdown[start:end]
     return ""
+
+
+def h3_blocks(section_text: str) -> list[tuple[str, int, str]]:
+    matches = list(re.finditer(r"^###\s+(.+?)\s*$", section_text, re.M))
+    blocks: list[tuple[str, int, str]] = []
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(section_text)
+        blocks.append((match.group(1).strip(), match.start(), section_text[start:end]))
+    return blocks
 
 
 def validate_ordered_headings(
@@ -554,6 +570,62 @@ def validate_core_logic_reader_first_quality(
     return findings
 
 
+def validate_core_logic_theme_sections(program_markdown: str) -> list[str]:
+    findings: list[str] = []
+    for section in BATCH_CORE_SECTIONS:
+        section_text = h2_section_text(program_markdown, section)
+        if not section_text:
+            continue
+
+        blocks = h3_blocks(section_text)
+        overview_aliases = CORE_SECTION_OVERVIEW_HEADINGS[section]
+        overview_block = next(
+            (block for block in blocks if block[0] in overview_aliases),
+            None,
+        )
+        if overview_block is None:
+            findings.append(
+                f"reader-first golden gate: program-analysis.md {section} "
+                "missing themed overview heading: "
+                + " or ".join(overview_aliases)
+            )
+        elif (
+            has_reader_first_placeholder(overview_block[2])
+            or meaningful_word_count(overview_block[2]) < 8
+        ):
+            findings.append(
+                f"reader-first golden gate: program-analysis.md {overview_block[0]} "
+                "needs reader-useful theme overview content"
+            )
+
+        index_heading = f"Routine Index For {section}"
+        index_position = next(
+            (position for heading, position, _body in blocks if heading == index_heading),
+            len(section_text),
+        )
+        theme_blocks = [
+            block
+            for block in blocks
+            if block[1] < index_position
+            and block[0] != index_heading
+            and block[0] not in overview_aliases
+        ]
+        if not theme_blocks:
+            findings.append(
+                f"reader-first golden gate: program-analysis.md {section} needs at least "
+                "one reader-first theme subsection before the routine index"
+            )
+            continue
+
+        for heading, _position, body in theme_blocks:
+            if has_reader_first_placeholder(body) or meaningful_word_count(body) < 8:
+                findings.append(
+                    f"reader-first golden gate: program-analysis.md {section} theme "
+                    f"subsection {heading} needs reader-useful detail"
+                )
+    return findings
+
+
 def extract_main_rlog_detail_blocks(program_markdown: str) -> dict[str, str]:
     section_text = h2_section_text(program_markdown, "Routine Logic Details")
     matches = list(
@@ -601,6 +673,7 @@ def validate_reader_first_golden_gate(program_markdown: str, analysis_dir: Path)
     findings: list[str] = []
     findings.extend(validate_program_reading_summary_quality(program_markdown))
     findings.extend(validate_core_logic_reader_first_quality(program_markdown, analysis_dir))
+    findings.extend(validate_core_logic_theme_sections(program_markdown))
     findings.extend(validate_main_rlog_detail_quality(program_markdown, analysis_dir))
     return findings
 

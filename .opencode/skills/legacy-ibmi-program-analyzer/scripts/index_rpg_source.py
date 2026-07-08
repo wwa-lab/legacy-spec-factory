@@ -2215,6 +2215,25 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                 [["pending deep read", "pending", "pending reader-oriented summary"]],
             ),
             "## Calculation Logic",
+            "### Calculation Logic Overview",
+            (
+                "Pending semantic deep-read. Final output must group material "
+                "calculation and assignment behavior by reader-first processing "
+                "theme before the complete routine index."
+            ),
+            markdown_table(
+                ["Theme", "Routine Count", "Routines", "Reader Cue"],
+                [
+                    [
+                        "pending calculation theme",
+                        "pending",
+                        "pending",
+                        "replace with source-backed calculation/assignment theme after deep-read",
+                    ]
+                ],
+            ),
+            "### Pending Calculation Theme",
+            "Pending semantic deep-read. Replace this subsection with the source-backed calculation theme detail before final delivery.",
             "**Calculation logic unresolved:** pending semantic deep-read. Populate only after source windows are analyzed.",
             markdown_table(
                 [
@@ -2234,6 +2253,26 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                 routine_index_rows,
             ),
             "## Validation Logic",
+            "### Validation Logic Overview",
+            (
+                "Pending semantic deep-read and message/reference-pack lookup. "
+                "Final output must group validation, status, return-code, and "
+                "message outcomes by reader-first validation theme before the "
+                "complete routine index."
+            ),
+            markdown_table(
+                ["Theme", "Routine Count", "Routines", "Reader Cue"],
+                [
+                    [
+                        "pending validation theme",
+                        "pending",
+                        "pending",
+                        "replace with source-backed validation/status theme after deep-read",
+                    ]
+                ],
+            ),
+            "### Pending Validation Theme",
+            "Pending semantic deep-read. Replace this subsection with source-backed validation/status theme detail before final delivery.",
             "**Validation logic unresolved:** pending semantic deep-read and message/reference-pack lookup.",
             markdown_table(
                 [
@@ -2255,6 +2294,26 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                 routine_index_rows,
             ),
             "## Exception Handling",
+            "### Exception Flow Overview",
+            (
+                "Pending semantic deep-read. Final output must group business, "
+                "parameter, I/O, external-call, system, and generic exception "
+                "paths by reader-first exception-flow theme before the complete "
+                "routine index."
+            ),
+            markdown_table(
+                ["Theme", "Routine Count", "Routines", "Reader Cue"],
+                [
+                    [
+                        "pending exception theme",
+                        "pending",
+                        "pending",
+                        "replace with source-backed exception-flow theme after deep-read",
+                    ]
+                ],
+            ),
+            "### Pending Exception Theme",
+            "Pending semantic deep-read. Replace this subsection with source-backed exception closure detail before final delivery.",
             "**Exception handling unresolved:** pending semantic deep-read.",
             markdown_table(
                 [

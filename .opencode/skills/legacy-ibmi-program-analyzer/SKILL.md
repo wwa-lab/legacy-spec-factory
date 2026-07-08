@@ -125,6 +125,13 @@ Produce:
   but sidecars remain audit, checkpoint, and machine-readable sources; they are
   not the SME reading entry point unless the user explicitly asks for a compact
   wrapper.
+- Themed Calculation / Validation / Exception sections means each core section
+  has a `### ... Overview` heading and at least one named theme subsection
+  before `### Routine Index For ...`. For example, `normal_program` output
+  should still show concise themes such as account setup, limit checks,
+  change/modify paths, file prerequisites, helper failures, or whatever
+  source-backed themes fit the program. Do not collapse a normal program into
+  only a top table plus routine index.
 
 Use:
 
@@ -526,6 +533,13 @@ Run this gate before delivering `program-analysis.md` /
   start with a reader-oriented overview and contain `Routine Index For ...`
   rows that cover every RLOG in `routine-logic-details.yaml`, with a category
   and reader-useful detail.
+- `Calculation Logic`, `Validation Logic`, and `Exception Handling` must each
+  include a named overview subsection (`### Calculation Logic Overview`,
+  `### Validation Logic Overview`, and `### Exception Flow Overview` or
+  `### Exception Handling Overview`) plus at least one source-backed named
+  theme subsection before the routine index. This is required for
+  `normal_program`, `complex_normal_program`, and `large_extreme_program`;
+  normal scans may be shorter, but not theme-free.
 - If all RLOG entries have been deep-read or normalized, do not retain stale
   gap wording such as `Remaining routine deep-read gaps`,
   `not-yet-deep-read routines`, or `not deep-read routines`.
@@ -727,6 +741,12 @@ Run this gate before delivering `program-analysis.md` /
      `Routine Index For <section>` covering every RLOG declared in
      `routine-logic-details.yaml`. Each row must include the RLOG/routine,
      a category, and reader-useful detail.
+   - In those same three sections, add one `### ... Overview` subsection and
+     one or more named source-backed theme subsections before the routine index.
+     The theme headings should be business/processing-readable and match the
+     program's behavior, not generic placeholders. For normal programs this can
+     be two or three concise subsections; for large programs it can expand into
+     the richer CU653-style category map.
    - Add **Routine / Window Data Flow** for every load-bearing routine or
      deep-read window: purpose, input variables, transformation logic,
      output variables, side effects, source lines, and evidence. Use
@@ -1082,6 +1102,7 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
 - [ ] Routine Logic Details include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
 - [ ] Calculation Logic is front-loaded immediately after Program Reading Summary, summarizes the whole program's material calculations/assignments, and links every row to Routine Logic Details, Logic Decomposition, Key File & Field Logic, or Field Mutation evidence
+- [ ] Calculation Logic, Validation Logic, and Exception Handling each include an overview subsection plus at least one named source-backed theme subsection before the routine index; normal programs are concise but still CU653-style reader-first, not table-plus-index only
 - [ ] Calculation Logic, Validation Logic, and Exception Handling each include a reader-oriented overview plus `Routine Index For ...` rows covering every RLOG in `routine-logic-details.yaml`
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
@@ -1217,3 +1238,8 @@ No runtime-specific assumptions are embedded in the canonical version.
     content, routine-index detail, and main-file RLOG detail
   - Makes CU653-style one-file readability a final-delivery gate for every RPG
     program tier
+- v0.2.17 (2026-07-08): Core logic theme parity gate
+  - Requires Calculation Logic, Validation Logic, and Exception Handling to
+    include overview and named theme subsections before the routine index
+  - Clarifies that `normal_program` remains concise but must not degrade into
+    a top table plus routine index without CU653-style reader navigation
