@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-flow-analyzer
-description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Default field workflow is program-evidence first with no cross-run reuse: analyze every distinct SME-provided program for the current run, reuse only artifacts produced earlier in the same run/batch, then assemble the self-contained program-set review. Supports source inventory cache reuse from outputs/repo-scan when fresh and explicit full transaction-flow analysis for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
+description: Merge multiple IBM i program-analysis artifacts into a compact SME program-set core review, especially when an SME provides a program-flow list and wants Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. Default field workflow is program-evidence first with no cross-run reuse: analyze every distinct SME-provided program for the current run, reuse only artifacts produced earlier in the same run/batch, then assemble the self-contained program-set review. Also supports approved document-repo reuse after an all-program scan has been merged: SME can clone the document repo locally, provide a program flow, and assemble a core review from approved existing program artifacts without re-scanning source. Supports source inventory cache reuse from outputs/repo-scan when fresh and explicit full transaction-flow analysis for seven trigger models when requested separately. Layer 1.5 (platform-specific) skill of the Legacy Spec Factory reverse chain.
 ---
 
 <!--
@@ -21,9 +21,9 @@ Retain this notice in substantial copies or derived versions.
 | Field | Notes |
 | --- | --- |
 | Problem solved | Merges a SME-provided multi-program flow/list into one compact program-set core review without losing any requested program. Full transaction-flow analysis remains available only when explicitly requested. |
-| Input | Approved inventory, current-run program analyses, trigger context, runtime clues, screen/report evidence, and SME notes. |
+| Input | Approved inventory, current-run program analyses or an approved document repo clone containing all-program scan artifacts, trigger context, runtime clues, screen/report evidence, and SME notes. |
 | Output | For SME-provided program-flow/core merge requests, `program-set-sme-core-review.md` only. For separately requested full transaction-flow analysis, `flow-<FLOW-SLUG>.md`. |
-| Core prompt strategy | Resolve every SME-provided program to current-run program-analysis evidence first: analyze every distinct program from source, reuse only artifacts produced earlier in the same run/batch, aggregate compact core artifacts, preserve SME order as navigation evidence, and expose missing programs/sections in a completeness ledger. |
+| Core prompt strategy | Resolve every SME-provided program to approved program-analysis evidence first: either current-run artifacts from the active scan branch or approved artifacts from a local document repo clone, aggregate compact core artifacts, preserve SME order as navigation evidence, and expose missing programs/sections in a completeness ledger. |
 | Upstream skill | `legacy-ibmi-program-analyzer` and `legacy-ibmi-inventory`. |
 | Downstream consumer | `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, and capability/spec preparation. |
 | Validation standard | All called programs and files map to inventory IDs, trigger model is declared, and unresolved branches are not hidden. |
@@ -61,6 +61,20 @@ Git remains the review and conflict-resolution mechanism. If two analysts
 produce different program-analysis artifacts, compare them through normal branch
 diff/PR review rather than silently treating older artifacts as approved input.
 
+After a team has completed an all-program scan and merged the resulting
+program-analysis artifacts into the approved document/delivery repo, a second
+field workflow is supported: **approved document repo reuse**. In this mode the
+SME clones the document repo locally, supplies a program flow/list, and the
+builder reads only the requested programs' existing compact artifacts from that
+local clone. This is not remote-main probing and not arbitrary prior-run cache
+reuse; it is an explicit approved-artifact mode. Missing programs stay visible
+instead of being invented or silently dropped. If the program is missing from
+the document repo but a fresh source inventory finds it, mark it
+`pending_source` and route only that program back to a targeted program scan.
+If a fresh source inventory also does not contain it, mark it
+`blocked_missing_source` and ask the SME to confirm the program name, library,
+alias, deployment scope, or provide the missing source.
+
 Before analyzing unresolved programs from source, this skill uses the source
 repo inventory cache. By default it checks
 `<source-root>/outputs/repo-scan/program-list.csv` and
@@ -75,8 +89,10 @@ This skill supports these assembly modes:
 - **`core_review_only` (default for SME-provided program-flow input)** — user
   provides an ordered or partial program flow/list; the analyzer produces
   `program-set-sme-core-review.md` by first resolving every SME-provided
-  program to current-run working-branch program-analysis artifacts, then merging
-  those compact artifacts. Do not produce `flow-<FLOW-SLUG>.md` in this mode.
+  program to current-run working-branch program-analysis artifacts or, when
+  explicitly requested, approved artifacts in a local document repo clone, then
+  merging those compact artifacts. Do not produce `flow-<FLOW-SLUG>.md` in this
+  mode.
 - **`orchestrated`** — start from a trigger / entry program, discover the
   involved programs, run or route missing per-program analysis first, then
   assemble a full transaction flow from the generated compact artifacts. Use
@@ -152,8 +168,17 @@ Accept:
   if it does not exist, but never write directly to `main`.
 - **Program artifact resolution profile** — optional
   `program_artifact_resolution_profile` describing folder patterns, artifact
-  filenames, and program-name normalization for current-run artifact lookup
-  under the working root. This profile does not authorize cross-run reuse.
+  filenames, and program-name normalization for artifact lookup under the
+  working root. This profile does not authorize cross-run reuse by itself; use
+  explicit approved document repo mode when the working root is a cloned repo of
+  approved all-program scan artifacts.
+- **Approved document repo clone** — optional local clone of the delivery /
+  document repo after the all-program scan artifacts have been reviewed and
+  merged. Use this only with
+  `artifact_repo_mode: approved_document_repo` /
+  `--artifact-repo-mode approved_document_repo`. The clone supplies already
+  approved per-program artifacts for SME flow assembly; it does not authorize
+  inventing missing programs or bypassing required compact artifacts.
 - **Source inventory profile / source root** — optional
   `source_inventory_profile` plus source repo path. The default cache is
   `<source-root>/outputs/repo-scan/` with `program-list.csv` and
@@ -179,8 +204,10 @@ Accept:
   persisted field mutation, or SQLRPGLE evidence.
 - **Run resolution per program** — record one row per requested or discovered
   program with `run_resolution`: `analyzed_this_run`, `reused_same_run`,
-  `pending_source`, or `blocked_missing_source`. Do not mark a program complete
-  from remote-main or prior-run artifacts.
+  `reused_artifact_repo`, `pending_source`, or `blocked_missing_source`.
+  `reused_artifact_repo` is valid only when the manifest
+  `run_profile.artifact_repo_mode` is `approved_document_repo`. Do not mark a
+  program complete from remote-main or unapproved prior-run artifacts.
 - **Approved inventory** with `relationships` populated for the involved objects
 - Optional: SME notes on trigger context, BAU rhythm, known error scenarios
 - Optional: DSPF / PRTF / MENU object definitions (for UI-aware flows)
@@ -495,9 +522,18 @@ to the orchestrator.
      branch and PR.
    - Load the team/project delivery profile when supplied. If no team profile is
      supplied, use `templates/delivery-profile.yaml` as the editable starting
-     shape. Use `program_artifact_resolution_profile` for current-run artifact
-     folder/name patterns, and use the workspace profile to decide where
-     current-run program artifacts and program-set reviews are written.
+     shape. Use `program_artifact_resolution_profile` for artifact folder/name
+     patterns, and use the workspace profile to decide where current-run
+     program artifacts and program-set reviews are written.
+   - If the SME is working from a locally cloned document/delivery repo that
+     already contains approved all-program scan artifacts, set artifact repo
+     mode to `approved_document_repo`. In that mode, resolve the SME-provided
+     program list from the local clone and do not route found programs back to
+     source scanning. Missing or incomplete programs remain explicit ledger gaps
+     for follow-up. When a fresh source inventory finds a missing program, route
+     only that program to `legacy-ibmi-program-analyzer` / program-list batch
+     and refresh the document repo artifact. When fresh inventory does not find
+     it, record `blocked_missing_source` and request SME correction or source.
    - For the default SME program-flow workflow, run **program-evidence first**:
      route every distinct SME-provided program through
      `legacy-ibmi-program-list-batch` when multiple programs need source
@@ -537,21 +573,31 @@ to the orchestrator.
      `delivery_workspace_profile.program_tier_roots` by size tier. Write
      `program-set-sme-core-review.md` under
      `delivery_workspace_profile.program_set_review_parent/{REVIEW_SLUG}/`.
-   - For `core_review_only`, run the deterministic builder after every program
-     analysis artifact is complete and before the LLM fills the review:
+   - For `core_review_only` in current-run mode, run the deterministic builder
+     after every program analysis artifact is complete and before the LLM fills
+     the review:
      Windows:
      `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
      macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
+   - For `core_review_only` from an approved local document repo clone, run the
+     deterministic builder with approved document repo mode:
+     Windows:
+     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>\<program_set_review_parent>\<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
+     macOS/Linux:
+     `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>/<program_set_review_parent>/<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
      The builder writes `program-set-core-input-manifest.yaml` plus a fixed
      `program-set-sme-core-review.md` skeleton. Treat the manifest as the
      control input for all subsequent summarization. In program-evidence-first
      mode, the manifest records `run_resolution` as `analyzed_this_run`,
-     `reused_same_run`, `pending_source`, or `blocked_missing_source`.
+     `reused_same_run`, `pending_source`, or `blocked_missing_source`. In
+     approved document repo mode, found artifacts use
+     `run_resolution: reused_artifact_repo` and
+     `artifact_source: approved_document_repo`.
      `--source-root` enables the default `<source-root>/outputs/repo-scan`
      lookup; `--inventory-dir` may override that cache path for teams with a
-     different layout. `--working-root` is the only artifact lookup root for the
-     default program-flow workflow.
+     different layout. `--working-root` is the only artifact lookup root for
+     the default program-flow workflow and for approved document repo reuse.
    - Use `flow_scan_mode: orchestrated` when the user explicitly provides a trigger /
      entry program and wants the skill to discover, index, and assemble the
      whole flow.
@@ -969,6 +1015,17 @@ No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
 
+- v0.2.9 (2026-07-08): Approved document repo reuse for SME flow assembly
+  - Added explicit approved document repo mode for the post all-program-scan
+    workflow: SME clones the document/delivery repo locally, provides a program
+    flow/list, and assembles `program-set-sme-core-review.md` from approved
+    existing per-program artifacts
+  - Builder supports `--artifact-repo-mode approved_document_repo`
+  - Manifest records found programs as `run_resolution: reused_artifact_repo`
+    and `artifact_source: approved_document_repo`
+  - Validator accepts `reused_artifact_repo` only when
+    `run_profile.artifact_repo_mode: approved_document_repo`
+
 - v0.2.8 (2026-06-26): No cross-run reuse for SME program-flow core review
   - Default program-flow workflow now analyzes every distinct SME-provided
     program for the current run before program-set assembly
@@ -1012,8 +1069,8 @@ No runtime-specific assumptions are embedded in the canonical source.
   - Builder reads program artifacts from the delivery working branch via
     `--working-root`
   - Validator checks required core sections, per-program coverage in Sources
-    and Core Completeness Ledger, valid current-run resolution values, and
-    blocks accidental full-flow sections in compact SME reviews
+    and Core Completeness Ledger, legal `run_resolution` values, and blocks
+    accidental full-flow sections in compact SME reviews
 
 - v0.2.4 (2026-06-17): SME program-flow intake and configurable profiles
   - Added configurable delivery profile values for delivery repo, module roots,

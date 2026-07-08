@@ -200,7 +200,10 @@ Open one PR for the batch. Include:
 
 After review and merge to `main`, those artifacts become durable delivery
 history. Future program-flow runs still analyze their own current-run artifacts
-by default; differences are reviewed through Git/PR.
+by default, but an SME-local review can clone the document/delivery repo and
+run the program-set builder with `--artifact-repo-mode approved_document_repo`
+to assemble a selected program flow from approved existing artifacts.
+Differences are reviewed through Git/PR.
 
 ## Common Mistakes
 

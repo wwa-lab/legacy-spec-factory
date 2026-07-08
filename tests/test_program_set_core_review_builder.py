@@ -314,6 +314,74 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
 
             self.assertEqual(BUILDER.validate(manifest_path, review_path), [])
 
+    def test_builder_can_reuse_approved_document_repo_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            document_repo = temp_root / "legacy-modernization-delivery"
+            output_dir = document_repo / "modules" / "CAP-ID-0004-program_set_reviews" / "card_auth"
+            write_compact_artifacts(
+                document_repo / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            )
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CC050"],
+                artifact_root=document_repo,
+                config=config,
+                working_branch="main",
+                artifact_repo_mode=BUILDER.ARTIFACT_REPO_APPROVED_DOCUMENT,
+            )
+            manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
+            write_reader_first_review(review_path, manifest)
+
+            entry = manifest["programs"][0]  # type: ignore[index]
+            self.assertEqual(entry["run_resolution"], "reused_artifact_repo")
+            self.assertEqual(entry["artifact_source"], "approved_document_repo")
+            self.assertEqual(
+                entry["artifact_root"],
+                "modules/CAP-ID-0003-normal_program/CC050",
+            )
+            self.assertEqual(
+                manifest["run_profile"]["artifact_repo_mode"],  # type: ignore[index]
+                "approved_document_repo",
+            )
+            self.assertEqual(
+                manifest["run_profile"]["reuse_policy"],  # type: ignore[index]
+                "approved_document_repo_clone",
+            )
+            self.assertEqual(
+                manifest["source_inventory"]["programs"][0]["inventory_status"],  # type: ignore[index]
+                "not_needed_approved_document_repo_artifact_present",
+            )
+
+            findings = BUILDER.validate(manifest_path, review_path)
+            self.assertEqual(findings, [])
+
+    def test_validator_rejects_artifact_repo_reuse_without_mode(self) -> None:
+        manifest = {
+            "run_profile": {"artifact_repo_mode": "current_run"},
+            "programs": [
+                {
+                    "normalized_name": "CC050",
+                    "run_resolution": "reused_artifact_repo",
+                    "artifact_root": "modules/CAP-ID-0003-normal_program/CC050",
+                    "artifact_source": "approved_document_repo",
+                    "compact_artifacts": {
+                        BUILDER.artifact_key(filename): {"status": "present", "path": filename}
+                        for filename in BUILDER.REQUIRED_COMPACT_ARTIFACTS
+                    },
+                }
+            ],
+        }
+
+        findings = BUILDER.validate_manifest(manifest)
+
+        self.assertTrue(
+            any("requires artifact_repo_mode approved_document_repo" in finding for finding in findings),
+            findings,
+        )
+
     def test_builder_skeleton_is_reader_first_but_not_final_valid_review(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -541,7 +609,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(second["run_resolution"], "pending_source")
             self.assertIsNone(second["artifact_root"])
             self.assertEqual(second["artifact_source"], "source_scan_required")
-            self.assertIn("will scan once", manifest["warnings"][0])  # type: ignore[index]
+            self.assertIn("will resolve once", manifest["warnings"][0])  # type: ignore[index]
 
     def test_validator_reports_legacy_manifest_without_keyerror(self) -> None:
         manifest = {
@@ -582,7 +650,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
 
         self.assertTrue(
             any(
-                "duplicate with current-run artifact must use reused_same_run" in finding
+                "duplicate with artifact must use reused_same_run" in finding
                 for finding in findings
             ),
             findings,
@@ -674,6 +742,35 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertEqual(source_inventory["programs"][0]["source_path"], "QRPGLESRC/CU257F.RPGLE")
             self.assertEqual(source_inventory["programs"][0]["size_tier"], "complex_normal_program")
             self.assertTrue(source_inventory["programs"][0]["targeted_scan_allowed"])
+
+    def test_builder_blocks_program_missing_from_fresh_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            document_repo = temp_root / "legacy-modernization-delivery"
+            source_root = temp_root / "source"
+            init_clean_git_source_root(source_root)
+            write_inventory_cache(source_root)
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["MISSINGPGM"],
+                artifact_root=document_repo,
+                source_root=source_root,
+                config=config,
+                working_branch="main",
+                artifact_repo_mode=BUILDER.ARTIFACT_REPO_APPROVED_DOCUMENT,
+            )
+
+            entry = manifest["programs"][0]  # type: ignore[index]
+            source_inventory = manifest["source_inventory"]  # type: ignore[index]
+
+            self.assertEqual(entry["run_resolution"], "blocked_missing_source")
+            self.assertEqual(entry["artifact_source"], "source_inventory_missing")
+            self.assertIn("confirm SME program name", entry["follow_up"])
+            self.assertEqual(source_inventory["programs"][0]["inventory_status"], "missing_from_inventory")
+            self.assertEqual(source_inventory["programs"][0]["run_resolution"], "blocked_missing_source")
+            self.assertFalse(source_inventory["programs"][0]["targeted_scan_allowed"])
 
     def test_builder_marks_inventory_stale_when_source_revision_mismatches(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -782,7 +879,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("current-run artifact root not found", result.stderr)
+            self.assertIn("artifact root not found", result.stderr)
 
     def test_build_wrapper_rejects_deprecated_delivery_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

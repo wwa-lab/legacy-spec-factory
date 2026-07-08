@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build and validate program-set SME core review scaffolds.
 
-The builder is intentionally deterministic: it reads current-run program
-analysis artifact folders from the delivery working branch or output root,
-writes a manifest, and renders a fixed review skeleton. It does not reuse
-remote-main or prior-run artifacts. The validator checks structure and
-coverage; it does not judge whether the LLM-written summaries are
-semantically correct.
+The builder is intentionally deterministic: it reads program analysis artifact
+folders from either a current-run working root or an approved local document
+repository clone, writes a manifest, and renders a fixed review skeleton. It
+does not fetch remote-main or silently reuse arbitrary prior-run artifacts. The
+validator checks structure and coverage; it does not judge whether the
+LLM-written summaries are semantically correct.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import csv
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -92,8 +92,12 @@ OPTIONAL_COMPACT_ARTIFACTS = (
 
 RUN_ANALYZED = "analyzed_this_run"
 RUN_REUSED = "reused_same_run"
+RUN_ARTIFACT_REPO = "reused_artifact_repo"
 RUN_PENDING = "pending_source"
 RUN_BLOCKED = "blocked_missing_source"
+
+ARTIFACT_REPO_CURRENT_RUN = "current_run"
+ARTIFACT_REPO_APPROVED_DOCUMENT = "approved_document_repo"
 
 DEFAULT_SOURCE_INVENTORY_DIR = Path("outputs") / "repo-scan"
 DEFAULT_PROGRAM_LIST_FILENAME = "program-list.csv"
@@ -306,9 +310,29 @@ def build_program_entries(
     programs: list[str],
     artifact_root: Path,
     config: dict[str, Any],
+    artifact_repo_mode: str = ARTIFACT_REPO_CURRENT_RUN,
 ) -> tuple[list[ProgramEntry], list[str]]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
+    approved_document_repo = artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT
+    present_resolution = RUN_ARTIFACT_REPO if approved_document_repo else RUN_ANALYZED
+    duplicate_resolution = RUN_ARTIFACT_REPO if approved_document_repo else RUN_REUSED
+    present_source = "approved_document_repo" if approved_document_repo else "delivery_working_branch"
+    present_follow_up = (
+        "none - approved document repo artifact present"
+        if approved_document_repo
+        else "none - analysis artifact present in current run"
+    )
+    duplicate_follow_up = (
+        "none - reused approved document repo artifact"
+        if approved_document_repo
+        else "none - reused earlier in this run"
+    )
+    missing_follow_up = (
+        "add or refresh this program in the approved document repo"
+        if approved_document_repo
+        else "scan this program in current run"
+    )
     entries: list[ProgramEntry] = []
     warnings: list[str] = []
     seen: dict[str, ProgramEntry] = {}
@@ -320,25 +344,21 @@ def build_program_entries(
             warnings.append(
                 f"Duplicate normalized program name {normalized!r}; "
                 + (
-                    f"reusing current-run artifact from order {first.order}"
+                    f"reusing artifact from order {first.order}"
                     if has_current_artifact
-                    else f"will scan once from order {first.order} before reuse"
+                    else f"will resolve once from order {first.order} before reuse"
                 )
             )
             entry = ProgramEntry(
                 input_name=program,
                 normalized_name=normalized,
                 order=index,
-                run_resolution=RUN_REUSED if has_current_artifact else RUN_PENDING,
+                run_resolution=duplicate_resolution if has_current_artifact else RUN_PENDING,
                 artifact_root=first.artifact_root,
                 artifact_source=first.artifact_source if has_current_artifact else "source_scan_required",
                 tier=first.tier,
                 compact_artifacts=first.compact_artifacts,
-                follow_up=(
-                    "none - reused earlier in this run"
-                    if has_current_artifact
-                    else "scan this program once in current run"
-                ),
+                follow_up=duplicate_follow_up if has_current_artifact else missing_follow_up,
             )
             entries.append(entry)
             continue
@@ -346,17 +366,17 @@ def build_program_entries(
         found_artifact_root, matches = find_program_artifact_root(artifact_root, normalized, lookup)
         if len(matches) > 1:
             warnings.append(
-                f"Program {normalized} matched multiple current-run artifact folders; using {found_artifact_root}: "
+                f"Program {normalized} matched multiple artifact folders; using {found_artifact_root}: "
                 + ", ".join(matches)
             )
         if found_artifact_root:
-            run_resolution = RUN_ANALYZED
-            source = "delivery_working_branch"
-            follow_up = "none - analysis artifact present in current run"
+            run_resolution = present_resolution
+            source = present_source
+            follow_up = present_follow_up
         else:
             run_resolution = RUN_PENDING
             source = "source_scan_required"
-            follow_up = "scan this program in current run"
+            follow_up = missing_follow_up
         entry = ProgramEntry(
             input_name=program,
             normalized_name=normalized,
@@ -460,12 +480,16 @@ def inventory_program_statuses(
     statuses: list[dict[str, Any]] = []
     targeted_scan_allowed = freshness == "fresh"
     for entry in entries:
-        if entry.run_resolution in {RUN_ANALYZED, RUN_REUSED}:
+        if entry.run_resolution in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}:
             statuses.append(
                 {
                     "program": entry.normalized_name,
                     "run_resolution": entry.run_resolution,
-                    "inventory_status": "not_needed_current_artifact_present",
+                    "inventory_status": (
+                        "not_needed_approved_document_repo_artifact_present"
+                        if entry.run_resolution == RUN_ARTIFACT_REPO
+                        else "not_needed_current_artifact_present"
+                    ),
                     "source_path": None,
                     "size_tier": entry.tier,
                     "targeted_scan_allowed": False,
@@ -571,6 +595,43 @@ def build_source_inventory_status(
     }
 
 
+def apply_source_inventory_blockers(
+    entries: list[ProgramEntry],
+    source_inventory: dict[str, Any],
+) -> list[ProgramEntry]:
+    if source_inventory.get("freshness") != "fresh":
+        return entries
+    inventory_rows = {
+        str(row.get("program") or ""): row
+        for row in source_inventory.get("programs", []) or []
+        if isinstance(row, dict)
+    }
+    updated: list[ProgramEntry] = []
+    for entry in entries:
+        row = inventory_rows.get(entry.normalized_name)
+        if (
+            entry.run_resolution == RUN_PENDING
+            and row
+            and row.get("inventory_status") == "missing_from_inventory"
+        ):
+            updated.append(
+                replace(
+                    entry,
+                    run_resolution=RUN_BLOCKED,
+                    artifact_source="source_inventory_missing",
+                    follow_up=(
+                        "confirm SME program name/library/alias or provide source; "
+                        "fresh source inventory did not contain this program"
+                    ),
+                )
+            )
+            row["run_resolution"] = RUN_BLOCKED
+            row["targeted_scan_allowed"] = False
+        else:
+            updated.append(entry)
+    return updated
+
+
 def entry_to_dict(entry: ProgramEntry) -> dict[str, Any]:
     return {
         "input_name": entry.input_name,
@@ -598,6 +659,7 @@ def build_manifest(
     source_root: Path | None = None,
     inventory_dir: Path | None = None,
     program_first: bool = False,
+    artifact_repo_mode: str = ARTIFACT_REPO_CURRENT_RUN,
 ) -> dict[str, Any]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
@@ -605,6 +667,7 @@ def build_manifest(
         programs,
         artifact_root,
         config,
+        artifact_repo_mode=artifact_repo_mode,
     )
     source_inventory = build_source_inventory_status(
         entries=entries,
@@ -612,6 +675,7 @@ def build_manifest(
         inventory_dir=inventory_dir,
         config=config,
     )
+    entries = apply_source_inventory_blockers(entries, source_inventory)
     return {
         "schema_version": "0.1",
         "generated_by": "program_set_core_review.py",
@@ -622,8 +686,14 @@ def build_manifest(
             "repo": lookup.get("repo") or workspace.get("repo"),
             "working_branch": working_branch,
             "artifact_root": str(artifact_root),
+            "artifact_repo_mode": artifact_repo_mode,
             "program_first": program_first,
-            "cross_run_reuse": False,
+            "cross_run_reuse": artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT,
+            "reuse_policy": (
+                "approved_document_repo_clone"
+                if artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT
+                else "current_run_only"
+            ),
         },
         "program_resolution_profile": {
             "program_folder_patterns": lookup.get("program_folder_patterns", ["modules/*/{PROGRAM}"]),
@@ -665,7 +735,7 @@ def routine_detail_status(entry: dict[str, Any]) -> str:
 
 
 def routine_logic_evidence_status(entry: dict[str, Any]) -> str:
-    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED}:
+    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}:
         return "N/A"
     markdown = present_missing(entry, "routine-logic-details.md")
     yaml = present_missing(entry, "routine-logic-details.yaml")
@@ -680,7 +750,7 @@ def routine_logic_evidence_status(entry: dict[str, Any]) -> str:
 
 
 def present_missing(entry: dict[str, Any], artifact_filename: str) -> str:
-    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED}:
+    if entry.get("run_resolution") not in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}:
         return "N/A"
     if artifact_filename == "routine-logic-details.yaml":
         status = routine_detail_status(entry)
@@ -735,6 +805,8 @@ def render_run_profile(manifest: dict[str, Any]) -> str:
             f"| Repo | {run_profile.get('repo') or ''} |",
             f"| Working Branch | {run_profile.get('working_branch') or ''} |",
             f"| Artifact Root | {run_profile.get('artifact_root') or ''} |",
+            f"| Artifact Repo Mode | {run_profile.get('artifact_repo_mode') or ARTIFACT_REPO_CURRENT_RUN} |",
+            f"| Reuse Policy | {run_profile.get('reuse_policy') or 'current_run_only'} |",
             f"| Cross-Run Reuse | {str(run_profile.get('cross_run_reuse', False)).lower()} |",
             f"| Program Folder Patterns | {patterns} |",
             f"| Program Set Review Parent | {workspace.get('program_set_review_parent') or ''} |",
@@ -1033,6 +1105,8 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     programs = manifest.get("programs")
     if not isinstance(programs, list) or not programs:
         return ["manifest has no programs[] entries"]
+    run_profile = manifest.get("run_profile", {}) or {}
+    artifact_repo_mode = run_profile.get("artifact_repo_mode") or ARTIFACT_REPO_CURRENT_RUN
     by_name: dict[str, list[dict[str, Any]]] = {}
     for entry in programs:
         name = str(entry.get("normalized_name") or "")
@@ -1046,17 +1120,24 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             )
             continue
         resolution = entry.get("run_resolution")
-        if resolution not in {RUN_ANALYZED, RUN_REUSED, RUN_PENDING, RUN_BLOCKED}:
+        if resolution not in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO, RUN_PENDING, RUN_BLOCKED}:
             findings.append(f"{name} has invalid run_resolution: {resolution}")
-        if resolution in {RUN_ANALYZED, RUN_REUSED} and not entry.get("artifact_root"):
+        if resolution in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO} and not entry.get("artifact_root"):
             findings.append(f"{name} {resolution} missing artifact_root")
         if resolution == RUN_ANALYZED and entry.get("artifact_source") != "delivery_working_branch":
             findings.append(f"{name} analyzed_this_run must use artifact_source delivery_working_branch")
         if resolution == RUN_REUSED and entry.get("artifact_source") != "delivery_working_branch":
             findings.append(f"{name} reused_same_run has invalid artifact_source")
+        if resolution == RUN_ARTIFACT_REPO:
+            if artifact_repo_mode != ARTIFACT_REPO_APPROVED_DOCUMENT:
+                findings.append(
+                    f"{name} reused_artifact_repo requires artifact_repo_mode {ARTIFACT_REPO_APPROVED_DOCUMENT}"
+                )
+            if entry.get("artifact_source") != "approved_document_repo":
+                findings.append(f"{name} reused_artifact_repo must use artifact_source approved_document_repo")
         if resolution in {RUN_PENDING, RUN_BLOCKED} and entry.get("artifact_root"):
             findings.append(f"{name} {resolution} must not have artifact_root")
-        if resolution in {RUN_ANALYZED, RUN_REUSED}:
+        if resolution in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}:
             compact = entry.get("compact_artifacts", {}) or {}
             missing_artifacts = [
                 filename
@@ -1078,10 +1159,11 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             resolution = duplicate.get("run_resolution")
             artifact_root = duplicate.get("artifact_root")
             if first_artifact_root:
-                if resolution != RUN_REUSED:
-                    findings.append(f"{name} duplicate with current-run artifact must use reused_same_run")
+                expected_duplicate = RUN_ARTIFACT_REPO if first.get("run_resolution") == RUN_ARTIFACT_REPO else RUN_REUSED
+                if resolution != expected_duplicate:
+                    findings.append(f"{name} duplicate with artifact must use {expected_duplicate}")
                 if artifact_root != first_artifact_root:
-                    findings.append(f"{name} duplicate artifact_root must match the first current-run artifact")
+                    findings.append(f"{name} duplicate artifact_root must match the first artifact")
             elif first_resolution in {RUN_PENDING, RUN_BLOCKED}:
                 if resolution not in {RUN_PENDING, RUN_BLOCKED}:
                     findings.append(f"{name} duplicate without a current-run artifact must remain pending/blocked")
@@ -1208,9 +1290,9 @@ def build_command(args: argparse.Namespace) -> int:
         )
     artifact_root = args.working_root or args.output_root or args.delivery_root
     if artifact_root is None:
-        raise SystemExit("provide --working-root or --output-root for current-run artifacts")
+        raise SystemExit("provide --working-root or --output-root for program artifacts")
     if not artifact_root.is_dir():
-        raise SystemExit(f"current-run artifact root not found or not a directory: {artifact_root}")
+        raise SystemExit(f"artifact root not found or not a directory: {artifact_root}")
     if args.source_root is not None and not args.source_root.is_dir():
         raise SystemExit(f"source root not found or not a directory: {args.source_root}")
     manifest = build_manifest(
@@ -1222,6 +1304,7 @@ def build_command(args: argparse.Namespace) -> int:
         source_root=args.source_root,
         inventory_dir=args.inventory_dir,
         program_first=args.program_first,
+        artifact_repo_mode=args.artifact_repo_mode,
     )
     manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
     print(f"Wrote {manifest_path}")
@@ -1246,8 +1329,17 @@ def build_parser() -> argparse.ArgumentParser:
     build = subparsers.add_parser("build", help="Build manifest and review skeleton")
     build.add_argument("--review-name", required=True)
     build.add_argument("--programs-file", type=Path, required=True)
-    build.add_argument("--working-root", type=Path, help="Delivery working checkout or current-run artifact root")
-    build.add_argument("--output-root", type=Path, help="Alias for current-run artifact root")
+    build.add_argument("--working-root", type=Path, help="Delivery working checkout, approved document repo clone, or artifact root")
+    build.add_argument("--output-root", type=Path, help="Alias for artifact root")
+    build.add_argument(
+        "--artifact-repo-mode",
+        choices=[ARTIFACT_REPO_CURRENT_RUN, ARTIFACT_REPO_APPROVED_DOCUMENT],
+        default=ARTIFACT_REPO_CURRENT_RUN,
+        help=(
+            "Use current_run for active scan branches. Use approved_document_repo when "
+            "--working-root is a local clone containing approved all-program scan artifacts."
+        ),
+    )
     build.add_argument(
         "--delivery-root",
         type=Path,
@@ -1265,7 +1357,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Compatibility marker recorded in run_profile; the default workflow is already "
-            "program-evidence first and does not reuse remote-main or prior-run artifacts."
+            "program-evidence first. For approved document repo reuse, pass "
+            "--artifact-repo-mode approved_document_repo."
         ),
     )
     build.add_argument("--profile", type=Path, required=True)

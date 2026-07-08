@@ -1,10 +1,14 @@
 # Copy this file into a project/team config location and edit the values for
 # that delivery repository.
-# Program-flow core review uses current-run artifacts only:
-# - program_artifact_resolution_profile resolves folder/name patterns under the
-#   current working root
-# - output writes to the named working branch
-# - no remote-main or prior-run artifact satisfies the default flow run
+# Program-flow core review supports two explicit artifact modes:
+# - current_run (default): program_artifact_resolution_profile resolves
+#   folder/name patterns under the current working root; output writes to the
+#   named working branch; no remote-main or prior-run artifact satisfies the
+#   default flow run.
+# - approved_document_repo: after an all-program scan has been reviewed and
+#   merged into the document/delivery repo, an SME can clone that repo locally
+#   and use --artifact-repo-mode approved_document_repo to assemble a selected
+#   program flow from approved existing artifacts without re-scanning source.
 
 program_artifact_resolution_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
@@ -75,6 +79,7 @@ delivery_workspace_profile:
   output_rules:
     analyzed_this_run: read_from_working_root
     reused_same_run: read_same_run_artifact
+    reused_artifact_repo: read_approved_document_repo_artifact
     pending_source: scan_source_then_write_to_working_branch
     blocked_missing_source: record_blocker_tbd
 
