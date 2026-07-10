@@ -27,3 +27,22 @@ jobs:
         run: python -m pip install --upgrade pyyaml
       - name: Check spec schema and template are in sync
         run: python scripts/check-spec-contract.py
+
+  windows-native-powershell-fallback:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install parity-test dependency
+        run: python -m pip install --upgrade pyyaml
+      - name: Run native Windows PowerShell 5.1 fallback tests
+        shell: powershell
+        run: >-
+          python -m unittest
+          tests.test_program_list_batch_powershell
+          tests.test_program_analysis_contract_powershell_validator
+          tests.test_rpg_source_indexer_powershell
+          tests.test_current_state_discovery_powershell_validator
+          tests.test_program_set_core_review_powershell

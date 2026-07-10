@@ -146,17 +146,20 @@ outputs/program-list-batch/
 
 ## Scripts
 
-Use the repository Python launcher convention. For company-internal Windows 11
-testing, use `py -3` only.
+Use the repository Windows runtime router convention.
 
-- Windows / company Copilot environment: use `py -3`.
+- Windows / company Cline or Copilot environment: use
+  `scripts\invoke-windows-tool.ps1`. The router tries `py -3`, then `python`,
+  then the native PowerShell implementation. It does not retry a tool that has
+  already run and failed.
 - macOS/Linux: use `python3`.
-- If Python is unavailable, stop and report the runtime issue.
+- If all three Windows routes are unavailable, stop and report the runtime issue.
 
 Initialize a Copilot Chat queue:
 
 ```powershell
-py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  InitializeProgramBatch `
   --program-list outputs\repo-scan\program-list.csv `
   --programs-file programs.txt `
   --out-dir outputs\program-list-batch `
@@ -177,7 +180,8 @@ initializer creates prompts for every `object_type = program` row in the input
 Validate batch state:
 
 ```powershell
-py -3 skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateProgramBatch `
   --batch-dir outputs\program-list-batch
 ```
 
@@ -209,3 +213,11 @@ py -3 skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_statu
 - No two active rows share the same output directory.
 - Completed rows have required per-program artifacts and validator status.
 - Blocked and failed rows have `last_error` and `next_action`.
+
+## Version History
+
+- v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
+  - Added native Windows PowerShell 5.1 batch initialization and status
+    validation for machines without Python.
+  - Standardized Cline routing as `py -3`, then `python`, then native
+    PowerShell without retrying completed validator runs.

@@ -67,12 +67,13 @@ Conditional output:
   complex/large tier or retained batch evidence.
 
 Validation:
-{{python_launcher}} scripts/validate-program-analysis-contract.py --analysis-dir "{{output_dir}}"
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir "{{output_dir}}"
 
-Company Windows 11 note:
-- Use `py -3` as the Python launcher.
-- Do not fall back to `python` unless the team explicitly allows it for this
-  run.
+Company Windows 11 / Cline note:
+- The generated validation command invokes `scripts\invoke-windows-tool.ps1`,
+  which tries `py -3`, then `python`, then the native PowerShell validator.
+- A validator failure is a result failure, not a reason to rerun it through
+  another route.
 - Keep Windows paths in code spans or fenced code blocks when reporting them.
   In Markdown, a raw `\@` can render as `@`, hiding the separator before
   program names such as `@CU400P`.

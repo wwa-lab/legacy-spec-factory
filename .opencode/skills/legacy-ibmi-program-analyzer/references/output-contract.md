@@ -125,13 +125,13 @@ the artifact set:
 Run the mechanical validator before delivery:
 
 ```text
-Windows: py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>
+Windows/Cline PowerShell: powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
-On Windows, fall back from `py -3` to `python` if needed. If every launcher
-fails, stop with **"Python runtime unavailable"** and do not configure PATH,
-install Python, or create a virtual environment.
+On Windows/Cline, the router tries `py -3`, then `python`, then the native
+PowerShell validator. If all routes are unavailable, stop with a runtime error
+and do not configure PATH, install Python, or create a virtual environment.
 
 ---
 
@@ -461,9 +461,10 @@ understanding. Align terminology with `references/large-program-analysis.md`.
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
-  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  If all supported routes fail, stop and report:
+  **"No supported analysis runtime available"**.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts in

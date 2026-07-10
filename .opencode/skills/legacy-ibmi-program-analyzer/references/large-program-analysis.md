@@ -153,7 +153,8 @@ canonical helper before asking an LLM to synthesize behavior:
 Windows:
 
 ```powershell
-py -3 scripts\index-rpg-source.py path\to\PROGRAM.rpgle `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  IndexRpgSource path\to\PROGRAM.rpgle `
   --program PROGRAM `
   --out-dir path\to\PROGRAM-analysis `
   --delivery-root path\to\delivery-remote-main-snapshot `
@@ -170,9 +171,10 @@ python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --delivery-profile path/to/delivery-profile.yaml
 ```
 
-Windows launcher order: try `py -3` first, fall back to `python` if unavailable.
-macOS/Linux: use `python3`. If all launchers fail, stop and report:
-**"Python runtime unavailable"**. Do not configure PATH, install Python,
+Windows/Cline router order: `py -3`, then `python`, then the native PowerShell
+indexer when neither Python 3 launcher is available.
+macOS/Linux: use `python3`. If all supported routes fail, stop and report:
+**"No supported analysis runtime available"**. Do not configure PATH, install Python,
 or create a virtual environment. Apply the same launcher order to all
 temporary consistency checks, YAML readability checks, Markdown sanity checks,
 and one-off helper scripts in this skill.
@@ -313,7 +315,7 @@ blocks or copied RPG/CL/COBOL/SQL source snippets. Do not replace the wrapper wi
 latest-batch summary or sidecar table of contents. Before delivery, run:
 
 ```text
-Windows: py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>
+Windows/Cline PowerShell: powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 

@@ -89,9 +89,10 @@ Parameter naming note:
   evidence for message/status/control-table meanings; they do not replace
   source evidence or SME approval.
 
-When the prompt asks the agent/operator to run a Python script in the company
-Windows environment, use `py -3`, for example
-`py -3 scripts\validate-program-set-core-review.py ...`. Use `python3` only on
+When the prompt asks the agent/operator to build or validate a program-set core
+review in the company Windows environment, use the repository runtime router:
+`powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview ...`.
+It tries `py -3`, then `python`, then native PowerShell. Use `python3` only on
 macOS/Linux development machines.
 
 ## Prompt 1: Program-Evidence-First Single Flow Core Review Complete E2E

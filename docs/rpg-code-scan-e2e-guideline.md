@@ -320,7 +320,7 @@ prepared:
 Windows:
 
 ```powershell
-py -3 scripts\build-program-set-core-review.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "<review name>" `
   --programs-file <programs.txt> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -356,7 +356,7 @@ SME handoff:
 Windows:
 
 ```powershell
-py -3 scripts\validate-program-set-core-review.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
   --manifest <output-dir>\program-set-core-input-manifest.yaml `
   --review <output-dir>\program-set-sme-core-review.md
 ```
