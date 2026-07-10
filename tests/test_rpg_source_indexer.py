@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-WINDOWS_TOOL_ROUTER = REPO_ROOT / "scripts" / "invoke-windows-tool.ps1"
 CANONICAL_SCRIPT_PATH = (
     REPO_ROOT
     / "skills"
@@ -70,11 +69,11 @@ class RpgSourceIndexerTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         for text in (skill_text, large_program_text, output_contract_text):
-            self.assertIn("invoke-windows-tool.ps1", text)
-            self.assertIn("native PowerShell", text)
             self.assertIn("py -3", text)
+            self.assertIn("python", text)
+            self.assertNotIn("invoke-windows-tool.cmd", text)
             self.assertTrue(
-                "scripts\\index-rpg-source.py" in text or "IndexRpgSource" in text
+                "index_rpg_source.py" in text or "scripts\\index-rpg-source.py" in text
             )
             self.assertIn("python3 scripts/index-rpg-source.py", text)
             self.assertIn("validate-program-analysis-contract.py", text)
@@ -97,25 +96,18 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("large_extreme_program", text)
             self.assertIn("optional", text)
 
-    def test_windows_router_prefers_python_then_native_powershell_without_retry(self) -> None:
-        router_text = WINDOWS_TOOL_ROUTER.read_text(encoding="utf-8")
+    def test_windows_guidance_uses_direct_python_without_shell_launcher(self) -> None:
+        skill_text = (
+            REPO_ROOT / "skills" / "legacy-ibmi-program-analyzer" / "SKILL.md"
+        ).read_text(encoding="utf-8")
 
-        py_probe = router_text.index("Get-Command py")
-        py_run = router_text.index("& py -3 $PythonScript @PythonArguments")
-        python_probe = router_text.index("Get-Command python")
-        python_run = router_text.index("& python $PythonScript @PythonArguments")
-        native_run = router_text.index("& $PowerShellScript @ToolArguments")
-        self.assertLess(py_probe, py_run)
-        self.assertLess(py_run, python_probe)
-        self.assertLess(python_probe, python_run)
-        self.assertLess(python_run, native_run)
-        self.assertIn("import sys, yaml", router_text)
-        self.assertIn("--delivery-profile", router_text)
-        self.assertIn("BuildProgramSetCoreReview", router_text)
-        self.assertIn("ValidateProgramSetCoreReview", router_text)
-        self.assertIn("ValidateCurrentStateDiscovery", router_text)
-        self.assertIn("$global:LASTEXITCODE = 0", router_text)
-        self.assertIn("exit $LASTEXITCODE", router_text)
+        self.assertIn(
+            "py -3 .agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\index_rpg_source.py",
+            skill_text,
+        )
+        self.assertIn("python` replacing `py -3`", skill_text)
+        self.assertNotIn("invoke-windows-tool.cmd", skill_text)
+        self.assertNotIn("invoke-windows-tool.ps1", skill_text)
 
     def test_analyze_source_extracts_structure_without_business_summary(self) -> None:
         indexer = load_indexer()

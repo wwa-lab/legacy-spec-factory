@@ -125,7 +125,7 @@ the artifact set:
 Run the mechanical validator before delivery:
 
 ```text
-Windows/Cline PowerShell: powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
+Windows/Cline: py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
@@ -461,9 +461,9 @@ understanding. Align terminology with `references/large-program-analysis.md`.
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer.
+  - Windows/Cline: `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. If `py -3` is unavailable, rerun the same command with `python`.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
-  If all supported routes fail, stop and report:
+  If both Windows Python routes fail, stop and report:
   **"No supported analysis runtime available"**.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML

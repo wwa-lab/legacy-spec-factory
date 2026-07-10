@@ -90,11 +90,11 @@ For interrupted runs or cross-session handoff, use
 - program flow 的稳定输出由 program analyzer + builder + validator 一起固定：
   先逐个 program 生成足够深度的 program-level artifacts，再用
   `scripts/build-program-set-core-review.py`（Windows/Cline 通过
-  `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview`）生成
+  `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build`）生成
   `program-set-core-input-manifest.yaml` 和 `program-set-sme-core-review.md`
   骨架；填完四个核心区后，再跑
   `scripts/validate-program-set-core-review.py`（Windows/Cline 通过
-  `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview`），确保没有漏 program，也没有
+  `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate`），确保没有漏 program，也没有
   混入 full flow 的 Nodes/Edges/Replay 等章节。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
@@ -620,11 +620,11 @@ still preserve the five-routine limit, evidence boundaries, and
     - 检查 YAML 可读。
     - 检查本轮 updated RLOG-* 在 md/yaml 中一致。
     - 检查 coverage ledger 与本轮实际处理 routine/window 一致。
-    - Windows/Cline 临时验证统一通过当前 skill 安装目录下的
-      `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1`，
-      它依次尝试 `py -3`、`python`、原生 Windows PowerShell；不要拼接
-      `py ... || python ...`。macOS/Linux 使用 `python3`。不要安装 Python、
-      不要改 PATH。
+    - Windows/Cline 临时验证直接运行
+      `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate`；
+      如果 `py -3` 不可用，再把命令开头替换成 `python` 单独执行。不要使用
+      PowerShell、`.cmd`、`.ps1`，也不要拼接 `py ... || python ...`。
+      macOS/Linux 使用 `python3`。不要安装 Python、不要改 PATH。
 15. 写入本轮 checkpoint:
     - 本轮编号
     - 本轮处理的 RLOG-* / routine/window

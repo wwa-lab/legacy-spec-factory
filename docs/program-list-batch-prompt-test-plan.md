@@ -32,9 +32,9 @@ Do not test large full-project batches first. Start with 3-5 programs:
 
 - Source material is redacted or approved for internal analysis.
 - Company internal test environment is Windows 11/Cline. Windows commands use
-  the installed batch skill's `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`,
-  which tries `py -3`, then `python`, then the native Windows PowerShell
-  implementation. Do not construct a `py ... || python ...` command.
+  direct `py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\*.py`
+  calls. If `py -3` is unavailable, rerun the same command with `python`. Do
+  not use PowerShell, `.cmd`, `.ps1`, or `py ... || python ...`.
 - `program-list.csv` exists and has at least:
   `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`,
   `tier_reason`.
@@ -45,13 +45,12 @@ Do not test large full-project batches first. Start with 3-5 programs:
 
 Run the initializer locally or ask the agent to run it:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list <path-to-program-list.csv> `
-  --out-dir outputs\program-list-batch-test `
-  --source-root <path-to-source-root> `
-  --delivery-root <path-to-delivery-working-root> `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py
+  --program-list <path-to-program-list.csv>
+  --out-dir outputs\program-list-batch-test
+  --source-root <path-to-source-root>
+  --delivery-root <path-to-delivery-working-root>
   --review-name "copilot prompt dry run"
 ```
 
@@ -67,9 +66,8 @@ outputs/program-list-batch-test/
 
 Run:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py
   --batch-dir outputs\program-list-batch-test
 ```
 
@@ -243,9 +241,8 @@ Setup:
 
 Command:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py
   --batch-dir outputs\program-list-batch-test
 ```
 

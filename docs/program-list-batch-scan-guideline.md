@@ -187,17 +187,15 @@ Quality gates:
   blocked_missing_source, failed_validator, or failed_runtime.
 
 Validation commands:
-- In the company Windows 11 Copilot/Cline environment, invoke tools through
-  the installed analyzer skill's
-  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`.
-  The router tries `py -3`, then `python`, then the native Windows PowerShell
-  implementation. Do not synthesize a `py ... || python ...` command.
+- In the company Windows 11 Copilot/Cline environment, invoke the validator
+  directly with `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py`.
+  If `py -3` is unavailable, rerun the same command with `python`. Do not use
+  PowerShell, `.cmd`, `.ps1`, or `py ... || python ...`.
 - For local macOS/Linux development, use `python3`.
 - Do not install Python, create a virtual environment, or configure PATH.
 
 Per-program validation:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <program-output-dir>
 
 Final response:
@@ -311,16 +309,15 @@ Program list 字段:
   failed_validator 或 failed_runtime 时，batch 才算 complete。
 
 验证命令:
-- 公司 Windows 11 Copilot/Cline 环境统一通过
-  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`
-  执行。启动器依次尝试 `py -3`、`python`，最后使用原生 Windows
-  PowerShell 实现。不要拼接 `py ... || python ...`。
+- 公司 Windows 11 Copilot/Cline 环境直接运行
+  `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py`。
+  如果 `py -3` 不可用，再把命令开头替换成 `python` 单独执行。不要使用
+  PowerShell、`.cmd`、`.ps1`，也不要拼接 `py ... || python ...`。
 - macOS/Linux 本地开发可以使用 `python3`。
 - 不要安装 Python、创建 virtual environment 或配置 PATH。
 
 单个 program 验证:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <program-output-dir>
 
 最终回复:
@@ -731,8 +728,7 @@ Conditional output:
   large_extreme_program, or explicit deep-read continuation.
 
 Validation on Windows/Cline:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <output directory>
 
 Validation on macOS/Linux:

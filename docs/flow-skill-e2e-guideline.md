@@ -144,10 +144,10 @@ artifact; do not rescan it just because it appears in a second flow.
 
 ## Commands
 
-The field deployment environment is Windows/Cline. Use the installed flow
-skill's `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1`
-for flow tools there; it tries `py -3`, then `python`, then native Windows
-PowerShell. Do not construct `py ... || python ...` commands in PowerShell 5.1.
+The field deployment environment is Windows/Cline. Use direct `py -3` commands
+against `.agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py`.
+If `py -3` is unavailable, rerun the same command with `python`. Do not use
+PowerShell, `.cmd`, `.ps1`, shell continuations, or `py ... || python ...`.
 Use `python3` only on macOS/Linux development machines.
 
 Default program-evidence-first order:
@@ -176,15 +176,15 @@ CC050
 
 Build the deterministic program-set inputs on Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
-  --review-name "card auth posting core review" `
-  --programs-file programs.txt `
-  --working-root C:\path\to\legacy-modernization-delivery `
-  --source-root C:\path\to\source-repo `
-  --profile C:\path\to\delivery-profile.yaml `
-  --working-branch develop-leo `
-  --program-first `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
+  --review-name "card auth posting core review"
+  --programs-file programs.txt
+  --working-root C:\path\to\legacy-modernization-delivery
+  --source-root C:\path\to\source-repo
+  --profile C:\path\to\delivery-profile.yaml
+  --working-branch develop-leo
+  --program-first
   --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
 ```
 
@@ -212,14 +212,14 @@ different location.
 
 Build from an approved local document repo clone on Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
-  --review-name "card auth posting core review" `
-  --programs-file programs.txt `
-  --working-root C:\path\to\legacy-modernization-delivery `
-  --profile C:\path\to\delivery-profile.yaml `
-  --working-branch main `
-  --artifact-repo-mode approved_document_repo `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
+  --review-name "card auth posting core review"
+  --programs-file programs.txt
+  --working-root C:\path\to\legacy-modernization-delivery
+  --profile C:\path\to\delivery-profile.yaml
+  --working-branch main
+  --artifact-repo-mode approved_document_repo
   --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
 ```
 
@@ -238,8 +238,8 @@ python3 scripts/build-program-set-core-review.py \
 
 Repo-level inventory cache, only when needed on Windows:
 
-```powershell
-py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo `
+```text
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo
   --out-dir C:\path\to\source-repo\outputs\repo-scan
 ```
 
@@ -256,9 +256,9 @@ repo-level inventory before targeted program scan.
 
 Validate before handoff on Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
-  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate
+  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml
   --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
 ```
 

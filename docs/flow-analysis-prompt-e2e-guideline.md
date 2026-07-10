@@ -91,8 +91,8 @@ Parameter naming note:
 
 When the prompt asks the agent/operator to build or validate a program-set core
 review in the company Windows environment, use the installed flow skill router:
-`powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview ...`.
-It tries `py -3`, then `python`, then native PowerShell. Use `python3` only on
+`py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate ...`.
+If `py -3` is unavailable, rerun the same command with `python`. Use `python3` only on
 macOS/Linux development machines.
 
 ## Prompt 1: Program-Evidence-First Single Flow Core Review Complete E2E

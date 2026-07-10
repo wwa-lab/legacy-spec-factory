@@ -146,37 +146,23 @@ outputs/program-list-batch/
 
 ## Scripts
 
-Use the skill-local Windows runtime router. Resolve the directory containing
-this `SKILL.md`, then invoke its sibling `scripts\invoke-windows-tool.ps1`.
-The launcher is included in every synced runtime copy, so it remains available
-when the skill is installed under `.agents`, `.claude`, `.codex`, or
-`.opencode` in another repository.
+Use direct Python commands in Windows/Cline. Do not use PowerShell, `.cmd`
+launchers, `.ps1` launchers, shell continuations, or `py ... || python ...`
+fallback chains.
 
-- Windows / company Cline environment: use
-  `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`.
-  The router tries `py -3`, then `python`, then the native PowerShell
-  implementation. It does not retry a tool that has already run and failed.
-- Never call the `.py` scripts directly on Windows and never synthesize
-  `py -3 ... || python ...`. Windows PowerShell 5.1 does not support `||`.
-- For another runtime adapter, invoke the same skill-local script from the
-  directory that supplied this `SKILL.md`.
+- Windows / company Cline environment: run the `py -3 ...` command first. If
+  the Python Launcher is unavailable, run the same command again with `python`
+  replacing `py -3`.
+- If Python starts and the script exits non-zero, treat that as the tool result
+  and do not retry with another launcher.
 - macOS/Linux: use `python3`.
-- If all three Windows routes are unavailable, stop and report the runtime issue.
+- If both Windows Python routes are unavailable, stop and report the runtime
+  issue.
 
 Initialize a Copilot Chat queue:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list outputs\repo-scan\program-list.csv `
-  --programs-file programs.txt `
-  --out-dir outputs\program-list-batch `
-  --source-root C:\path\to\source-repo `
-  --delivery-root C:\path\to\delivery-work `
-  --reference-path C:\path\to\reference-pack.md `
-  --reference-path C:\path\to\message-catalog.csv `
-  --control-file C:\path\to\status-code-table.csv `
-  --review-name "normal program batch"
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch"
 ```
 
 `--programs-file` is optional. Use it when an operator or SME provides a
@@ -187,10 +173,8 @@ initializer creates prompts for every `object_type = program` row in the input
 
 Validate batch state:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
-  --batch-dir outputs\program-list-batch
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch
 ```
 
 ## References
@@ -230,6 +214,11 @@ powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\script
     launcher.
   - Prohibited `py -3 ... || python ...` fallback chains under Windows
     PowerShell 5.1.
+
+- v0.1.3 (2026-07-11): Python-only Windows/Cline launcher
+  - Standardized Cline commands as direct `py -3 <script.py> ...` calls with a
+    manual `python <script.py> ...` fallback only when `py -3` is unavailable.
+  - Removed PowerShell and `.cmd` launchers from generated Cline commands.
 
 - v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
   - Added native Windows PowerShell 5.1 batch initialization and status

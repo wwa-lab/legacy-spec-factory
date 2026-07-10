@@ -271,11 +271,11 @@ not dependent on the flow builder:
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
-  --program <PROGRAM> `
-  --out-dir <analysis-dir> `
-  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
+```text
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py <source-file>
+  --program <PROGRAM>
+  --out-dir <analysis-dir>
+  --delivery-root <tmp-delivery-dir-or-fresh-cache>
   --delivery-profile <delivery-profile.yaml>
 ```
 
@@ -299,13 +299,13 @@ If the SME is not satisfied with the approved artifact on remote `main`, or a
 large source/business change makes a refresh necessary, make that an explicit
 override instead of silently rescanning:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
-  --program <PROGRAM> `
-  --out-dir <analysis-dir> `
-  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
-  --delivery-profile <delivery-profile.yaml> `
-  --force-rescan `
+```text
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py <source-file>
+  --program <PROGRAM>
+  --out-dir <analysis-dir>
+  --delivery-root <tmp-delivery-dir-or-fresh-cache>
+  --delivery-profile <delivery-profile.yaml>
+  --force-rescan
   --rescan-reason "SME requested refresh after major source or rule change"
 ```
 
@@ -319,15 +319,15 @@ prepared:
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
-  --review-name "<review name>" `
-  --programs-file <programs.txt> `
-  --delivery-root <tmp-delivery-dir-or-fresh-cache> `
-  --working-root <delivery-working-branch-checkout> `
-  --source-root <source-repo> `
-  --profile <delivery-profile.yaml> `
-  --working-branch develop-<person> `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
+  --review-name "<review name>"
+  --programs-file <programs.txt>
+  --delivery-root <tmp-delivery-dir-or-fresh-cache>
+  --working-root <delivery-working-branch-checkout>
+  --source-root <source-repo>
+  --profile <delivery-profile.yaml>
+  --working-branch develop-<person>
   --output-dir <delivery-worktree>\modules\CAP-ID-0004-program_set_reviews\{review_slug}
 ```
 
@@ -355,9 +355,9 @@ SME handoff:
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
-  --manifest <output-dir>\program-set-core-input-manifest.yaml `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate
+  --manifest <output-dir>\program-set-core-input-manifest.yaml
   --review <output-dir>\program-set-sme-core-review.md
 ```
 
@@ -393,8 +393,8 @@ python3 skills/legacy-ibmi-inventory/scripts/scan_ibmi_repo.py . \
 
 Windows:
 
-```powershell
-py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py . `
+```text
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py .
   --out-dir outputs\repo-scan
 ```
 
@@ -498,8 +498,8 @@ python3 scripts/validate-program-analysis-contract.py \
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis `
+```text
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <program-analysis-output-dir>
 ```
 
