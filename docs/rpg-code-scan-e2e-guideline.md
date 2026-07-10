@@ -272,7 +272,7 @@ not dependent on the flow builder:
 Windows:
 
 ```powershell
-py -3 scripts\index-rpg-source.py <source-file> `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
   --program <PROGRAM> `
   --out-dir <analysis-dir> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -300,7 +300,7 @@ large source/business change makes a refresh necessary, make that an explicit
 override instead of silently rescanning:
 
 ```powershell
-py -3 scripts\index-rpg-source.py <source-file> `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
   --program <PROGRAM> `
   --out-dir <analysis-dir> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -499,7 +499,7 @@ python3 scripts/validate-program-analysis-contract.py \
 Windows:
 
 ```powershell
-py -3 scripts\validate-program-analysis-contract.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis `
   --analysis-dir <program-analysis-output-dir>
 ```
 
