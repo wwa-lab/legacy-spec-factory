@@ -140,9 +140,9 @@ Use:
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
   local file access is available:
-  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer. Other adapters use the same script beside the `SKILL.md` they loaded.
+  - Windows/Cline: `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. If `py -3` is unavailable, run the same command again with `python` replacing `py -3`.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
-  If all three Windows routes are unavailable, stop and report the runtime issue.
+  If both Windows Python routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
@@ -161,9 +161,9 @@ Use:
 - `scripts/validate_program_analysis_contract.py` (or the root
   `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
   finalization gate before delivery:
-  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell validator.
+  - Windows/Cline: `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>`. If `py -3` is unavailable, run the same command again with `python` replacing `py -3`.
   - macOS/Linux: `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`
-  If all three Windows routes are unavailable, stop and report the runtime issue.
+  If both Windows Python routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
@@ -263,11 +263,10 @@ field-level rules. The summary below is normative for this skill.
 - When the source file is accessible on disk, first run
   `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
   wrapper) to classify the program tier and produce the appropriate artifact
-  set. Windows/Cline: use the `scripts\invoke-windows-tool.ps1` beside this
-  `SKILL.md` (for Cline, `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`), which tries
-  `py -3`, then `python`, then the native PowerShell implementation;
-  macOS/Linux: use
-  `python3`. If all supported routes fail, stop and report:
+  set. Windows/Cline: run `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py ...`;
+  if `py -3` is unavailable, run the same command again with `python`
+  replacing `py -3`. macOS/Linux: use
+  `python3`. If both Windows Python routes fail, stop and report:
   **"No supported analysis runtime available"**. Do not configure PATH, install Python, or
   create a virtual environment. Apply the same launcher order to temporary
   consistency checks, YAML readability checks, Markdown sanity checks, and
@@ -275,8 +274,8 @@ field-level rules. The summary below is normative for this skill.
   structure artifacts, not the final program analysis. Do not produce
   whole-program business narrative until the source index, SME-first sections,
   and any needed coverage evidence exist.
-  Never call the `.py` helper directly on Windows and never construct
-  `py -3 ... || python ...`; Windows PowerShell 5.1 does not support `||`.
+  Do not use PowerShell, `.cmd`, `.ps1`, shell continuations, or
+  `py ... || python ...`.
   Pass `--delivery-root <remote-main-snapshot>` and
   `--delivery-profile <delivery-profile.yaml>` when available. If the helper
   reports `central_lookup_result: found_on_remote_main`, stop the scan and
@@ -298,6 +297,31 @@ field-level rules. The summary below is normative for this skill.
 - **TBD handling**: missing DDS → `TBD: pending_source`; undefined
   subroutine reference → `TBD: pending_source`; unclear error path →
   `TBD: pending_sme_judgment`; non-blocking gaps tagged `non_blocking`.
+
+#### Retry / Exit Policy
+
+- Do not create an unbounded retry loop around Cline, model, network, tool, or
+  validator failures. Cline may show its own bounded Auto-Retry cycle; once
+  that visible cycle is exhausted, or the same transient error repeats, stop
+  this program instead of starting a new ad hoc attempt.
+- In a program-list batch, a Cline/model/network/tool interruption after the
+  visible Auto-Retry cycle is a runtime failure for the current row. Write back
+  `batch_status=failed_runtime`, `validator_status=not_run`, a short
+  `last_error` such as
+  `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`, and a
+  `next_action` to resume this same program after Cline/network stability
+  returns.
+- For Windows/Cline Python launch, try `py -3 ...` once. Retry the same
+  command once with `python` replacing `py -3` only if the Python Launcher is
+  unavailable. If Python starts and the script exits non-zero, treat the exit
+  as the tool or validator result, not a launcher failure.
+- If the Program Artifact Finalization Gate or validator fails after artifacts
+  are generated, perform at most one targeted repair pass for the same
+  program. If validation still fails, report the concrete validator findings
+  and, in batch mode, set `batch_status=failed_validator`.
+- Do not create temporary `_generate_*_batch.py` scripts, launcher wrappers,
+  or self-retry helpers to bypass these limits unless the user explicitly asks
+  for that recovery path.
 
 ### Output
 
@@ -450,7 +474,7 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer.
+     - Windows/Cline: `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. If `py -3` is unavailable, run the same command again with `python` replacing `py -3`.
      - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
      When `--delivery-root` is available and the helper reports
      `central_lookup_result: found_on_remote_main`, stop and return the central
@@ -458,7 +482,7 @@ to the orchestrator.
      a reviewed central artifact intentionally, add
      `--force-rescan --rescan-reason "<SME/business reason>"`; never force a
      rescan silently.
-     If all supported routes fail, stop and report:
+     If both Windows Python routes fail, stop and report:
      **"No supported analysis runtime available"**.
      Do not configure PATH, install Python, or create a virtual environment.
      Use the same launcher order for all temporary consistency checks, YAML
@@ -569,9 +593,9 @@ Run this gate before delivering `program-analysis.md` /
   `routine-logic-details/part-*.md` or
   `routine-logic-details/deep-read-batch-*.md`, or `chain_ready` output, a
   failed gate is blocking.
-- Run the validator with the repository Python launcher convention:
-  Windows/Cline PowerShell `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`
-  (router order: `py -3`, `python`, native PowerShell), macOS/Linux
+- Run the validator with the Python-only launcher convention:
+  Windows/Cline `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>`
+  (fallback: rerun with `python` only if `py -3` is unavailable), macOS/Linux
   `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`.
 
 2. **Select Program & Resolve Analysis Intent**
@@ -1141,11 +1165,24 @@ No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
 
+- v0.2.21 (2026-07-11): Cline retry exit budget
+  - Added an explicit task-level stop rule for Cline/model/network/tool
+    interruptions so program-list batch rows exit as `failed_runtime` instead
+    of retrying indefinitely.
+  - Limited validator recovery to one targeted repair pass before reporting
+    `failed_validator` in batch mode.
+
 - v0.2.19 (2026-07-10): Installed-skill Windows router
-  - Added the Python-first/native-PowerShell launcher inside the skill so
+  - Added the Python-first launcher inside the skill so
     `.agents` installations do not depend on repository-root scripts.
   - Prohibited Cline from generating `py -3 ... || python ...` under Windows
     PowerShell 5.1.
+
+- v0.2.20 (2026-07-11): Python-only Windows/Cline launcher
+  - Standardized Cline commands as direct `py -3 <script.py> ...` calls with a
+    manual `python <script.py> ...` fallback only when `py -3` is unavailable.
+  - Removed PowerShell and `.cmd` launchers from the documented Cline
+    execution path.
 
 - v0.1.0 (2026-05-14): Initial release
   - 10-step workflow for RPGLE, CLLE, COBOL (with Program Call Map extraction and flat object-dependency listing)
@@ -1255,8 +1292,8 @@ No runtime-specific assumptions are embedded in the canonical version.
     include overview and named theme subsections before the routine index
   - Clarifies that `normal_program` remains concise but must not degrade into
     a top table plus routine index without CU653-style reader navigation
-- v0.2.18 (2026-07-10): Python-first Windows PowerShell fallback
-  - Added native Windows PowerShell 5.1 source indexing and program contract
-    validation for Cline environments without Python.
-  - Standardized Windows routing as `py -3`, then `python`, then native
-    PowerShell while preserving validator failure semantics.
+- v0.2.18 (2026-07-10): Superseded native Windows fallback experiment
+  - Historical experiment only; current Cline guidance is Python-only via
+    direct `py -3`, then direct `python`.
+  - Do not use non-Python launchers for source indexing or program contract
+    validation.

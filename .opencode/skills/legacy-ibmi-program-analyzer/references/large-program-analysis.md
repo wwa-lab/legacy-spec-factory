@@ -152,13 +152,8 @@ canonical helper before asking an LLM to synthesize behavior:
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  IndexRpgSource path\to\PROGRAM.rpgle `
-  --program PROGRAM `
-  --out-dir path\to\PROGRAM-analysis `
-  --delivery-root path\to\delivery-remote-main-snapshot `
-  --delivery-profile path\to\delivery-profile.yaml
+```text
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py path\to\PROGRAM.rpgle --program PROGRAM --out-dir path\to\PROGRAM-analysis --delivery-root path\to\delivery-remote-main-snapshot --delivery-profile path\to\delivery-profile.yaml
 ```
 
 macOS/Linux:
@@ -171,9 +166,9 @@ python3 scripts/index-rpg-source.py path/to/PROGRAM.rpgle \
   --delivery-profile path/to/delivery-profile.yaml
 ```
 
-Windows/Cline router order: `py -3`, then `python`, then the native PowerShell
-indexer when neither Python 3 launcher is available.
-macOS/Linux: use `python3`. If all supported routes fail, stop and report:
+Windows/Cline order: run `py -3` first. If the Python Launcher is unavailable,
+rerun the same command with `python` replacing `py -3`.
+macOS/Linux: use `python3`. If both Windows Python routes fail, stop and report:
 **"No supported analysis runtime available"**. Do not configure PATH, install Python,
 or create a virtual environment. Apply the same launcher order to all
 temporary consistency checks, YAML readability checks, Markdown sanity checks,
@@ -315,7 +310,7 @@ blocks or copied RPG/CL/COBOL/SQL source snippets. Do not replace the wrapper wi
 latest-batch summary or sidecar table of contents. Before delivery, run:
 
 ```text
-Windows/Cline PowerShell: powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
+Windows/Cline: py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 

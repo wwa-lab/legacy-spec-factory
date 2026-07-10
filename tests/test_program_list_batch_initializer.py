@@ -82,11 +82,17 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("routine-logic-details.md", prompt_text)
             self.assertIn("routine-logic-details.yaml", prompt_text)
             self.assertIn(
-                "powershell -NoProfile -File "
-                ".agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\invoke-windows-tool.ps1 "
-                "ValidateProgramAnalysis",
+                "py -3 .agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\validate_program_analysis_contract.py "
+                "--analysis-dir",
                 prompt_text,
             )
+            self.assertIn("Retry / exit budget", prompt_text)
+            self.assertIn("Cline may show its own bounded Auto-Retry", prompt_text)
+            self.assertIn("batch_status=failed_runtime", prompt_text)
+            self.assertIn("cline_auto_retry_exhausted", prompt_text)
+            self.assertIn("batch_status=failed_validator", prompt_text)
+            self.assertIn("at most one targeted repair pass", prompt_text)
+            self.assertIn("Do not create ad hoc `_generate_*_batch.py`", prompt_text)
             self.assertNotIn("{{python_launcher}}", prompt_text)
             self.assertNotIn("For normal_program, do not create routine-logic-details.md", prompt_text)
 
@@ -232,6 +238,22 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("routine-logic-details.md", result.stdout)
             self.assertIn("routine-logic-details.yaml", result.stdout)
+
+    def test_status_contract_documents_cline_retry_exit_state(self) -> None:
+        contract_text = (
+            REPO_ROOT
+            / "skills"
+            / "legacy-ibmi-program-list-batch"
+            / "references"
+            / "status-contract.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Retry And Exit Budget", contract_text)
+        self.assertIn("Cline may perform its own bounded Auto-Retry", contract_text)
+        self.assertIn("cline_auto_retry_exhausted", contract_text)
+        self.assertIn("batch_status=failed_runtime", contract_text)
+        self.assertIn("batch_status=failed_validator", contract_text)
+        self.assertIn("one targeted", contract_text)
 
 
 if __name__ == "__main__":

@@ -32,9 +32,13 @@ Do not test large full-project batches first. Start with 3-5 programs:
 
 - Source material is redacted or approved for internal analysis.
 - Company internal test environment is Windows 11/Cline. Windows commands use
-  the installed batch skill's `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`,
-  which tries `py -3`, then `python`, then the native Windows PowerShell
-  implementation. Do not construct a `py ... || python ...` command.
+  direct `py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\*.py`
+  calls. If `py -3` is unavailable, rerun the same command with `python`. Do
+  not use PowerShell, `.cmd`, `.ps1`, or `py ... || python ...`.
+- Cline/model/network Auto-Retry is treated as bounded. When that visible
+  retry cycle is exhausted, the prompt must stop the current program and write
+  `failed_runtime` with `last_error` and `next_action` instead of inventing a
+  new retry loop.
 - `program-list.csv` exists and has at least:
   `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`,
   `tier_reason`.
@@ -45,13 +49,12 @@ Do not test large full-project batches first. Start with 3-5 programs:
 
 Run the initializer locally or ask the agent to run it:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list <path-to-program-list.csv> `
-  --out-dir outputs\program-list-batch-test `
-  --source-root <path-to-source-root> `
-  --delivery-root <path-to-delivery-working-root> `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py
+  --program-list <path-to-program-list.csv>
+  --out-dir outputs\program-list-batch-test
+  --source-root <path-to-source-root>
+  --delivery-root <path-to-delivery-working-root>
   --review-name "copilot prompt dry run"
 ```
 
@@ -67,9 +70,8 @@ outputs/program-list-batch-test/
 
 Run:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py
   --batch-dir outputs\program-list-batch-test
 ```
 
@@ -243,9 +245,8 @@ Setup:
 
 Command:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py
   --batch-dir outputs\program-list-batch-test
 ```
 
@@ -258,7 +259,45 @@ Pass criteria:
 
 - False completion is caught before the batch can be treated as done.
 
-## Test Case 7: Final Batch Readiness
+## Test Case 7: Cline Auto-Retry Exhaustion
+
+Purpose: confirm model/network retry exhaustion becomes durable failed state,
+not an unbounded loop.
+
+Setup:
+
+- Use a single-program prompt.
+- Simulate or capture a Cline/model/network interruption such as
+  `net::ERR_INCOMPLETE_CHUNKED_ENCODING` after Cline's visible Auto-Retry
+  cycle.
+
+Prompt expectation:
+
+```text
+If Cline Auto-Retry is exhausted or the same model/network error repeats, do
+not create a new generator script or retry loop. Mark this program
+failed_runtime with validator_status=not_run, last_error, and next_action.
+```
+
+Expected behavior:
+
+- Copilot stops advancing this program.
+- `program-list-status.csv` records `batch_status=failed_runtime`.
+- `validator_status` is `not_run` if stable artifacts were not produced.
+- `last_error` includes the concrete retry/network error, for example
+  `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`.
+- `next_action` tells the next operator to resume the same program after
+  Cline/network stability returns.
+
+Pass criteria:
+
+- No ad hoc `_generate_*_batch.py`, launcher wrapper, or self-retry helper is
+  created.
+- The row is not left `in_progress`.
+- The batch status validator accepts the row as a classified failed row, or
+  reports only expected artifact absence for that failed row.
+
+## Test Case 8: Final Batch Readiness
 
 Purpose: confirm the independent scan batch is ready to close only after all
 rows are classified, without generating a program-set SME review.
@@ -311,6 +350,7 @@ Repo dry-run passes when:
 - Resume prompt selects the correct next row from files.
 - Missing source is blocked honestly.
 - False completion is caught by validator.
+- Cline Auto-Retry exhaustion exits to durable `failed_runtime` state.
 - Final readiness is blocked until all rows are classified.
 
 Field-pilot readiness is not claimed until the team records successful

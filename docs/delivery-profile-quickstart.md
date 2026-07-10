@@ -100,15 +100,15 @@ CC050
 Then build the deterministic manifest and review skeleton on Windows after the
 current-run program artifacts exist or have precise pending/blocked states:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
-  --review-name "card auth posting core review" `
-  --programs-file programs.txt `
-  --working-root C:\path\to\legacy-modernization-delivery `
-  --source-root C:\path\to\source-repo `
-  --profile C:\path\to\delivery-profile.yaml `
-  --working-branch develop-leo `
-  --program-first `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
+  --review-name "card auth posting core review"
+  --programs-file programs.txt
+  --working-root C:\path\to\legacy-modernization-delivery
+  --source-root C:\path\to\source-repo
+  --profile C:\path\to\delivery-profile.yaml
+  --working-branch develop-leo
+  --program-first
   --output-dir C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review
 ```
 
@@ -137,8 +137,8 @@ skill uses it to target program analysis. If the cache is missing, stale, or
 the source worktree has uncommitted source changes, rerun repo inventory on
 Windows:
 
-```powershell
-py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo `
+```text
+py -3 skills\legacy-ibmi-inventory\scripts\scan_ibmi_repo.py C:\path\to\source-repo
   --out-dir C:\path\to\source-repo\outputs\repo-scan
 ```
 
@@ -167,9 +167,9 @@ status.
 
 Windows:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
-  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate
+  --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml
   --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
 ```
 

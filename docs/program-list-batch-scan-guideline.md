@@ -186,18 +186,35 @@ Quality gates:
   completed, completed_with_warnings, skipped_not_program,
   blocked_missing_source, failed_validator, or failed_runtime.
 
+Retry / exit budget:
+- Do not build an unbounded retry loop around Cline, model, network, tool, or
+  validator failures.
+- Cline may show its own bounded Auto-Retry cycle. If that visible cycle is
+  exhausted, or the same transient error repeats, stop the current program and
+  update durable batch state instead of starting a new ad hoc attempt.
+- For Windows Python launch, run `py -3 ...` once. If the Python Launcher is
+  unavailable, rerun the same command once with `python` replacing `py -3`. If
+  Python starts and the script exits non-zero, treat it as the tool result.
+- If model/network/tool execution fails before stable artifacts exist, set
+  `batch_status=failed_runtime`, `validator_status=not_run`, record
+  `last_error` such as
+  `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`, and set
+  `next_action` to resume the same program after the environment is stable.
+- If the program-analysis validator fails, perform at most one targeted repair
+  pass for that program. If validation still fails, set
+  `batch_status=failed_validator`, preserve the validator finding in
+  `last_error`, and write a concrete `next_action`.
+
 Validation commands:
-- In the company Windows 11 Copilot/Cline environment, invoke tools through
-  the installed analyzer skill's
-  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`.
-  The router tries `py -3`, then `python`, then the native Windows PowerShell
-  implementation. Do not synthesize a `py ... || python ...` command.
+- In the company Windows 11 Copilot/Cline environment, invoke the validator
+  directly with `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py`.
+  If `py -3` is unavailable, rerun the same command with `python`. Do not use
+  PowerShell, `.cmd`, `.ps1`, or `py ... || python ...`.
 - For local macOS/Linux development, use `python3`.
 - Do not install Python, create a virtual environment, or configure PATH.
 
 Per-program validation:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <program-output-dir>
 
 Final response:
@@ -310,17 +327,33 @@ Program list 字段:
   completed_with_warnings、skipped_not_program、blocked_missing_source、
   failed_validator 或 failed_runtime 时，batch 才算 complete。
 
+重试 / 退出预算:
+- 不要围绕 Cline、model、network、tool 或 validator 失败构造无限重试。
+- Cline 可能会显示自己的有上限 Auto-Retry。这个可见重试周期用尽后，
+  或同一个 transient error 重复出现时，停止当前 program，把失败写入
+  durable batch state，不要重新发起新的临时尝试。
+- Windows Python 启动只允许 `py -3 ...` 一次；只有 Python Launcher
+  不可用时，才把同一条命令开头替换成 `python` 再执行一次。如果 Python
+  已经启动但脚本返回 non-zero，把它当作 tool result。
+- 如果 model/network/tool 失败导致稳定 artifacts 尚未生成，设置
+  `batch_status=failed_runtime`、`validator_status=not_run`，在
+  `last_error` 记录类似
+  `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`，并在
+  `next_action` 写明等 Cline/network 稳定后继续同一个 program。
+- 如果 program-analysis validator 失败，同一个 program 最多做一次
+  targeted repair。仍然失败时，设置 `batch_status=failed_validator`，
+  在 `last_error` 保留 validator finding，并写清楚 `next_action`。
+
 验证命令:
-- 公司 Windows 11 Copilot/Cline 环境统一通过
-  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`
-  执行。启动器依次尝试 `py -3`、`python`，最后使用原生 Windows
-  PowerShell 实现。不要拼接 `py ... || python ...`。
+- 公司 Windows 11 Copilot/Cline 环境直接运行
+  `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py`。
+  如果 `py -3` 不可用，再把命令开头替换成 `python` 单独执行。不要使用
+  PowerShell、`.cmd`、`.ps1`，也不要拼接 `py ... || python ...`。
 - macOS/Linux 本地开发可以使用 `python3`。
 - 不要安装 Python、创建 virtual environment 或配置 PATH。
 
 单个 program 验证:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <program-output-dir>
 
 最终回复:
@@ -385,8 +418,8 @@ Allowed program states:
 | `completed` | Source scan finished and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, but review warnings or non-blocking TBDs remain. |
 | `blocked_missing_source` | The source path could not be resolved. |
-| `failed_validator` | Files were generated but validation failed. |
-| `failed_runtime` | Tooling or runtime failed before a valid artifact could be produced. |
+| `failed_validator` | Files were generated, but validation still failed after the allowed targeted repair pass. |
+| `failed_runtime` | Tooling, Python runtime, Cline Auto-Retry exhaustion, model/network interruption, or edit/tool-call failure prevented a valid artifact. |
 | `skipped_not_program` | Row was ignored because `object_type` was not `program`. |
 
 ## Resume After Interruption
@@ -417,6 +450,12 @@ Resume rules:
   resolved.
 - If a row is `blocked_missing_source`, retry only when the source path or
   source root has changed.
+- If a row is `failed_runtime` because of Cline Auto-Retry exhaustion,
+  Python-runtime unavailability, or a network/model/tool interruption, retry
+  only after that environment issue is resolved. Do not keep the same row
+  `in_progress` while launching fresh attempts.
+- If a row is `failed_validator`, retry only after reviewing the validator
+  output or making a deliberate targeted repair plan.
 - If a program output folder exists but the manifest does not record it, do not
   treat it as authoritative cache. Rerun the selected program and overwrite the
   generated analysis artifacts.
@@ -509,6 +548,8 @@ Auto-continuation rule:
 - If validation passes, continue directly to the next bounded batch in the same
   session.
 - If validation fails, stop advancing and fix the current batch.
+- If Cline/model/network/tool Auto-Retry is exhausted, stop advancing, update
+  durable state with `failed_runtime`, and leave a concrete resume action.
 - If the session cannot safely continue, write an explicit checkpoint with the
   next program, next routines/windows, required reads, required updates, and
   validator status. The next session must resume from those files.
@@ -731,8 +772,7 @@ Conditional output:
   large_extreme_program, or explicit deep-read continuation.
 
 Validation on Windows/Cline:
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramAnalysis `
+py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <output directory>
 
 Validation on macOS/Linux:
@@ -828,8 +868,8 @@ Allowed `batch_status` values:
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
 | `blocked_missing_source` | Source path cannot be resolved. |
-| `failed_validator` | Validator failed. |
-| `failed_runtime` | Runtime/tooling failed before valid output. |
+| `failed_validator` | Validator failed after the allowed targeted repair pass. |
+| `failed_runtime` | Runtime/tooling, Python availability, Cline Auto-Retry, or model/network/tool-call failure prevented valid output. |
 | `skipped_not_program` | Row is not a program. |
 
 Update rule:

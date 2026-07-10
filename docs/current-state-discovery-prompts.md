@@ -73,9 +73,9 @@ Validation command rule:
   原生 PowerShell validator。
 - 不要拼接 `py ... || python ...`，Windows PowerShell 5.1 不支持。
 - Windows 示例：
-  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
+  `py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
 - Windows strict quality gate 示例：
-  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
+  `py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
 - 只有在 macOS / Linux 环境下才使用 `python3`。
 
 Quality gate:
@@ -149,13 +149,13 @@ Report formatting rule:
 Validation command rule:
 - If a validator must be run and the environment is Windows / Windows 11, use
   the installed current-state skill's local launcher; it tries `py -3`, then
-  `python`, then the native PowerShell validator.
+  `python`, then fails clearly when Python is unavailable.
 - Do not synthesize `py ... || python ...`; Windows PowerShell 5.1 does not
   support `||`.
 - Windows example:
-  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
+  `py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
 - Windows strict quality gate example:
-  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
+  `py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
 - Use `python3` only on macOS / Linux.
 
 Quality gate:

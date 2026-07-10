@@ -73,6 +73,19 @@ directly.
 - After every program, update all durable state files before starting another:
   `program-batch-plan.md`, `program-list-status.csv`, and
   `batch-scan-manifest.yaml`.
+- Do not create an unbounded retry loop around Cline, model, network, tool, or
+  validator failures. Cline may show its own bounded Auto-Retry cycle; once
+  that visible cycle is exhausted, or the same transient error repeats, stop
+  the current program and write durable failed state instead of starting a new
+  ad hoc attempt.
+- For Python command launch on Windows/Cline, allow only one launcher fallback:
+  run `py -3 ...` first, then run the same command once with `python` only if
+  `py -3` itself is unavailable. If Python starts and the script exits
+  non-zero, treat that as the tool result, not a launcher problem.
+- For generated artifact or validator failures, allow at most one targeted
+  repair pass for the same program. If the validator still fails, mark the row
+  `failed_validator`, record `last_error` and `next_action`, and move on only
+  after durable state is updated.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
 - Run the program-analysis validator before marking a row complete.
 - Do not generate `program-set-sme-core-review.md` as part of this batch step.
@@ -123,6 +136,13 @@ outputs/program-list-batch/
      current skill output. Do not treat old artifacts as a cache.
    - Validate the output directory.
    - Update the plan, status CSV, and manifest.
+   - If Cline/model/network/tool execution is interrupted after its visible
+     Auto-Retry cycle, mark this row `failed_runtime`,
+     `validator_status=not_run`, record the exact error in `last_error`, and
+     set `next_action` to resume the same program after the environment is
+     stable. Do not generate temporary `_generate_*_batch.py` scripts or other
+     self-retry helpers unless the user explicitly asks for that recovery
+     path.
 
 3. **Resume safely**
    - In any new session, read durable files first.
@@ -146,37 +166,23 @@ outputs/program-list-batch/
 
 ## Scripts
 
-Use the skill-local Windows runtime router. Resolve the directory containing
-this `SKILL.md`, then invoke its sibling `scripts\invoke-windows-tool.ps1`.
-The launcher is included in every synced runtime copy, so it remains available
-when the skill is installed under `.agents`, `.claude`, `.codex`, or
-`.opencode` in another repository.
+Use direct Python commands in Windows/Cline. Do not use PowerShell, `.cmd`
+launchers, `.ps1` launchers, shell continuations, or `py ... || python ...`
+fallback chains.
 
-- Windows / company Cline environment: use
-  `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`.
-  The router tries `py -3`, then `python`, then the native PowerShell
-  implementation. It does not retry a tool that has already run and failed.
-- Never call the `.py` scripts directly on Windows and never synthesize
-  `py -3 ... || python ...`. Windows PowerShell 5.1 does not support `||`.
-- For another runtime adapter, invoke the same skill-local script from the
-  directory that supplied this `SKILL.md`.
+- Windows / company Cline environment: run the `py -3 ...` command first. If
+  the Python Launcher is unavailable, run the same command again with `python`
+  replacing `py -3`.
+- If Python starts and the script exits non-zero, treat that as the tool result
+  and do not retry with another launcher.
 - macOS/Linux: use `python3`.
-- If all three Windows routes are unavailable, stop and report the runtime issue.
+- If both Windows Python routes are unavailable, stop and report the runtime
+  issue.
 
 Initialize a Copilot Chat queue:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list outputs\repo-scan\program-list.csv `
-  --programs-file programs.txt `
-  --out-dir outputs\program-list-batch `
-  --source-root C:\path\to\source-repo `
-  --delivery-root C:\path\to\delivery-work `
-  --reference-path C:\path\to\reference-pack.md `
-  --reference-path C:\path\to\message-catalog.csv `
-  --control-file C:\path\to\status-code-table.csv `
-  --review-name "normal program batch"
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch"
 ```
 
 `--programs-file` is optional. Use it when an operator or SME provides a
@@ -187,10 +193,8 @@ initializer creates prompts for every `object_type = program` row in the input
 
 Validate batch state:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramBatch `
-  --batch-dir outputs\program-list-batch
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch
 ```
 
 ## References
@@ -224,6 +228,13 @@ powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\script
 
 ## Version History
 
+- v0.1.4 (2026-07-11): Cline retry exit budget
+  - Added a task-level retry budget so Cline/model/network interruptions,
+    launcher failures, and validator failures exit into durable batch state
+    instead of causing unbounded retries.
+  - Limited semantic repair after a validator failure to one targeted pass
+    before marking the row `failed_validator`.
+
 - v0.1.2 (2026-07-10): Installed-skill Windows router
   - Moved the Cline execution entry point into the skill's own `scripts/`
     directory so synced `.agents` copies do not depend on a repository-root
@@ -231,8 +242,13 @@ powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\script
   - Prohibited `py -3 ... || python ...` fallback chains under Windows
     PowerShell 5.1.
 
-- v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
-  - Added native Windows PowerShell 5.1 batch initialization and status
-    validation for machines without Python.
-  - Standardized Cline routing as `py -3`, then `python`, then native
-    PowerShell without retrying completed validator runs.
+- v0.1.3 (2026-07-11): Python-only Windows/Cline launcher
+  - Standardized Cline commands as direct `py -3 <script.py> ...` calls with a
+    manual `python <script.py> ...` fallback only when `py -3` is unavailable.
+  - Removed PowerShell and `.cmd` launchers from generated Cline commands.
+
+- v0.1.1 (2026-07-10): Superseded native Windows fallback experiment
+  - Historical experiment only; current Cline guidance is Python-only via
+    direct `py -3`, then direct `python`.
+  - Do not use non-Python launchers for batch initialization or status
+    validation.

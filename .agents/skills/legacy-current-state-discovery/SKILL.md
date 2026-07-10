@@ -258,14 +258,13 @@ Before handoff, verify:
 - the SME-facing report matches the structured catalogs and does not add new
   unsupported facts.
 
-On Windows/Cline, run the validator through the installed current-state skill
-router. It tries `py -3`, then `python`, then the native Windows PowerShell 5.1
-validator. Do not construct `py ... || python ...` commands in PowerShell 5.1:
+On Windows/Cline, run the validator directly with Python. Run the `py -3 ...`
+command first. If the Python Launcher is unavailable, run the same command
+again with `python` replacing `py -3`. Do not use PowerShell, `.cmd`, `.ps1`,
+shell continuations, or `py ... || python ...` fallback chains:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 `
-  ValidateCurrentStateDiscovery `
-  00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
+```text
+py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py 00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
 ```
 
 On macOS/Linux, run:
@@ -279,11 +278,8 @@ Use the stricter gate before SME review:
 
 Windows/Cline:
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 `
-  ValidateCurrentStateDiscovery `
-  --quality-gate --require-ready `
-  00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
+```text
+py -3 .agents\skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready 00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
 ```
 
 macOS/Linux:
@@ -319,6 +315,12 @@ No runtime-specific assumptions are embedded in the canonical source.
 - v0.1.2 (2026-07-10): Installed-skill Windows router
   - Added a skill-local Windows launcher so synced `.agents`, `.claude`,
     `.codex`, and `.opencode` installs do not depend on a repository-root
-    `scripts\invoke-windows-tool.ps1`.
+    launcher.
   - Prohibited `py -3 ... || python ...` fallback chains under Windows
     PowerShell 5.1.
+
+- v0.1.3 (2026-07-11): Python-only Windows/Cline launcher
+  - Standardized Cline commands as direct `py -3 <script.py> ...` calls with a
+    manual `python <script.py> ...` fallback only when `py -3` is unavailable.
+  - Removed PowerShell and `.cmd` launchers from the documented Cline
+    execution path.

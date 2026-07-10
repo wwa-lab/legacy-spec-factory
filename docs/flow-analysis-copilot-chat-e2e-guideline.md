@@ -105,13 +105,12 @@ Windows path rendering warning:
 
 Company Windows/Cline environment:
 
-- Use the installed skill-local Windows router for repository tools. For batch
-  initialization use `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`;
-  for flow assembly validation use `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1`.
-  The routers try `py -3`, then `python`, then the native Windows PowerShell
-  implementation.
-- Do not synthesize `py ... || python ...` fallback commands. Windows
-  PowerShell 5.1 does not support `||`.
+- Use direct Python commands for repository tools. For batch initialization use
+  `py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py`;
+  for flow assembly validation use
+  `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate`.
+- If `py -3` is unavailable, rerun the same command with `python`. Do not use
+  PowerShell, `.cmd`, `.ps1`, shell continuations, or `py ... || python ...`.
 - Use `python3` only on macOS/Linux development machines.
 
 Reference and control input rule:
@@ -223,15 +222,14 @@ Rules:
 
 Batch prompt generation command on Windows/Cline:
 
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
-  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
-  --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG> `
-  --source-root <SOURCE_REPO> `
-  --delivery-root <DELIVERY_WORKING_CHECKOUT> `
-  --reference-path <REFERENCE_PACK_OR_MESSAGE_CATALOG> `
-  --control-file <CONTROL_FILE_OR_CODE_TABLE> `
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py
+  --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv
+  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW>
+  --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG>
+  --source-root <SOURCE_REPO>
+  --delivery-root <DELIVERY_WORKING_CHECKOUT>
+  --reference-path <REFERENCE_PACK_OR_MESSAGE_CATALOG>
+  --control-file <CONTROL_FILE_OR_CODE_TABLE>
   --review-name "<REVIEW_NAME>"
 
 Omit `--reference-path` and `--control-file` when the run has no reference
@@ -476,10 +474,9 @@ Run the repository router against:
 - program-set-core-input-manifest.yaml
 - program-set-sme-core-review.md
 
-```powershell
-powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 `
-  ValidateProgramSetCoreReview `
-  --manifest <program-set-core-input-manifest.yaml> `
+```text
+py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate
+  --manifest <program-set-core-input-manifest.yaml>
   --review <program-set-sme-core-review.md>
 ```
 
@@ -616,15 +613,14 @@ SME 提供的 program flow，必须保留顺序：
 
 Windows/Cline 批量生成 prompt 命令：
 
-powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
-  InitializeProgramBatch `
-  --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
-  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
-  --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG> `
-  --source-root <SOURCE_REPO> `
-  --delivery-root <DELIVERY_WORKING_CHECKOUT> `
-  --reference-path <REFERENCE_PACK_OR_MESSAGE_CATALOG> `
-  --control-file <CONTROL_FILE_OR_CODE_TABLE> `
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py
+  --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv
+  --programs-file <PROGRAMS_TXT_WITH_SME_FLOW>
+  --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG>
+  --source-root <SOURCE_REPO>
+  --delivery-root <DELIVERY_WORKING_CHECKOUT>
+  --reference-path <REFERENCE_PACK_OR_MESSAGE_CATALOG>
+  --control-file <CONTROL_FILE_OR_CODE_TABLE>
   --review-name "<REVIEW_NAME>"
 
 如果本次没有 reference pack 或 control file，请直接省略
