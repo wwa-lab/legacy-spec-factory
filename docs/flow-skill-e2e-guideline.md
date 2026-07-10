@@ -144,10 +144,11 @@ artifact; do not rescan it just because it appears in a second flow.
 
 ## Commands
 
-The field deployment environment is Windows/Cline. Use
-`scripts\invoke-windows-tool.ps1` for flow tools there; it tries `py -3`, then
-`python`, then native Windows PowerShell. Use `python3` only on macOS/Linux
-development machines.
+The field deployment environment is Windows/Cline. Use the installed flow
+skill's `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1`
+for flow tools there; it tries `py -3`, then `python`, then native Windows
+PowerShell. Do not construct `py ... || python ...` commands in PowerShell 5.1.
+Use `python3` only on macOS/Linux development machines.
 
 Default program-evidence-first order:
 
@@ -176,7 +177,7 @@ CC050
 Build the deterministic program-set inputs on Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "card auth posting core review" `
   --programs-file programs.txt `
   --working-root C:\path\to\legacy-modernization-delivery `
@@ -212,7 +213,7 @@ different location.
 Build from an approved local document repo clone on Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "card auth posting core review" `
   --programs-file programs.txt `
   --working-root C:\path\to\legacy-modernization-delivery `
@@ -256,7 +257,7 @@ repo-level inventory before targeted program scan.
 Validate before handoff on Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
   --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
   --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
 ```

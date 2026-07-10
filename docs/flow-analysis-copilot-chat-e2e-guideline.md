@@ -105,8 +105,13 @@ Windows path rendering warning:
 
 Company Windows/Cline environment:
 
-- Use `scripts\invoke-windows-tool.ps1` for repository tools. The router tries
-  `py -3`, then `python`, then the native Windows PowerShell implementation.
+- Use the installed skill-local Windows router for repository tools. For batch
+  initialization use `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`;
+  for flow assembly validation use `.agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1`.
+  The routers try `py -3`, then `python`, then the native Windows PowerShell
+  implementation.
+- Do not synthesize `py ... || python ...` fallback commands. Windows
+  PowerShell 5.1 does not support `||`.
 - Use `python3` only on macOS/Linux development machines.
 
 Reference and control input rule:
@@ -218,7 +223,7 @@ Rules:
 
 Batch prompt generation command on Windows/Cline:
 
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
   InitializeProgramBatch `
   --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
   --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
@@ -472,7 +477,7 @@ Run the repository router against:
 - program-set-sme-core-review.md
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 `
   ValidateProgramSetCoreReview `
   --manifest <program-set-core-input-manifest.yaml> `
   --review <program-set-sme-core-review.md>
@@ -611,7 +616,7 @@ SME 提供的 program flow，必须保留顺序：
 
 Windows/Cline 批量生成 prompt 命令：
 
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
   InitializeProgramBatch `
   --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
   --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `

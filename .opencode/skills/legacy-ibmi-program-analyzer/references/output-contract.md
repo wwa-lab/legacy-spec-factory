@@ -125,7 +125,7 @@ the artifact set:
 Run the mechanical validator before delivery:
 
 ```text
-Windows/Cline PowerShell: powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
+Windows/Cline PowerShell: powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
@@ -461,7 +461,7 @@ understanding. Align terminology with `references/large-program-analysis.md`.
   dependencies before synthesis.
 - When a local source file is available, prefer the deterministic pre-analysis
   helper. Use the platform's existing Python launcher only:
-  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
+  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
   If all supported routes fail, stop and report:
   **"No supported analysis runtime available"**.

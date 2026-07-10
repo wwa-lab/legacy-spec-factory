@@ -140,7 +140,7 @@ Use:
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
   local file access is available:
-  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
+  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer. Other adapters use the same script beside the `SKILL.md` they loaded.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
   If all three Windows routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
@@ -161,7 +161,7 @@ Use:
 - `scripts/validate_program_analysis_contract.py` (or the root
   `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
   finalization gate before delivery:
-  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`. The router tries `py -3`, then `python`, then the native PowerShell validator.
+  - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell validator.
   - macOS/Linux: `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`
   If all three Windows routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
@@ -263,7 +263,8 @@ field-level rules. The summary below is normative for this skill.
 - When the source file is accessible on disk, first run
   `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
   wrapper) to classify the program tier and produce the appropriate artifact
-  set. Windows/Cline: use `scripts\invoke-windows-tool.ps1`, which tries
+  set. Windows/Cline: use the `scripts\invoke-windows-tool.ps1` beside this
+  `SKILL.md` (for Cline, `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`), which tries
   `py -3`, then `python`, then the native PowerShell implementation;
   macOS/Linux: use
   `python3`. If all supported routes fail, stop and report:
@@ -274,6 +275,8 @@ field-level rules. The summary below is normative for this skill.
   structure artifacts, not the final program analysis. Do not produce
   whole-program business narrative until the source index, SME-first sections,
   and any needed coverage evidence exist.
+  Never call the `.py` helper directly on Windows and never construct
+  `py -3 ... || python ...`; Windows PowerShell 5.1 does not support `||`.
   Pass `--delivery-root <remote-main-snapshot>` and
   `--delivery-profile <delivery-profile.yaml>` when available. If the helper
   reports `central_lookup_result: found_on_remote_main`, stop the scan and
@@ -447,7 +450,7 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
+     - Windows/Cline: `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The installed skill-local router tries `py -3`, then `python`, then the native PowerShell indexer.
      - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
      When `--delivery-root` is available and the helper reports
      `central_lookup_result: found_on_remote_main`, stop and return the central
@@ -567,7 +570,7 @@ Run this gate before delivering `program-analysis.md` /
   `routine-logic-details/deep-read-batch-*.md`, or `chain_ready` output, a
   failed gate is blocking.
 - Run the validator with the repository Python launcher convention:
-  Windows/Cline PowerShell `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`
+  Windows/Cline PowerShell `powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`
   (router order: `py -3`, `python`, native PowerShell), macOS/Linux
   `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`.
 
@@ -1137,6 +1140,12 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
+
+- v0.2.19 (2026-07-10): Installed-skill Windows router
+  - Added the Python-first/native-PowerShell launcher inside the skill so
+    `.agents` installations do not depend on repository-root scripts.
+  - Prohibited Cline from generating `py -3 ... || python ...` under Windows
+    PowerShell 5.1.
 
 - v0.1.0 (2026-05-14): Initial release
   - 10-step workflow for RPGLE, CLLE, COBOL (with Program Call Map extraction and flat object-dependency listing)

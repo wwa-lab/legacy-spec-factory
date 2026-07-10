@@ -68,11 +68,14 @@ Report formatting rule:
 - 如果一个 section 只能写高层总结，请把它降级为 Gap 或 Code Analysis Required，不要写成 confirmed functional。
 
 Validation command rule:
-- 如果需要运行 Python validator，并且当前环境是 Windows / Windows 11，请优先使用 `py -3`。
+- 如果需要运行 validator，并且当前环境是 Windows / Windows 11，请使用已安装
+  current-state skill 的本地 launcher；它内部会依次尝试 `py -3`、`python`、
+  原生 PowerShell validator。
+- 不要拼接 `py ... || python ...`，Windows PowerShell 5.1 不支持。
 - Windows 示例：
-  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
+  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
 - Windows strict quality gate 示例：
-  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
+  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
 - 只有在 macOS / Linux 环境下才使用 `python3`。
 
 Quality gate:
@@ -144,11 +147,15 @@ Report formatting rule:
 - If a section can only contain a high-level summary, downgrade it to Gap or Code Analysis Required instead of writing it as confirmed functional behavior.
 
 Validation command rule:
-- If a Python validator must be run and the environment is Windows / Windows 11, use `py -3` first.
+- If a validator must be run and the environment is Windows / Windows 11, use
+  the installed current-state skill's local launcher; it tries `py -3`, then
+  `python`, then the native PowerShell validator.
+- Do not synthesize `py ... || python ...`; Windows PowerShell 5.1 does not
+  support `||`.
 - Windows example:
-  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
+  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
 - Windows strict quality gate example:
-  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
+  `powershell -NoProfile -File .agents\skills\legacy-current-state-discovery\scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
 - Use `python3` only on macOS / Linux.
 
 Quality gate:

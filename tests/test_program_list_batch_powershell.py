@@ -17,6 +17,29 @@ SCRIPT_DIR = (
 INITIALIZER = SCRIPT_DIR / "initialize_program_batch.ps1"
 STATUS_VALIDATOR = SCRIPT_DIR / "validate_program_batch_status.ps1"
 ROUTER = REPO_ROOT / "scripts" / "invoke-windows-tool.ps1"
+LOCAL_ROUTER = SCRIPT_DIR / "invoke-windows-tool.ps1"
+SKILL_LOCAL_ROUTERS = (
+    REPO_ROOT
+    / "skills"
+    / "legacy-ibmi-program-list-batch"
+    / "scripts"
+    / "invoke-windows-tool.ps1",
+    REPO_ROOT
+    / "skills"
+    / "legacy-ibmi-program-analyzer"
+    / "scripts"
+    / "invoke-windows-tool.ps1",
+    REPO_ROOT
+    / "skills"
+    / "legacy-ibmi-flow-analyzer"
+    / "scripts"
+    / "invoke-windows-tool.ps1",
+    REPO_ROOT
+    / "skills"
+    / "legacy-current-state-discovery"
+    / "scripts"
+    / "invoke-windows-tool.ps1",
+)
 POWERSHELL = shutil.which("powershell") or shutil.which("pwsh")
 
 
@@ -40,6 +63,22 @@ def run_powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess
 
 
 class ProgramListBatchPowerShellContractTests(unittest.TestCase):
+    def test_skill_local_windows_routers_are_portable_and_safe(self) -> None:
+        for router in SKILL_LOCAL_ROUTERS:
+            with self.subTest(router=router):
+                self.assertTrue(router.is_file(), router)
+                text = router.read_text(encoding="utf-8")
+                lowered = text.lower()
+                self.assertIn("Copyright 2026 Leo L Zhang", text)
+                self.assertIn("#requires -version 5.1", lowered)
+                self.assertIn("$psscriptroot", lowered)
+                self.assertIn("get-command py", lowered)
+                self.assertIn("get-command python", lowered)
+                self.assertIn("native powershell", lowered)
+                self.assertNotIn("||", text)
+                self.assertNotIn("Invoke-Expression", text)
+                self.assertNotRegex(text, r"(?i)\biex\b")
+
     def test_native_scripts_exist_and_do_not_delegate_to_python(self) -> None:
         for script in (INITIALIZER, STATUS_VALIDATOR):
             self.assertTrue(script.is_file(), script)
@@ -86,6 +125,55 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
                     "Bypass",
                     "-File",
                     str(ROUTER),
+                    "InitializeProgramBatch",
+                    "--program-list",
+                    str(program_list),
+                    "--out-dir",
+                    str(out_dir),
+                ],
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertIn("Initialized program batch:", result.stdout)
+            self.assertTrue((out_dir / "program-list-status.csv").is_file())
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_skill_local_router_uses_native_fallback_when_python_is_missing(self) -> None:
+        if os.name != "nt":
+            self.skipTest("Windows command shims require a Windows host")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            shims = root / "shims"
+            shims.mkdir()
+            for command in ("py.cmd", "python.cmd"):
+                (shims / command).write_text("@exit /b 9009\r\n", encoding="ascii")
+            program_list = root / "program-list.csv"
+            out_dir = root / "batch"
+            program_list.write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason",
+                        "CC050,program,RPGLE,CC050.RPGLE,100,normal_program,test",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            environment = dict(os.environ)
+            environment["PATH"] = str(shims) + os.pathsep + environment.get("PATH", "")
+
+            result = subprocess.run(
+                [
+                    str(POWERSHELL),
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(LOCAL_ROUTER),
                     "InitializeProgramBatch",
                     "--program-list",
                     str(program_list),

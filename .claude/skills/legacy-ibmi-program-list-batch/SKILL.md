@@ -146,19 +146,27 @@ outputs/program-list-batch/
 
 ## Scripts
 
-Use the repository Windows runtime router convention.
+Use the skill-local Windows runtime router. Resolve the directory containing
+this `SKILL.md`, then invoke its sibling `scripts\invoke-windows-tool.ps1`.
+The launcher is included in every synced runtime copy, so it remains available
+when the skill is installed under `.agents`, `.claude`, `.codex`, or
+`.opencode` in another repository.
 
-- Windows / company Cline or Copilot environment: use
-  `scripts\invoke-windows-tool.ps1`. The router tries `py -3`, then `python`,
-  then the native PowerShell implementation. It does not retry a tool that has
-  already run and failed.
+- Windows / company Cline environment: use
+  `.agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1`.
+  The router tries `py -3`, then `python`, then the native PowerShell
+  implementation. It does not retry a tool that has already run and failed.
+- Never call the `.py` scripts directly on Windows and never synthesize
+  `py -3 ... || python ...`. Windows PowerShell 5.1 does not support `||`.
+- For another runtime adapter, invoke the same skill-local script from the
+  directory that supplied this `SKILL.md`.
 - macOS/Linux: use `python3`.
 - If all three Windows routes are unavailable, stop and report the runtime issue.
 
 Initialize a Copilot Chat queue:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
   InitializeProgramBatch `
   --program-list outputs\repo-scan\program-list.csv `
   --programs-file programs.txt `
@@ -180,7 +188,7 @@ initializer creates prompts for every `object_type = program` row in the input
 Validate batch state:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-list-batch\scripts\invoke-windows-tool.ps1 `
   ValidateProgramBatch `
   --batch-dir outputs\program-list-batch
 ```
@@ -215,6 +223,13 @@ powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
 - Blocked and failed rows have `last_error` and `next_action`.
 
 ## Version History
+
+- v0.1.2 (2026-07-10): Installed-skill Windows router
+  - Moved the Cline execution entry point into the skill's own `scripts/`
+    directory so synced `.agents` copies do not depend on a repository-root
+    launcher.
+  - Prohibited `py -3 ... || python ...` fallback chains under Windows
+    PowerShell 5.1.
 
 - v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
   - Added native Windows PowerShell 5.1 batch initialization and status

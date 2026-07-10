@@ -52,7 +52,7 @@ After the four core sections are populated, run the structural validator:
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 `
   ValidateProgramSetCoreReview `
   --manifest program-set-core-input-manifest.yaml `
   --review program-set-sme-core-review.md

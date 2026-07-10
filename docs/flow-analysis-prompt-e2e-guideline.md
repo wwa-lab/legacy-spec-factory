@@ -90,8 +90,8 @@ Parameter naming note:
   source evidence or SME approval.
 
 When the prompt asks the agent/operator to build or validate a program-set core
-review in the company Windows environment, use the repository runtime router:
-`powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview ...`.
+review in the company Windows environment, use the installed flow skill router:
+`powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview ...`.
 It tries `py -3`, then `python`, then native PowerShell. Use `python3` only on
 macOS/Linux development machines.
 

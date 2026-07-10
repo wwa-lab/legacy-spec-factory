@@ -67,11 +67,13 @@ Conditional output:
   complex/large tier or retained batch evidence.
 
 Validation:
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir "{{output_dir}}"
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir "{{output_dir}}"
 
 Company Windows 11 / Cline note:
-- The generated validation command invokes `scripts\invoke-windows-tool.ps1`,
+- The generated validation command invokes the analyzer skill-local router,
   which tries `py -3`, then `python`, then the native PowerShell validator.
+- Do not replace it with `py -3 ... || python ...`; Windows PowerShell 5.1
+  does not support `||`.
 - A validator failure is a result failure, not a reason to rerun it through
   another route.
 - Keep Windows paths in code spans or fenced code blocks when reporting them.
