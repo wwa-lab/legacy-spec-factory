@@ -188,13 +188,15 @@ Quality gates:
 
 Validation commands:
 - In the company Windows 11 Copilot/Cline environment, invoke tools through
-  `scripts\invoke-windows-tool.ps1`. The router tries `py -3`, then `python`,
-  then the native Windows PowerShell implementation.
+  the installed analyzer skill's
+  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`.
+  The router tries `py -3`, then `python`, then the native Windows PowerShell
+  implementation. Do not synthesize a `py ... || python ...` command.
 - For local macOS/Linux development, use `python3`.
 - Do not install Python, create a virtual environment, or configure PATH.
 
 Per-program validation:
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
   ValidateProgramAnalysis `
   --analysis-dir <program-output-dir>
 
@@ -310,13 +312,14 @@ Program list 字段:
 
 验证命令:
 - 公司 Windows 11 Copilot/Cline 环境统一通过
-  `scripts\invoke-windows-tool.ps1` 执行。启动器依次尝试 `py -3`、
-  `python`，最后使用原生 Windows PowerShell 实现。
+  `.agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1`
+  执行。启动器依次尝试 `py -3`、`python`，最后使用原生 Windows
+  PowerShell 实现。不要拼接 `py ... || python ...`。
 - macOS/Linux 本地开发可以使用 `python3`。
 - 不要安装 Python、创建 virtual environment 或配置 PATH。
 
 单个 program 验证:
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
   ValidateProgramAnalysis `
   --analysis-dir <program-output-dir>
 
@@ -728,7 +731,7 @@ Conditional output:
   large_extreme_program, or explicit deep-read continuation.
 
 Validation on Windows/Cline:
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
   ValidateProgramAnalysis `
   --analysis-dir <output directory>
 

@@ -583,13 +583,13 @@ to the orchestrator.
      after every program analysis artifact is complete and before the LLM fills
      the review:
      Windows:
-     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
+     `powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
      macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
    - For `core_review_only` from an approved local document repo clone, run the
      deterministic builder with approved document repo mode:
      Windows:
-     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>\<program_set_review_parent>\<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
+     `powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>\<program_set_review_parent>\<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
      macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>/<program_set_review_parent>/<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
      The builder writes `program-set-core-input-manifest.yaml` plus a fixed
@@ -631,7 +631,7 @@ to the orchestrator.
      or SME Checklist in that compact core-review artifact.
    - After the four core sections are filled, run
      Windows:
-     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
+     `powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
      macOS/Linux:
      `python3 scripts/validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
      A failed validator means the artifact is structurally unsafe to hand to
@@ -1020,6 +1020,13 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.11 (2026-07-10): Installed-skill Windows router
+  - Added a skill-local Windows launcher so synced `.agents`, `.claude`,
+    `.codex`, and `.opencode` installs do not depend on a repository-root
+    `scripts\invoke-windows-tool.ps1`.
+  - Prohibited `py -3 ... || python ...` fallback chains under Windows
+    PowerShell 5.1.
 
 - v0.2.10 (2026-07-10): Python-first Windows PowerShell fallback
   - Added native Windows PowerShell 5.1 program-set builder and validator for

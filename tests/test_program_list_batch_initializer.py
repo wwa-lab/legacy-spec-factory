@@ -82,7 +82,8 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("routine-logic-details.md", prompt_text)
             self.assertIn("routine-logic-details.yaml", prompt_text)
             self.assertIn(
-                "powershell -NoProfile -File scripts\\invoke-windows-tool.ps1 "
+                "powershell -NoProfile -File "
+                ".agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\invoke-windows-tool.ps1 "
                 "ValidateProgramAnalysis",
                 prompt_text,
             )

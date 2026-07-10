@@ -272,7 +272,7 @@ not dependent on the flow builder:
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
   --program <PROGRAM> `
   --out-dir <analysis-dir> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -300,7 +300,7 @@ large source/business change makes a refresh necessary, make that an explicit
 override instead of silently rescanning:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> `
   --program <PROGRAM> `
   --out-dir <analysis-dir> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -320,7 +320,7 @@ prepared:
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "<review name>" `
   --programs-file <programs.txt> `
   --delivery-root <tmp-delivery-dir-or-fresh-cache> `
@@ -356,7 +356,7 @@ SME handoff:
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-flow-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
   --manifest <output-dir>\program-set-core-input-manifest.yaml `
   --review <output-dir>\program-set-sme-core-review.md
 ```
@@ -499,7 +499,7 @@ python3 scripts/validate-program-analysis-contract.py \
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis `
   --analysis-dir <program-analysis-output-dir>
 ```
 

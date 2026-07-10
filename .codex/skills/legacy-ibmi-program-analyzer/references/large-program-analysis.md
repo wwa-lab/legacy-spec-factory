@@ -153,7 +153,7 @@ canonical helper before asking an LLM to synthesize behavior:
 Windows:
 
 ```powershell
-powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 `
   IndexRpgSource path\to\PROGRAM.rpgle `
   --program PROGRAM `
   --out-dir path\to\PROGRAM-analysis `
@@ -315,7 +315,7 @@ blocks or copied RPG/CL/COBOL/SQL source snippets. Do not replace the wrapper wi
 latest-batch summary or sidecar table of contents. Before delivery, run:
 
 ```text
-Windows/Cline PowerShell: powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
+Windows/Cline PowerShell: powershell -NoProfile -File .agents\skills\legacy-ibmi-program-analyzer\scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
