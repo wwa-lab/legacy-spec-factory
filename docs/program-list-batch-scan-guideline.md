@@ -187,12 +187,15 @@ Quality gates:
   blocked_missing_source, failed_validator, or failed_runtime.
 
 Validation commands:
-- In the company Windows 11 Copilot environment, use `py -3` only.
+- In the company Windows 11 Copilot/Cline environment, invoke tools through
+  `scripts\invoke-windows-tool.ps1`. The router tries `py -3`, then `python`,
+  then the native Windows PowerShell implementation.
 - For local macOS/Linux development, use `python3`.
 - Do not install Python, create a virtual environment, or configure PATH.
 
 Per-program validation:
-py -3 scripts\validate-program-analysis-contract.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateProgramAnalysis `
   --analysis-dir <program-output-dir>
 
 Final response:
@@ -306,12 +309,15 @@ Program list 字段:
   failed_validator 或 failed_runtime 时，batch 才算 complete。
 
 验证命令:
-- 公司 Windows 11 Copilot 环境只使用 `py -3`。
+- 公司 Windows 11 Copilot/Cline 环境统一通过
+  `scripts\invoke-windows-tool.ps1` 执行。启动器依次尝试 `py -3`、
+  `python`，最后使用原生 Windows PowerShell 实现。
 - macOS/Linux 本地开发可以使用 `python3`。
 - 不要安装 Python、创建 virtual environment 或配置 PATH。
 
 单个 program 验证:
-py -3 scripts\validate-program-analysis-contract.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateProgramAnalysis `
   --analysis-dir <program-output-dir>
 
 最终回复:
@@ -721,8 +727,13 @@ Conditional output:
   routine-logic-details/deep-read-batch-*.md only for complex_normal_program,
   large_extreme_program, or explicit deep-read continuation.
 
-Validation:
-py -3 scripts\validate-program-analysis-contract.py `
+Validation on Windows/Cline:
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateProgramAnalysis `
+  --analysis-dir <output directory>
+
+Validation on macOS/Linux:
+python3 scripts/validate-program-analysis-contract.py \
   --analysis-dir <output directory>
 ```
 

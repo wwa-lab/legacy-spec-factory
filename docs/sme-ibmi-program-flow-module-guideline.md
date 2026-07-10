@@ -89,10 +89,12 @@ For interrupted runs or cross-session handoff, use
   输出写到这个 branch 的 tier folders。
 - program flow 的稳定输出由 program analyzer + builder + validator 一起固定：
   先逐个 program 生成足够深度的 program-level artifacts，再用
-  `scripts/build-program-set-core-review.py` 生成
+  `scripts/build-program-set-core-review.py`（Windows/Cline 通过
+  `scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview`）生成
   `program-set-core-input-manifest.yaml` 和 `program-set-sme-core-review.md`
   骨架；填完四个核心区后，再跑
-  `scripts/validate-program-set-core-review.py`，确保没有漏 program，也没有
+  `scripts/validate-program-set-core-review.py`（Windows/Cline 通过
+  `scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview`），确保没有漏 program，也没有
   混入 full flow 的 Nodes/Edges/Replay 等章节。
 - SME review 的第一屏要能看到 calculation logic、validation logic、
   exception handling、message inventory、file I/O / SQL state changes，以及
@@ -618,7 +620,10 @@ still preserve the five-routine limit, evidence boundaries, and
     - 检查 YAML 可读。
     - 检查本轮 updated RLOG-* 在 md/yaml 中一致。
     - 检查 coverage ledger 与本轮实际处理 routine/window 一致。
-    - 临时验证优先使用 py -3；不要安装 Python、不要改 PATH。
+    - Windows/Cline 临时验证统一通过
+      `scripts\invoke-windows-tool.ps1`，它依次尝试 `py -3`、`python`、
+      原生 Windows PowerShell；macOS/Linux 使用 `python3`。不要安装
+      Python、不要改 PATH。
 15. 写入本轮 checkpoint:
     - 本轮编号
     - 本轮处理的 RLOG-* / routine/window

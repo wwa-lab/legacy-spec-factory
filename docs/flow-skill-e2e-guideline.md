@@ -144,8 +144,10 @@ artifact; do not rescan it just because it appears in a second flow.
 
 ## Commands
 
-The field deployment environment is Windows. Use `py -3` there. Use
-`python3` only on macOS/Linux development machines.
+The field deployment environment is Windows/Cline. Use
+`scripts\invoke-windows-tool.ps1` for flow tools there; it tries `py -3`, then
+`python`, then native Windows PowerShell. Use `python3` only on macOS/Linux
+development machines.
 
 Default program-evidence-first order:
 

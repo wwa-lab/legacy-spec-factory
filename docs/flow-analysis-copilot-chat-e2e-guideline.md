@@ -103,9 +103,10 @@ Windows path rendering warning:
   `C:\sandbox\project\legacy-modernization-delivery\modules\CAP-ID-0003-normal_program@CU400P`
 - Build output paths by joining path components, not by string concatenation.
 
-Company Windows environment:
+Company Windows/Cline environment:
 
-- Use `py -3` for Python commands.
+- Use `scripts\invoke-windows-tool.ps1` for repository tools. The router tries
+  `py -3`, then `python`, then the native Windows PowerShell implementation.
 - Use `python3` only on macOS/Linux development machines.
 
 Reference and control input rule:
@@ -215,9 +216,10 @@ Rules:
 8. When reporting planned output directories, wrap the full path in backticks
    and keep the separator before any program beginning with @.
 
-Batch prompt generation command on Windows:
+Batch prompt generation command on Windows/Cline:
 
-py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  InitializeProgramBatch `
   --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
   --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
   --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG> `
@@ -464,10 +466,20 @@ summary.
 Review folder:
 <DELIVERY_WORKING_CHECKOUT>/modules/CAP-ID-0004-program_set_reviews/<REVIEW_SLUG>/
 
-Validation:
-Run scripts/validate-program-set-core-review.py against:
+Validation on Windows/Cline:
+Run the repository router against:
 - program-set-core-input-manifest.yaml
 - program-set-sme-core-review.md
+
+```powershell
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateProgramSetCoreReview `
+  --manifest <program-set-core-input-manifest.yaml> `
+  --review <program-set-sme-core-review.md>
+```
+
+On macOS/Linux, use `python3 scripts/validate-program-set-core-review.py`
+with the same `--manifest` and `--review` arguments.
 
 Checks:
 1. Every manifest program appears in Sources and Core Completeness Ledger.
@@ -597,9 +609,10 @@ SME 提供的 program flow，必须保留顺序：
 8. 报告 planned output directory 时，完整路径必须放在反引号里；如果
    program 以 @ 开头，必须保留 tier folder 和 program folder 之间的路径分隔符。
 
-Windows 批量生成 prompt 命令：
+Windows/Cline 批量生成 prompt 命令：
 
-py -3 skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  InitializeProgramBatch `
   --program-list <SOURCE_REPO>\outputs\repo-scan\program-list.csv `
   --programs-file <PROGRAMS_TXT_WITH_SME_FLOW> `
   --out-dir <DELIVERY_WORKING_CHECKOUT>\outputs\program-list-batch\<REVIEW_SLUG> `
