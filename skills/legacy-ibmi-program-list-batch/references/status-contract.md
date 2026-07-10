@@ -58,6 +58,34 @@ Add these columns to `program-list-status.csv`:
 | `failed_runtime` | Runtime/tooling failed before valid output. |
 | `skipped_not_program` | Row is not a program. |
 
+## Retry And Exit Budget
+
+The batch state is the exit mechanism when Cline, the model, the network, or a
+tool call cannot proceed safely. Do not keep a row `in_progress` while starting
+fresh ad hoc attempts in the same chat.
+
+- Cline may perform its own bounded Auto-Retry for model/network errors. If the
+  visible Auto-Retry cycle is exhausted, or the same transient error repeats,
+  stop the current program and set `batch_status=failed_runtime`.
+- For Windows/Cline Python launch, try `py -3 ...` once. If the Python Launcher
+  is unavailable, retry the identical command once with `python` replacing
+  `py -3`. If Python starts and the script exits non-zero, record that command
+  result; do not try another launcher.
+- For generated artifact or validator failures, perform at most one targeted
+  repair pass for the same program. If validation still fails, set
+  `batch_status=failed_validator`.
+- Do not create temporary `_generate_*_batch.py` scripts, launcher wrappers, or
+  self-retry helpers as an implicit recovery path. Use them only when the user
+  explicitly approves that approach.
+
+Examples:
+
+| Situation | batch_status | validator_status | last_error | next_action |
+| --- | --- | --- | --- | --- |
+| Cline Auto-Retry exhausts on a network/model error before artifacts are stable | `failed_runtime` | `not_run` | `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING` | `Resume this program in a fresh/stable Cline session; do not skip the row.` |
+| Neither Windows Python route is available | `failed_runtime` | `not_run` | `python_runtime_unavailable` | `Install or expose Python 3, then rerun this program prompt.` |
+| Program validator still fails after one targeted repair pass | `failed_validator` | `failed` | `program_analysis_contract_failed: <short validator finding>` | `Review validator output and rerun/repair this program only.` |
+
 ## Required Per-Program Artifacts
 
 For `completed` and `completed_with_warnings` rows, the output directory should
@@ -89,6 +117,7 @@ explicit deep-read continuation.
 - Put missing source in `blocked_missing_source`, not `failed_runtime`.
 - Put validator failures in `failed_validator`, not `completed_with_warnings`.
 - Record `last_error` and `next_action` for every blocked or failed row.
+- Do not leave a row `in_progress` after the retry budget is exhausted.
 - Treat `@CC080` and `CC080` as different program identities unless a reviewed
   delivery profile defines aliases.
 

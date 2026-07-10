@@ -106,6 +106,12 @@ class RpgSourceIndexerTests(unittest.TestCase):
             skill_text,
         )
         self.assertIn("python` replacing `py -3`", skill_text)
+        self.assertIn("Retry / Exit Policy", skill_text)
+        self.assertIn("Cline may show its own bounded Auto-Retry", skill_text)
+        self.assertIn("cline_auto_retry_exhausted", skill_text)
+        self.assertIn("batch_status=failed_runtime", skill_text)
+        self.assertIn("batch_status=failed_validator", skill_text)
+        self.assertIn("at most one targeted repair pass", skill_text)
         self.assertNotIn("invoke-windows-tool.cmd", skill_text)
         self.assertNotIn("invoke-windows-tool.ps1", skill_text)
 

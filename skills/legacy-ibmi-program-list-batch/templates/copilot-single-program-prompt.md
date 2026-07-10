@@ -52,6 +52,26 @@ Rules:
   single-program chat. Program-set review is a later flow-analyzer step only
   after a specific flow or program set is selected.
 
+Retry / exit budget:
+- Cline may show its own bounded Auto-Retry for model/network errors. Do not
+  add your own unbounded retry loop.
+- If a model, network, tool-call, or edit interruption persists after Cline's
+  visible Auto-Retry cycle, stop this program. Update
+  program-list-status.csv with `batch_status=failed_runtime`,
+  `validator_status=not_run`, a short `last_error` such as
+  `cline_auto_retry_exhausted: <error>`, and a `next_action` telling the next
+  operator to resume this same program after Cline/network stability returns.
+- For Python launch, run the `py -3 ...` command once. If the Python Launcher
+  is unavailable, rerun the same command once with `python` replacing `py -3`.
+  If Python starts and the script exits non-zero, treat that as the tool
+  result, not a launcher failure.
+- If the validator fails after artifacts are generated, perform at most one targeted repair pass for this program. If validation still fails, mark
+  `batch_status=failed_validator`, preserve the validator error in
+  `last_error`, and set `next_action` for a later manual or SME-assisted
+  follow-up.
+- Do not create ad hoc `_generate_*_batch.py` scripts, launcher wrappers, or
+  self-retry helpers to bypass these limits unless the user explicitly asks.
+
 Required output:
 - program-analysis.md
 - source-index.yaml

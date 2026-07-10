@@ -73,6 +73,19 @@ directly.
 - After every program, update all durable state files before starting another:
   `program-batch-plan.md`, `program-list-status.csv`, and
   `batch-scan-manifest.yaml`.
+- Do not create an unbounded retry loop around Cline, model, network, tool, or
+  validator failures. Cline may show its own bounded Auto-Retry cycle; once
+  that visible cycle is exhausted, or the same transient error repeats, stop
+  the current program and write durable failed state instead of starting a new
+  ad hoc attempt.
+- For Python command launch on Windows/Cline, allow only one launcher fallback:
+  run `py -3 ...` first, then run the same command once with `python` only if
+  `py -3` itself is unavailable. If Python starts and the script exits
+  non-zero, treat that as the tool result, not a launcher problem.
+- For generated artifact or validator failures, allow at most one targeted
+  repair pass for the same program. If the validator still fails, mark the row
+  `failed_validator`, record `last_error` and `next_action`, and move on only
+  after durable state is updated.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
 - Run the program-analysis validator before marking a row complete.
 - Do not generate `program-set-sme-core-review.md` as part of this batch step.
@@ -123,6 +136,13 @@ outputs/program-list-batch/
      current skill output. Do not treat old artifacts as a cache.
    - Validate the output directory.
    - Update the plan, status CSV, and manifest.
+   - If Cline/model/network/tool execution is interrupted after its visible
+     Auto-Retry cycle, mark this row `failed_runtime`,
+     `validator_status=not_run`, record the exact error in `last_error`, and
+     set `next_action` to resume the same program after the environment is
+     stable. Do not generate temporary `_generate_*_batch.py` scripts or other
+     self-retry helpers unless the user explicitly asks for that recovery
+     path.
 
 3. **Resume safely**
    - In any new session, read durable files first.
@@ -208,6 +228,13 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
 
 ## Version History
 
+- v0.1.4 (2026-07-11): Cline retry exit budget
+  - Added a task-level retry budget so Cline/model/network interruptions,
+    launcher failures, and validator failures exit into durable batch state
+    instead of causing unbounded retries.
+  - Limited semantic repair after a validator failure to one targeted pass
+    before marking the row `failed_validator`.
+
 - v0.1.2 (2026-07-10): Installed-skill Windows router
   - Moved the Cline execution entry point into the skill's own `scripts/`
     directory so synced `.agents` copies do not depend on a repository-root
@@ -220,8 +247,8 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
     manual `python <script.py> ...` fallback only when `py -3` is unavailable.
   - Removed PowerShell and `.cmd` launchers from generated Cline commands.
 
-- v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
-  - Added native Windows PowerShell 5.1 batch initialization and status
-    validation for machines without Python.
-  - Standardized Cline routing as `py -3`, then `python`, then native
-    PowerShell without retrying completed validator runs.
+- v0.1.1 (2026-07-10): Superseded native Windows fallback experiment
+  - Historical experiment only; current Cline guidance is Python-only via
+    direct `py -3`, then direct `python`.
+  - Do not use non-Python launchers for batch initialization or status
+    validation.
