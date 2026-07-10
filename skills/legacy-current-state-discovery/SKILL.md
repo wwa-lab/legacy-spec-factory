@@ -258,7 +258,16 @@ Before handoff, verify:
 - the SME-facing report matches the structured catalogs and does not add new
   unsupported facts.
 
-When local Python validation is available, run the bundled validator:
+On Windows/Cline, run the validator through the repository router. It tries
+`py -3`, then `python`, then the native Windows PowerShell 5.1 validator:
+
+```powershell
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateCurrentStateDiscovery `
+  00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
+```
+
+On macOS/Linux, run:
 
 ```bash
 python3 skills/legacy-current-state-discovery/scripts/validate_current_state_discovery_package.py \
@@ -266,6 +275,17 @@ python3 skills/legacy-current-state-discovery/scripts/validate_current_state_dis
 ```
 
 Use the stricter gate before SME review:
+
+Windows/Cline:
+
+```powershell
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 `
+  ValidateCurrentStateDiscovery `
+  --quality-gate --require-ready `
+  00_context_packages\<MODULE-SLUG>\current-state-discovery\<DISCOVERY-SLUG>
+```
+
+macOS/Linux:
 
 ```bash
 python3 skills/legacy-current-state-discovery/scripts/validate_current_state_discovery_package.py \
@@ -286,3 +306,11 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 - Agents: `.agents/skills/legacy-current-state-discovery/SKILL.md`
 
 No runtime-specific assumptions are embedded in the canonical source.
+
+## Version History
+
+- v0.1.1 (2026-07-10): Python-first Windows PowerShell fallback
+  - Added native Windows PowerShell 5.1 package validation for machines
+    without Python.
+  - Standardized Windows/Cline routing as `py -3`, then `python`, then native
+    PowerShell while preserving strict quality-gate behavior.

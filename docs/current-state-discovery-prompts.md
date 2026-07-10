@@ -70,9 +70,9 @@ Report formatting rule:
 Validation command rule:
 - 如果需要运行 Python validator，并且当前环境是 Windows / Windows 11，请优先使用 `py -3`。
 - Windows 示例：
-  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
+  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
 - Windows strict quality gate 示例：
-  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
+  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
 - 只有在 macOS / Linux 环境下才使用 `python3`。
 
 Quality gate:
@@ -146,9 +146,9 @@ Report formatting rule:
 Validation command rule:
 - If a Python validator must be run and the environment is Windows / Windows 11, use `py -3` first.
 - Windows example:
-  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py <package-path>`
+  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery <package-path>`
 - Windows strict quality gate example:
-  `py -3 skills\legacy-current-state-discovery\scripts\validate_current_state_discovery_package.py --quality-gate --require-ready <package-path>`
+  `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateCurrentStateDiscovery --quality-gate --require-ready <package-path>`
 - Use `python3` only on macOS / Linux.
 
 Quality gate:

@@ -564,6 +564,12 @@ to the orchestrator.
      source HEAD. If missing, stale, or dirty, rerun repo-level
      `legacy-ibmi-inventory` first, then use `program-list.csv` to locate each
      program's source path and tier for targeted program analysis.
+   - On a Windows machine where `py -3` and `python` are both unavailable, a
+     missing, stale, or dirty inventory cache remains
+     `blocked_pending_inventory_runtime` until a fresh cache is supplied or the
+     separate `legacy-ibmi-inventory` repo scanner receives a native
+     PowerShell implementation. The program-set builder and validator fallback
+     do not silently treat a stale cache as fresh.
    - Write current-run program analysis output to the delivery repo
      working branch named by the user/profile, normally `develop-<person>`. If
      that branch does not exist, create it from `origin/main`; if it exists,
@@ -577,13 +583,13 @@ to the orchestrator.
      after every program analysis artifact is complete and before the LLM fills
      the review:
      Windows:
-     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
+     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
      macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <delivery-working-branch-checkout> --source-root <source-repo> --profile <delivery-profile.yaml> --output-dir <delivery-worktree-output-dir> --working-branch <develop-person> --program-first`.
    - For `core_review_only` from an approved local document repo clone, run the
      deterministic builder with approved document repo mode:
      Windows:
-     `py -3 scripts\build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>\<program_set_review_parent>\<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
+     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>\<program_set_review_parent>\<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
      macOS/Linux:
      `python3 scripts/build-program-set-core-review.py --review-name "<name>" --programs-file <programs.txt> --working-root <local-document-repo-clone> --profile <delivery-profile.yaml> --output-dir <local-document-repo-clone>/<program_set_review_parent>/<review_slug> --working-branch main --artifact-repo-mode approved_document_repo`.
      The builder writes `program-set-core-input-manifest.yaml` plus a fixed
@@ -625,7 +631,7 @@ to the orchestrator.
      or SME Checklist in that compact core-review artifact.
    - After the four core sections are filled, run
      Windows:
-     `py -3 scripts\validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
+     `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
      macOS/Linux:
      `python3 scripts/validate-program-set-core-review.py --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>`.
      A failed validator means the artifact is structurally unsafe to hand to
@@ -1014,6 +1020,12 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.10 (2026-07-10): Python-first Windows PowerShell fallback
+  - Added native Windows PowerShell 5.1 program-set builder and validator for
+    Cline environments without Python or PyYAML.
+  - Standardized Windows routing as `py -3`, then `python`, then native
+    PowerShell while preserving manifest and validator failure semantics.
 
 - v0.2.9 (2026-07-08): Approved document repo reuse for SME flow assembly
   - Added explicit approved document repo mode for the post all-program-scan

@@ -174,7 +174,7 @@ CC050
 Build the deterministic program-set inputs on Windows:
 
 ```powershell
-py -3 scripts/build-program-set-core-review.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "card auth posting core review" `
   --programs-file programs.txt `
   --working-root C:\path\to\legacy-modernization-delivery `
@@ -210,7 +210,7 @@ different location.
 Build from an approved local document repo clone on Windows:
 
 ```powershell
-py -3 scripts/build-program-set-core-review.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 BuildProgramSetCoreReview `
   --review-name "card auth posting core review" `
   --programs-file programs.txt `
   --working-root C:\path\to\legacy-modernization-delivery `
@@ -254,7 +254,7 @@ repo-level inventory before targeted program scan.
 Validate before handoff on Windows:
 
 ```powershell
-py -3 scripts\validate-program-set-core-review.py `
+powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramSetCoreReview `
   --manifest C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-core-input-manifest.yaml `
   --review C:\path\to\legacy-modernization-delivery\modules\CAP-ID-0004-program_set_reviews\card_auth_posting_core_review\program-set-sme-core-review.md
 ```

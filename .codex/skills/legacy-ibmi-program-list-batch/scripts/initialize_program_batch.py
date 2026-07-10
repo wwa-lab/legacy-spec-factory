@@ -192,7 +192,6 @@ def render_prompt(
     source_root: str | None,
     delivery_root: str | None,
     intent: str,
-    python_launcher: str,
     reference_paths: list[str] | None,
     control_files: list[str] | None,
 ) -> str:
@@ -207,7 +206,6 @@ def render_prompt(
         "size_tier": row.get("size_tier", ""),
         "intent": intent,
         "output_dir": row.get("output_dir", ""),
-        "python_launcher": python_launcher,
         "reference_paths": bullet_list("Reference paths", reference_paths),
         "control_files": bullet_list("Control files", control_files),
     }
@@ -415,7 +413,6 @@ def initialize(args: argparse.Namespace) -> None:
                     source_root=args.source_root,
                     delivery_root=args.delivery_root,
                     intent=args.intent,
-                    python_launcher=args.python_launcher,
                     reference_paths=args.reference_path,
                     control_files=args.control_file,
                 ),
@@ -480,7 +477,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delivery-main-snapshot", help=argparse.SUPPRESS)
     parser.add_argument("--review-name", default="program list batch", help="Human-readable batch name")
     parser.add_argument("--intent", default="standalone_exploratory")
-    parser.add_argument("--python-launcher", default="py -3")
+    parser.add_argument("--python-launcher", help=argparse.SUPPRESS)
     parser.add_argument("--force", action="store_true", help="Overwrite generated files in an existing output directory")
     return parser
 

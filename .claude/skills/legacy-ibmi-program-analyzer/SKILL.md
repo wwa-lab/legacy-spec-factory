@@ -140,9 +140,9 @@ Use:
 - `references/large-program-analysis.md` for large-program, segmented, and context-window-safe analysis
 - `scripts/index_rpg_source.py` as the deterministic source-index helper when
   local file access is available:
-  - Windows: try `py -3 scripts\index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
   - macOS/Linux: `python3 scripts/index-rpg-source.py <source> --program <NAME> --out-dir <DIR> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
-  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  If all three Windows routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
   Apply the same launcher order to all temporary consistency checks, YAML
   readability checks, Markdown sanity checks, and one-off helper scripts run
@@ -161,9 +161,9 @@ Use:
 - `scripts/validate_program_analysis_contract.py` (or the root
   `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
   finalization gate before delivery:
-  - Windows: try `py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>`, fall back to `python` if `py -3` is unavailable
+  - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`. The router tries `py -3`, then `python`, then the native PowerShell validator.
   - macOS/Linux: `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`
-  If all launchers fail, stop and report: **"Python runtime unavailable"**.
+  If all three Windows routes are unavailable, stop and report the runtime issue.
   Do not configure PATH, install Python, or create a virtual environment.
 - `references/control-flow-patterns.md` for language-specific pattern recognition
 - `references/error-handling-taxonomy.md` for error detection
@@ -263,9 +263,11 @@ field-level rules. The summary below is normative for this skill.
 - When the source file is accessible on disk, first run
   `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
   wrapper) to classify the program tier and produce the appropriate artifact
-  set. Windows: try `py -3`, fall back to `python`; macOS/Linux: use
-  `python3`. If all launchers fail, stop and report:
-  **"Python runtime unavailable"**. Do not configure PATH, install Python, or
+  set. Windows/Cline: use `scripts\invoke-windows-tool.ps1`, which tries
+  `py -3`, then `python`, then the native PowerShell implementation;
+  macOS/Linux: use
+  `python3`. If all supported routes fail, stop and report:
+  **"No supported analysis runtime available"**. Do not configure PATH, install Python, or
   create a virtual environment. Apply the same launcher order to temporary
   consistency checks, YAML readability checks, Markdown sanity checks, and
   one-off helper scripts run during this skill. These are pre-analysis
@@ -445,7 +447,7 @@ to the orchestrator.
    - Count approximate source lines, routine definitions, external calls,
      and object dependencies before writing business summary prose
    - If local source file access is available, run:
-     - Windows: try `py -3 scripts\index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`, fall back to `python` if `py -3` is unavailable
+     - Windows/Cline: `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 IndexRpgSource <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`. The router tries `py -3`, then `python`, then the native PowerShell indexer.
      - macOS/Linux: `python3 scripts/index-rpg-source.py <source-file> --program <PROGRAM> --out-dir <analysis-dir> --delivery-root <remote-main-snapshot> --delivery-profile <delivery-profile.yaml>`
      When `--delivery-root` is available and the helper reports
      `central_lookup_result: found_on_remote_main`, stop and return the central
@@ -453,7 +455,8 @@ to the orchestrator.
      a reviewed central artifact intentionally, add
      `--force-rescan --rescan-reason "<SME/business reason>"`; never force a
      rescan silently.
-     If all launchers fail, stop and report: **"Python runtime unavailable"**.
+     If all supported routes fail, stop and report:
+     **"No supported analysis runtime available"**.
      Do not configure PATH, install Python, or create a virtual environment.
      Use the same launcher order for all temporary consistency checks, YAML
      readability checks, Markdown sanity checks, and one-off helper scripts.
@@ -564,8 +567,8 @@ Run this gate before delivering `program-analysis.md` /
   `routine-logic-details/deep-read-batch-*.md`, or `chain_ready` output, a
   failed gate is blocking.
 - Run the validator with the repository Python launcher convention:
-  Windows `py -3 scripts\validate-program-analysis-contract.py --analysis-dir <DIR>`
-  (fall back to `python`), macOS/Linux
+  Windows/Cline PowerShell `powershell -NoProfile -File scripts\invoke-windows-tool.ps1 ValidateProgramAnalysis --analysis-dir <DIR>`
+  (router order: `py -3`, `python`, native PowerShell), macOS/Linux
   `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`.
 
 2. **Select Program & Resolve Analysis Intent**
@@ -1243,3 +1246,8 @@ No runtime-specific assumptions are embedded in the canonical version.
     include overview and named theme subsections before the routine index
   - Clarifies that `normal_program` remains concise but must not degrade into
     a top table plus routine index without CU653-style reader navigation
+- v0.2.18 (2026-07-10): Python-first Windows PowerShell fallback
+  - Added native Windows PowerShell 5.1 source indexing and program contract
+    validation for Cline environments without Python.
+  - Standardized Windows routing as `py -3`, then `python`, then native
+    PowerShell while preserving validator failure semantics.

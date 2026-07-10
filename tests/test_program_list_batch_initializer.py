@@ -81,6 +81,12 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn(f"Output directory: `{expected_output}`", prompt_text)
             self.assertIn("routine-logic-details.md", prompt_text)
             self.assertIn("routine-logic-details.yaml", prompt_text)
+            self.assertIn(
+                "powershell -NoProfile -File scripts\\invoke-windows-tool.ps1 "
+                "ValidateProgramAnalysis",
+                prompt_text,
+            )
+            self.assertNotIn("{{python_launcher}}", prompt_text)
             self.assertNotIn("For normal_program, do not create routine-logic-details.md", prompt_text)
 
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
