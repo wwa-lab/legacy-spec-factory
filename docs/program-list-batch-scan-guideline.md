@@ -75,6 +75,56 @@ generation, SME signoff, or central delivery handoff. Use the default
 `--validation-mode immediate` when every row must be validator-clean during the
 scan.
 
+## Step 1 Queue-Only Cline Prompt
+
+Use this short prompt for the first Cline task. Its only job is to generate the
+batch queue and optional deterministic scaffolds. It must not start semantic
+program analysis.
+
+````text
+/legacy-ibmi-program-list-batch
+
+任务：只初始化 program-list batch，生成 prompt queue 和 batch state。不要扫描任何 program。
+
+严格边界：
+- 不要调用 `legacy-ibmi-program-analyzer`。
+- 不要逐行分析 program source。
+- 不要填充 reader-first semantic details。
+- 不要运行 program-analysis validator。
+- 不要把任何 program row 标记为 `completed`、`completed_with_warnings` 或 `scanned_unvalidated`。
+- 如果使用 `--scaffold-mode precreate`，只允许生成 deterministic scaffold；row 仍应保持 `batch_status=queued`，并写 `scaffold_status=present`。
+- 初始化完成后立即停止，输出生成文件路径和下一步 Cline prompt 路径。
+
+请运行以下初始化命令，并只执行这一条命令对应的初始化工作：
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<batch-dir>" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+```
+
+初始化成功后的预期输出：
+- `<batch-dir>/program-batch-plan.md`
+- `<batch-dir>/program-list-status.csv`
+- `<batch-dir>/batch-scan-manifest.yaml`
+- `<batch-dir>/prompt-queue/*.md`
+- `<batch-dir>/subagent-queue/*.md`
+- `<batch-dir>/cline-parallel-runner-prompt.md`
+- `<batch-dir>/subagent-dispatch-plan.md`
+- `<batch-dir>/subagent-results/`
+
+验收检查：
+- `program-list-status.csv` 中 program rows 仍是 `queued`，除非 source 缺失或非 program row。
+- 如果 scaffold precreate 成功，`scaffold_status=present`。
+- 不应出现因 Step 1 产生的 final semantic analysis 结论。
+- 不应因为 Step 1 而显示 batch scan completed。
+
+现在开始：运行初始化命令，生成 queue/state/scaffold 后停止并报告下一步应该复制哪个 Step 2 prompt。
+````
+
+If this Step 1 prompt produces rich semantic files such as a filled
+`CU219B-program-analysis.md` and marks rows completed, the prompt used was too
+broad and has started Step 2 work accidentally. Regenerate the batch with the
+queue-only prompt above.
+
 ## Input List Contract
 
 Minimum useful columns:
@@ -100,7 +150,12 @@ Input checks before scanning:
 - Names such as `@CC080` and `CC080` are treated as distinct unless a reviewed
   delivery profile explicitly defines aliases.
 
-## English Copilot Prompt
+## Legacy Full Batch Prompt Reference
+
+The following long prompt is a reference for full prompt-driven batch
+execution. Do not paste it as Step 1 queue initialization. It includes
+per-program analyzer and artifact rules, so Cline may start scanning programs
+instead of only generating queue files.
 
 ```text
 Use skill: legacy-ibmi-program-list-batch

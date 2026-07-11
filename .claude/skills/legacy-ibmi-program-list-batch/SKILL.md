@@ -95,6 +95,11 @@ directly.
   `failed_validator`, record `last_error` and `next_action`, and move on only
   after durable state is updated.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
+- In queue initialization mode, do not invoke `legacy-ibmi-program-analyzer`,
+  do not run semantic deep-read, do not run the program-analysis validator, and
+  do not mark rows `completed`, `completed_with_warnings`, or
+  `scanned_unvalidated`. Initialization creates queue/state files and, when
+  requested, deterministic scaffolds only.
 - Use validation mode deliberately:
   - `immediate` (default): run the program-analysis validator inside each
     per-program prompt before marking a row `completed`.
@@ -168,6 +173,9 @@ outputs/program-list-batch/
      parallel workers.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
+   - Stop after initialization. Do not start semantic program scans in this
+     step. Program rows should remain `queued` unless they are blocked or
+     skipped; scaffolded rows use `scaffold_status=present`.
 
 2. **Run one program in Copilot Chat or one sub-agent**
    - Open a fresh chat.
@@ -244,6 +252,11 @@ Initialize a Copilot Chat queue:
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
+
+Step 1 queue-only prompt for Cline must be short and command-oriented. It
+should tell Cline to run the initializer and stop. It must not include the
+per-program analyzer contract, required per-program analysis outputs, or
+validator instructions; those belong to generated Step 2 prompts.
 
 Recommended fast two-phase mode:
 
