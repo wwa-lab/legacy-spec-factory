@@ -332,7 +332,7 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                     "--delivery-root",
                     "/tmp/delivery",
                     "--validation-mode",
-                    "deferred",
+                    "immediate",
                     "--subagent-mode",
                     "prepare",
                     "--max-parallel-agents",
@@ -376,6 +376,10 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("program-list-status.csv", subagent_prompt)
             self.assertIn("CC050.result.json", subagent_prompt)
             self.assertIn("Embedded Per-Program Prompt", subagent_prompt)
+            self.assertIn("Per-Program Validation Gate", subagent_prompt)
+            self.assertIn("Routine Index For Calculation Logic", subagent_prompt)
+            self.assertIn("Do not write `completed/pass` until that validator passes", subagent_prompt)
+            self.assertIn("parent merge will run the full validator again", subagent_prompt)
 
             with (out_dir / "program-list-status.csv").open(
                 "r", encoding="utf-8", newline=""
@@ -405,6 +409,9 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("最大并发 worker 数", kiro_prompt)
             self.assertIn("subagent-queue", kiro_prompt)
             self.assertIn("merge_subagent_results.py", kiro_prompt)
+            self.assertIn("只接受 `validation_mode=immediate`", kiro_prompt)
+            self.assertIn("完整的 `validate_program_analysis_contract.py`", kiro_prompt)
+            self.assertIn("parent gate", kiro_prompt)
             self.assertIn("validate_program_batch_status.py", kiro_prompt)
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
             self.assertIn("cline-serial-runner-prompt.md", plan_text)
@@ -414,11 +421,41 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("cline_serial_runner_prompt:", manifest_text)
             self.assertIn("kiro_parallel_runner_prompt:", manifest_text)
             self.assertIn("subagent_mode: prepare", manifest_text)
+            self.assertIn("validation_mode: immediate", manifest_text)
             self.assertIn("max_parallel_agents: 2", manifest_text)
             self.assertIn("subagent_dispatch_plan:", manifest_text)
             self.assertIn('cline_parallel_runner_prompt: ""', manifest_text)
 
-    def test_merge_subagent_results_updates_status_plan_and_manifest(self) -> None:
+    def test_subagent_mode_rejects_deferred_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            program_list = temp_root / "program-list.csv"
+            program_list.write_text(
+                "member,object_type,source_kind,path,total_lines,size_tier,tier_reason\n"
+                "CC050,program,RPGLE,CC050.RPGLE,100,normal_program,test\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(INITIALIZER),
+                    "--program-list",
+                    str(program_list),
+                    "--out-dir",
+                    str(temp_root / "batch"),
+                    "--validation-mode",
+                    "deferred",
+                    "--subagent-mode",
+                    "prepare",
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("requires --validation-mode immediate", result.stderr)
+
+    def test_merge_subagent_results_revalidates_successful_worker_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             program_list = temp_root / "program-list.csv"
@@ -444,7 +481,7 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                     "--delivery-root",
                     str(temp_root / "delivery"),
                     "--validation-mode",
-                    "deferred",
+                    "immediate",
                     "--subagent-mode",
                     "prepare",
                 ],
@@ -457,11 +494,11 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                 json.dumps(
                     {
                         "member": "CC050",
-                        "batch_status": "scanned_unvalidated",
-                        "validator_status": "deferred",
+                        "batch_status": "completed",
+                        "validator_status": "pass",
                         "completed_at": "2026-07-11T00:00:00+00:00",
                         "last_error": "",
-                        "next_action": "run program-analysis validator before downstream use",
+                        "next_action": "ready for downstream program-list batch validation",
                         "output_dir": str(temp_root / "delivery" / "modules" / "CAP-ID-0003-normal_program" / "CC050"),
                         "artifacts": ["CC050-program-analysis.md"],
                     }
@@ -486,17 +523,18 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                 "r", encoding="utf-8", newline=""
             ) as handle:
                 rows = list(csv.DictReader(handle))
-            self.assertEqual(rows[0]["batch_status"], "scanned_unvalidated")
-            self.assertEqual(rows[0]["validator_status"], "deferred")
+            self.assertEqual(rows[0]["batch_status"], "failed_validator")
+            self.assertEqual(rows[0]["validator_status"], "failed")
+            self.assertIn("program_output_directory_missing", rows[0]["last_error"])
             self.assertEqual(rows[0]["session_id"], "0001-CC050.result")
             self.assertEqual(rows[1]["batch_status"], "queued")
 
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
-            self.assertIn("| scanned_unvalidated | 1 |", plan_text)
+            self.assertIn("| failed | 1 |", plan_text)
             manifest_text = (out_dir / "batch-scan-manifest.yaml").read_text(encoding="utf-8")
             self.assertIn("status: subagent_results_merged", manifest_text)
             self.assertIn("merged_result_count: 1", manifest_text)
-            self.assertIn("batch_status: scanned_unvalidated", manifest_text)
+            self.assertIn("batch_status: failed_validator", manifest_text)
 
     def test_programs_file_reports_missing_programs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

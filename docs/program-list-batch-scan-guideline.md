@@ -1079,7 +1079,8 @@ When the initializer generates `cline-serial-runner-prompt.md`, it replaces
 
 Use this only when Kiro or another agent runtime can reliably launch isolated
 workers and pass one complete Markdown prompt to each worker. Initialize with
-`--subagent-mode prepare`; the initializer writes:
+`--subagent-mode prepare --validation-mode immediate`; Kiro parallel mode does
+not support deferred validation. The initializer writes:
 
 - `kiro-parallel-runner-prompt.md`
 - `subagent-dispatch-plan.md`
@@ -1094,8 +1095,15 @@ Parallel worker rules:
 - Each worker writes only its program output directory and its own result JSON.
 - Workers do not edit `program-list-status.csv`, `program-batch-plan.md`, or
   `batch-scan-manifest.yaml` directly.
-- After workers finish, run `merge_subagent_results.py --batch-dir <batch-dir>`
-  and then run the batch status validator.
+- Each worker must preserve the full `legacy-ibmi-program-analyzer`
+  reader-first layout, including `Routine Index For Calculation Logic`,
+  `Routine Index For Validation Logic`, and `Routine Index For Exception
+  Handling`, and run `validate_program_analysis_contract.py` before writing a
+  successful `completed/pass` result JSON.
+- After workers finish, run `merge_subagent_results.py --batch-dir <batch-dir>`.
+  The merge command re-runs the full program-analysis validator for every
+  worker result that claims success and converts a failed recheck to
+  `failed_validator/failed`. Then run the batch status validator.
 
 If Kiro cannot guarantee isolated worker execution, fall back to
 `cline-serial-runner-prompt.md`.

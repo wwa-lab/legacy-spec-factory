@@ -118,12 +118,22 @@ Cline/model/network/tool/file I/O blocker prevents safe progress, write
 queued or in their current state; do not mark unattempted rows failed.
 
 In `--subagent-mode prepare`, each Kiro/agent worker must write its result JSON
-and avoid direct edits to shared batch state. Use this mode only in runtimes
-that can reliably launch isolated workers and pass one complete Markdown
-prompt to each worker. The parent agent or operator runs
-`merge_subagent_results.py` after workers finish. That merge step is the only
-place parallel worker results should update `program-list-status.csv`,
-`program-batch-plan.md`, or `batch-scan-manifest.yaml`.
+and avoid direct edits to shared batch state. This mode requires
+`validation_mode=immediate`; deferred validation is not allowed for Kiro
+parallel workers. Each worker must preserve the full reader-first analyzer
+layout, retain `Routine Index For Calculation Logic`,
+`Routine Index For Validation Logic`, and `Routine Index For Exception
+Handling`, and run the full program-analysis validator before reporting
+`completed/pass`.
+
+Use this mode only in runtimes that can reliably launch isolated workers and
+pass one complete Markdown prompt to each worker. The parent agent or operator
+runs `merge_subagent_results.py` after workers finish. Before updating shared
+state, that merge step re-runs the full program-analysis validator for every
+worker result that claims success and converts a failed recheck to
+`failed_validator/failed`. It is the only place parallel worker results should
+update `program-list-status.csv`, `program-batch-plan.md`, or
+`batch-scan-manifest.yaml`.
 
 ## Required Per-Program Artifacts
 
