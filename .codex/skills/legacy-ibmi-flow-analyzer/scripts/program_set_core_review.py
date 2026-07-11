@@ -90,6 +90,8 @@ OPTIONAL_COMPACT_ARTIFACTS = (
     "sql-inventory.yaml",
 )
 
+ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
+
 RUN_ANALYZED = "analyzed_this_run"
 RUN_REUSED = "reused_same_run"
 RUN_ARTIFACT_REPO = "reused_artifact_repo"
@@ -260,15 +262,44 @@ def artifact_key(filename: str) -> str:
     return filename.replace("-", "_").replace(".", "_")
 
 
-def collect_artifact_statuses(root: Path, artifact_root: str | None) -> dict[str, ArtifactStatus]:
+def artifact_program_prefix(program: str | None) -> str | None:
+    if not program:
+        return None
+    prefix = ARTIFACT_SAFE_RE.sub("_", str(program).strip().upper())
+    prefix = prefix.strip("._-")
+    return prefix or None
+
+
+def program_artifact_filename(program: str | None, base_filename: str) -> str:
+    prefix = artifact_program_prefix(program)
+    return f"{prefix}-{base_filename}" if prefix else base_filename
+
+
+def program_artifact_candidates(program: str | None, base_filename: str) -> tuple[str, ...]:
+    prefixed = program_artifact_filename(program, base_filename)
+    if prefixed == base_filename:
+        return (base_filename,)
+    return (prefixed, base_filename)
+
+
+def collect_artifact_statuses(
+    root: Path,
+    artifact_root: str | None,
+    program: str | None = None,
+) -> dict[str, ArtifactStatus]:
     statuses: dict[str, ArtifactStatus] = {}
     root_path = root / artifact_root if artifact_root else None
     for filename in REQUIRED_COMPACT_ARTIFACTS + CONDITIONAL_COMPACT_ARTIFACTS + OPTIONAL_COMPACT_ARTIFACTS:
         key = artifact_key(filename)
+        expected_filename = program_artifact_filename(program, filename)
         if root_path is None:
-            statuses[key] = ArtifactStatus(path=filename, status="missing")
+            statuses[key] = ArtifactStatus(path=expected_filename, status="missing")
             continue
-        candidate = root_path / filename
+        candidates = [
+            root_path / candidate
+            for candidate in program_artifact_candidates(program, filename)
+        ]
+        candidate = next((path for path in candidates if path.is_file()), candidates[0])
         statuses[key] = ArtifactStatus(
             path=relative_path(root, candidate),
             status="present" if candidate.is_file() else "missing",
@@ -385,7 +416,11 @@ def build_program_entries(
             artifact_root=found_artifact_root,
             artifact_source=source,
             tier=infer_tier(found_artifact_root, workspace),
-            compact_artifacts=collect_artifact_statuses(artifact_root, found_artifact_root),
+            compact_artifacts=collect_artifact_statuses(
+                artifact_root,
+                found_artifact_root,
+                normalized,
+            ),
             follow_up=follow_up,
         )
         entries.append(entry)
@@ -712,11 +747,12 @@ def build_manifest(
 
 def artifact_summary(entry: dict[str, Any]) -> str:
     compact = entry.get("compact_artifacts", {}) or {}
+    program = entry.get("normalized_name")
     labels = []
     for filename in REQUIRED_COMPACT_ARTIFACTS:
         key = artifact_key(filename)
         status = (compact.get(key) or {}).get("status", "missing")
-        labels.append(f"{filename}={status}")
+        labels.append(f"{program_artifact_filename(program, filename)}={status}")
     return "; ".join(labels)
 
 
@@ -743,9 +779,9 @@ def routine_logic_evidence_status(entry: dict[str, Any]) -> str:
         return "present"
     missing = []
     if markdown != "present":
-        missing.append("routine-logic-details.md")
+        missing.append(program_artifact_filename(entry.get("normalized_name"), "routine-logic-details.md"))
     if yaml != "present":
-        missing.append("routine-logic-details.yaml")
+        missing.append(program_artifact_filename(entry.get("normalized_name"), "routine-logic-details.yaml"))
     return "missing: " + ", ".join(missing)
 
 
@@ -1140,7 +1176,7 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
         if resolution in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}:
             compact = entry.get("compact_artifacts", {}) or {}
             missing_artifacts = [
-                filename
+                program_artifact_filename(name, filename)
                 for filename in REQUIRED_COMPACT_ARTIFACTS
                 if (compact.get(artifact_key(filename)) or {}).get("status") != "present"
             ]

@@ -310,12 +310,13 @@ Rules:
    output. Do not skip because old artifacts exist.
 4. Read at most five routine bodies per turn.
 5. Keep normal_program output lightweight unless density triggers appear.
-6. For normal_program, do not create routine-logic-details.md,
-   routine-logic-details.yaml, deep-read-plan.md, or batch deep-read files
-   unless the tier is promoted or deep-read is explicitly requested.
-7. Create routine-logic-details.md and routine-logic-details.yaml only when the
-   program is complex_normal_program, large_extreme_program, or explicitly
-   deep-read.
+6. For normal_program, do not create `<PROGRAM>-routine-logic-details.md`,
+   `<PROGRAM>-routine-logic-details.yaml`, `<PROGRAM>-deep-read-plan.md`, or
+   batch deep-read files unless the tier is promoted or deep-read is explicitly
+   requested.
+7. Create `<PROGRAM>-routine-logic-details.md` and
+   `<PROGRAM>-routine-logic-details.yaml` only when the program is
+   complex_normal_program, large_extreme_program, or explicitly deep-read.
 8. Do not treat indexed_only routines as confirmed business logic.
 9. Read reference/control inputs when they are relevant to observed messages,
    status values, control-file lookups, field meanings, or validation rules.
@@ -326,20 +327,20 @@ Rules:
    action.
 
 Required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
 
 Conditional output:
-- routine-logic-details.md and routine-logic-details.yaml only for
-  complex_normal_program, large_extreme_program, or explicit deep-read
-  continuation.
-- file-io-inventory.yaml, field-mutation-matrix.yaml, and sql-inventory.yaml
-  only when observed or needed by the flow claim.
-- deep-read-plan.md, all-routine-coverage-ledger.md, and
-  routine-logic-details/deep-read-batch-*.md only when triggered by
+- <PROGRAM>-routine-logic-details.md and
+  <PROGRAM>-routine-logic-details.yaml only for complex_normal_program,
+  large_extreme_program, or explicit deep-read continuation.
+- <PROGRAM>-file-io-inventory.yaml, <PROGRAM>-field-mutation-matrix.yaml, and
+  <PROGRAM>-sql-inventory.yaml only when observed or needed by the flow claim.
+- <PROGRAM>-deep-read-plan.md, <PROGRAM>-all-routine-coverage-ledger.md, and
+  routine-logic-details/<PROGRAM>-deep-read-batch-*.md only when triggered by
   complex/large tier or retained batch evidence.
 
 Validation:
@@ -427,10 +428,10 @@ Instructions:
 6. Confirm the manifest does not contain central_lookup_result,
    found_on_remote_main, force_rescan, or remote_main_artifact_root.
 7. Fill program-set-sme-core-review.md from current-run compact artifacts.
-   Prefer program-analysis-summary.yaml, source-index.yaml,
-   message-inventory.yaml, routine-logic-details.yaml when required/present,
-   and optional sidecars when needed.
-8. Use program-analysis.md only for targeted clarification.
+   Prefer <PROGRAM>-program-analysis-summary.yaml, <PROGRAM>-source-index.yaml,
+   <PROGRAM>-message-inventory.yaml, <PROGRAM>-routine-logic-details.yaml when
+   required/present, and optional sidecars when needed.
+8. Use <PROGRAM>-program-analysis.md only for targeted clarification.
 9. Keep the review self-contained. The SME must not need to open per-program
    docs to understand Calculation Logic, Validation Logic, Exception Handling,
    or Message Inventory.
@@ -697,11 +698,12 @@ Output directory：
    不要因为旧 artifacts 存在就跳过。
 4. 每一轮最多读取 5 个 routine body。
 5. normal_program 保持轻量，除非触发 density / complexity 升级。
-6. 对 normal_program，不要生成 routine-logic-details.md、
-   routine-logic-details.yaml、deep-read-plan.md 或 batch deep-read files，
-   除非 tier 被提升或明确要求 deep-read。
+6. 对 normal_program，不要生成 `<PROGRAM>-routine-logic-details.md`、
+   `<PROGRAM>-routine-logic-details.yaml`、`<PROGRAM>-deep-read-plan.md`
+   或 batch deep-read files，除非 tier 被提升或明确要求 deep-read。
 7. 只有 complex_normal_program、large_extreme_program 或明确 deep-read 时，
-   才生成 routine-logic-details.md 和 routine-logic-details.yaml。
+   才生成 `<PROGRAM>-routine-logic-details.md` 和
+   `<PROGRAM>-routine-logic-details.yaml`。
 8. 不要把 indexed_only routines 当成已经确认的 business logic。
 9. 当 observed messages、status values、control-file lookups、field
    meanings 或 validation rules 需要解释时，读取 reference/control inputs。
@@ -711,21 +713,22 @@ Output directory：
     包含已检查的 routine/window、缺失的 evidence type、next action。
 
 必须输出：
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
 
 条件输出：
-- routine-logic-details.md 和 routine-logic-details.yaml：只在
-  complex_normal_program、large_extreme_program 或 explicit deep-read
-  continuation 时输出。
-- file-io-inventory.yaml、field-mutation-matrix.yaml、sql-inventory.yaml：
+- <PROGRAM>-routine-logic-details.md 和
+  <PROGRAM>-routine-logic-details.yaml：只在 complex_normal_program、
+  large_extreme_program 或 explicit deep-read continuation 时输出。
+- <PROGRAM>-file-io-inventory.yaml、
+  <PROGRAM>-field-mutation-matrix.yaml、<PROGRAM>-sql-inventory.yaml：
   只在观察到，或 flow claim 需要时输出。
-- deep-read-plan.md、all-routine-coverage-ledger.md、
-  routine-logic-details/deep-read-batch-*.md：
-  只在 complex/large tier 或 retained batch evidence 触发时输出。
+- <PROGRAM>-deep-read-plan.md、<PROGRAM>-all-routine-coverage-ledger.md、
+  routine-logic-details/<PROGRAM>-deep-read-batch-*.md：只在 complex/large
+  tier 或 retained batch evidence 触发时输出。
 
 Validation：
 标记完成前运行 program-analysis validator。
@@ -809,10 +812,10 @@ Per-program analysis 使用过的 reference/control inputs：
 6. 确认 manifest 不包含 central_lookup_result、found_on_remote_main、
    force_rescan 或 remote_main_artifact_root。
 7. program-set-sme-core-review.md 必须从 current-run compact artifacts 填充。
-   优先使用 program-analysis-summary.yaml、source-index.yaml、
-   message-inventory.yaml、需要且存在时的 routine-logic-details.yaml，
-   必要时再使用 optional sidecars。
-8. program-analysis.md 只用于 targeted clarification。
+   优先使用 <PROGRAM>-program-analysis-summary.yaml、
+   <PROGRAM>-source-index.yaml、<PROGRAM>-message-inventory.yaml、需要且存在时的
+   <PROGRAM>-routine-logic-details.yaml，必要时再使用 optional sidecars。
+8. <PROGRAM>-program-analysis.md 只用于 targeted clarification。
 9. review 必须 self-contained。SME 不应该为了理解 Calculation Logic、
    Validation Logic、Exception Handling 或 Message Inventory 再去打开每个
    per-program doc。

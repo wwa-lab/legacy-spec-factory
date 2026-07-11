@@ -127,6 +127,7 @@ READER_FIRST_PLACEHOLDER_PATTERNS = (
     re.compile(r"\bnot deep-read\b", re.I),
 )
 MEANINGFUL_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_#$@/-]*|[\u4e00-\u9fff]{2,}")
+ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
 
 
 def read_text(path: Path) -> str:
@@ -145,9 +146,28 @@ def load_yaml(path: Path) -> Any:
         return yaml.safe_load(handle)
 
 
+def artifact_program_prefix(program_name: str) -> str:
+    prefix = ARTIFACT_SAFE_RE.sub("_", program_name.strip().upper())
+    prefix = prefix.strip("._-")
+    return prefix or "PROGRAM"
+
+
+def find_artifact_path(analysis_dir: Path, base_name: str) -> Path | None:
+    prefixed_matches = sorted(analysis_dir.glob(f"*-{base_name}"))
+    if len(prefixed_matches) == 1:
+        return prefixed_matches[0]
+    generic_path = analysis_dir / base_name
+    if generic_path.is_file():
+        return generic_path
+    return None
+
+
 def find_program_analysis_path(analysis_dir: Path, explicit_path: Path | None) -> Path | None:
     if explicit_path is not None:
         return explicit_path
+    prefixed_matches = sorted(analysis_dir.glob("*-program-analysis.md"))
+    if len(prefixed_matches) == 1:
+        return prefixed_matches[0]
     default_path = analysis_dir / "program-analysis.md"
     if default_path.is_file():
         return default_path
@@ -155,6 +175,44 @@ def find_program_analysis_path(analysis_dir: Path, explicit_path: Path | None) -
     if len(matches) == 1:
         return matches[0]
     return None
+
+
+def summary_path(analysis_dir: Path) -> Path | None:
+    return find_artifact_path(analysis_dir, "program-analysis-summary.yaml")
+
+
+def sidecar_entries_for_dir(analysis_dir: Path) -> dict[str, dict[str, str]]:
+    path = summary_path(analysis_dir)
+    if path is None or not path.is_file():
+        return {}
+    payload = load_yaml(path)
+    sidecars = (payload or {}).get("sidecars", {})
+    if not isinstance(sidecars, dict):
+        return {}
+    entries: dict[str, dict[str, str]] = {}
+    for key, value in sidecars.items():
+        if not isinstance(value, dict):
+            continue
+        entries[str(key)] = {
+            "path": str(value.get("path", "")),
+            "status": str(value.get("status", "")),
+        }
+    return entries
+
+
+def declared_sidecar_path(
+    analysis_dir: Path,
+    sidecar_key: str,
+    fallback_base_name: str,
+) -> Path | None:
+    entry = sidecar_entries_for_dir(analysis_dir).get(sidecar_key)
+    if entry:
+        rel_path = entry.get("path", "")
+        if rel_path:
+            candidate = analysis_dir / rel_path
+            if candidate.is_file():
+                return candidate
+    return find_artifact_path(analysis_dir, fallback_base_name)
 
 
 def h2_positions(markdown: str) -> dict[str, int]:
@@ -392,9 +450,17 @@ def validate_rlog_sequence(label: str, rlog_ids: list[str]) -> list[str]:
 
 def validate_rlog_coverage(analysis_dir: Path) -> list[str]:
     findings: list[str] = []
-    yaml_path = analysis_dir / "routine-logic-details.yaml"
-    markdown_path = analysis_dir / "routine-logic-details.md"
-    if not yaml_path.is_file() or not markdown_path.is_file():
+    yaml_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details_yaml",
+        "routine-logic-details.yaml",
+    )
+    markdown_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details",
+        "routine-logic-details.md",
+    )
+    if yaml_path is None or markdown_path is None or not yaml_path.is_file() or not markdown_path.is_file():
         return findings
 
     yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
@@ -416,8 +482,12 @@ def validate_rlog_coverage(analysis_dir: Path) -> list[str]:
 
 
 def validate_program_rlog_coverage(program_markdown: str, analysis_dir: Path) -> list[str]:
-    yaml_path = analysis_dir / "routine-logic-details.yaml"
-    if not yaml_path.is_file():
+    yaml_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details_yaml",
+        "routine-logic-details.yaml",
+    )
+    if yaml_path is None or not yaml_path.is_file():
         return []
 
     yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
@@ -454,8 +524,12 @@ def validate_program_rlog_coverage(program_markdown: str, analysis_dir: Path) ->
 
 
 def validate_core_logic_routine_indexes(program_markdown: str, analysis_dir: Path) -> list[str]:
-    yaml_path = analysis_dir / "routine-logic-details.yaml"
-    if not yaml_path.is_file():
+    yaml_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details_yaml",
+        "routine-logic-details.yaml",
+    )
+    if yaml_path is None or not yaml_path.is_file():
         return []
 
     yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
@@ -528,8 +602,12 @@ def validate_core_logic_reader_first_quality(
     program_markdown: str,
     analysis_dir: Path,
 ) -> list[str]:
-    yaml_path = analysis_dir / "routine-logic-details.yaml"
-    if not yaml_path.is_file():
+    yaml_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details_yaml",
+        "routine-logic-details.yaml",
+    )
+    if yaml_path is None or not yaml_path.is_file():
         return []
 
     yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
@@ -647,8 +725,12 @@ def validate_main_rlog_detail_quality(
     program_markdown: str,
     analysis_dir: Path,
 ) -> list[str]:
-    yaml_path = analysis_dir / "routine-logic-details.yaml"
-    if not yaml_path.is_file():
+    yaml_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details_yaml",
+        "routine-logic-details.yaml",
+    )
+    if yaml_path is None or not yaml_path.is_file():
         return []
 
     yaml_ids = extract_rlog_ids_from_yaml(yaml_path)
@@ -693,7 +775,16 @@ def batch_detail_files(analysis_dir: Path) -> list[Path]:
     batch_dir = analysis_dir / "routine-logic-details"
     if not batch_dir.is_dir():
         return []
-    patterns = ("part-*.md", "deep-read-batch-*.md", "deep-batch-*.md")
+    declared = [
+        analysis_dir / entry["path"]
+        for key, entry in sidecar_entries_for_dir(analysis_dir).items()
+        if key.startswith("routine_logic_deep_read_batch_")
+        and entry.get("path")
+        and (analysis_dir / entry["path"]).is_file()
+    ]
+    if declared:
+        return sorted(set(declared))
+    patterns = ("part-*.md", "*-part-*.md", "deep-read-batch-*.md", "*-deep-read-batch-*.md", "deep-batch-*.md", "*-deep-batch-*.md")
     files: list[Path] = []
     for pattern in patterns:
         files.extend(batch_dir.glob(pattern))
@@ -701,10 +792,10 @@ def batch_detail_files(analysis_dir: Path) -> list[Path]:
 
 
 def summary_payload(analysis_dir: Path) -> dict[str, Any]:
-    summary_path = analysis_dir / "program-analysis-summary.yaml"
-    if not summary_path.is_file():
+    path = summary_path(analysis_dir)
+    if path is None or not path.is_file():
         return {}
-    payload = load_yaml(summary_path)
+    payload = load_yaml(path)
     return payload if isinstance(payload, dict) else {}
 
 
@@ -734,12 +825,21 @@ def validate_large_program_batches(analysis_dir: Path) -> list[str]:
         )
         return findings
 
-    canonical_first = analysis_dir / "routine-logic-details" / "deep-read-batch-001.md"
-    alias_first = analysis_dir / "routine-logic-details" / "deep-batch-001.md"
-    if not canonical_first.is_file() and not alias_first.is_file():
+    program = str(payload.get("program") or "").strip()
+    batch_dir = analysis_dir / "routine-logic-details"
+    prefix = artifact_program_prefix(program) if program else ""
+    canonical_first = batch_dir / f"{prefix}-deep-read-batch-001.md" if prefix else None
+    alias_first = batch_dir / f"{prefix}-deep-batch-001.md" if prefix else None
+    legacy_first = analysis_dir / "routine-logic-details" / "deep-read-batch-001.md"
+    wildcard_first = sorted(batch_dir.glob("*-deep-read-batch-001.md")) if not prefix else []
+    canonical_ok = canonical_first is not None and canonical_first.is_file()
+    alias_ok = alias_first is not None and alias_first.is_file()
+    if not canonical_ok and not alias_ok and not wildcard_first:
+        if legacy_first.is_file():
+            return findings
         findings.append(
             "large_extreme_program requires a first batch checkpoint: "
-            "routine-logic-details/deep-read-batch-001.md"
+            "routine-logic-details/<PROGRAM>-deep-read-batch-001.md"
         )
     return findings
 
@@ -750,8 +850,12 @@ def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
     if not batches:
         return findings
 
-    routine_markdown_path = analysis_dir / "routine-logic-details.md"
-    if routine_markdown_path.is_file():
+    routine_markdown_path = declared_sidecar_path(
+        analysis_dir,
+        "routine_logic_details",
+        "routine-logic-details.md",
+    )
+    if routine_markdown_path is not None and routine_markdown_path.is_file():
         findings.extend(
             validate_ordered_headings(
                 read_text(routine_markdown_path),
@@ -783,34 +887,18 @@ def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
     return findings
 
 
-def sidecar_entries(summary_path: Path) -> dict[str, dict[str, str]]:
-    payload = load_yaml(summary_path)
-    sidecars = (payload or {}).get("sidecars", {})
-    if not isinstance(sidecars, dict):
-        return {}
-    entries: dict[str, dict[str, str]] = {}
-    for key, value in sidecars.items():
-        if not isinstance(value, dict):
-            continue
-        entries[str(key)] = {
-            "path": str(value.get("path", "")),
-            "status": str(value.get("status", "")),
-        }
-    return entries
-
-
 def validate_sidecar_set(analysis_dir: Path) -> list[str]:
     findings: list[str] = []
-    summary_path = analysis_dir / "program-analysis-summary.yaml"
-    if not summary_path.is_file():
-        findings.append("Missing required file: program-analysis-summary.yaml")
+    path = summary_path(analysis_dir)
+    if path is None or not path.is_file():
+        findings.append("Missing required file: <PROGRAM>-program-analysis-summary.yaml")
         return findings
 
-    entries = sidecar_entries(summary_path)
+    entries = sidecar_entries_for_dir(analysis_dir)
     for key in CORE_SIDECAR_KEYS:
         entry = entries.get(key)
         if not entry:
-            findings.append(f"program-analysis-summary.yaml missing sidecar declaration: {key}")
+            findings.append(f"{path.name} missing sidecar declaration: {key}")
             continue
         rel_path = entry.get("path")
         status = entry.get("status")
@@ -829,8 +917,12 @@ def validate_sidecar_set(analysis_dir: Path) -> list[str]:
 
 
 def message_inventory_payload(analysis_dir: Path) -> dict[str, Any]:
-    path = analysis_dir / "message-inventory.yaml"
-    if not path.is_file():
+    path = declared_sidecar_path(
+        analysis_dir,
+        "message_inventory_yaml",
+        "message-inventory.yaml",
+    )
+    if path is None or not path.is_file():
         return {}
     payload = load_yaml(path)
     inventory = (payload or {}).get("message_inventory", {})

@@ -62,7 +62,7 @@ an artifact list, file inventory, or pending placeholder.
 
 | Program | Analysis Directory | Run Resolution | Compact Artifacts Used | Coverage / Readiness | Notes |
 | --- | --- | --- | --- | --- | --- |
-| [PROGRAM] | [working-branch path / approved document repo path / pending source scan] | analyzed_this_run / reused_same_run / reused_artifact_repo / pending_source / blocked_missing_source | program-analysis.md; program-analysis-summary.yaml; source-index.yaml; routine-index.md; message-inventory.yaml; routine-logic-details.md=present/missing; routine-logic-details.yaml=present/missing; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
+| [PROGRAM] | [working-branch path / approved document repo path / pending source scan] | analyzed_this_run / reused_same_run / reused_artifact_repo / pending_source / blocked_missing_source | <PROGRAM>-program-analysis.md; <PROGRAM>-program-analysis-summary.yaml; <PROGRAM>-source-index.yaml; <PROGRAM>-routine-index.md; <PROGRAM>-message-inventory.yaml; <PROGRAM>-routine-logic-details.md=present/missing; <PROGRAM>-routine-logic-details.yaml=present/missing; [optional sidecars] | deep_read / indexed_only / warning / blocked | [notes] |
 
 ## Run Profile
 
@@ -111,8 +111,9 @@ Rules:
   `blocked_missing_source`; satisfy rows from existing artifacts only when the
   manifest explicitly uses `run_profile.artifact_repo_mode:
   approved_document_repo` and `run_resolution: reused_artifact_repo`.
-- Normal, complex, and large programs all require `routine-logic-details.md`
-  and `routine-logic-details.yaml` as routine logic evidence.
+- Normal, complex, and large programs all require
+  `<PROGRAM>-routine-logic-details.md` and
+  `<PROGRAM>-routine-logic-details.yaml` as routine logic evidence.
 - For `pending_source` programs, use source inventory cache only when freshness
   is `fresh`; otherwise rerun repo-level inventory before targeted program scan.
 - Message Inventory must list every exact message/status/literal observed

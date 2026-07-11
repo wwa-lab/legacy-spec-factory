@@ -150,17 +150,19 @@ NODE-[SLUG]-02 ([PROGRAM])  ── [one-line role]
 
 | Node ID | Program (OBJ-*) | Role | Artifact Set | Coverage Status | Blocking Coverage Gaps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | human=`program-analysis.md`; summary=`program-analysis-summary.yaml`; source=`source-index.yaml`; routine_index=`routine-index.md`; routines_md=`routine-logic-details.md`; routines_yaml=`routine-logic-details.yaml`; messages=`message-inventory.yaml`; file_io=`file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed; mutations=`field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed; sql=`sql-inventory.yaml` present / not_applicable / missing_when_needed; object_human=`program-analysis-OBJ-[SLUG]-[NNN].md` | tier=<normal_program/complex_normal_program/large_extreme_program>; mode=<standard/segmented/large_program>; readiness=<approved/warning/blocked>; routines=<deep_read/indexed_only/blocked> | none / TBD-[SLUG]-[NNN] [missing_program_artifact or routine indexed_only with state impact; route only affected program to program analyzer unless named SME waiver recorded] | [notes] |
+| NODE-[SLUG]-01 | [PROGRAM] (OBJ-[SLUG]-[NNN]) | entry / orchestrator / worker / data-access / reporter / exit | human=`<PROGRAM>-program-analysis.md`; summary=`<PROGRAM>-program-analysis-summary.yaml`; source=`<PROGRAM>-source-index.yaml`; routine_index=`<PROGRAM>-routine-index.md`; routines_md=`<PROGRAM>-routine-logic-details.md`; routines_yaml=`<PROGRAM>-routine-logic-details.yaml`; messages=`<PROGRAM>-message-inventory.yaml`; file_io=`<PROGRAM>-file-io-inventory.yaml` present / optional_not_triggered / missing_when_needed; mutations=`<PROGRAM>-field-mutation-matrix.yaml` present / optional_not_triggered / missing_when_needed; sql=`<PROGRAM>-sql-inventory.yaml` present / not_applicable / missing_when_needed; object_human=`<PROGRAM>-program-analysis-OBJ-[SLUG]-[NNN].md` | tier=<normal_program/complex_normal_program/large_extreme_program>; mode=<standard/segmented/large_program>; readiness=<approved/warning/blocked>; routines=<deep_read/indexed_only/blocked> | none / TBD-[SLUG]-[NNN] [missing_program_artifact or routine indexed_only with state impact; route only affected program to program analyzer unless named SME waiver recorded] | [notes] |
 
 **Missing program artifacts:** none | TBD-[SLUG]-[NNN] for each
 
-**Aggregation rule:** prefer core artifacts `program-analysis-summary.yaml`,
-`source-index.yaml`, `routine-logic-details.yaml`, and
-`message-inventory.yaml`. Use optional `file-io-inventory.yaml`,
-`field-mutation-matrix.yaml`, and `sql-inventory.yaml` only when present,
-triggered by the program tier, or needed for I/O, persistence, and SQLRPGLE
-claims. Do not concatenate multiple full `program-analysis.md` files; open
-human-readable Markdown only for targeted clarification.
+**Aggregation rule:** prefer core artifacts
+`<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
+`<PROGRAM>-routine-logic-details.yaml`, and `<PROGRAM>-message-inventory.yaml`.
+Use optional `<PROGRAM>-file-io-inventory.yaml`,
+`<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml` only
+when present, triggered by the program tier, or needed for I/O, persistence, and
+SQLRPGLE claims. Do not concatenate multiple full
+`<PROGRAM>-program-analysis.md` files; open human-readable Markdown only for
+targeted clarification.
 
 ---
 

@@ -22,7 +22,7 @@ Retain this notice in substantial copies or derived versions.
 | --- | --- |
 | Problem solved | Creates an evidence-backed technical analysis of one RPGLE, CLLE, or COBOL program. |
 | Input | One approved source program; for chain-ready output, its `OBJ-*` inventory entry; referenced DDS/copybooks; optional runtime, SME notes, and project reference packs for message catalogs, control files, or data dictionaries. |
-| Output | `program-analysis-<OBJ-ID>.md` for chain-ready runs, or standalone `program-analysis.md` for exploratory inspection, covering call map, control flow, file I/O, external calls, and error handling. |
+| Output | `<PROGRAM>-program-analysis.md` plus program-prefixed sidecars such as `<PROGRAM>-source-index.yaml`, `<PROGRAM>-program-analysis-summary.yaml`, and `<PROGRAM>-routine-logic-details.yaml`, covering call map, control flow, file I/O, external calls, and error handling. |
 | Core prompt strategy | Check reusable central artifacts before scanning, extract concrete code behavior only when needed, enrich field/message meanings from approved reference packs, tag every inference, avoid business-rule invention, and separate exploratory analysis warnings from downstream blocking gates. |
 | Upstream skill | `legacy-ibmi-inventory` for chain-ready output; none required for standalone exploratory output. |
 | Downstream consumer | `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, data-model analysis, batch digest, and spec synthesis. |
@@ -100,10 +100,21 @@ Stop and require clarification if:
 
 Produce:
 
-- `program-analysis-<OBJ-ID>.md` per program for chain-ready runs (one file
-  per analysis session)
-- `program-analysis.md` for standalone exploratory inspection when no
-  inventory-backed `OBJ-*` exists yet
+- `<PROGRAM>-program-analysis.md` per program for both chain-ready and
+  standalone exploratory runs. Keep the existing per-program folder structure,
+  but prefix every generated file under that folder with the program/member
+  name so flat RAG ingestion can preserve provenance.
+- Program-prefixed sidecars, for example
+  `<PROGRAM>-source-index.yaml`,
+  `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`,
+  `<PROGRAM>-routine-logic-details.md`, and
+  `<PROGRAM>-routine-logic-details.yaml`.
+- Optional triggered sidecars use the same pattern, for example
+  `<PROGRAM>-file-io-inventory.yaml`,
+  `<PROGRAM>-field-mutation-matrix.yaml`, and
+  `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`.
 - `central_lookup_result` when a central delivery artifact is checked before
   source analysis. Values:
   - `found_on_remote_main` — program folder exists on the delivery repo remote
@@ -114,11 +125,12 @@ Produce:
     the artifact is missing.
 - Never report the program-analysis step complete unless the main wrapper file
   exists at the target output path and follows the required section order. When
-  deterministic indexing runs first, it must create a draft `program-analysis.md`
-  wrapper seed with all required sections; semantic deep-read then fills that
-  stable layout instead of inventing a new layout.
-- Every final RPG `program-analysis.md`, including `normal_program` output,
-  must be a reader-first SME artifact. It must include a Program Reading
+  deterministic indexing runs first, it must create a draft
+  `<PROGRAM>-program-analysis.md` wrapper seed with all required sections;
+  semantic deep-read then fills that stable layout instead of inventing a new
+  layout.
+- Every final RPG `<PROGRAM>-program-analysis.md`, including `normal_program`
+  output, must be a reader-first SME artifact. It must include a Program Reading
   Summary, themed Calculation / Validation / Exception sections, complete
   routine indexes, and routine logic details sufficient to understand the
   program from the main file. Larger or denser programs retain more sidecars,
@@ -154,10 +166,10 @@ Use:
   artifact, rerun with `--force-rescan --rescan-reason "<why>"`; the helper
   will scan source and record the prior central artifact path in the generated
   metadata.
-  The helper writes a draft `program-analysis.md` wrapper seed, core sidecars,
-  and large-program batch checkpoints when triggered. The seed is not approved
-  analysis; it exists to keep the final layout stable and prevent missing main
-  artifacts.
+  The helper writes a draft `<PROGRAM>-program-analysis.md` wrapper seed,
+  program-prefixed core sidecars, and program-prefixed large-program batch
+  checkpoints when triggered. The seed is not approved analysis; it exists to
+  keep the final layout stable and prevent missing main artifacts.
 - `scripts/validate_program_analysis_contract.py` (or the root
   `scripts/validate-program-analysis-contract.py` wrapper) as the mechanical
   finalization gate before delivery:
@@ -236,20 +248,26 @@ field-level rules. The summary below is normative for this skill.
   - `normal_program`: fewer than 10,000 lines and no density trigger. Produce
     concise SME review using the same reader-first layout as larger programs,
     plus core artifacts:
-    `program-analysis.md`, `program-analysis-summary.yaml`,
-    `source-index.yaml`, `routine-index.md`, `routine-logic-details.md`,
-    `routine-logic-details.yaml`, and `message-inventory.yaml`. Do not create
+    `<PROGRAM>-program-analysis.md`,
+    `<PROGRAM>-program-analysis-summary.yaml`,
+    `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+    `<PROGRAM>-routine-logic-details.md`,
+    `<PROGRAM>-routine-logic-details.yaml`, and
+    `<PROGRAM>-message-inventory.yaml`. Do not create
     `deep-read-plan.md`, coverage ledgers, or retained batch files unless
     density changes the tier or the user explicitly continues a deep-read pass.
   - `complex_normal_program`: under large thresholds but dense enough to need
     extra evidence surfaces, for example more than 10 routines, more than 5
     recommended deep-read windows, dense file I/O, dense messages, dense SQL,
     many external calls, or field mutation chains. Produce the same
-    reader-first review plus only triggered sidecars such as `deep-read-plan.md`,
-    `all-routine-coverage-ledger.md`, `message-inventory.md`,
-    `file-io-inventory.md` / `file-io-inventory.yaml`,
-    `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, or
-    `sql-inventory.md` / `sql-inventory.yaml`.
+    reader-first review plus only triggered sidecars such as
+    `<PROGRAM>-deep-read-plan.md`,
+    `<PROGRAM>-all-routine-coverage-ledger.md`,
+    `<PROGRAM>-message-inventory.md`,
+    `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml`,
+    `<PROGRAM>-field-mutation-matrix.md` /
+    `<PROGRAM>-field-mutation-matrix.yaml`, or
+    `<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml`.
   - `large_extreme_program`: source greater than 10,000 lines, more than 25
     routines, more than 20 external calls, more than 25 object dependencies, or
     cannot safely fit in context with evidence windows. Use
@@ -257,8 +275,8 @@ field-level rules. The summary below is normative for this skill.
     deep-read in batches of at most five routines/windows. The artifact set
     must include retained batch checkpoint files under
     `routine-logic-details/`, starting with
-    `routine-logic-details/deep-read-batch-001.md`. The final
-    `program-analysis.md` remains the reader-first SME surface and must not be
+    `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`. The final
+    `<PROGRAM>-program-analysis.md` remains the reader-first SME surface and must not be
     only a compact wrapper that points to sidecars.
 - When the source file is accessible on disk, first run
   `scripts/index_rpg_source.py` (or the root `scripts/index-rpg-source.py`
@@ -325,9 +343,10 @@ field-level rules. The summary below is normative for this skill.
 
 ### Output
 
-- **Canonical artifact**: `program-analysis-<OBJ-ID>.md` for chain-ready runs
-  or `program-analysis.md` for standalone exploratory inspection (one per
-  program).
+- **Canonical artifact**: `<PROGRAM>-program-analysis.md` for chain-ready and
+  standalone exploratory inspection (one per program). All generated files in
+  the program folder use `<PROGRAM>-<artifact-name>` filenames for RAG-friendly
+  flat ingestion.
 - **Required sections**: `Program Reading Summary`, `Calculation Logic`,
   `Validation Logic`, `Exception Handling`, `Message Inventory`, `Metadata`, `Analysis Coverage & Scope`,
   `Program Call Map`, `Routine Cards`, `Routine Logic Details`,
@@ -369,7 +388,7 @@ field-level rules. The summary below is normative for this skill.
   blocking for final delivery; provide message file/catalog/reference pack,
   source literal/comment, runtime evidence, or SME-approved text before
   declaring the analysis review-ready.
-  `program-analysis.md` / `program-analysis-<OBJ-ID>.md` must pass the Program
+  `<PROGRAM>-program-analysis.md` must pass the Program
   Artifact Finalization Gate before delivery, and chain-ready output must not
   be promoted when the gate fails. Reference-pack facts must cite the
   pack/file/row or anchor used.
@@ -437,7 +456,9 @@ to the orchestrator.
          - modules/*
        program_folder_patterns:
          - modules/*/{PROGRAM}
-       artifact_file_patterns:
+      artifact_file_patterns:
+         - "{PROGRAM}-program-analysis.md"
+         - "{PROGRAM}-program-analysis-summary.yaml"
          - program-analysis.md
          - program-analysis-*.md
          - program-analysis-summary.yaml
@@ -455,7 +476,7 @@ to the orchestrator.
      folder match before using project-local output. Preferred lookup keys:
      exact program/member name first, then `OBJ-*`, module/CAP-ID,
      source library/member, and the source ref or collection date recorded in
-     `program-analysis-summary.yaml` or module metadata.
+     `<PROGRAM>-program-analysis-summary.yaml` or module metadata.
    - Match program folders by exact normalized program identity. For the
      current screenshot layout, `@CU118` and `CU118` are distinct programs; do
      not strip leading `@` and do not cross-match the two names. Do not treat a
@@ -487,15 +508,19 @@ to the orchestrator.
      Do not configure PATH, install Python, or create a virtual environment.
      Use the same launcher order for all temporary consistency checks, YAML
      readability checks, Markdown sanity checks, and one-off helper scripts.
-   - Use `source-index.yaml`, `program-analysis-summary.yaml`,
-     `program-analysis.md`, `routine-index.md`, and `message-inventory.yaml`
+   - Use `<PROGRAM>-source-index.yaml`,
+     `<PROGRAM>-program-analysis-summary.yaml`,
+     `<PROGRAM>-program-analysis.md`, `<PROGRAM>-routine-index.md`, and
+     `<PROGRAM>-message-inventory.yaml`
      as the normal deterministic pre-analysis index. Add
-     `routine-logic-details.md`, `routine-logic-details.yaml`,
-     `all-routine-coverage-ledger.md`,
-     `deep-read-plan.md`, `message-inventory.md`,
-     `file-io-inventory.md` / `file-io-inventory.yaml`,
-     `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and
-     `sql-inventory.md` / `sql-inventory.yaml` only when the generated
+     `<PROGRAM>-routine-logic-details.md`,
+     `<PROGRAM>-routine-logic-details.yaml`,
+     `<PROGRAM>-all-routine-coverage-ledger.md`,
+     `<PROGRAM>-deep-read-plan.md`, `<PROGRAM>-message-inventory.md`,
+     `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml`,
+     `<PROGRAM>-field-mutation-matrix.md` /
+     `<PROGRAM>-field-mutation-matrix.yaml`, and
+     `<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml` only when the generated
      `optional_sidecar_triggers` or downstream evidence needs require them.
    - For SQLRPGLE and free-format RPGLE, use statement-level indexing for
      `DCL-PI`, `DCL-PR`, `DCL-DS`, `DCL-S`, `DCL-PROC`, procedure calls,
@@ -506,7 +531,8 @@ to the orchestrator.
      (`standard`, `segmented`, or `large_program`) and SME-facing
      `program_size_tier` (`normal_program`, `complex_normal_program`, or
      `large_extreme_program`).
-   - For every tier, including `normal_program`, keep `program-analysis.md`
+   - For every tier, including `normal_program`, keep
+     `<PROGRAM>-program-analysis.md`
      reader-first with the same required H2 layout, Program Reading Summary,
      core logic routine indexes, and Routine Logic Details RLOG headings.
      Normal programs may be concise; they do not use a different layout.
@@ -519,10 +545,9 @@ to the orchestrator.
 
 ### Program Artifact Finalization Gate
 
-Run this gate before delivering `program-analysis.md` /
-`program-analysis-<OBJ-ID>.md`.
+Run this gate before delivering `<PROGRAM>-program-analysis.md`.
 
-- `program-analysis.md` is the SME review wrapper, not a free-form compressed
+- `<PROGRAM>-program-analysis.md` is the SME review wrapper, not a free-form compressed
   summary. It must follow `references/output-contract.md` File Structure with
   all required `##` sections in order. Small programs may keep sections
   concise or mark them not applicable / pending, but sections must not be
@@ -531,20 +556,22 @@ Run this gate before delivering `program-analysis.md` /
   the reviewer by processing layer/theme. It must not be only a list of
   sidecars or generated artifact links.
 - For `large_extreme_program`, `routine-dense`, `segmented`, `large_program`,
-  or explicit one-file review requests, `program-analysis.md` cannot be only a
+  or explicit one-file review requests, `<PROGRAM>-program-analysis.md` cannot be only a
   compact wrapper that requires sidecar navigation to understand calculation,
   validation, exception, or routine behavior.
-- `program-analysis-summary.yaml` is the compact machine-readable program
+- `<PROGRAM>-program-analysis-summary.yaml` is the compact machine-readable program
   summary and sidecar index. Core sidecars declared there must exist:
-  `source-index.yaml`, `routine-index.md`, and `message-inventory.yaml`.
-  `routine-logic-details.md` and `routine-logic-details.yaml` are required for
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`, and
+  `<PROGRAM>-message-inventory.yaml`.
+  `<PROGRAM>-routine-logic-details.md` and
+  `<PROGRAM>-routine-logic-details.yaml` are required for
   every tier, including normal programs. Optional sidecars are required only
   when declared `present` or `optional_triggered`.
-- `routine-logic-details.yaml` is the RLOG coverage source of truth.
+- `<PROGRAM>-routine-logic-details.yaml` is the RLOG coverage source of truth.
   `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md` files are retained deep-read
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files are retained deep-read
   checkpoint and audit surfaces for large/extreme runs. They do not replace
-  the consolidated `routine-logic-details.md`, but they must be kept when
+  the consolidated `<PROGRAM>-routine-logic-details.md`, but they must be kept when
   generated. Each batch file must use the exact top-level `##` section order:
   `Calculation Logic`, `Validation Logic`, `Exception Handling`, `Scope`,
   `Batch Coverage Summary`, `Message Inventory`, `Routine Details`. The first
@@ -552,8 +579,8 @@ Run this gate before delivering `program-analysis.md` /
   contain pasted source code, fenced code blocks, or verbatim RPG/CL/COBOL/SQL
   statements. Use source identifiers, normalized logic summaries, source
   ranges, evidence IDs, and `RLOG-*` links instead. The final
-  `program-analysis.md` Routine Logic Details section and
-  `routine-logic-details.md` must contain every
+  `<PROGRAM>-program-analysis.md` Routine Logic Details section and
+  `<PROGRAM>-routine-logic-details.md` must contain every
   `routine_logic_inventory.details[].detail_id` from YAML as continuous,
   ordered RLOG headings. The final routine detail document must also contain
   whole-program `Calculation Logic`, `Validation Logic`, `Exception Handling`,
@@ -561,7 +588,7 @@ Run this gate before delivering `program-analysis.md` /
   deliver only the latest batch, a delta, or a summary of recent batches.
 - `Calculation Logic`, `Validation Logic`, and `Exception Handling` must each
   start with a reader-oriented overview and contain `Routine Index For ...`
-  rows that cover every RLOG in `routine-logic-details.yaml`, with a category
+  rows that cover every RLOG in `<PROGRAM>-routine-logic-details.yaml`, with a category
   and reader-useful detail.
 - `Calculation Logic`, `Validation Logic`, and `Exception Handling` must each
   include a named overview subsection (`### Calculation Logic Overview`,
@@ -574,7 +601,7 @@ Run this gate before delivering `program-analysis.md` /
   gap wording such as `Remaining routine deep-read gaps`,
   `not-yet-deep-read routines`, or `not deep-read routines`.
 - `Message Inventory` in the main file must stay synchronized with
-  `message-inventory.yaml`; every observed message/status/code/literal in YAML
+  `<PROGRAM>-message-inventory.yaml`; every observed message/status/code/literal in YAML
   must appear in the main summary.
 - The reader-first golden gate is blocking for final delivery: no pending or
   placeholder `Program Reading Summary`, no placeholder routine-index detail in
@@ -582,16 +609,16 @@ Run this gate before delivering `program-analysis.md` /
   detail. This applies to normal, complex-normal, and large/extreme RPG
   programs.
 - For `large_extreme_program`, `routine-logic-details/` and at least
-  `routine-logic-details/deep-read-batch-001.md` are required checkpoint
+  `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` are required checkpoint
   artifacts. A missing batch directory or first batch file is blocking even if
-  the consolidated `routine-logic-details.md` exists.
+  the consolidated `<PROGRAM>-routine-logic-details.md` exists.
 - For `normal_program` / quick exploratory runs with no part files, this gate
   still enforces the same reader-first main-file layout and RLOG sidecars. It
   does not require large-program sidecars or batched deep-read. For
   `complex_normal_program`,
   `large_extreme_program`, `segmented`, `large_program`, existing
-  `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md`, or `chain_ready` output, a
+  `routine-logic-details/<PROGRAM>-part-*.md` or
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md`, or `chain_ready` output, a
   failed gate is blocking.
 - Run the validator with the Python-only launcher convention:
   Windows/Cline `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>`
@@ -660,13 +687,14 @@ Run this gate before delivering `program-analysis.md` /
      performs field calculation, validation, downstream-affecting branching,
      file mutation, external handoff, error/status assignment, display/report
      output, or queue/message interaction.
-   - For routine-dense programs, keep `program-analysis.md` compact:
+   - For routine-dense programs, keep `<PROGRAM>-program-analysis.md` compact:
      - `routine_count <= 25`: full Routine Logic Details may live in the main
        analysis.
      - `routine_count > 25`: the main analysis must contain complete,
        continuous, ordered `RLOG-<PROGRAM>-NNN` detail headings and enough
        reader-useful routine detail for one-file SME review. The
-       `routine-logic-details.md` / `routine-logic-details.yaml` sidecars
+       `<PROGRAM>-routine-logic-details.md` /
+       `<PROGRAM>-routine-logic-details.yaml` sidecars
        remain audit/checkpoint and coverage sources, not the only place where
        routine logic can be read.
     - `routine_count > 80` or source lines > 10,000: split human-authored
@@ -688,8 +716,8 @@ Run this gate before delivering `program-analysis.md` /
        contain real source-code snippets or fenced code blocks; preserve
        evidence through source ranges and identifiers, not pasted code.
        After batch deep-read is complete, merge every part file back into the
-       final `program-analysis.md` reader-first wrapper and one final
-       `routine-logic-details.md` audit document. The final routine document
+       final `<PROGRAM>-program-analysis.md` reader-first wrapper and one final
+       `<PROGRAM>-routine-logic-details.md` audit document. The final routine document
        must contain whole-program `## Calculation Logic`,
        `## Validation Logic`, `## Exception Handling`, `## Message Inventory`,
        a routine detail index, and all routine detail sections. Do not leave
@@ -769,7 +797,7 @@ Run this gate before delivering `program-analysis.md` /
    - In **Calculation Logic**, **Validation Logic**, and **Exception
      Handling**, write reader-oriented overview content first, then add
      `Routine Index For <section>` covering every RLOG declared in
-     `routine-logic-details.yaml`. Each row must include the RLOG/routine,
+     `<PROGRAM>-routine-logic-details.yaml`. Each row must include the RLOG/routine,
      a category, and reader-useful detail.
    - In those same three sections, add one `### ... Overview` subsection and
      one or more named source-backed theme subsections before the routine index.
@@ -821,7 +849,7 @@ Run this gate before delivering `program-analysis.md` /
        coverage before the tree, for example:
        `Visual coverage: main dispatch and high-impact branches only
        (shows 22 of 124 routines); complete routine inventory is in
-       routine-index.md, Node Inventory, and Call Evidence.`
+       `<PROGRAM>-routine-index.md`, Node Inventory, and Call Evidence.`
      - **Node inventory** (mainline, internal routines, procedures, external programs, APIs, queues, services)
      - **Call Evidence** (caller, callee, call type, condition, source
        lines, evidence source, and resolution status)
@@ -921,10 +949,10 @@ Run this gate before delivering `program-analysis.md` /
        field descriptions
    - For file-I/O-dense or SQLRPGLE programs, keep the main `File I/O`
      section as a SME-readable summary. Store complete observed I/O evidence
-     in `file-io-inventory.md` / `file-io-inventory.yaml`, persisted native
-     and SQL mutations in `field-mutation-matrix.md` /
-     `field-mutation-matrix.yaml`, and embedded SQL details in
-     `sql-inventory.md` / `sql-inventory.yaml`. Link main-table rows to
+     in `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml`,
+     persisted native and SQL mutations in `<PROGRAM>-field-mutation-matrix.md` /
+     `<PROGRAM>-field-mutation-matrix.yaml`, and embedded SQL details in
+     `<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml`. Link main-table rows to
      stable `FIO-*`, `MUT-*`, and `SQL-*` detail IDs instead of expanding
      every operation inline.
    - Reference file definitions from inventory via evidence ID (EV-\*)
@@ -1016,7 +1044,7 @@ Run this gate before delivering `program-analysis.md` /
      seen/set-by location, trigger/handler summary, and detail ID.
      For message-dense, segmented, or large programs, keep the main section
      compact and store full per-occurrence detail in `message-inventory.md`
-     and `message-inventory.yaml`.
+     and `<PROGRAM>-message-inventory.yaml`.
      When a message/control value is found in an approved reference pack, set
      Message Source to `reference pack: <pack_id>/<file>#<row-or-anchor>` and
      still trace Emitted / Set By and Trigger / Handler from source in the
@@ -1062,12 +1090,12 @@ Template: [`skills/legacy-modernization-orchestrator/references/state-writeback-
 **Stage this skill produces:**
 
 - `3b Program Analysis Done` when **every** in-scope program in
-  `inventory.yaml` has an approved `program-analysis.md`
+  `inventory.yaml` has an approved `<PROGRAM>-program-analysis.md`
 - `3a Program Analysis In Progress` when one or more in-scope programs
   still lack an analysis
 
 **Last artifact path pattern:**
-`02_programs/<MODULE-SLUG>/<OBJ-PROGRAM>/program-analysis.md`
+`02_programs/<MODULE-SLUG>/<OBJ-PROGRAM>/<PROGRAM>-program-analysis.md`
 
 **Writes per run:**
 
@@ -1127,23 +1155,23 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Program Reading Summary appears immediately after the title and explains the program by processing layer for one-file SME reading
 - [ ] Reader-first golden gate is clean: no pending/placeholder Program Reading Summary, routine-index detail, or main-file RLOG detail remains
-- [ ] Routine Logic Details in `program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `routine-logic-details.yaml`
+- [ ] Routine Logic Details in `<PROGRAM>-program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`
 - [ ] Routine Logic Details explain field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence for each deep-read load-bearing routine; sidecars are audit/checkpoint sources, not the only SME reading path
 - [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
 - [ ] Routine Logic Details include outcome reverse traces from every material message/status/error/return outcome back to the branch guard, conditioned calculation block, comparison threshold, intermediate variables, and source operands/carriers that make the outcome true
 - [ ] Calculation Logic is front-loaded immediately after Program Reading Summary, summarizes the whole program's material calculations/assignments, and links every row to Routine Logic Details, Logic Decomposition, Key File & Field Logic, or Field Mutation evidence
 - [ ] Calculation Logic, Validation Logic, and Exception Handling each include an overview subsection plus at least one named source-backed theme subsection before the routine index; normal programs are concise but still CU653-style reader-first, not table-plus-index only
-- [ ] Calculation Logic, Validation Logic, and Exception Handling each include a reader-oriented overview plus `Routine Index For ...` rows covering every RLOG in `routine-logic-details.yaml`
+- [ ] Calculation Logic, Validation Logic, and Exception Handling each include a reader-oriented overview plus `Routine Index For ...` rows covering every RLOG in `<PROGRAM>-routine-logic-details.yaml`
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows variable-level input, transformation, output, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
 - [ ] Key File & Field Logic preserves source identifiers with business meanings for key fields, aliases, work variables, calculations/conditions, and persisted fields
 - [ ] File I/O Key Fields preserve source identifiers plus business meanings, and Purpose describes file access behavior
-- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `file-io-inventory.md` / `file-io-inventory.yaml`, `field-mutation-matrix.md` / `field-mutation-matrix.yaml`, and `sql-inventory.md` / `sql-inventory.yaml`
+- [ ] File I/O field mutation matrix names which files and fields are written, updated, deleted, or skipped, and dense I/O/SQL detail is routed to `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml`, `<PROGRAM>-field-mutation-matrix.md` / `<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml`
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with message descriptions and reverse trigger chains, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
-- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal from `message-inventory.yaml`, including late-round tokens, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal from `<PROGRAM>-message-inventory.yaml`, including late-round tokens, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
 - [ ] Coverage/TBD wording is current; no stale legacy deep-read gap labels remain after RLOGs are normalized
 - [ ] Inferred and unresolved calls, fields, variable meanings, and error codes are explicitly marked
 - [ ] Code identifiers remain intact and readable in rendered tables/lists
@@ -1164,6 +1192,13 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
+
+- v0.2.22 (2026-07-11): RAG-friendly per-program artifact names
+  - Standardized generated analyzer outputs as `<PROGRAM>-<artifact-name>`
+    while keeping the existing per-program folder layout.
+  - Updated the deterministic indexer and validator contract to emit and
+    validate program-prefixed main artifacts, YAML sidecars, Markdown
+    sidecars, and retained deep-read batch checkpoint files.
 
 - v0.2.21 (2026-07-11): Cline retry exit budget
   - Added an explicit task-level stop rule for Cline/model/network/tool
@@ -1229,8 +1264,8 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Standardized the tree shape around `PROGRAM mainline` plus `|--` branch connectors
   - Requires source flow headers to be reconciled against code-derived Call Evidence before use as the visual map
 - v0.2.9 (2026-06-16): Large-program artifact completion tightening
-  - Deterministic indexer now emits a draft `program-analysis.md` wrapper seed with the required section order
-  - Large/extreme runs retain `routine-logic-details/deep-read-batch-001.md` style batch checkpoint files under `routine-logic-details/`
+  - Deterministic indexer now emits a draft `<PROGRAM>-program-analysis.md` wrapper seed with the required section order
+  - Large/extreme runs retain `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` style batch checkpoint files under `routine-logic-details/`
   - Finalization gate blocks large/extreme delivery when the main wrapper or required batch checkpoint artifacts are missing
 - v0.2.10 (2026-06-16): Batch layout and no-source-snippet gate
   - Requires every `routine-logic-details/deep-read-batch-*.md` checkpoint to use the same top-level `##` layout
@@ -1253,7 +1288,10 @@ No runtime-specific assumptions are embedded in the canonical version.
   - Standardizes GitHub lookup on read-only Git method 2:
     `git ls-remote` plus temporary shallow clone / sparse checkout
   - Forbids rerunning deterministic source indexing when remote `main` already
-    contains an exact central program artifact folder for the requested program
+    contains an exact central program artifact folder for the requested program.
+    Existing central repositories may still contain legacy unprefixed artifact
+    filenames, which are read-only compatibility fallbacks, not the target for
+    newly generated outputs.
 
 - v0.2.13 (2026-06-18): Direct indexer central reuse gate
   - Added `--delivery-root` and `--delivery-profile` to the deterministic
@@ -1261,14 +1299,14 @@ No runtime-specific assumptions are embedded in the canonical version.
     remote-main snapshot/cache before writing new artifacts
   - When the exact program folder is found, the indexer prints
     `central_lookup_result: found_on_remote_main`, reports the artifact path,
-    and exits without generating a new `source-index.yaml` or
-    `program-analysis.md` seed
+    and exits without generating a new `<PROGRAM>-source-index.yaml` or
+    `<PROGRAM>-program-analysis.md` seed
   - Added explicit `--force-rescan --rescan-reason "<why>"` override for SME
     refresh scenarios; forced scans record `central_artifact_reuse` metadata so
     reviewers can see which approved artifact was intentionally bypassed
 - v0.2.14 (2026-07-06): Reader-first final wrapper tightening
   - Added required `Program Reading Summary` before core logic sections
-  - For large/routine-dense programs, final `program-analysis.md` must be
+  - For large/routine-dense programs, final `<PROGRAM>-program-analysis.md` must be
     readable without sidecar navigation unless the user explicitly requests a
     compact wrapper
   - Requires Calculation / Validation / Exception sections to include
@@ -1277,8 +1315,9 @@ No runtime-specific assumptions are embedded in the canonical version.
     and stale deep-read gap wording checks in the validator
 - v0.2.15 (2026-07-06): Normal-program layout parity
   - Requires `normal_program` outputs to use the same reader-first
-    `program-analysis.md` structure as complex and large programs
-  - Makes `routine-logic-details.md` and `routine-logic-details.yaml` core
+    `<PROGRAM>-program-analysis.md` structure as complex and large programs
+  - Makes `<PROGRAM>-routine-logic-details.md` and
+    `<PROGRAM>-routine-logic-details.yaml` core
     artifacts for every tier
   - Renames lightweight profiles to reader-first profiles so "normal" means
     concise content, not a different layout

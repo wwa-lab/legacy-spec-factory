@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sys
 from pathlib import Path
 
@@ -20,7 +21,7 @@ ALLOWED_STATUSES = {
     "skipped_not_program",
 }
 
-REQUIRED_ARTIFACTS = {
+REQUIRED_ARTIFACT_BASE_NAMES = {
     "program-analysis.md",
     "source-index.yaml",
     "program-analysis-summary.yaml",
@@ -29,6 +30,37 @@ REQUIRED_ARTIFACTS = {
     "routine-logic-details.md",
     "routine-logic-details.yaml",
 }
+
+ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
+SCAFFOLD_TEXT_BASE_NAMES = ("program-analysis.md", "routine-logic-details.md")
+SCAFFOLD_PATTERNS = (
+    re.compile(r"\bDraft wrapper seed generated\b", re.I),
+    re.compile(r"\bpending reader-oriented summary\b", re.I),
+    re.compile(r"\bpending semantic deep-read\b", re.I),
+    re.compile(r"\bpending semantic detail\b", re.I),
+    re.compile(r"\breplace this placeholder\b", re.I),
+    re.compile(r"\bplaceholder content\b", re.I),
+    re.compile(r"\bnot-yet-deep-read\b", re.I),
+)
+
+
+def artifact_program_prefix(program_name: str) -> str:
+    prefix = ARTIFACT_SAFE_RE.sub("_", program_name.strip().upper())
+    prefix = prefix.strip("._-")
+    return prefix or "PROGRAM"
+
+
+def required_artifacts_for_member(member: str) -> set[str]:
+    prefix = artifact_program_prefix(member)
+    return {f"{prefix}-{base_name}" for base_name in REQUIRED_ARTIFACT_BASE_NAMES}
+
+
+def required_artifact_for_member(member: str, base_name: str) -> str:
+    return f"{artifact_program_prefix(member)}-{base_name}"
+
+
+def scaffold_patterns_in(text: str) -> list[str]:
+    return [pattern.pattern.replace("\\b", "") for pattern in SCAFFOLD_PATTERNS if pattern.search(text)]
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -118,9 +150,24 @@ def validate(args: argparse.Namespace) -> int:
             if not output_path.is_dir():
                 findings.append(f"Row {index} {member}: output_dir does not exist: {output_path}")
                 continue
-            missing = sorted(name for name in REQUIRED_ARTIFACTS if not (output_path / name).is_file())
+            expected_artifacts = required_artifacts_for_member(member)
+            missing = sorted(name for name in expected_artifacts if not (output_path / name).is_file())
             if missing:
                 findings.append(f"Row {index} {member}: missing required artifacts: {', '.join(missing)}")
+            for base_name in SCAFFOLD_TEXT_BASE_NAMES:
+                artifact_name = required_artifact_for_member(member, base_name)
+                artifact_path = output_path / artifact_name
+                if not artifact_path.is_file():
+                    continue
+                text = artifact_path.read_text(encoding="utf-8-sig")
+                matches = scaffold_patterns_in(text)
+                if matches:
+                    findings.append(
+                        f"Row {index} {member}: {artifact_name} still appears to be a scaffold "
+                        "or pending deep-read artifact; run semantic source deep-read and replace "
+                        "placeholder content before marking completed. Matched: "
+                        + ", ".join(matches)
+                    )
 
     for warning in warnings:
         print(f"WARNING: {warning}")

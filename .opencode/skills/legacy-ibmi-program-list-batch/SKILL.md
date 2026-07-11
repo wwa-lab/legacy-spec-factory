@@ -22,7 +22,7 @@ Retain this notice in substantial copies or derived versions.
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program scan queue with durable status files. |
 | Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
-| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`. |
+| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
 | Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
 | Downstream skill | `legacy-ibmi-program-analyzer` for each program; later `legacy-ibmi-flow-analyzer` only when a specific flow/program set should be assembled from completed program artifacts. |
@@ -88,14 +88,28 @@ directly.
   after durable state is updated.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
 - Run the program-analysis validator before marking a row complete.
+- Deterministic source indexes are pre-analysis scaffolds only. A row is not
+  complete until semantic source deep-read has replaced pending/thin content in
+  `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`.
+- Do not mark a row `completed` or `completed_with_warnings` when the main
+  analysis or routine detail file still contains scaffold wording such as
+  `Draft wrapper seed generated`, `pending semantic deep-read`,
+  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
+  `not deep-read`.
 - Do not generate `program-set-sme-core-review.md` as part of this batch step.
   This skill only prepares, tracks, and validates independent per-program
   scans. Use `legacy-ibmi-flow-analyzer` later when an SME-provided flow or
   other explicit program set defines a meaningful cross-program boundary.
 - Normal, complex, and large program rows all produce
-  `routine-logic-details.md` and `routine-logic-details.yaml` as routine-level
-  audit/checkpoint evidence. They do not replace the reader-first
-  `program-analysis.md`.
+  `<PROGRAM>-routine-logic-details.md` and
+  `<PROGRAM>-routine-logic-details.yaml` as routine-level audit/checkpoint
+  evidence. They do not replace the reader-first
+  `<PROGRAM>-program-analysis.md`.
+- Every per-program analyzer artifact under the program folder must be
+  prefixed with the program/member name for RAG-friendly ingestion. Example:
+  `CU219B-program-analysis.md`, `CU219B-source-index.yaml`,
+  `CU219B-routine-logic-details.yaml`. Preserve IBM i member-safe characters
+  such as `@`, `#`, and `$`; replace only filesystem-unsafe characters.
 - A completed batch is a scan ledger, not a cross-program review. Programs in a
   repo-wide list do not need to have business-flow relationships before they
   can be scanned.
@@ -225,8 +239,27 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
 - No two active rows share the same output directory.
 - Completed rows have required per-program artifacts and validator status.
 - Blocked and failed rows have `last_error` and `next_action`.
+- Completed rows must not contain deterministic scaffold or pending deep-read
+  text in `<PROGRAM>-program-analysis.md` or
+  `<PROGRAM>-routine-logic-details.md`.
+
+Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
+for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.6 (2026-07-11): Reader-first completion guard
+  - Strengthened generated per-program prompts so deterministic indexes are
+    treated as scaffolds, not final analysis.
+  - Updated batch status validators to reject completed rows whose main
+    analysis or routine detail artifacts still contain scaffold / pending
+    deep-read wording.
+
+- v0.1.5 (2026-07-11): RAG-friendly per-program artifact names
+  - Required per-program analyzer outputs to use `<PROGRAM>-<artifact-name>`
+    filenames while keeping the existing program folder structure.
+  - Updated generated Copilot/Cline prompts and batch status validation to
+    expect program-prefixed artifacts.
 
 - v0.1.4 (2026-07-11): Cline retry exit budget
   - Added a task-level retry budget so Cline/model/network interruptions,

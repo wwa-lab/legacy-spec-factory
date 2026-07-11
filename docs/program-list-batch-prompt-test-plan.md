@@ -231,7 +231,7 @@ Expected behavior:
 
 Pass criteria:
 
-- No `program-analysis.md` is fabricated for the missing source.
+- No `<PROGRAM>-program-analysis.md` is fabricated for the missing source.
 - Batch status validator passes or reports only the expected blocker.
 
 ## Test Case 6: Completed Row Consistency

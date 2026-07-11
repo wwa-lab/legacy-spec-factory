@@ -91,13 +91,18 @@ Examples:
 For `completed` and `completed_with_warnings` rows, the output directory should
 contain:
 
-- `program-analysis.md`
-- `source-index.yaml`
-- `program-analysis-summary.yaml`
-- `routine-index.md`
-- `message-inventory.yaml`
-- `routine-logic-details.md`
-- `routine-logic-details.yaml`
+- `<PROGRAM>-program-analysis.md`
+- `<PROGRAM>-source-index.yaml`
+- `<PROGRAM>-program-analysis-summary.yaml`
+- `<PROGRAM>-routine-index.md`
+- `<PROGRAM>-message-inventory.yaml`
+- `<PROGRAM>-routine-logic-details.md`
+- `<PROGRAM>-routine-logic-details.yaml`
+
+Use the exact program/member identity as the filename prefix after replacing
+only filesystem-unsafe characters. Examples:
+`CU219B-program-analysis.md`, `CU219B-source-index.yaml`, and
+`@CU400P-routine-logic-details.yaml`.
 
 For `normal_program`, routine detail sidecars are required as audit/checkpoint
 evidence with the same reader-first coverage contract as complex and large
@@ -105,6 +110,28 @@ programs. Deep-read plans, coverage ledgers, and retained
 `routine-logic-details/deep-read-batch-*.md` files are required only when the
 program is promoted to `complex_normal_program`, `large_extreme_program`, or an
 explicit deep-read continuation.
+
+## Completion Quality Guard
+
+Deterministic source indexes create pre-analysis scaffolds. They are useful for
+layout stability, source ranges, and routine inventory, but they are not final
+reader-first analysis.
+
+Before a row can stay `completed` or `completed_with_warnings`:
+
+- `<PROGRAM>-program-analysis.md` must be filled with source-backed semantic
+  analysis, not only the deterministic wrapper seed.
+- `<PROGRAM>-routine-logic-details.md` must contain reader-useful routine
+  details for the RLOG IDs declared in
+  `<PROGRAM>-routine-logic-details.yaml`.
+- Neither file may still contain scaffold wording such as
+  `Draft wrapper seed generated`, `pending semantic deep-read`,
+  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
+  `not deep-read`.
+
+If these checks fail after one targeted repair pass, mark the row
+`failed_validator`, preserve the concrete finding in `last_error`, and set
+`next_action` to continue semantic deep-read for that same program.
 
 ## Update Rules
 

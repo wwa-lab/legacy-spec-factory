@@ -19,6 +19,10 @@ CANONICAL_SCRIPT_PATH = (
 WRAPPER_SCRIPT_PATH = REPO_ROOT / "scripts" / "index-rpg-source.py"
 
 
+def artifact_name(program: str, base_name: str) -> str:
+    return f"{program}-{base_name}"
+
+
 def load_indexer():
     spec = importlib.util.spec_from_file_location("index_rpg_source", CANONICAL_SCRIPT_PATH)
     if spec is None or spec.loader is None:
@@ -77,18 +81,18 @@ class RpgSourceIndexerTests(unittest.TestCase):
             )
             self.assertIn("python3 scripts/index-rpg-source.py", text)
             self.assertIn("validate-program-analysis-contract.py", text)
-            self.assertIn("program-analysis-summary.yaml", text)
-            self.assertIn("program-analysis.md", text)
-            self.assertIn("routine-logic-details.md", text)
-            self.assertIn("routine-logic-details.yaml", text)
-            self.assertIn("routine-logic-details/deep-read-batch-001.md", text)
+            self.assertIn("<PROGRAM>-program-analysis-summary.yaml", text)
+            self.assertIn("<PROGRAM>-program-analysis.md", text)
+            self.assertIn("<PROGRAM>-routine-logic-details.md", text)
+            self.assertIn("<PROGRAM>-routine-logic-details.yaml", text)
+            self.assertIn("routine-logic-details/<PROGRAM>-deep-read-batch-001.md", text)
             self.assertIn("temporary consistency checks", text)
             self.assertIn("YAML", text)
             self.assertIn("readability checks", text)
-            self.assertIn("file-io-inventory.md", text)
-            self.assertIn("file-io-inventory.yaml", text)
-            self.assertIn("field-mutation-matrix.md", text)
-            self.assertIn("field-mutation-matrix.yaml", text)
+            self.assertIn("<PROGRAM>-file-io-inventory.md", text)
+            self.assertIn("<PROGRAM>-file-io-inventory.yaml", text)
+            self.assertIn("<PROGRAM>-field-mutation-matrix.md", text)
+            self.assertIn("<PROGRAM>-field-mutation-matrix.yaml", text)
             self.assertIn("sql-inventory.md", text)
             self.assertIn("sql-inventory.yaml", text)
             self.assertIn("normal_program", text)
@@ -177,26 +181,26 @@ C                   SETON                                        LR
                 text=True,
             )
 
-            self.assertIn("source-index.yaml", result.stdout)
+            self.assertIn(artifact_name("SIMPLE", "source-index.yaml"), result.stdout)
             expected_present = {
-                "program-analysis.md",
-                "source-index.yaml",
-                "program-analysis-summary.yaml",
-                "routine-index.md",
-                "routine-logic-details.md",
-                "routine-logic-details.yaml",
-                "message-inventory.yaml",
+                artifact_name("SIMPLE", "program-analysis.md"),
+                artifact_name("SIMPLE", "source-index.yaml"),
+                artifact_name("SIMPLE", "program-analysis-summary.yaml"),
+                artifact_name("SIMPLE", "routine-index.md"),
+                artifact_name("SIMPLE", "routine-logic-details.md"),
+                artifact_name("SIMPLE", "routine-logic-details.yaml"),
+                artifact_name("SIMPLE", "message-inventory.yaml"),
             }
             expected_absent = {
-                "all-routine-coverage-ledger.md",
-                "deep-read-plan.md",
-                "message-inventory.md",
-                "file-io-inventory.md",
-                "file-io-inventory.yaml",
-                "field-mutation-matrix.md",
-                "field-mutation-matrix.yaml",
-                "sql-inventory.md",
-                "sql-inventory.yaml",
+                artifact_name("SIMPLE", "all-routine-coverage-ledger.md"),
+                artifact_name("SIMPLE", "deep-read-plan.md"),
+                artifact_name("SIMPLE", "message-inventory.md"),
+                artifact_name("SIMPLE", "file-io-inventory.md"),
+                artifact_name("SIMPLE", "file-io-inventory.yaml"),
+                artifact_name("SIMPLE", "field-mutation-matrix.md"),
+                artifact_name("SIMPLE", "field-mutation-matrix.yaml"),
+                artifact_name("SIMPLE", "sql-inventory.md"),
+                artifact_name("SIMPLE", "sql-inventory.yaml"),
             }
             for artifact in expected_present:
                 self.assertTrue((output_dir / artifact).exists(), artifact)
@@ -204,9 +208,9 @@ C                   SETON                                        LR
                 self.assertFalse((output_dir / artifact).exists(), artifact)
             self.assertFalse((output_dir / "routine-logic-details").exists())
 
-            source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
-            summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
-            program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
+            source_index = (output_dir / artifact_name("SIMPLE", "source-index.yaml")).read_text(encoding="utf-8")
+            summary = (output_dir / artifact_name("SIMPLE", "program-analysis-summary.yaml")).read_text(encoding="utf-8")
+            program_analysis = (output_dir / artifact_name("SIMPLE", "program-analysis.md")).read_text(encoding="utf-8")
             self.assertIn("program_size_tier: normal_program", source_index)
             self.assertIn("default_output_profile: reader_first_lightweight_review", summary)
             self.assertIn("program_analysis:", summary)
@@ -232,7 +236,7 @@ C                   EVAL      RESULT = 'Y'
             delivery_root = temp_path / "delivery-main"
             artifact_root = delivery_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
             artifact_root.mkdir(parents=True)
-            (artifact_root / "program-analysis-summary.yaml").write_text(
+            (artifact_root / artifact_name("CU257F", "program-analysis-summary.yaml")).write_text(
                 "schema_version: '0.1'\nprogram: CU257F\n",
                 encoding="utf-8",
             )
@@ -258,8 +262,8 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("central_lookup_result: found_on_remote_main", result.stdout)
             self.assertIn("artifact_root: modules/CAP-ID-0002-complex_normal_program/CU257F", result.stdout)
             self.assertIn("action: reuse_existing_program_artifacts", result.stdout)
-            self.assertFalse((output_dir / "source-index.yaml").exists())
-            self.assertFalse((output_dir / "program-analysis.md").exists())
+            self.assertFalse((output_dir / artifact_name("CU257F", "source-index.yaml")).exists())
+            self.assertFalse((output_dir / artifact_name("CU257F", "program-analysis.md")).exists())
 
     def test_cli_force_rescan_writes_artifacts_with_central_reuse_trace(self) -> None:
         source = """H DFTACTGRP(*NO)
@@ -296,10 +300,10 @@ C                   EVAL      RESULT = 'Y'
 
             self.assertIn("central_lookup_result: found_on_remote_main", result.stdout)
             self.assertIn("action: force_rescan_requested", result.stdout)
-            self.assertTrue((output_dir / "source-index.yaml").exists())
-            self.assertTrue((output_dir / "program-analysis-summary.yaml").exists())
-            source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
-            summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
+            self.assertTrue((output_dir / artifact_name("CU257F", "source-index.yaml")).exists())
+            self.assertTrue((output_dir / artifact_name("CU257F", "program-analysis-summary.yaml")).exists())
+            source_index = (output_dir / artifact_name("CU257F", "source-index.yaml")).read_text(encoding="utf-8")
+            summary = (output_dir / artifact_name("CU257F", "program-analysis-summary.yaml")).read_text(encoding="utf-8")
             self.assertIn("central_artifact_reuse:", source_index)
             self.assertIn("reuse_decision: force_rescan_requested", source_index)
             self.assertIn("artifact_root: modules/CAP-ID-0002-complex_normal_program/CU257F", source_index)
@@ -336,7 +340,7 @@ C                   EVAL      RESULT = 'Y'
 
             self.assertEqual(result.returncode, 4)
             self.assertIn("rescan_reason_required", result.stderr)
-            self.assertFalse((output_dir / "source-index.yaml").exists())
+            self.assertFalse((output_dir / artifact_name("CU257F", "source-index.yaml")).exists())
 
     def test_cli_continues_source_scan_when_central_artifact_missing(self) -> None:
         source = """H DFTACTGRP(*NO)
@@ -369,8 +373,8 @@ C                   EVAL      RESULT = 'Y'
 
             self.assertIn("central_lookup_result: not_found_on_remote_main", result.stdout)
             self.assertIn("action: proceed_to_source_scan", result.stdout)
-            self.assertTrue((output_dir / "source-index.yaml").exists())
-            self.assertTrue((output_dir / "program-analysis.md").exists())
+            self.assertTrue((output_dir / artifact_name("CU999", "source-index.yaml")).exists())
+            self.assertTrue((output_dir / artifact_name("CU999", "program-analysis.md")).exists())
 
     def test_cli_keeps_at_prefixed_programs_distinct_in_central_lookup(self) -> None:
         source = """H DFTACTGRP(*NO)
@@ -404,7 +408,7 @@ C                   EVAL      RESULT = 'Y'
 
             self.assertIn("central_lookup_result: not_found_on_remote_main", result.stdout)
             self.assertIn("action: proceed_to_source_scan", result.stdout)
-            self.assertTrue((output_dir / "source-index.yaml").exists())
+            self.assertTrue((output_dir / artifact_name("CU118", "source-index.yaml")).exists())
 
     def test_fixed_format_begsr_uses_factor_before_opcode_with_source_prefix(self) -> None:
         indexer = load_indexer()
@@ -703,35 +707,35 @@ C                   EVAL      RESULT = 'Y'
 
             self.assertEqual(result.returncode, 0, result.stderr)
             for name in (
-                "source-index.yaml",
-                "program-analysis.md",
-                "program-analysis-summary.yaml",
-                "routine-index.md",
-                "all-routine-coverage-ledger.md",
-                "deep-read-plan.md",
-                "routine-logic-details.md",
-                "routine-logic-details.yaml",
-                "message-inventory.md",
-                "message-inventory.yaml",
-                "file-io-inventory.md",
-                "file-io-inventory.yaml",
-                "field-mutation-matrix.md",
-                "field-mutation-matrix.yaml",
-                "sql-inventory.md",
-                "sql-inventory.yaml",
-                "routine-logic-details/deep-read-batch-001.md",
+                artifact_name("CU106", "source-index.yaml"),
+                artifact_name("CU106", "program-analysis.md"),
+                artifact_name("CU106", "program-analysis-summary.yaml"),
+                artifact_name("CU106", "routine-index.md"),
+                artifact_name("CU106", "all-routine-coverage-ledger.md"),
+                artifact_name("CU106", "deep-read-plan.md"),
+                artifact_name("CU106", "routine-logic-details.md"),
+                artifact_name("CU106", "routine-logic-details.yaml"),
+                artifact_name("CU106", "message-inventory.md"),
+                artifact_name("CU106", "message-inventory.yaml"),
+                artifact_name("CU106", "file-io-inventory.md"),
+                artifact_name("CU106", "file-io-inventory.yaml"),
+                artifact_name("CU106", "field-mutation-matrix.md"),
+                artifact_name("CU106", "field-mutation-matrix.yaml"),
+                artifact_name("CU106", "sql-inventory.md"),
+                artifact_name("CU106", "sql-inventory.yaml"),
+                f"routine-logic-details/{artifact_name('CU106', 'deep-read-batch-001.md')}",
             ):
                 self.assertTrue((output_dir / name).exists(), name)
 
-            source_index = (output_dir / "source-index.yaml").read_text(encoding="utf-8")
+            source_index = (output_dir / artifact_name("CU106", "source-index.yaml")).read_text(encoding="utf-8")
             self.assertIn("analysis_mode: large_program", source_index)
             self.assertIn("program: CU106", source_index)
 
-            deep_read_plan = (output_dir / "deep-read-plan.md").read_text(encoding="utf-8")
+            deep_read_plan = (output_dir / artifact_name("CU106", "deep-read-plan.md")).read_text(encoding="utf-8")
             self.assertIn("| SR100 |", deep_read_plan)
             self.assertIn("state-changing file operation", deep_read_plan)
 
-            routine_logic = (output_dir / "routine-logic-details.md").read_text(encoding="utf-8")
+            routine_logic = (output_dir / artifact_name("CU106", "routine-logic-details.md")).read_text(encoding="utf-8")
             self.assertIn("RLOG-CU106-001", routine_logic)
             self.assertIn("pending_deep_read", routine_logic)
             self.assertIn("Calculation Logic", routine_logic)
@@ -739,17 +743,17 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("Batch Coverage Summary", routine_logic)
             self.assertIn("pasted source-code snippets", routine_logic)
             self.assertIn("must list every exact message/status/literal", routine_logic)
-            self.assertIn("reader-first `program-analysis.md`", routine_logic)
-            self.assertIn("consolidated `routine-logic-details.md` audit document", routine_logic)
+            self.assertIn("reader-first `CU106-program-analysis.md`", routine_logic)
+            self.assertIn("consolidated `CU106-routine-logic-details.md` audit document", routine_logic)
             self.assertIn("reader-useful detail for every YAML RLOG", routine_logic)
 
-            program_analysis = (output_dir / "program-analysis.md").read_text(encoding="utf-8")
+            program_analysis = (output_dir / artifact_name("CU106", "program-analysis.md")).read_text(encoding="utf-8")
             self.assertIn("Draft wrapper seed generated", program_analysis)
             self.assertIn("## Calculation Logic", program_analysis)
             self.assertIn("## Metadata", program_analysis)
             self.assertIn("## Review Checklist", program_analysis)
 
-            routine_logic_yaml = (output_dir / "routine-logic-details.yaml").read_text(encoding="utf-8")
+            routine_logic_yaml = (output_dir / artifact_name("CU106", "routine-logic-details.yaml")).read_text(encoding="utf-8")
             self.assertIn("routine_logic_inventory:", routine_logic_yaml)
             self.assertIn("semantic_status: pending_deep_read", routine_logic_yaml)
             self.assertIn("part_file_front_matter:", routine_logic_yaml)
@@ -758,13 +762,13 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("final_consolidation_required:", routine_logic_yaml)
             self.assertIn("Batch files are retained audit surfaces", routine_logic_yaml)
 
-            program_summary = (output_dir / "program-analysis-summary.yaml").read_text(encoding="utf-8")
+            program_summary = (output_dir / artifact_name("CU106", "program-analysis-summary.yaml")).read_text(encoding="utf-8")
             self.assertIn("routine_summary:", program_summary)
             self.assertIn("message_summary:", program_summary)
             self.assertIn("routine_logic_deep_read_batch_001:", program_summary)
-            self.assertIn("routine-logic-details/deep-read-batch-001.md", program_summary)
+            self.assertIn(f"routine-logic-details/{artifact_name('CU106', 'deep-read-batch-001.md')}", program_summary)
 
-            batch = (output_dir / "routine-logic-details" / "deep-read-batch-001.md").read_text(encoding="utf-8")
+            batch = (output_dir / "routine-logic-details" / artifact_name("CU106", "deep-read-batch-001.md")).read_text(encoding="utf-8")
             self.assertIn("# Routine Logic Details: CU106 - Deep Read Batch 001", batch)
             self.assertIn("## Calculation Logic", batch)
             self.assertIn("## Validation Logic", batch)
@@ -775,24 +779,24 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("## Routine Details", batch)
             self.assertIn("RLOG-CU106-001", batch)
 
-            message_inventory = (output_dir / "message-inventory.md").read_text(encoding="utf-8")
+            message_inventory = (output_dir / artifact_name("CU106", "message-inventory.md")).read_text(encoding="utf-8")
             self.assertIn("MSG-CU106-001", message_inventory)
             self.assertIn("UCC1852", message_inventory)
             self.assertIn("unresolved - message description not available", message_inventory)
 
-            message_inventory_yaml = (output_dir / "message-inventory.yaml").read_text(encoding="utf-8")
+            message_inventory_yaml = (output_dir / artifact_name("CU106", "message-inventory.yaml")).read_text(encoding="utf-8")
             self.assertIn("message_inventory:", message_inventory_yaml)
             self.assertIn("message: UCC1852", message_inventory_yaml)
 
-            file_io_inventory_yaml = (output_dir / "file-io-inventory.yaml").read_text(encoding="utf-8")
+            file_io_inventory_yaml = (output_dir / artifact_name("CU106", "file-io-inventory.yaml")).read_text(encoding="utf-8")
             self.assertIn("file_io_inventory:", file_io_inventory_yaml)
             self.assertIn("object: CUSTPF", file_io_inventory_yaml)
 
-            mutation_yaml = (output_dir / "field-mutation-matrix.yaml").read_text(encoding="utf-8")
+            mutation_yaml = (output_dir / artifact_name("CU106", "field-mutation-matrix.yaml")).read_text(encoding="utf-8")
             self.assertIn("field_mutation_inventory:", mutation_yaml)
             self.assertIn("operation: UPDATE", mutation_yaml)
 
-            sql_inventory_yaml = (output_dir / "sql-inventory.yaml").read_text(encoding="utf-8")
+            sql_inventory_yaml = (output_dir / artifact_name("CU106", "sql-inventory.yaml")).read_text(encoding="utf-8")
             self.assertIn("sql_inventory:", sql_inventory_yaml)
 
 

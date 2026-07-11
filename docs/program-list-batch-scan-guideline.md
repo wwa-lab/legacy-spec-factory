@@ -7,7 +7,7 @@ program list.
 中文摘要: 这份文档用于按 `program-list.csv` 批量执行 IBM i program scan。
 核心原则是外层按清单批量调度，内层仍然使用
 `legacy-ibmi-program-analyzer` 一次分析一个 program。不要把多个 program
-合并进同一个 `program-analysis.md`。
+合并进同一个 `<PROGRAM>-program-analysis.md`。
 
 Canonical skill entry: `legacy-ibmi-program-list-batch`.
 
@@ -125,7 +125,11 @@ Execution rules:
   messages, statuses, control-file lookups, field meanings, or validation
   rules. Treat them as supporting evidence only.
 - Run legacy-ibmi-program-analyzer for each queued program row.
-- Do not combine multiple programs into one program-analysis.md.
+- Treat deterministic indexes as pre-analysis scaffolds only. After index
+  generation, read the source-index, routine-logic YAML, and source routine
+  bodies; replace pending/thin scaffold content with source-backed semantic
+  analysis before marking the row complete.
+- Do not combine multiple programs into one <PROGRAM>-program-analysis.md.
 - Each program must have its own output folder.
 - Read at most 5 routine bodies per program-analysis turn.
 - Keep normal_program output lightweight unless a density trigger appears:
@@ -138,18 +142,18 @@ Execution rules:
 - Continue from the next unprocessed row if interrupted or resumed.
 
 Per-program required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 Conditional per-program output:
-- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
-  routine-logic-details/deep-read-batch-*.md only when complex/large tier or
-  explicit deep-read continuation triggers require them.
+- <PROGRAM>-deep-read-plan.md, <PROGRAM>-all-routine-coverage-ledger.md, and
+  retained routine-logic-details/<PROGRAM>-deep-read-batch-*.md only when
+  complex/large tier or explicit deep-read continuation triggers require them.
 
 Batch required output:
 - batch-scan-manifest.yaml
@@ -169,6 +173,11 @@ Quality gates:
 - Do not mark a program complete only because files were generated.
 - A program is complete only when required artifacts exist and the
   program-analysis validator passes.
+- Do not mark a program complete if <PROGRAM>-program-analysis.md or
+  <PROGRAM>-routine-logic-details.md still contains scaffold wording such as
+  `Draft wrapper seed generated`, `pending semantic deep-read`,
+  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
+  `not deep-read`.
 - Validate each generated program-analysis artifact before marking that program
   complete.
 - Do not mark the batch complete if required per-program artifacts are missing.
@@ -272,7 +281,11 @@ Program list 字段:
   status、control-file lookup、field meaning 或 validation rule 有关时，
   读取它们作为 supporting evidence。
 - 对每个 queued program row 执行 legacy-ibmi-program-analyzer。
-- 不要把多个 program 合并进同一个 program-analysis.md。
+- deterministic source index 只是 pre-analysis scaffold。index 生成后必须
+  继续读取 source-index、routine-logic YAML 和 source routine bodies，把
+  pending/thin scaffold 内容替换成有 source evidence 的 semantic analysis，
+  然后才能把该 row 标记为 complete。
+- 不要把多个 program 合并进同一个 <PROGRAM>-program-analysis.md。
 - 每个 program 必须有自己的输出目录。
 - 每一轮 program-analysis 最多读取 5 个 routine body。
 - 如果是 normal_program，且没有密集度触发，保持轻量输出。
@@ -282,18 +295,18 @@ Program list 字段:
 - 如果执行中断或恢复，从下一个未处理的 program 继续。
 
 每个 program 必须产出:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 条件性产出:
-- deep-read-plan.md、all-routine-coverage-ledger.md，以及保留的
-  routine-logic-details/deep-read-batch-*.md 只在 complex/large tier 或明确
-  deep-read continuation 触发时产出。
+- <PROGRAM>-deep-read-plan.md、<PROGRAM>-all-routine-coverage-ledger.md，以及
+  保留的 routine-logic-details/<PROGRAM>-deep-read-batch-*.md 只在
+  complex/large tier 或明确 deep-read continuation 触发时产出。
 
 批量执行必须产出:
 - batch-scan-manifest.yaml
@@ -311,6 +324,10 @@ Program list 字段:
 - 不要因为文件生成了，就把 program 标记为 complete。
 - 只有 required artifacts 存在，并且 program-analysis validator 通过时，
   该 program 才算 complete。
+- 如果 <PROGRAM>-program-analysis.md 或 <PROGRAM>-routine-logic-details.md
+  仍包含 `Draft wrapper seed generated`、`pending semantic deep-read`、
+  `pending semantic detail`、`placeholder`、`not-yet-deep-read` 或
+  `not deep-read`，不要标记为 complete。
 - 每个 program 生成后，先验证 program-analysis artifact，再标记该
   program complete。
 - 如果缺少 required per-program artifacts，不要标记 batch complete。
@@ -487,9 +504,10 @@ Additional safeguards:
   artifacts forward in chat. Read only the next required source window and the
   compact state files.
 - Treat these files as the memory layer:
-  `batch-scan-manifest.yaml`, `program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
-  conditional `routine-logic-details.yaml`, deep-read checkpoint files, and
+  `batch-scan-manifest.yaml`, `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`, conditional
+  `<PROGRAM>-routine-logic-details.yaml`, deep-read checkpoint files, and
   validator output.
 - After every successful batch, update the manifest and the relevant compact
   sidecars before doing more reading.
@@ -522,10 +540,11 @@ checkpoint:
     - source_path: HCCILERPG/@CC081.RPGLE
       line_range: "16659-17400"
   required_updates:
-    - routine-logic-details.md / routine-logic-details.yaml only when this is
-      complex_normal_program, large_extreme_program, or explicit deep-read
-    - program-analysis-summary.yaml
-    - message-inventory.yaml
+    - <PROGRAM>-routine-logic-details.md / <PROGRAM>-routine-logic-details.yaml
+      only when this is complex_normal_program, large_extreme_program, or
+      explicit deep-read
+    - <PROGRAM>-program-analysis-summary.yaml
+    - <PROGRAM>-message-inventory.yaml
     - batch-scan-manifest.yaml
   resume_instruction: >
     Validation passed for the previous batch. Continue with the next bounded
@@ -620,10 +639,11 @@ Recommended handoff content:
 - Required source reads:
   - <source path>:<line range>
 - Required artifact updates:
-  - routine-logic-details.md / routine-logic-details.yaml only when this is
-    complex_normal_program, large_extreme_program, or explicit deep-read
-  - program-analysis-summary.yaml
-  - message-inventory.yaml
+  - <PROGRAM>-routine-logic-details.md / <PROGRAM>-routine-logic-details.yaml
+    only when this is complex_normal_program, large_extreme_program, or
+    explicit deep-read
+  - <PROGRAM>-program-analysis-summary.yaml
+  - <PROGRAM>-message-inventory.yaml
   - batch-scan-manifest.yaml
 
 ## Copy-Ready Resume Prompt
@@ -740,6 +760,15 @@ Reference and control inputs:
 
 Rules:
 - Build deterministic indexes first.
+- Deterministic indexes are pre-analysis scaffolds only. The generated
+  <PROGRAM>-program-analysis.md seed, source index, and routine sidecars are
+  not final analysis until semantic deep-read replaces pending/thin content
+  with source-backed reader-first detail.
+- Do not stop after deterministic indexing. Read the generated
+  <PROGRAM>-source-index.yaml, <PROGRAM>-routine-logic-details.yaml, and the
+  source routine bodies; then fill <PROGRAM>-program-analysis.md and
+  <PROGRAM>-routine-logic-details.md with the actual calculation, validation,
+  exception, data movement, and outcome-trace details.
 - Analyze only this program.
 - Read the listed reference and control inputs when they are relevant to this
   program's observed messages, status values, control-file lookups, field
@@ -752,24 +781,33 @@ Rules:
   named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
+- Every RLOG declared in <PROGRAM>-routine-logic-details.yaml must have
+  reader-useful detail in both <PROGRAM>-program-analysis.md and
+  <PROGRAM>-routine-logic-details.md before this row can be marked complete.
 - Write required artifacts to the output directory.
 - Run the program-analysis validator before marking complete.
+- Before writing `batch_status=completed`, open the generated
+  <PROGRAM>-program-analysis.md and <PROGRAM>-routine-logic-details.md and
+  confirm they do not contain scaffold language such as `Draft wrapper seed
+  generated`, `pending semantic deep-read`, `pending semantic detail`,
+  `placeholder`, `not-yet-deep-read`, or `not deep-read`.
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
 
 Required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 Conditional output:
-- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
-  routine-logic-details/deep-read-batch-*.md only for complex_normal_program,
-  large_extreme_program, or explicit deep-read continuation.
+- <PROGRAM>-deep-read-plan.md, <PROGRAM>-all-routine-coverage-ledger.md, and
+  retained routine-logic-details/<PROGRAM>-deep-read-batch-*.md only for
+  complex_normal_program, large_extreme_program, or explicit deep-read
+  continuation.
 
 Validation on Windows/Cline:
 py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
