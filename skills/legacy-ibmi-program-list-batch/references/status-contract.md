@@ -104,7 +104,10 @@ final row status according to the selected validation mode.
 
 In Cline, use `cline-serial-runner-prompt.md` and process `prompt-queue/*.md`
 serially. Cline must not use `subagent-queue`, must not call `use_subagents`,
-and must not write `subagent-results/*.json`.
+and must not write `subagent-results/*.json`. Cline serial batches use
+`validation_mode=immediate`: run the full program-analysis validator after
+each program before starting the next. `scanned_unvalidated` is not a valid
+Cline serial success state.
 
 The Cline serial runner should not impose its own small stop limit. Continue
 through every available prompt in the assigned batch while file reads/writes
@@ -165,14 +168,22 @@ Before a row can stay `completed`, `completed_with_warnings`, or
   `Draft wrapper seed generated`, `pending semantic deep-read`,
   `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
   `not deep-read`.
+- The main file must preserve the reader-first navigation headings, including
+  `### Routine Index For Calculation Logic`,
+  `### Routine Index For Validation Logic`, and
+  `### Routine Index For Exception Handling`, in that order under their
+  corresponding H2 sections. This is a cheap structural guard and applies even
+  when the semantic validator is deferred.
 
 If these checks fail after one targeted repair pass, mark the row
 `failed_validator`, preserve the concrete finding in `last_error`, and set
 `next_action` to continue semantic deep-read for that same program.
 
-In `deferred` validation mode, the prompt skips the expensive validator command
-inside the Cline batch run and writes `batch_status=scanned_unvalidated` with
-`validator_status=deferred`. This is a throughput optimization only. Any
+In `deferred` validation mode, the prompt skips the expensive semantic
+validator command inside the Cline batch run, but the batch status validator
+still checks required reader-first navigation headings. It writes
+`batch_status=scanned_unvalidated` with `validator_status=deferred`. This is a
+throughput optimization only. Any
 downstream flow review, BRD/spec generation, SME signoff, or central delivery
 handoff must run the program-analysis validator first and promote the row to
 `completed` / `pass` only after the validator succeeds.

@@ -208,23 +208,34 @@ def validation_policy(mode: str, member: str) -> str:
         "seed generated`, `pending semantic deep-read`, `pending semantic detail`, "
         "`placeholder`, `not-yet-deep-read`, or `not deep-read`."
     )
+    layout_check = (
+        "- Always preserve the reader-first layout headings in the main file: "
+        "`### Routine Index For Calculation Logic`, "
+        "`### Routine Index For Validation Logic`, and "
+        "`### Routine Index For Exception Handling`, in that order under their "
+        "corresponding H2 sections. Deferred mode still runs this cheap "
+        "structural check; only the expensive semantic validator is deferred."
+    )
     if mode == "deferred":
         return "\n".join(
             [
                 "- Skip the program-analysis validator in this batch prompt to keep scan throughput high.",
                 "- Do not mark this row `completed` or `completed_with_warnings` in deferred mode.",
                 scaffold_check,
-                "- If required artifacts exist and the scaffold check is clean, set "
+                layout_check,
+                "- If required artifacts exist and the scaffold/layout checks are clean, set "
                 "`batch_status=scanned_unvalidated`, `validator_status=deferred`, and "
                 "`next_action=run program-analysis validator before downstream use`.",
-                "- If required artifacts are missing or scaffold text remains after one targeted repair pass, "
+                "- If required artifacts are missing or scaffold/layout checks remain dirty after one targeted repair pass, "
                 "mark `batch_status=failed_validator`, preserve the finding in `last_error`, and set a concrete `next_action`.",
             ]
         )
     return "\n".join(
         [
-            "- Run the program-analysis validator before marking complete.",
+            "- Run the program-analysis validator immediately after writing this program's artifacts and before starting the next prompt.",
+            "- This validation is mandatory for every program in the Cline serial batch; do not use `scanned_unvalidated` in immediate mode.",
             scaffold_check,
+            layout_check,
             "- If validation passes, set `batch_status=completed` and `validator_status=pass`. "
             "Use `completed_with_warnings` only when the validator reports pass/pass_with_warnings and the warnings are non-blocking.",
         ]
@@ -671,6 +682,9 @@ def render_cline_serial_runner_prompt(
 
 目标：
 读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
+每个 program 写完 artifact 后，必须先运行该 program 的
+`validate_program_analysis_contract.py`；只有验证通过，才可以开始下一个
+program。
 
 Cline 执行边界：
 - Cline 中只做串行，不做并行。
@@ -680,6 +694,24 @@ Cline 执行边界：
 - 本 Step 2 的目标是处理完当前 `prompt-queue` 中所有可处理的 program；不要设置 3/5/10 个 program 之类的自我停止上限。
 - 不要仅仅因为上下文变长、输出很多、或者担心后续质量不稳定就提前停止。
 - 不要在 chat 里复述完整 source、完整 artifact 或历史分析；每个 program 完成后只输出一行 ledger 摘要，然后继续下一个 prompt。
+- 这个 serial runner 只接受 `validation_mode=immediate`。如果
+  `batch-scan-manifest.yaml` 是 `deferred`，停止处理并要求重新初始化 batch，
+  使用 `--validation-mode immediate` 生成新的 prompt queue。
+- 不允许把 `scanned_unvalidated` 当作 Cline serial 的成功状态。每个 program
+  必须是 `completed` / `completed_with_warnings`，或因验证失败进入
+  `failed_validator`。
+- serial runner 不是第二套分析模板；每个 per-program prompt 必须完整遵循
+  `legacy-ibmi-program-analyzer` 的主文件 H2 顺序、reader-first sections、
+  三组 `Routine Index For ...` 和 RLOG coverage contract。
+- 主文件 H2 顺序必须是：`Program Reading Summary` -> `Calculation Logic` ->
+  `Validation Logic` -> `Exception Handling` -> `Message Inventory` ->
+  `Metadata` -> `Analysis Coverage & Scope` -> `Program Call Map` ->
+  `Routine Cards` -> `Routine Logic Details` -> `Deep Read Windows` ->
+  `Entry Points & Parameters` -> `Object Dependencies` ->
+  `Logic Decomposition Ledger` -> `Data Touch Map` ->
+  `Key File & Field Logic` -> `Control Flow` -> `File I/O` ->
+  `External Calls` -> `Error Handling` -> `Redundancy Candidate Notes` ->
+  `TBDs & Blocking Status` -> `Review Checklist`。不得改成自定义简版 layout。
 
 Batch directory:
 `{out_dir}`
@@ -702,8 +734,11 @@ Batch manifest:
 6. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
 7. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
 8. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
-9. 如果某个 program 的 artifact/validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
-10. 如果 batch 是 deferred validation 模式，不要在每个 prompt 里运行昂贵的 final validator；按 prompt 要求写入 `scanned_unvalidated` / `validator_status=deferred`。
+9. 每个 program 生成必需 artifact 后，立即运行 prompt 中的
+   `validate_program_analysis_contract.py`，检查完整 analyzer layout、sidecars、
+   RLOG coverage 和 message inventory；不要只运行 batch status validator。
+10. 如果 validator 失败，最多做一次 targeted repair；仍失败则写入
+    `failed_validator`、`last_error` 和 `next_action`，再继续下一个可处理 prompt。
 11. 每完成一个 program，都必须更新：
     - `program-list-status.csv`
     - `program-batch-plan.md`
@@ -720,7 +755,7 @@ Batch manifest:
 4. 执行该 prompt。
 5. 更新 batch state。
 6. 输出一行 ledger 摘要，不输出完整 artifact 内容。
-7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
+7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
 
 全部处理完成后，运行 batch status validator：
 

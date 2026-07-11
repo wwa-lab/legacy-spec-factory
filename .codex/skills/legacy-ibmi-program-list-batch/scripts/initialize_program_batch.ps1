@@ -258,18 +258,22 @@ function Get-ValidationPolicy {
         [Parameter(Mandatory = $true)][string]$Member
     )
     $scaffoldCheck = "- Before writing final row status, open the generated ${Member}-program-analysis.md and ${Member}-routine-logic-details.md and confirm they do not contain scaffold language such as ``Draft wrapper seed generated``, ``pending semantic deep-read``, ``pending semantic detail``, ``placeholder``, ``not-yet-deep-read``, or ``not deep-read``."
+    $layoutCheck = "- Always preserve the reader-first layout headings in the main file: ``### Routine Index For Calculation Logic``, ``### Routine Index For Validation Logic``, and ``### Routine Index For Exception Handling``, in that order under their corresponding H2 sections. Deferred mode still runs this cheap structural check; only the expensive semantic validator is deferred."
     if ($Mode -eq "deferred") {
         return @(
             "- Skip the program-analysis validator in this batch prompt to keep scan throughput high.",
             "- Do not mark this row ``completed`` or ``completed_with_warnings`` in deferred mode.",
             $scaffoldCheck,
-            "- If required artifacts exist and the scaffold check is clean, set ``batch_status=scanned_unvalidated``, ``validator_status=deferred``, and ``next_action=run program-analysis validator before downstream use``.",
-            "- If required artifacts are missing or scaffold text remains after one targeted repair pass, mark ``batch_status=failed_validator``, preserve the finding in ``last_error``, and set a concrete ``next_action``."
+            $layoutCheck,
+            "- If required artifacts exist and the scaffold/layout checks are clean, set ``batch_status=scanned_unvalidated``, ``validator_status=deferred``, and ``next_action=run program-analysis validator before downstream use``.",
+            "- If required artifacts are missing or scaffold/layout checks remain dirty after one targeted repair pass, mark ``batch_status=failed_validator``, preserve the finding in ``last_error``, and set a concrete ``next_action``."
         ) -join "`n"
     }
     return @(
-        "- Run the program-analysis validator before marking complete.",
+        "- Run the program-analysis validator immediately after writing this program's artifacts and before starting the next prompt.",
+        "- This validation is mandatory for every program in the Cline serial batch; do not use ``scanned_unvalidated`` in immediate mode.",
         $scaffoldCheck,
+        $layoutCheck,
         "- If validation passes, set ``batch_status=completed`` and ``validator_status=pass``. Use ``completed_with_warnings`` only when the validator reports pass/pass_with_warnings and the warnings are non-blocking."
     ) -join "`n"
 }

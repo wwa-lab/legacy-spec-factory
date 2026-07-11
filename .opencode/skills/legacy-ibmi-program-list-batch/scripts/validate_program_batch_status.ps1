@@ -64,6 +64,18 @@ $ScaffoldPatterns = @(
     '\bplaceholder content\b',
     '\bnot-yet-deep-read\b'
 )
+$ReaderFirstLayoutGroups = @(
+    @{ Name = "Program Reading Summary"; Candidates = @("## Program Reading Summary") },
+    @{ Name = "Calculation Logic"; Candidates = @("## Calculation Logic") },
+    @{ Name = "Calculation Logic Overview"; Candidates = @("### Calculation Logic Overview") },
+    @{ Name = "Routine Index For Calculation Logic"; Candidates = @("### Routine Index For Calculation Logic") },
+    @{ Name = "Validation Logic"; Candidates = @("## Validation Logic") },
+    @{ Name = "Validation Logic Overview"; Candidates = @("### Validation Logic Overview") },
+    @{ Name = "Routine Index For Validation Logic"; Candidates = @("### Routine Index For Validation Logic") },
+    @{ Name = "Exception Handling"; Candidates = @("## Exception Handling") },
+    @{ Name = "Exception Handling Overview"; Candidates = @("### Exception Flow Overview", "### Exception Handling Overview") },
+    @{ Name = "Routine Index For Exception Handling"; Candidates = @("### Routine Index For Exception Handling") }
+)
 
 function Get-CommandLineOptions {
     param([object[]]$Arguments)
@@ -145,6 +157,52 @@ function Find-ScaffoldPatterns {
         }
     }
     return @($matches)
+}
+
+function Find-ReaderFirstLayoutFindings {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $positions = New-Object System.Collections.Generic.List[object]
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($group in $script:ReaderFirstLayoutGroups) {
+        $matched = $false
+        $position = -1
+        foreach ($candidate in $group.Candidates) {
+            $match = [regex]::Match($Text, "(?m)^" + [regex]::Escape($candidate) + "\s*$")
+            if ($match.Success) {
+                $matched = $true
+                $position = $match.Index
+                break
+            }
+        }
+        if (-not $matched) {
+            $missing.Add([string]$group.Name)
+        }
+        else {
+            $positions.Add([pscustomobject]@{ Name = [string]$group.Name; Position = $position })
+        }
+    }
+
+    $findings = New-Object System.Collections.Generic.List[string]
+    if ($missing.Count -gt 0) {
+        $findings.Add(
+            "program-analysis.md missing reader-first layout heading(s): " +
+            ($missing -join ", ")
+        )
+    }
+    if ($positions.Count -eq $script:ReaderFirstLayoutGroups.Count) {
+        for ($index = 1; $index -lt $positions.Count; $index++) {
+            $previous = $positions[$index - 1]
+            $current = $positions[$index]
+            if ($previous.Position -ge $current.Position) {
+                $findings.Add(
+                    "program-analysis.md reader-first layout headings are out of order: " +
+                    "$($previous.Name) before $($current.Name)"
+                )
+            }
+        }
+    }
+    return @($findings)
 }
 
 function Resolve-OutputDirectory {
@@ -292,6 +350,14 @@ function Invoke-Validation {
                         "run semantic source deep-read and replace placeholder content before marking completed. Matched: " +
                         ($matchedPatterns -join ', ')
                     )
+                }
+            }
+
+            $analysisPath = Join-Path $outputPath (Get-RequiredArtifactName -Member $member -BaseName "program-analysis.md")
+            if (Test-Path -LiteralPath $analysisPath -PathType Leaf) {
+                $analysisText = [System.IO.File]::ReadAllText($analysisPath, [System.Text.Encoding]::UTF8)
+                foreach ($finding in @(Find-ReaderFirstLayoutFindings -Text $analysisText)) {
+                    $findings.Add("Row $index ${member}: $finding")
                 }
             }
         }

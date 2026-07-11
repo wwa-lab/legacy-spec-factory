@@ -99,6 +99,15 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("Deterministic indexes are pre-analysis scaffolds only", prompt_text)
             self.assertIn("Do not stop after deterministic indexing", prompt_text)
             self.assertIn("Every RLOG declared in @CU400P-routine-logic-details.yaml", prompt_text)
+            self.assertIn("Preserve the exact reader-first main-file structure", prompt_text)
+            self.assertIn("Follow the `legacy-ibmi-program-analyzer` output contract", prompt_text)
+            self.assertIn("## Program Reading Summary", prompt_text)
+            self.assertIn("## Review Checklist", prompt_text)
+            self.assertIn("### Routine Index For Calculation Logic", prompt_text)
+            self.assertIn("### Routine Index For Validation Logic", prompt_text)
+            self.assertIn("### Routine Index For Exception Handling", prompt_text)
+            self.assertIn("immediately after writing this program's artifacts", prompt_text)
+            self.assertIn("This validation is mandatory for every program", prompt_text)
             self.assertIn("Cline may show its own bounded Auto-Retry", prompt_text)
             self.assertIn("batch_status=failed_runtime", prompt_text)
             self.assertIn("cline_auto_retry_exhausted", prompt_text)
@@ -110,6 +119,7 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
 
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
             self.assertIn(f"`{expected_output}`", plan_text)
+            self.assertIn("- Validation mode: immediate", plan_text)
 
     def test_programs_file_filters_prompt_queue_in_flow_order(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -351,6 +361,12 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("不要仅仅因为上下文变长", serial_prompt)
             self.assertIn("只有遇到硬性阻断才允许停止", serial_prompt)
             self.assertIn("不要把尚未执行的后续 program 标记为 failed", serial_prompt)
+            self.assertIn("只接受 `validation_mode=immediate`", serial_prompt)
+            self.assertIn("立即运行 prompt 中的", serial_prompt)
+            self.assertIn("不要只运行 batch status validator", serial_prompt)
+            self.assertIn("不允许把 `scanned_unvalidated` 当作 Cline serial 的成功状态", serial_prompt)
+            self.assertIn("Routine Logic Details` -> `Deep Read Windows`", serial_prompt)
+            self.assertIn("不得改成自定义简版 layout", serial_prompt)
             self.assertIn("prompt-queue", serial_prompt)
             self.assertTrue((out_dir / "subagent-results").is_dir())
             subagent_prompt = (out_dir / "subagent-queue" / "0001-CC050.md").read_text(
@@ -644,6 +660,21 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                     "# Program Analysis: CC050\n\n"
                     "## Program Reading Summary\n\n"
                     "Reader-first processing context is filled.\n\n"
+                    "## Calculation Logic\n\n"
+                    "### Calculation Logic Overview\n\n"
+                    "Calculation overview is filled.\n\n"
+                    "### Routine Index For Calculation Logic\n\n"
+                    "RLOG-CC050-001 calculation detail.\n\n"
+                    "## Validation Logic\n\n"
+                    "### Validation Logic Overview\n\n"
+                    "Validation overview is filled.\n\n"
+                    "### Routine Index For Validation Logic\n\n"
+                    "RLOG-CC050-001 validation detail.\n\n"
+                    "## Exception Handling\n\n"
+                    "### Exception Flow Overview\n\n"
+                    "Exception overview is filled.\n\n"
+                    "### Routine Index For Exception Handling\n\n"
+                    "RLOG-CC050-001 exception detail.\n\n"
                     "## Review Checklist\n\n"
                     "- [x] Reader-first golden gate is clean: no pending/placeholder detail remains.\n"
                 ),
@@ -694,7 +725,26 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                 encoding="utf-8",
             )
             artifact_text = {
-                "CC050-program-analysis.md": "# Program Analysis: CC050\n\nreader-first analysis filled\n",
+                "CC050-program-analysis.md": (
+                    "# Program Analysis: CC050\n\n"
+                    "## Program Reading Summary\n\n"
+                    "Reader-first processing context is filled.\n\n"
+                    "## Calculation Logic\n\n"
+                    "### Calculation Logic Overview\n\n"
+                    "Calculation overview is filled.\n\n"
+                    "### Routine Index For Calculation Logic\n\n"
+                    "RLOG-CC050-001 calculation detail.\n\n"
+                    "## Validation Logic\n\n"
+                    "### Validation Logic Overview\n\n"
+                    "Validation overview is filled.\n\n"
+                    "### Routine Index For Validation Logic\n\n"
+                    "RLOG-CC050-001 validation detail.\n\n"
+                    "## Exception Handling\n\n"
+                    "### Exception Flow Overview\n\n"
+                    "Exception overview is filled.\n\n"
+                    "### Routine Index For Exception Handling\n\n"
+                    "RLOG-CC050-001 exception detail.\n"
+                ),
                 "CC050-routine-logic-details.md": "# Routine Logic Details: CC050\n\nRLOG-CC050-001 has detail.\n",
                 "CC050-source-index.yaml": "ok\n",
                 "CC050-program-analysis-summary.yaml": "ok\n",
@@ -719,6 +769,65 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_status_validator_rejects_scanned_unvalidated_missing_reader_first_indexes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            batch_dir = temp_root / "batch"
+            output_dir = temp_root / "delivery" / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            batch_dir.mkdir()
+            output_dir.mkdir(parents=True)
+            (batch_dir / "batch-scan-manifest.yaml").write_text("programs: []\n", encoding="utf-8")
+            (batch_dir / "program-batch-plan.md").write_text("# Plan\n", encoding="utf-8")
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason,batch_status,validator_status,output_dir,prompt_path,owner,session_id,started_at,completed_at,last_error,next_action,handoff_path",
+                        "CC050,program,RPGLE,CC050.RPGLE,100,normal_program,test,scanned_unvalidated,deferred,modules/CAP-ID-0003-normal_program/CC050,,,,,,,run final validation",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            artifact_text = {
+                "CC050-program-analysis.md": (
+                    "# Program Analysis: CC050\n\n"
+                    "## Program Reading Summary\n\n"
+                    "Reader-first processing context is filled.\n\n"
+                    "## Calculation Logic\n\n"
+                    "Calculation themes are filled, but the routine index is missing.\n\n"
+                    "## Validation Logic\n\n"
+                    "Validation themes are filled, but the routine index is missing.\n\n"
+                    "## Exception Handling\n\n"
+                    "Exception themes are filled, but the routine index is missing.\n"
+                ),
+                "CC050-routine-logic-details.md": "# Routine Logic Details: CC050\n\nRLOG-CC050-001 has detail.\n",
+                "CC050-source-index.yaml": "ok\n",
+                "CC050-program-analysis-summary.yaml": "ok\n",
+                "CC050-routine-index.md": "ok\n",
+                "CC050-message-inventory.yaml": "ok\n",
+                "CC050-routine-logic-details.yaml": "ok\n",
+            }
+            for artifact, text in artifact_text.items():
+                (output_dir / artifact).write_text(text, encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(STATUS_VALIDATOR),
+                    "--batch-dir",
+                    str(batch_dir),
+                    "--delivery-root",
+                    str(temp_root / "delivery"),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("missing reader-first layout heading(s)", result.stdout)
+            self.assertIn("Routine Index For Calculation Logic", result.stdout)
+            self.assertIn("Routine Index For Validation Logic", result.stdout)
+            self.assertIn("Routine Index For Exception Handling", result.stdout)
 
     def test_status_validator_requires_deferred_status_for_scanned_unvalidated(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

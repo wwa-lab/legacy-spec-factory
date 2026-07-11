@@ -55,9 +55,9 @@ Program-set SME review is not part of this batch step. It is a downstream
 `legacy-ibmi-flow-analyzer` step only after a specific flow/list or discovered
 call-flow defines a meaningful program set.
 
-For faster Cline batch scans, use the two-phase mode:
+For Cline serial batch scans, use the validation-first two-phase mode:
 
-1. Initialize with `--scaffold-mode precreate --validation-mode deferred`.
+1. Initialize with `--scaffold-mode precreate --validation-mode immediate`.
    This creates the prompt queue, status files, manifest, and deterministic
    per-program scaffold artifacts up front.
 2. In Cline, paste the generated `cline-serial-runner-prompt.md`. Cline should
@@ -66,17 +66,14 @@ For faster Cline batch scans, use the two-phase mode:
 3. Add `--subagent-mode prepare` only when the operator also wants to try
    Kiro/agent parallel execution. Kiro should use
    `kiro-parallel-runner-prompt.md` and the `subagent-queue/*.md` prompts.
-4. Each prompt starts from the existing scaffold and fills semantic
-   reader-first details from source. Final validation is deferred until
-   downstream use or handoff.
+4. Each prompt starts from the existing scaffold, fills semantic reader-first
+   details from source, and runs the full program-analysis validator before the
+   serial runner advances to the next program.
 
-Deferred mode skips the expensive program-analysis validator inside each
-per-program prompt and writes `batch_status=scanned_unvalidated` /
-`validator_status=deferred` after the artifacts and scaffold guard are clean.
-Run the validator later before any downstream flow review, BRD/spec
-generation, SME signoff, or central delivery handoff. Use the default
-`--validation-mode immediate` when every row must be validator-clean during the
-scan.
+`--validation-mode deferred` remains available only as an explicit throughput
+mode for runtimes other than the Cline serial runner. The generated Cline
+serial prompt rejects deferred mode because every program must be validated
+before the next one starts.
 
 ## Step 1 Queue-Only Cline Prompt
 
@@ -103,7 +100,7 @@ program analysis.
 请运行以下初始化命令，并只执行这一条命令对应的初始化工作：
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<output-root>/<review-name>-program-list-batch" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<output-root>/<review-name>-program-list-batch" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode immediate --subagent-mode prepare --max-parallel-agents 4
 ```
 
 初始化成功后的预期输出：
@@ -259,7 +256,7 @@ Batch required output:
 Recommended initialization command:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode immediate --subagent-mode prepare --max-parallel-agents 4
 ```
 
 After Kiro/agent workers finish, merge their result JSON files:
@@ -285,9 +282,9 @@ Quality gates:
 - Do not mark a program complete only because files were generated.
 - A program is complete only when required artifacts exist and the
   program-analysis validator passes.
-- In fast deferred-validation scans, use `batch_status=scanned_unvalidated`
-  and `validator_status=deferred` instead of `completed`; run final validation
-  before downstream use.
+- In Cline serial mode, do not use `scanned_unvalidated`; run the full
+  program-analysis validator after every program and use `completed` or
+  `completed_with_warnings` only after it passes.
 - Do not mark a program complete if <PROGRAM>-program-analysis.md or
   <PROGRAM>-routine-logic-details.md still contains scaffold wording such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
@@ -326,9 +323,10 @@ Retry / exit budget:
   `last_error` such as
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`, and set
   `next_action` to resume the same program after the environment is stable.
-- In deferred validation mode, do not run the validator inside the per-program
-  prompt. Mark successful fast scans as `batch_status=scanned_unvalidated`,
-  `validator_status=deferred`, with `next_action` pointing to final validation.
+- In Cline serial mode, run the validator inside every per-program prompt before
+  updating durable state or starting the next prompt. If the validator fails,
+  perform at most one targeted repair; then mark `failed_validator` if it still
+  fails.
 - If the program-analysis validator fails, perform at most one targeted repair
   pass for that program. If validation still fails, set
   `batch_status=failed_validator`, preserve the validator finding in
@@ -362,12 +360,10 @@ Final response:
 使用 skill: legacy-ibmi-program-list-batch
 任务: 按 program list 批量执行 program scan，并编排 Copilot Chat prompt queue。
 
-如果目标是快速跑 Cline batch scan，初始化 queue 时使用
---validation-mode deferred。deferred 模式下，每个 program prompt 不在
-Cline 内立即运行昂贵的 program-analysis validator；artifact 和 scaffold
-检查干净后，写入 batch_status=scanned_unvalidated、
-validator_status=deferred。后续真正用于 flow review、BRD/spec、SME signoff
-或 central delivery handoff 前，再统一运行 final validation。
+如果目标是运行 Cline serial batch scan，初始化 queue 时使用
+--validation-mode immediate。每个 program prompt 必须在生成 artifacts 后
+立即运行 program-analysis validator；只有验证通过，才允许处理下一个
+program。Cline serial 不使用 scanned_unvalidated。
 
 每处理一行 program 时，使用 skill: legacy-ibmi-program-analyzer
 目的: 一次分析一个 IBM i program，并为每个 program 生成有 evidence 支撑的
@@ -451,9 +447,9 @@ Program list 字段:
 - 不要因为文件生成了，就把 program 标记为 complete。
 - 只有 required artifacts 存在，并且 program-analysis validator 通过时，
   该 program 才算 complete。
-- 快速 deferred-validation scan 使用 `batch_status=scanned_unvalidated` 和
-  `validator_status=deferred`，不要伪装成 completed；后续真正使用前必须
-  再运行 final validation。
+- Cline serial scan 不使用 `batch_status=scanned_unvalidated`；每个 program
+  生成后必须立即运行 program-analysis validator，只有通过后才能标记
+  `completed` / `completed_with_warnings`。
 - 如果 <PROGRAM>-program-analysis.md 或 <PROGRAM>-routine-logic-details.md
   仍包含 `Draft wrapper seed generated`、`pending semantic deep-read`、
   `pending semantic detail`、`placeholder`、`not-yet-deep-read` 或
@@ -489,10 +485,9 @@ Program list 字段:
   `last_error` 记录类似
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`，并在
   `next_action` 写明等 Cline/network 稳定后继续同一个 program。
-- deferred validation 模式下，不在 per-program prompt 里运行 validator。
-  成功快扫后写 `batch_status=scanned_unvalidated`、
-  `validator_status=deferred`，并在 `next_action` 写明下游使用前运行 final
-  validation。
+- Cline serial 模式下，每个 per-program prompt 都必须运行 validator。验证
+  失败时最多进行一次 targeted repair；仍失败则写入
+  `batch_status=failed_validator`，不能伪装成 completed。
 - 如果 program-analysis validator 失败，同一个 program 最多做一次
   targeted repair。仍然失败时，设置 `batch_status=failed_validator`，
   在 `last_error` 保留 validator finding，并写清楚 `next_action`。
@@ -934,15 +929,19 @@ Rules:
   reader-useful detail in both <PROGRAM>-program-analysis.md and
   <PROGRAM>-routine-logic-details.md before this row can be marked complete.
 - Write required artifacts to the output directory.
-- For fast batch scans, skip the program-analysis validator in this prompt and
-  mark the row `scanned_unvalidated` / `deferred` after artifacts and scaffold
-  checks are clean. For strict scans, run the validator before marking
-  `completed`.
+- For Cline serial scans, run the program-analysis validator immediately after
+  writing this program's artifacts and before starting the next prompt. Mark
+  `completed` / `completed_with_warnings` only after it passes; do not use
+  `scanned_unvalidated` in Cline serial mode.
 - Before writing `batch_status=completed`, open the generated
   <PROGRAM>-program-analysis.md and <PROGRAM>-routine-logic-details.md and
   confirm they do not contain scaffold language such as `Draft wrapper seed
   generated`, `pending semantic deep-read`, `pending semantic detail`,
   `placeholder`, `not-yet-deep-read`, or `not deep-read`.
+- Preserve the reader-first navigation headings in the main file, especially
+  `### Routine Index For Calculation Logic`,
+  `### Routine Index For Validation Logic`, and
+  `### Routine Index For Exception Handling`.
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
 
@@ -962,8 +961,7 @@ Conditional output:
   continuation.
 
 Validation on Windows/Cline:
-Fast deferred-validation batch prompt: do not run now. Run later before
-downstream use:
+Run immediately after this program's artifacts are written:
 
 py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <output directory>
@@ -1010,6 +1008,10 @@ Cline 执行边界：
 - 本 Step 2 的目标是处理完当前 `prompt-queue` 中所有可处理的 program；不要设置 3/5/10 个 program 之类的自我停止上限。
 - 不要仅仅因为上下文变长、输出很多、或者担心后续质量不稳定就提前停止。
 - 不要在 chat 里复述完整 source、完整 artifact 或历史分析；每个 program 完成后只输出一行 ledger 摘要，然后继续下一个 prompt。
+- 这个 serial runner 只接受 `validation_mode=immediate`。如果 manifest 是
+  `deferred`，停止并要求使用 `--validation-mode immediate` 重新生成 queue。
+- 每个 program 写完 artifacts 后，必须立即运行完整的
+  `validate_program_analysis_contract.py`；验证通过后才可以开始下一个。
 
 Batch directory:
 `<batch-dir>`
@@ -1029,19 +1031,28 @@ Batch manifest:
 3. 每次只处理一个 prompt 文件。
 4. 每个 prompt 只对应一个 program；不要把多个 program 合并到一次分析。
 5. 处理当前 program 时，完整执行该 prompt 的内容。
-6. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
-7. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
-8. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
-9. 如果某个 program 的 artifact/validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
-10. 如果 batch 是 deferred validation 模式，不要在每个 prompt 里运行昂贵的 final validator；按 prompt 要求写入 `scanned_unvalidated` / `validator_status=deferred`。
-11. 每完成一个 program，都必须更新：
+6. 每个主分析文件必须遵循 `legacy-ibmi-program-analyzer` 的完整 layout，
+   H2 顺序为：Program Reading Summary、Calculation Logic、Validation Logic、
+   Exception Handling、Message Inventory、Metadata、Analysis Coverage & Scope、
+   Program Call Map、Routine Cards、Routine Logic Details、Deep Read Windows、
+   Entry Points & Parameters、Object Dependencies、Logic Decomposition Ledger、
+   Data Touch Map、Key File & Field Logic、Control Flow、File I/O、External Calls、
+   Error Handling、Redundancy Candidate Notes、TBDs & Blocking Status、Review Checklist。
+7. Calculation / Validation / Exception 三个 H2 下必须分别保留对应的
+   `Routine Index For ...`，并覆盖 routine-logic YAML 中的每个 RLOG。
+8. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
+9. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
+10. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
+11. 每个 program 写完 artifacts 后，立即运行 `validate_program_analysis_contract.py`，不要只运行 batch status validator。
+12. 如果 validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
+13. 每完成一个 program，都必须更新：
     - `program-list-status.csv`
     - `program-batch-plan.md`
     - `batch-scan-manifest.yaml`
-12. 每完成一个 program，只在 chat 里报告：program、status、validator_status、关键 artifact 路径、下一条 prompt；不要粘贴大段分析内容。
-13. 只要工具仍能读写文件并执行下一个 prompt，就必须继续处理下一个 program。
-14. 只有遇到硬性阻断才允许停止，例如 Cline/model/network/tool Auto-Retry 用尽、文件读写失败、当前 session 已无法安全读取或写入下一个 prompt。
-15. 如果发生硬性阻断，停在当前 program 边界，写好 durable state 和 `batch-session-handoff.md`，报告精确的下一个待处理 prompt。不要把尚未执行的后续 program 标记为 failed。
+14. 每完成一个 program，只在 chat 里报告：program、status、validator_status、关键 artifact 路径、下一条 prompt；不要粘贴大段分析内容。
+15. 只要工具仍能读写文件并执行下一个 prompt，就必须继续处理下一个 program。
+16. 只有遇到硬性阻断才允许停止，例如 Cline/model/network/tool Auto-Retry 用尽、文件读写失败、当前 session 已无法安全读取或写入下一个 prompt。
+17. 如果发生硬性阻断，停在当前 program 边界，写好 durable state 和 `batch-session-handoff.md`，报告精确的下一个待处理 prompt。不要把尚未执行的后续 program 标记为 failed。
 
 建议处理顺序：
 1. 列出 `prompt-queue/*.md` 文件清单。
@@ -1050,7 +1061,7 @@ Batch manifest:
 4. 执行该 prompt。
 5. 更新 batch state。
 6. 输出一行 ledger 摘要，不输出完整 artifact 内容。
-7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
+7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
 
 全部处理完成后，运行 batch status validator：
 

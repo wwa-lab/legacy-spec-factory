@@ -36,6 +36,32 @@ Rules:
   source routine bodies; then fill {{member}}-program-analysis.md and
   {{member}}-routine-logic-details.md with the actual calculation,
   validation, exception, data movement, and outcome-trace details.
+- Preserve the exact reader-first main-file structure while filling semantic
+  detail. Do not delete, rename, demote, or replace these required headings:
+  `## Program Reading Summary`, `## Calculation Logic`,
+  `### Calculation Logic Overview`,
+  `### Routine Index For Calculation Logic`, `## Validation Logic`,
+  `### Validation Logic Overview`,
+  `### Routine Index For Validation Logic`, `## Exception Handling`,
+  `### Exception Flow Overview` (or `### Exception Handling Overview`), and
+  `### Routine Index For Exception Handling`. Put source-backed theme
+  subsections before each Routine Index and keep one reader-useful Routine
+  Index row for every RLOG in {{member}}-routine-logic-details.yaml.
+- Follow the `legacy-ibmi-program-analyzer` output contract and its exact main
+  H2 order. The final `{{member}}-program-analysis.md` must contain, in order:
+  `## Program Reading Summary`, `## Calculation Logic`, `## Validation Logic`,
+  `## Exception Handling`, `## Message Inventory`, `## Metadata`,
+  `## Analysis Coverage & Scope`, `## Program Call Map`, `## Routine Cards`,
+  `## Routine Logic Details`, `## Deep Read Windows`,
+  `## Entry Points & Parameters`, `## Object Dependencies`,
+  `## Logic Decomposition Ledger`, `## Data Touch Map`,
+  `## Key File & Field Logic`, `## Control Flow`, `## File I/O`,
+  `## External Calls`, `## Error Handling`, `## Redundancy Candidate Notes`,
+  `## TBDs & Blocking Status`, and `## Review Checklist`.
+- Do not produce a simplified summary-only file, a theme-only file, or a
+  latest-batch/delta-only file. Use the analyzer template and
+  `references/output-contract.md` as the structure source of truth; sidecars
+  supplement the main file and do not replace its reader-first sections.
 - Analyze only this program.
 - Read the listed reference and control inputs when they are relevant to this
   program's observed messages, status values, control-file lookups, field
