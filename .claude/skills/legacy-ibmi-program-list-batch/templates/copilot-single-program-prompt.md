@@ -26,6 +26,7 @@ Reference and control inputs:
 
 Rules:
 - Build deterministic indexes first.
+{{scaffold_prompt_note}}
 - Deterministic indexes are pre-analysis scaffolds only. The generated
   {{member}}-program-analysis.md seed, source index, and routine sidecars are
   not final analysis until semantic deep-read replaces pending/thin content
@@ -62,12 +63,7 @@ Rules:
   exception closure, and source-line evidence. If a routine is truly utility
   only, say why and keep it concise rather than leaving it as indexed_only.
 - Write required artifacts to the output directory.
-- Run the program-analysis validator before marking complete.
-- Before writing `batch_status=completed`, open the generated
-  {{member}}-program-analysis.md and {{member}}-routine-logic-details.md and
-  confirm they do not contain scaffold language such as `Draft wrapper seed
-  generated`, `pending semantic deep-read`, `pending semantic detail`,
-  `placeholder`, `not-yet-deep-read`, or `not deep-read`.
+{{validation_policy}}
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
 - Do not generate or refresh program-set-sme-core-review.md in this
@@ -109,15 +105,10 @@ Conditional output:
   complex/large tier or retained batch evidence.
 
 Validation:
-py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir "{{output_dir}}"
+{{validation_command_block}}
 
 Company Windows 11 / Cline note:
-- Run the generated `py -3 ...` command first. If the Python Launcher is
-  unavailable, run the same command again with `python` replacing `py -3`.
-- Do not replace it with PowerShell, `.cmd`, `.ps1`, shell continuations, or
-  `py ... || python ...`.
-- A validator failure is a result failure, not a reason to rerun it through
-  another route.
+{{validation_launcher_note}}
 - Keep Windows paths in code spans or fenced code blocks when reporting them.
   In Markdown, a raw `\@` can render as `@`, hiding the separator before
   program names such as `@CU400P`.

@@ -15,6 +15,7 @@ ALLOWED_STATUSES = {
     "in_progress",
     "completed",
     "completed_with_warnings",
+    "scanned_unvalidated",
     "blocked_missing_source",
     "failed_validator",
     "failed_runtime",
@@ -31,6 +32,7 @@ REQUIRED_ARTIFACT_BASE_NAMES = {
     "routine-logic-details.yaml",
 }
 
+ARTIFACT_REQUIRED_STATUSES = {"completed", "completed_with_warnings", "scanned_unvalidated"}
 ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
 SCAFFOLD_TEXT_BASE_NAMES = ("program-analysis.md", "routine-logic-details.md")
 SCAFFOLD_PATTERNS = (
@@ -143,7 +145,11 @@ def validate(args: argparse.Namespace) -> int:
             findings.append(
                 f"Row {index} {member}: completed_with_warnings requires validator_status pass/pass_with_warnings"
             )
-        if status in {"completed", "completed_with_warnings"}:
+        if status == "scanned_unvalidated" and validator_status != "deferred":
+            findings.append(f"Row {index} {member}: scanned_unvalidated requires validator_status deferred")
+        if status == "scanned_unvalidated" and not row.get("next_action"):
+            findings.append(f"Row {index} {member}: scanned_unvalidated requires next_action for final validation")
+        if status in ARTIFACT_REQUIRED_STATUSES:
             if output_path is None:
                 warnings.append(f"Row {index} {member}: cannot verify placeholder/empty output_dir {output_dir_value!r}")
                 continue

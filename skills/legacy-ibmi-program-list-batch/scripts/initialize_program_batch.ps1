@@ -23,6 +23,7 @@ $ErrorActionPreference = "Stop"
 $StatusColumns = @(
     "batch_status",
     "validator_status",
+    "scaffold_status",
     "output_dir",
     "prompt_path",
     "owner",
@@ -55,6 +56,8 @@ function Get-CommandLineOptions {
         ControlFile = @()
         ReviewName = "program list batch"
         Intent = "standalone_exploratory"
+        ValidationMode = "immediate"
+        ScaffoldMode = "none"
         Force = $false
     }
     $names = @{
@@ -67,6 +70,8 @@ function Get-CommandLineOptions {
         controlfile = "ControlFile"
         reviewname = "ReviewName"
         intent = "Intent"
+        validationmode = "ValidationMode"
+        scaffoldmode = "ScaffoldMode"
         pythonlauncher = "IgnoredValue"
         force = "Force"
         deliveryprofile = "IgnoredValue"
@@ -104,6 +109,12 @@ function Get-CommandLineOptions {
         if ([string]::IsNullOrWhiteSpace([string]$options[$required])) {
             throw "Missing required argument: $required"
         }
+    }
+    if ($options.ValidationMode -notin @("immediate", "deferred")) {
+        throw "Invalid ValidationMode '$($options.ValidationMode)'. Expected immediate or deferred."
+    }
+    if ($options.ScaffoldMode -notin @("none", "precreate")) {
+        throw "Invalid ScaffoldMode '$($options.ScaffoldMode)'. Expected none or precreate."
     }
     return $options
 }
@@ -184,6 +195,18 @@ function Join-DisplayPath {
     return $placeholderParts -join "/"
 }
 
+function Join-LocalPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [AllowEmptyString()][string]$RelativePath
+    )
+    $cleanedRelative = $RelativePath.Trim([char[]]@('/', '\'))
+    if ([string]::IsNullOrEmpty($cleanedRelative)) {
+        return $Root
+    }
+    return Join-Path $Root $cleanedRelative
+}
+
 function Get-SourceDisplay {
     param(
         [AllowNull()][AllowEmptyString()][string]$SourceRoot,
@@ -227,6 +250,145 @@ function Format-MarkdownCode {
         return ""
     }
     return [string]::Concat('`', $Value.Replace('`', '\`'), '`')
+}
+
+function Get-ValidationPolicy {
+    param(
+        [Parameter(Mandatory = $true)][string]$Mode,
+        [Parameter(Mandatory = $true)][string]$Member
+    )
+    $scaffoldCheck = "- Before writing final row status, open the generated ${Member}-program-analysis.md and ${Member}-routine-logic-details.md and confirm they do not contain scaffold language such as ``Draft wrapper seed generated``, ``pending semantic deep-read``, ``pending semantic detail``, ``placeholder``, ``not-yet-deep-read``, or ``not deep-read``."
+    if ($Mode -eq "deferred") {
+        return @(
+            "- Skip the program-analysis validator in this batch prompt to keep scan throughput high.",
+            "- Do not mark this row ``completed`` or ``completed_with_warnings`` in deferred mode.",
+            $scaffoldCheck,
+            "- If required artifacts exist and the scaffold check is clean, set ``batch_status=scanned_unvalidated``, ``validator_status=deferred``, and ``next_action=run program-analysis validator before downstream use``.",
+            "- If required artifacts are missing or scaffold text remains after one targeted repair pass, mark ``batch_status=failed_validator``, preserve the finding in ``last_error``, and set a concrete ``next_action``."
+        ) -join "`n"
+    }
+    return @(
+        "- Run the program-analysis validator before marking complete.",
+        $scaffoldCheck,
+        "- If validation passes, set ``batch_status=completed`` and ``validator_status=pass``. Use ``completed_with_warnings`` only when the validator reports pass/pass_with_warnings and the warnings are non-blocking."
+    ) -join "`n"
+}
+
+function Get-ValidationCommandBlock {
+    param(
+        [Parameter(Mandatory = $true)][string]$Mode,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+    $command = "py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir `"$OutputDirectory`""
+    if ($Mode -eq "deferred") {
+        return @(
+            "Deferred in this batch prompt. Do not run this command now.",
+            "Run before downstream use or final handoff:",
+            $command
+        ) -join "`n"
+    }
+    return $command
+}
+
+function Get-ValidationLauncherNote {
+    param([Parameter(Mandatory = $true)][string]$Mode)
+    if ($Mode -eq "deferred") {
+        $firstLine = "- When final validation is run later, run the generated ``py -3 ...`` command first. If the Python Launcher is unavailable, run the same command again with ``python`` replacing ``py -3``."
+    }
+    else {
+        $firstLine = "- Run the generated ``py -3 ...`` command first. If the Python Launcher is unavailable, run the same command again with ``python`` replacing ``py -3``."
+    }
+    return @(
+        $firstLine,
+        "- Do not replace it with PowerShell, ``.cmd``, ``.ps1``, shell continuations, or ``py ... || python ...``.",
+        "- A validator failure is a result failure, not a reason to rerun it through another route."
+    ) -join "`n"
+}
+
+function Get-ScaffoldPromptNote {
+    param([AllowEmptyString()][string]$ScaffoldStatus)
+    if ($ScaffoldStatus -eq "present") {
+        return @(
+            "- Scaffold artifacts were precreated during batch initialization.",
+            "- Start by reading the existing source index, routine index, and routine logic YAML in the output directory.",
+            "- Fill semantic details from source; do not rerun deterministic indexing unless the scaffold files are missing or stale."
+        ) -join "`n"
+    }
+    if ($ScaffoldStatus.StartsWith("failed")) {
+        return "- Scaffold precreation failed for this row. Resolve the recorded batch blocker before attempting semantic fill."
+    }
+    return "- If scaffold artifacts do not already exist, build deterministic indexes first."
+}
+
+function Get-IndexerScriptPath {
+    $skillRoot = Split-Path -Parent $PSScriptRoot
+    $skillsRoot = Split-Path -Parent $skillRoot
+    return Join-Path (Join-Path (Join-Path $skillsRoot "legacy-ibmi-program-analyzer") "scripts") "index-rpg-source.ps1"
+}
+
+function Get-CurrentPowerShellExecutable {
+    $processPath = (Get-Process -Id $PID).Path
+    if (-not [string]::IsNullOrWhiteSpace($processPath) -and
+        (Test-Path -LiteralPath $processPath -PathType Leaf)) {
+        return $processPath
+    }
+    $coreCandidate = Join-Path $PSHOME "pwsh.exe"
+    if (Test-Path -LiteralPath $coreCandidate -PathType Leaf) {
+        return $coreCandidate
+    }
+    $windowsCandidate = Join-Path $PSHOME "powershell.exe"
+    if (Test-Path -LiteralPath $windowsCandidate -PathType Leaf) {
+        return $windowsCandidate
+    }
+    $command = Get-Command powershell -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        return $command.Source
+    }
+    $command = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        return $command.Source
+    }
+    throw "powershell_runtime_unavailable_for_scaffold_precreate"
+}
+
+function New-ProgramScaffold {
+    param(
+        [Parameter(Mandatory = $true)][string]$Member,
+        [AllowNull()][AllowEmptyString()][string]$SourceRoot,
+        [AllowEmptyString()][string]$SourcePath,
+        [AllowEmptyString()][string]$OutputDirectory
+    )
+    if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+        return [pscustomobject]@{ Status = "blocked_missing_source"; Error = "source_root_required_for_scaffold_precreate" }
+    }
+    if ([string]::IsNullOrWhiteSpace($OutputDirectory) -or $OutputDirectory.StartsWith("<delivery-root>")) {
+        return [pscustomobject]@{ Status = "failed_runtime"; Error = "delivery_root_required_for_scaffold_precreate" }
+    }
+
+    $sourceFile = Join-LocalPath -Root $SourceRoot -RelativePath $SourcePath
+    if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
+        return [pscustomobject]@{ Status = "blocked_missing_source"; Error = "source_file_not_found_for_scaffold_precreate: $sourceFile" }
+    }
+
+    $indexer = Get-IndexerScriptPath
+    if (-not (Test-Path -LiteralPath $indexer -PathType Leaf)) {
+        return [pscustomobject]@{ Status = "failed_runtime"; Error = "indexer_script_not_found: $indexer" }
+    }
+
+    $powerShellExe = Get-CurrentPowerShellExecutable
+    $output = & $powerShellExe "-NoProfile" "-NonInteractive" "-ExecutionPolicy" "Bypass" "-File" $indexer $sourceFile "--program" $Member "--out-dir" $OutputDirectory 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $message = ($output | ForEach-Object { [string]$_ }) -join "`n"
+        if ([string]::IsNullOrWhiteSpace($message)) {
+            $message = "exit_code_$LASTEXITCODE"
+        }
+        $lastLine = @($message -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Last 1)
+        if ($lastLine.Count -gt 0) {
+            $message = $lastLine[0]
+        }
+        return [pscustomobject]@{ Status = "failed_runtime"; Error = "scaffold_precreate_failed: $message" }
+    }
+    return [pscustomobject]@{ Status = "present"; Error = "" }
 }
 
 function Write-CsvFile {
@@ -379,20 +541,28 @@ function Render-Prompt {
         [AllowNull()][string]$SourceRoot,
         [AllowNull()][string]$DeliveryRoot,
         [Parameter(Mandatory = $true)][string]$Intent,
+        [Parameter(Mandatory = $true)][string]$ValidationMode,
+        [Parameter(Mandatory = $true)][string]$ScaffoldMode,
         [AllowNull()][string[]]$ReferencePaths,
         [AllowNull()][string[]]$ControlFiles
     )
+    $member = Get-FieldValue -Row $Row -Name "member"
+    $outputDirectory = Get-FieldValue -Row $Row -Name "output_dir"
     $replacements = [ordered]@{
         program_list = $ProgramList
         program_batch_plan = Join-Path $OutDir "program-batch-plan.md"
         program_list_status = Join-Path $OutDir "program-list-status.csv"
         batch_manifest = Join-Path $OutDir "batch-scan-manifest.yaml"
-        member = Get-FieldValue -Row $Row -Name "member"
+        member = $member
         source_path = Get-SourceDisplay -SourceRoot $SourceRoot -SourcePath (Get-FieldValue -Row $Row -Name "path")
         source_kind = Get-FieldValue -Row $Row -Name "source_kind"
         size_tier = Get-FieldValue -Row $Row -Name "size_tier"
         intent = $Intent
-        output_dir = Get-FieldValue -Row $Row -Name "output_dir"
+        output_dir = $outputDirectory
+        validation_policy = Get-ValidationPolicy -Mode $ValidationMode -Member $member
+        validation_command_block = Get-ValidationCommandBlock -Mode $ValidationMode -OutputDirectory $outputDirectory
+        validation_launcher_note = Get-ValidationLauncherNote -Mode $ValidationMode
+        scaffold_prompt_note = Get-ScaffoldPromptNote -ScaffoldStatus (Get-FieldValue -Row $Row -Name "scaffold_status")
         reference_paths = Format-BulletList -Label "Reference paths" -Values $ReferencePaths
         control_files = Format-BulletList -Label "Control files" -Values $ControlFiles
     }
@@ -437,6 +607,8 @@ function Render-Plan {
         [Parameter(Mandatory = $true)][object[]]$Rows,
         [AllowNull()][string]$SourceRoot,
         [AllowNull()][string]$DeliveryRoot,
+        [Parameter(Mandatory = $true)][string]$ValidationMode,
+        [Parameter(Mandatory = $true)][string]$ScaffoldMode,
         [AllowNull()][string[]]$ReferencePaths,
         [AllowNull()][string[]]$ControlFiles
     )
@@ -484,6 +656,8 @@ function Render-Plan {
 - Manifest: $(Join-Path $OutDir "batch-scan-manifest.yaml")
 - Source root: $SourceRoot
 - Output root: $DeliveryRoot
+- Validation mode: $ValidationMode
+- Scaffold mode: $ScaffoldMode
 - Reference paths: $referenceText
 - Control files: $controlText
 - Mode: Copilot Chat-only / one program per chat
@@ -496,6 +670,7 @@ function Render-Plan {
 | in_progress | $(Get-StatusCount -Rows $Rows -Status "in_progress") |
 | completed | $(Get-StatusCount -Rows $Rows -Status "completed") |
 | completed_with_warnings | $(Get-StatusCount -Rows $Rows -Status "completed_with_warnings") |
+| scanned_unvalidated | $(Get-StatusCount -Rows $Rows -Status "scanned_unvalidated") |
 | blocked | $blockedCount |
 | failed | $failedCount |
 | skipped_not_program | $(Get-StatusCount -Rows $Rows -Status "skipped_not_program") |
@@ -586,10 +761,35 @@ function Invoke-Initializer {
             $promptPath = Join-Path $promptDir ("{0:D4}-{1}.md" -f ($index + 1), (ConvertTo-SafeFilename -Value $member))
             $batchStatus = "queued"
             $nextAction = "start scan"
+            $lastError = ""
+            $scaffoldStatus = "not_created"
+            if ($Options.ScaffoldMode -eq "precreate") {
+                $scaffoldResult = New-ProgramScaffold `
+                    -Member $member `
+                    -SourceRoot $Options.SourceRoot `
+                    -SourcePath (Get-FieldValue -Row $inputRow -Name "path") `
+                    -OutputDirectory $outputDirectory
+                $scaffoldStatus = $scaffoldResult.Status
+                if ($scaffoldStatus -eq "present") {
+                    $nextAction = "fill details from scaffold"
+                }
+                elseif ($scaffoldStatus -eq "blocked_missing_source") {
+                    $batchStatus = "blocked_missing_source"
+                    $nextAction = "fix source root/path, then regenerate scaffold"
+                    $lastError = $scaffoldResult.Error
+                }
+                else {
+                    $batchStatus = "failed_runtime"
+                    $nextAction = "fix scaffold precreation issue, then rerun initializer for this program"
+                    $lastError = $scaffoldResult.Error
+                }
+            }
         }
         else {
             $batchStatus = "skipped_not_program"
             $nextAction = "none - row is not a program"
+            $lastError = ""
+            $scaffoldStatus = "not_applicable"
         }
 
         $statusValues = [ordered]@{}
@@ -598,13 +798,14 @@ function Invoke-Initializer {
         }
         $statusValues.batch_status = $batchStatus
         $statusValues.validator_status = "not_run"
+        $statusValues.scaffold_status = $scaffoldStatus
         $statusValues.output_dir = $outputDirectory
         $statusValues.prompt_path = $promptPath
         $statusValues.owner = ""
         $statusValues.session_id = ""
         $statusValues.started_at = ""
         $statusValues.completed_at = ""
-        $statusValues.last_error = ""
+        $statusValues.last_error = $lastError
         $statusValues.next_action = $nextAction
         $statusValues.handoff_path = ""
         $statusRow = [pscustomobject]$statusValues
@@ -619,6 +820,8 @@ function Invoke-Initializer {
                 -SourceRoot $Options.SourceRoot `
                 -DeliveryRoot $Options.DeliveryRoot `
                 -Intent $Options.Intent `
+                -ValidationMode $Options.ValidationMode `
+                -ScaffoldMode $Options.ScaffoldMode `
                 -ReferencePaths $Options.ReferencePath `
                 -ControlFiles $Options.ControlFile
             Write-Utf8Text -Path $promptPath -Text $promptText
@@ -633,6 +836,8 @@ function Invoke-Initializer {
         -Rows @($statusRows) `
         -SourceRoot $Options.SourceRoot `
         -DeliveryRoot $Options.DeliveryRoot `
+        -ValidationMode $Options.ValidationMode `
+        -ScaffoldMode $Options.ScaffoldMode `
         -ReferencePaths $Options.ReferencePath `
         -ControlFiles $Options.ControlFile
     Write-Utf8Text -Path (Join-Path $outDirPath "program-batch-plan.md") -Text $plan
@@ -653,6 +858,7 @@ function Invoke-Initializer {
             tier_reason = Get-FieldValue -Row $row -Name "tier_reason"
             batch_status = Get-FieldValue -Row $row -Name "batch_status"
             validator_status = Get-FieldValue -Row $row -Name "validator_status"
+            scaffold_status = Get-FieldValue -Row $row -Name "scaffold_status"
             output_dir = Get-FieldValue -Row $row -Name "output_dir"
             prompt_path = Get-FieldValue -Row $row -Name "prompt_path"
             next_action = Get-FieldValue -Row $row -Name "next_action"
@@ -666,6 +872,8 @@ function Invoke-Initializer {
         program_batch_plan = Join-Path $outDirPath "program-batch-plan.md"
         source_root = $Options.SourceRoot
         output_root = $Options.DeliveryRoot
+        validation_mode = $Options.ValidationMode
+        scaffold_mode = $Options.ScaffoldMode
         reference_paths = @($Options.ReferencePath)
         control_files = @($Options.ControlFile)
         created_at = $timestamp

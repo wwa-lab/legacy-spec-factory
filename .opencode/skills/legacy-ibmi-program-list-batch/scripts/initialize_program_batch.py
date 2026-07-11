@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import subprocess
+import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,8 +17,11 @@ from typing import Any
 STATUS_COLUMNS = [
     "batch_status",
     "validator_status",
+    "scaffold_status",
     "output_dir",
     "prompt_path",
+    "subagent_prompt_path",
+    "subagent_result_path",
     "owner",
     "session_id",
     "started_at",
@@ -31,6 +36,10 @@ TIER_ROOTS = {
     "complex_normal_program": "modules/CAP-ID-0002-complex_normal_program",
     "large_extreme_program": "modules/CAP-ID-0001-large_extreme_program",
 }
+
+VALIDATION_MODES = {"immediate", "deferred"}
+SCAFFOLD_MODES = {"none", "precreate"}
+SUBAGENT_MODES = {"none", "prepare"}
 
 
 def now_iso() -> str:
@@ -163,6 +172,14 @@ def source_display(source_root: str | None, source_path: str) -> str:
     return f"<source-root>/{cleaned_source_path}"
 
 
+def local_join(root: str, relative_path: str) -> Path:
+    cleaned_parts = [part for part in re.split(r"[\\/]+", relative_path.strip("/\\")) if part]
+    path = Path(root)
+    for part in cleaned_parts:
+        path = path / part
+    return path
+
+
 def markdown_code(value: str) -> str:
     text = value or ""
     if not text:
@@ -183,6 +200,93 @@ def tier_root(size_tier: str) -> str:
     return TIER_ROOTS.get(size_tier.strip(), TIER_ROOTS["normal_program"])
 
 
+def validation_policy(mode: str, member: str) -> str:
+    scaffold_check = (
+        f"- Before writing final row status, open the generated "
+        f"{member}-program-analysis.md and {member}-routine-logic-details.md "
+        "and confirm they do not contain scaffold language such as `Draft wrapper "
+        "seed generated`, `pending semantic deep-read`, `pending semantic detail`, "
+        "`placeholder`, `not-yet-deep-read`, or `not deep-read`."
+    )
+    if mode == "deferred":
+        return "\n".join(
+            [
+                "- Skip the program-analysis validator in this batch prompt to keep scan throughput high.",
+                "- Do not mark this row `completed` or `completed_with_warnings` in deferred mode.",
+                scaffold_check,
+                "- If required artifacts exist and the scaffold check is clean, set "
+                "`batch_status=scanned_unvalidated`, `validator_status=deferred`, and "
+                "`next_action=run program-analysis validator before downstream use`.",
+                "- If required artifacts are missing or scaffold text remains after one targeted repair pass, "
+                "mark `batch_status=failed_validator`, preserve the finding in `last_error`, and set a concrete `next_action`.",
+            ]
+        )
+    return "\n".join(
+        [
+            "- Run the program-analysis validator before marking complete.",
+            scaffold_check,
+            "- If validation passes, set `batch_status=completed` and `validator_status=pass`. "
+            "Use `completed_with_warnings` only when the validator reports pass/pass_with_warnings and the warnings are non-blocking.",
+        ]
+    )
+
+
+def validation_command_block(mode: str, output_dir: str) -> str:
+    command = (
+        "py -3 .agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\"
+        f"validate_program_analysis_contract.py --analysis-dir \"{output_dir}\""
+    )
+    if mode == "deferred":
+        return "\n".join(
+            [
+                "Deferred in this batch prompt. Do not run this command now.",
+                "Run before downstream use or final handoff:",
+                command,
+            ]
+        )
+    return command
+
+
+def validation_launcher_note(mode: str) -> str:
+    if mode == "deferred":
+        first_line = (
+            "- When final validation is run later, run the generated `py -3 ...` "
+            "command first. If the Python Launcher is unavailable, run the same "
+            "command again with `python` replacing `py -3`."
+        )
+    else:
+        first_line = (
+            "- Run the generated `py -3 ...` command first. If the Python Launcher "
+            "is unavailable, run the same command again with `python` replacing `py -3`."
+        )
+    return "\n".join(
+        [
+            first_line,
+            "- Do not replace it with PowerShell, `.cmd`, `.ps1`, shell continuations, or `py ... || python ...`.",
+            "- A validator failure is a result failure, not a reason to rerun it through another route.",
+        ]
+    )
+
+
+def scaffold_prompt_note(scaffold_status: str) -> str:
+    if scaffold_status == "present":
+        return (
+            "- Scaffold artifacts were precreated during batch initialization. "
+            "Start by reading the existing source index, routine logic YAML, and "
+            "program-analysis seed in the output directory; do not rerun "
+            "deterministic indexing unless the scaffold files are missing or stale."
+        )
+    if scaffold_status.startswith("failed"):
+        return (
+            "- Scaffold precreation failed during batch initialization. Inspect "
+            "program-list-status.csv last_error/next_action before attempting "
+            "semantic fill."
+        )
+    return (
+        "- If scaffold artifacts do not already exist, build deterministic indexes first."
+    )
+
+
 def render_prompt(
     *,
     template: str,
@@ -192,20 +296,27 @@ def render_prompt(
     source_root: str | None,
     delivery_root: str | None,
     intent: str,
+    validation_mode: str,
     reference_paths: list[str] | None,
     control_files: list[str] | None,
 ) -> str:
+    member = row.get("member", "")
+    output_dir = row.get("output_dir", "")
     replacements = {
         "program_list": str(program_list),
         "program_batch_plan": str(out_dir / "program-batch-plan.md"),
         "program_list_status": str(out_dir / "program-list-status.csv"),
         "batch_manifest": str(out_dir / "batch-scan-manifest.yaml"),
-        "member": row.get("member", ""),
+        "member": member,
         "source_path": source_display(source_root, row.get("path", "")),
         "source_kind": row.get("source_kind", ""),
         "size_tier": row.get("size_tier", ""),
         "intent": intent,
-        "output_dir": row.get("output_dir", ""),
+        "output_dir": output_dir,
+        "validation_policy": validation_policy(validation_mode, member),
+        "validation_command_block": validation_command_block(validation_mode, output_dir),
+        "validation_launcher_note": validation_launcher_note(validation_mode),
+        "scaffold_prompt_note": scaffold_prompt_note(row.get("scaffold_status", "")),
         "reference_paths": bullet_list("Reference paths", reference_paths),
         "control_files": bullet_list("Control files", control_files),
     }
@@ -232,6 +343,10 @@ def render_plan(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
+    validation_mode: str,
+    scaffold_mode: str,
+    subagent_mode: str,
+    max_parallel_agents: int,
     reference_paths: list[str] | None,
     control_files: list[str] | None,
 ) -> str:
@@ -256,6 +371,10 @@ def render_plan(
 - Manifest: {out_dir / "batch-scan-manifest.yaml"}
 - Source root: {source_root or ""}
 - Output root: {delivery_root or ""}
+- Validation mode: {validation_mode}
+- Scaffold mode: {scaffold_mode}
+- Sub-agent mode: {subagent_mode}
+- Max parallel agents: {max_parallel_agents if subagent_mode != "none" else "not_applicable"}
 - Reference paths: {", ".join(reference_paths or []) if reference_paths else "none provided"}
 - Control files: {", ".join(control_files or []) if control_files else "none provided"}
 - Mode: Copilot Chat-only / one program per chat
@@ -268,6 +387,7 @@ def render_plan(
 | in_progress | {counts["in_progress"]} |
 | completed | {counts["completed"]} |
 | completed_with_warnings | {counts["completed_with_warnings"]} |
+| scanned_unvalidated | {counts["scanned_unvalidated"]} |
 | blocked | {blocked_count} |
 | failed | {failed_count} |
 | skipped_not_program | {counts["skipped_not_program"]} |
@@ -302,6 +422,10 @@ def build_manifest(
     rows: list[dict[str, str]],
     source_root: str | None,
     delivery_root: str | None,
+    validation_mode: str,
+    scaffold_mode: str,
+    subagent_mode: str,
+    max_parallel_agents: int,
     reference_paths: list[str] | None,
     control_files: list[str] | None,
 ) -> dict[str, Any]:
@@ -314,6 +438,13 @@ def build_manifest(
         "program_batch_plan": str(out_dir / "program-batch-plan.md"),
         "source_root": source_root,
         "output_root": delivery_root,
+        "validation_mode": validation_mode,
+        "scaffold_mode": scaffold_mode,
+        "subagent_mode": subagent_mode,
+        "max_parallel_agents": max_parallel_agents,
+        "subagent_dispatch_plan": str(out_dir / "subagent-dispatch-plan.md") if subagent_mode != "none" else "",
+        "subagent_queue": str(out_dir / "subagent-queue") if subagent_mode != "none" else "",
+        "subagent_results_dir": str(out_dir / "subagent-results") if subagent_mode != "none" else "",
         "reference_paths": reference_paths or [],
         "control_files": control_files or [],
         "created_at": timestamp,
@@ -332,11 +463,196 @@ def build_manifest(
                 "validator_status": row.get("validator_status", ""),
                 "output_dir": row.get("output_dir", ""),
                 "prompt_path": row.get("prompt_path", ""),
+                "subagent_prompt_path": row.get("subagent_prompt_path", ""),
+                "subagent_result_path": row.get("subagent_result_path", ""),
                 "next_action": row.get("next_action", ""),
+                "scaffold_status": row.get("scaffold_status", ""),
             }
             for index, row in enumerate(rows, start=1)
         ],
     }
+
+
+def indexer_script_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "legacy-ibmi-program-analyzer"
+        / "scripts"
+        / "index_rpg_source.py"
+    )
+
+
+def precreate_scaffold(
+    *,
+    member: str,
+    source_root: str | None,
+    source_path: str,
+    output_dir: str,
+) -> tuple[str, str]:
+    if not source_root:
+        return "blocked_missing_source", "source_root_required_for_scaffold_precreate"
+    if not output_dir or "<delivery-root>" in output_dir:
+        return "failed_runtime", "delivery_root_required_for_scaffold_precreate"
+
+    source_file = local_join(source_root, source_path)
+    if not source_file.is_file():
+        return "blocked_missing_source", f"source file not found: {source_file}"
+
+    script = indexer_script_path()
+    if not script.is_file():
+        return "failed_runtime", f"indexer script not found: {script}"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            str(source_file),
+            "--program",
+            member,
+            "--out-dir",
+            output_dir,
+        ],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout or f"exit {result.returncode}").strip()
+        return "failed_runtime", "scaffold_precreate_failed: " + message.splitlines()[-1]
+    return "present", ""
+
+
+def result_json_path(out_dir: Path, index: int, member: str) -> Path:
+    return out_dir / "subagent-results" / f"{index:04d}-{safe_filename(member)}.result.json"
+
+
+def render_subagent_prompt(
+    *,
+    row: dict[str, str],
+    prompt_text: str,
+    result_path: Path,
+    validation_mode: str,
+) -> str:
+    member = row.get("member", "")
+    success_status = "scanned_unvalidated" if validation_mode == "deferred" else "completed"
+    success_validator = "deferred" if validation_mode == "deferred" else "pass"
+    success_next_action = (
+        "run program-analysis validator before downstream use"
+        if validation_mode == "deferred"
+        else "ready for downstream program-list batch validation"
+    )
+    return f"""# Sub-Agent Program Task: {member}
+
+You are one parallel worker for one IBM i program-analysis task.
+
+## Ownership
+
+- Program: {member}
+- Output directory: `{row.get("output_dir", "")}`
+- Per-program prompt path: `{row.get("prompt_path", "")}`
+- Result JSON path: `{result_path}`
+
+Do not work on any other program. Other sub-agents may be running in parallel,
+so keep your writes inside this program's output directory and the single
+result JSON file above.
+
+## Shared State Rule
+
+Do not edit these shared batch files directly:
+
+- `program-list-status.csv`
+- `program-batch-plan.md`
+- `batch-scan-manifest.yaml`
+
+The main agent will merge your result JSON into those shared files after all
+parallel workers finish. If the embedded per-program prompt asks you to update
+shared batch state, follow the artifact/quality intent but write the row result
+to the JSON file instead.
+
+## Result JSON Contract
+
+Always write `{result_path}` before finishing, even for blocked or failed work.
+Use strict JSON with this shape:
+
+```json
+{{
+  "member": "{member}",
+  "batch_status": "{success_status}",
+  "validator_status": "{success_validator}",
+  "completed_at": "<ISO-8601 UTC timestamp>",
+  "last_error": "",
+  "next_action": "{success_next_action}",
+  "output_dir": "{row.get("output_dir", "")}",
+  "artifacts": [
+    "{member}-program-analysis.md",
+    "{member}-source-index.yaml",
+    "{member}-program-analysis-summary.yaml",
+    "{member}-routine-index.md",
+    "{member}-message-inventory.yaml",
+    "{member}-routine-logic-details.md",
+    "{member}-routine-logic-details.yaml"
+  ]
+}}
+```
+
+If source is missing, use `batch_status=blocked_missing_source`,
+`validator_status=not_run`, and a concrete `last_error` / `next_action`.
+If tool/model/runtime execution fails before stable artifacts exist, use
+`batch_status=failed_runtime`. If artifact quality or validation fails after
+one targeted repair pass, use `batch_status=failed_validator`.
+
+## Embedded Per-Program Prompt
+
+Follow this prompt for the actual analysis work, except for the shared-state
+override above.
+
+---
+
+{prompt_text}
+"""
+
+
+def render_subagent_dispatch_plan(
+    *,
+    out_dir: Path,
+    rows: list[dict[str, str]],
+    max_parallel_agents: int,
+) -> str:
+    runnable_rows = [
+        row for row in rows
+        if row.get("batch_status") == "queued" and row.get("subagent_prompt_path")
+    ]
+    queue_rows = "\n".join(
+        f"| {index} | {row.get('member', '')} | {markdown_code(row.get('subagent_prompt_path', ''))} | "
+        f"{markdown_code(row.get('output_dir', ''))} | {markdown_code(row.get('subagent_result_path', ''))} |"
+        for index, row in enumerate(runnable_rows, start=1)
+    )
+    if not queue_rows:
+        queue_rows = "|  |  |  |  |  |"
+    return f"""# Sub-Agent Dispatch Plan
+
+## Batch
+
+- Batch directory: {out_dir}
+- Sub-agent queue: {out_dir / "subagent-queue"}
+- Result directory: {out_dir / "subagent-results"}
+- Max parallel agents: {max_parallel_agents}
+- Merge command: `python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir {out_dir}`
+
+## Launch Rules
+
+- Start at most {max_parallel_agents} sub-agents at the same time.
+- Give each sub-agent exactly one file from `subagent-queue/`.
+- Do not assign the same prompt file to two sub-agents.
+- Sub-agents must not edit shared batch state files directly.
+- After all sub-agents finish, run the merge command above and then run the
+  batch status validator.
+
+## Queue
+
+| # | Program | Sub-agent prompt | Output | Result JSON |
+| ---: | --- | --- | --- | --- |
+{queue_rows}
+"""
 
 
 def initialize(args: argparse.Namespace) -> None:
@@ -348,6 +664,11 @@ def initialize(args: argparse.Namespace) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     prompt_dir = out_dir / "prompt-queue"
     prompt_dir.mkdir(parents=True, exist_ok=True)
+    subagent_dir = out_dir / "subagent-queue"
+    result_dir = out_dir / "subagent-results"
+    if args.subagent_mode != "none":
+        subagent_dir.mkdir(parents=True, exist_ok=True)
+        result_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "completed").mkdir(exist_ok=True)
     (out_dir / "blocked").mkdir(exist_ok=True)
     (out_dir / "failed").mkdir(exist_ok=True)
@@ -384,40 +705,77 @@ def initialize(args: argparse.Namespace) -> None:
             prompt_path = str(prompt_dir / f"{index:04d}-{safe_filename(member)}.md")
             batch_status = "queued"
             next_action = "start scan"
+            scaffold_status = "not_created"
+            last_error = ""
+            if args.scaffold_mode == "precreate":
+                scaffold_status, scaffold_error = precreate_scaffold(
+                    member=member,
+                    source_root=args.source_root,
+                    source_path=normalized.get("path", ""),
+                    output_dir=output_dir,
+                )
+                if scaffold_status == "present":
+                    next_action = "fill details from scaffold"
+                elif scaffold_status == "blocked_missing_source":
+                    batch_status = "blocked_missing_source"
+                    next_action = "fix source root/path, then regenerate scaffold"
+                    last_error = scaffold_error
+                else:
+                    batch_status = "failed_runtime"
+                    next_action = "fix scaffold precreation issue, then rerun initializer for this program"
+                    last_error = scaffold_error
         else:
             batch_status = "skipped_not_program"
             next_action = "none - row is not a program"
+            scaffold_status = "not_applicable"
+            last_error = ""
         normalized.update(
             {
                 "batch_status": batch_status,
                 "validator_status": "not_run",
                 "output_dir": output_dir,
                 "prompt_path": prompt_path,
+                "subagent_prompt_path": "",
+                "subagent_result_path": "",
                 "owner": "",
                 "session_id": "",
                 "started_at": "",
                 "completed_at": "",
-                "last_error": "",
+                "last_error": last_error,
                 "next_action": next_action,
                 "handoff_path": "",
+                "scaffold_status": scaffold_status,
             }
         )
         status_rows.append(normalized)
         if prompt_path:
-            Path(prompt_path).write_text(
-                render_prompt(
-                    template=prompt_template,
-                    program_list=program_list,
-                    out_dir=out_dir,
-                    row=normalized,
-                    source_root=args.source_root,
-                    delivery_root=args.delivery_root,
-                    intent=args.intent,
-                    reference_paths=args.reference_path,
-                    control_files=args.control_file,
-                ),
-                encoding="utf-8",
+            prompt_text = render_prompt(
+                template=prompt_template,
+                program_list=program_list,
+                out_dir=out_dir,
+                row=normalized,
+                source_root=args.source_root,
+                delivery_root=args.delivery_root,
+                intent=args.intent,
+                validation_mode=args.validation_mode,
+                reference_paths=args.reference_path,
+                control_files=args.control_file,
             )
+            Path(prompt_path).write_text(prompt_text, encoding="utf-8")
+            if args.subagent_mode == "prepare" and normalized["batch_status"] == "queued":
+                subagent_prompt_path = subagent_dir / f"{index:04d}-{safe_filename(member)}.md"
+                result_path = result_json_path(out_dir, index, member)
+                normalized["subagent_prompt_path"] = str(subagent_prompt_path)
+                normalized["subagent_result_path"] = str(result_path)
+                subagent_prompt_path.write_text(
+                    render_subagent_prompt(
+                        row=normalized,
+                        prompt_text=prompt_text,
+                        result_path=result_path,
+                        validation_mode=args.validation_mode,
+                    ),
+                    encoding="utf-8",
+                )
 
     write_csv(out_dir / "program-list-status.csv", status_fieldnames, status_rows)
     (out_dir / "program-batch-plan.md").write_text(
@@ -428,6 +786,10 @@ def initialize(args: argparse.Namespace) -> None:
             rows=status_rows,
             source_root=args.source_root,
             delivery_root=args.delivery_root,
+            validation_mode=args.validation_mode,
+            scaffold_mode=args.scaffold_mode,
+            subagent_mode=args.subagent_mode,
+            max_parallel_agents=args.max_parallel_agents,
             reference_paths=args.reference_path,
             control_files=args.control_file,
         ),
@@ -440,12 +802,27 @@ def initialize(args: argparse.Namespace) -> None:
         rows=status_rows,
         source_root=args.source_root,
         delivery_root=args.delivery_root,
+        validation_mode=args.validation_mode,
+        scaffold_mode=args.scaffold_mode,
+        subagent_mode=args.subagent_mode,
+        max_parallel_agents=args.max_parallel_agents,
         reference_paths=args.reference_path,
         control_files=args.control_file,
     )
     (out_dir / "batch-scan-manifest.yaml").write_text(to_yaml(manifest) + "\n", encoding="utf-8")
+    if args.subagent_mode == "prepare":
+        (out_dir / "subagent-dispatch-plan.md").write_text(
+            render_subagent_dispatch_plan(
+                out_dir=out_dir,
+                rows=status_rows,
+                max_parallel_agents=args.max_parallel_agents,
+            ),
+            encoding="utf-8",
+        )
     print(f"Initialized program batch: {out_dir}")
     print(f"Prompt files: {len(list(prompt_dir.glob('*.md')))}")
+    if args.subagent_mode != "none":
+        print(f"Sub-agent prompt files: {len(list(subagent_dir.glob('*.md')))}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -477,10 +854,47 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delivery-main-snapshot", help=argparse.SUPPRESS)
     parser.add_argument("--review-name", default="program list batch", help="Human-readable batch name")
     parser.add_argument("--intent", default="standalone_exploratory")
+    parser.add_argument(
+        "--validation-mode",
+        choices=sorted(VALIDATION_MODES),
+        default="immediate",
+        help=(
+            "immediate runs program-analysis validation inside each prompt; "
+            "deferred skips that expensive step and marks rows scanned_unvalidated"
+        ),
+    )
+    parser.add_argument(
+        "--scaffold-mode",
+        choices=sorted(SCAFFOLD_MODES),
+        default="none",
+        help=(
+            "none only generates prompt/status files; precreate also runs the "
+            "deterministic source indexer for each program to create scaffold artifacts"
+        ),
+    )
+    parser.add_argument(
+        "--subagent-mode",
+        choices=sorted(SUBAGENT_MODES),
+        default="none",
+        help=(
+            "none only generates the normal prompt queue; prepare also writes "
+            "subagent-queue prompts and a subagent dispatch plan for runtimes "
+            "that can launch isolated parallel workers"
+        ),
+    )
+    parser.add_argument(
+        "--max-parallel-agents",
+        type=int,
+        default=4,
+        help="Maximum parallel sub-agents recommended in the generated dispatch plan",
+    )
     parser.add_argument("--python-launcher", help=argparse.SUPPRESS)
     parser.add_argument("--force", action="store_true", help="Overwrite generated files in an existing output directory")
     return parser
 
 
 if __name__ == "__main__":
-    initialize(build_parser().parse_args())
+    parsed_args = build_parser().parse_args()
+    if parsed_args.max_parallel_agents < 1:
+        raise SystemExit("--max-parallel-agents must be at least 1")
+    initialize(parsed_args)

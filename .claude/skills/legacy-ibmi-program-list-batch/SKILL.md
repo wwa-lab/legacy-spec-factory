@@ -22,12 +22,12 @@ Retain this notice in substantial copies or derived versions.
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program scan queue with durable status files. |
 | Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
-| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
-| Core prompt strategy | Keep Copilot Chat stateless: one program, one prompt, one fresh chat, durable state in files. |
+| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `subagent-queue/*.md`, optional `subagent-dispatch-plan.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
+| Core prompt strategy | Keep work isolated: one program, one prompt, one fresh chat or sub-agent, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
 | Downstream skill | `legacy-ibmi-program-analyzer` for each program; later `legacy-ibmi-flow-analyzer` only when a specific flow/program set should be assembled from completed program artifacts. |
 | Validation standard | Every row is represented, status values are legal, completed rows have required artifacts and validator status, and output folders are unique. |
-| Known risk | Treating one Copilot Chat as a concurrent batch runner; this causes context contamination and status drift. |
+| Known risk | Treating one Copilot Chat or one shared batch-state file as a concurrent runner; this causes context contamination, write conflicts, and status drift. |
 
 ## Purpose
 
@@ -48,6 +48,8 @@ Use this skill when:
 - The user has a selected program subset and wants generated prompt files only
   for those programs, in the supplied order.
 - The team can only use Copilot Chat and cannot run a true agent batch worker.
+- The runtime supports isolated sub-agents and the user wants to fan out
+  independent program prompts in parallel.
 - Context limits require one program per session.
 - The team needs resumable progress across sessions.
 - The user asks for a "program batch plan", status columns in CSV/Excel, prompt
@@ -62,8 +64,14 @@ directly.
 - One prompt file names exactly one program.
 - Do not ask one Copilot Chat session to process multiple programs
   concurrently.
+- If the runtime supports isolated sub-agents, safe parallelism means one
+  sub-agent per generated `subagent-queue/*.md` file.
 - Do not carry source excerpts, prior program summaries, or chat history into
   the next program.
+- Parallel sub-agents must not edit `program-list-status.csv`,
+  `program-batch-plan.md`, or `batch-scan-manifest.yaml` directly. Each
+  sub-agent writes only its program artifacts and one result JSON under
+  `subagent-results/`; the parent agent merges results afterward.
 - If reference packs, dictionaries, message catalogs, code tables, or control
   files are provided, include their paths in every per-program prompt so each
   fresh Copilot Chat session can inspect the same supporting inputs.
@@ -87,7 +95,20 @@ directly.
   `failed_validator`, record `last_error` and `next_action`, and move on only
   after durable state is updated.
 - Use `legacy-ibmi-program-analyzer` for the actual source analysis.
-- Run the program-analysis validator before marking a row complete.
+- Use validation mode deliberately:
+  - `immediate` (default): run the program-analysis validator inside each
+    per-program prompt before marking a row `completed`.
+  - `deferred`: skip the expensive validator command during the fast batch
+    scan, write `batch_status=scanned_unvalidated` and
+    `validator_status=deferred`, then run final validation before downstream
+    flow/spec/central-delivery use.
+- Use scaffold mode deliberately:
+  - `none` (default): generated prompts build deterministic indexes when each
+    program prompt runs.
+  - `precreate`: the initializer quickly runs the deterministic source indexer
+    for each resolvable program, creates the per-program scaffold artifacts,
+    writes `scaffold_status=present`, and leaves the row queued for semantic
+    detail fill.
 - Deterministic source indexes are pre-analysis scaffolds only. A row is not
   complete until semantic source deep-read has replaced pending/thin content in
   `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`.
@@ -138,17 +159,33 @@ outputs/program-list-batch/
    - Create `program-batch-plan.md` as the human-readable queue.
    - Create `batch-scan-manifest.yaml` as the durable machine state.
    - Create `prompt-queue/*.md` per `object_type = program` row.
+   - In `--scaffold-mode precreate`, also create each program's deterministic
+     scaffold artifacts up front and set the row's `next_action` to
+     `fill details from scaffold`.
+   - In `--subagent-mode prepare`, also create `subagent-queue/*.md`,
+     `subagent-results/`, and `subagent-dispatch-plan.md` for runtimes that
+     can launch isolated parallel workers.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
 
-2. **Run one program in Copilot Chat**
+2. **Run one program in Copilot Chat or one sub-agent**
    - Open a fresh chat.
-   - Paste the next prompt file.
+   - Paste the next prompt file, or give one `subagent-queue/*.md` file to one
+     isolated sub-agent.
    - Let `legacy-ibmi-program-analyzer` analyze only that program.
+   - If the row has `scaffold_status=present`, start from the precreated
+     source index, routine index, and routine logic YAML. Fill the reader-first
+     semantic details from source instead of spending the prompt turn on
+     deterministic scaffold generation again.
    - If the program output directory already contains artifacts from an older
      run, overwrite that program's generated analysis artifacts with the
      current skill output. Do not treat old artifacts as a cache.
-   - Validate the output directory.
+   - In `immediate` validation mode, validate the output directory before
+     marking it complete.
+   - In `deferred` validation mode, do not run the expensive program-analysis
+     validator in this prompt. Perform the scaffold/artifact guard and mark the
+     row `scanned_unvalidated` / `deferred` so final validation can happen when
+     the artifacts are actually consumed.
    - Update the plan, status CSV, and manifest.
    - If Cline/model/network/tool execution is interrupted after its visible
      Auto-Retry cycle, mark this row `failed_runtime`,
@@ -158,7 +195,15 @@ outputs/program-list-batch/
      self-retry helpers unless the user explicitly asks for that recovery
      path.
 
-3. **Resume safely**
+3. **Merge parallel sub-agent results**
+   - When sub-agent mode is used, each worker writes one
+     `subagent-results/*.json` file.
+   - Run `merge_subagent_results.py` after the workers finish.
+   - The merge step updates `program-list-status.csv`,
+     `program-batch-plan.md`, and `batch-scan-manifest.yaml` from the result
+     JSON files.
+
+4. **Resume safely**
    - In any new session, read durable files first.
    - Continue from the first row with `queued`, `in_progress`,
      `failed_runtime`, `failed_validator`, or a now-resolved blocker.
@@ -166,7 +211,7 @@ outputs/program-list-batch/
      current skill behavior; reruns overwrite that program's generated
      artifacts and must pass validation again before staying `completed`.
 
-4. **Finish the batch**
+5. **Finish the batch**
    - Validate status consistency.
    - Treat the batch as complete when every requested row is classified as
      `completed`, `completed_with_warnings`, `skipped_not_program`,
@@ -196,8 +241,40 @@ fallback chains.
 Initialize a Copilot Chat queue:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch"
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
+
+Recommended fast two-phase mode:
+
+1. Run the initializer with `--scaffold-mode precreate --validation-mode
+   deferred --subagent-mode prepare`. This creates the prompt queue, optional
+   sub-agent queue, status files, manifest, and deterministic per-program
+   scaffold artifacts quickly.
+2. In a manual Cline/Copilot workflow, paste generated prompt files one by one.
+   In a sub-agent-capable runtime, launch up to `--max-parallel-agents`
+   isolated workers using `subagent-dispatch-plan.md`.
+3. Each prompt starts from the scaffold and fills semantic analysis details.
+   Final validator execution is deferred until the artifacts are consumed
+   downstream or prepared for handoff.
+4. After parallel workers finish, merge result JSON files:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
+```
+
+Use `--validation-mode immediate` or omit the option when every per-program
+prompt should run the full validator before completion. Use
+`--validation-mode deferred` for faster Cline batch scans; deferred rows are
+not downstream-ready until the validator is run later and passes.
+
+Use `--scaffold-mode precreate` when source paths are available locally and the
+goal is to avoid spending every Cline prompt on deterministic scaffold
+generation. Use `--scaffold-mode none` or omit the option when prompts should
+do all work themselves.
+
+Use `--subagent-mode prepare` when the runtime can launch isolated workers.
+This mode prepares `subagent-queue/*.md` prompts and a dispatch plan; it does
+not make Copilot Chat itself concurrent.
 
 `--programs-file` is optional. Use it when an operator or SME provides a
 selected program list, such as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C`, and you
@@ -237,7 +314,13 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
 - `batch-scan-manifest.yaml` records every row.
 - Every prompt file names exactly one program.
 - No two active rows share the same output directory.
+- In scaffold precreate mode, queued program rows with available source have
+  `scaffold_status=present` and `next_action=fill details from scaffold`.
+- In sub-agent mode, each generated sub-agent prompt writes to one unique
+  result JSON file, and shared batch state is updated only by the merge script.
 - Completed rows have required per-program artifacts and validator status.
+- Fast-scan rows may use `scanned_unvalidated` only when artifacts exist,
+  scaffold text is gone, and `validator_status=deferred`.
 - Blocked and failed rows have `last_error` and `next_action`.
 - Completed rows must not contain deterministic scaffold or pending deep-read
   text in `<PROGRAM>-program-analysis.md` or
@@ -247,6 +330,25 @@ Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.9 (2026-07-11): Parallel sub-agent dispatch preparation
+  - Added `--subagent-mode prepare` to generate sub-agent-safe per-program
+    prompts, a dispatch plan, and result JSON locations.
+  - Added `merge_subagent_results.py` so parallel workers avoid shared-state
+    write conflicts and the parent agent can merge results after fan-out.
+
+- v0.1.8 (2026-07-11): Two-phase scaffold precreate mode
+  - Added `--scaffold-mode precreate` so batch initialization can quickly
+    generate the prompt queue plus deterministic per-program scaffolds.
+  - Kept semantic source analysis as the second phase: each prompt starts from
+    the scaffold and fills reader-first details before deferred/final
+    validation.
+
+- v0.1.7 (2026-07-11): Deferred validation mode
+  - Added `--validation-mode deferred` for faster Cline batch scans.
+  - Introduced `scanned_unvalidated` / `validator_status=deferred` as a
+    durable state that keeps scan throughput high without pretending final
+    validation passed.
 
 - v0.1.6 (2026-07-11): Reader-first completion guard
   - Strengthened generated per-program prompts so deterministic indexes are

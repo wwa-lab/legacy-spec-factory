@@ -55,6 +55,26 @@ Program-set SME review is not part of this batch step. It is a downstream
 `legacy-ibmi-flow-analyzer` step only after a specific flow/list or discovered
 call-flow defines a meaningful program set.
 
+For faster Cline batch scans, use the two-phase mode:
+
+1. Initialize with `--scaffold-mode precreate --validation-mode deferred`.
+   This creates the prompt queue, status files, manifest, and deterministic
+   per-program scaffold artifacts up front.
+2. If the runtime supports isolated workers, add `--subagent-mode prepare` and
+   launch workers from `subagent-dispatch-plan.md`. Otherwise paste the
+   generated prompt files into Cline/Copilot serially.
+3. Each prompt starts from the existing scaffold and fills semantic
+   reader-first details from source. Final validation is deferred until
+   downstream use or handoff.
+
+Deferred mode skips the expensive program-analysis validator inside each
+per-program prompt and writes `batch_status=scanned_unvalidated` /
+`validator_status=deferred` after the artifacts and scaffold guard are clean.
+Run the validator later before any downstream flow review, BRD/spec
+generation, SME signoff, or central delivery handoff. Use the default
+`--validation-mode immediate` when every row must be validator-clean during the
+scan.
+
 ## Input List Contract
 
 Minimum useful columns:
@@ -125,6 +145,10 @@ Execution rules:
   messages, statuses, control-file lookups, field meanings, or validation
   rules. Treat them as supporting evidence only.
 - Run legacy-ibmi-program-analyzer for each queued program row.
+- If the batch was initialized with `--scaffold-mode precreate`, treat the
+  generated scaffold as phase-1 setup only. Start each prompt by reading the
+  existing source index, routine index, and routine logic YAML, then fill the
+  source-backed semantic detail.
 - Treat deterministic indexes as pre-analysis scaffolds only. After index
   generation, read the source-index, routine-logic YAML, and source routine
   bodies; replace pending/thin scaffold content with source-backed semantic
@@ -162,6 +186,18 @@ Batch required output:
 - program-list-status.csv
 - prompt-queue/*.md
 
+Recommended initialization command:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+```
+
+After isolated sub-agents finish, merge their result JSON files:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
+```
+
 Output folder rules:
 - normal_program outputs go under the configured normal_program tier root.
 - complex_normal_program outputs go under the configured
@@ -173,6 +209,9 @@ Quality gates:
 - Do not mark a program complete only because files were generated.
 - A program is complete only when required artifacts exist and the
   program-analysis validator passes.
+- In fast deferred-validation scans, use `batch_status=scanned_unvalidated`
+  and `validator_status=deferred` instead of `completed`; run final validation
+  before downstream use.
 - Do not mark a program complete if <PROGRAM>-program-analysis.md or
   <PROGRAM>-routine-logic-details.md still contains scaffold wording such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
@@ -192,8 +231,10 @@ Quality gates:
 - Unresolved message/status/code descriptions must be listed as TBDs or
   blockers.
 - The batch is complete only when every requested program is classified as
-  completed, completed_with_warnings, skipped_not_program,
-  blocked_missing_source, failed_validator, or failed_runtime.
+  completed, completed_with_warnings, scanned_unvalidated,
+  skipped_not_program, blocked_missing_source, failed_validator, or
+  failed_runtime. `scanned_unvalidated` closes the fast scan ledger only; it is
+  not downstream-ready.
 
 Retry / exit budget:
 - Do not build an unbounded retry loop around Cline, model, network, tool, or
@@ -209,6 +250,9 @@ Retry / exit budget:
   `last_error` such as
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`, and set
   `next_action` to resume the same program after the environment is stable.
+- In deferred validation mode, do not run the validator inside the per-program
+  prompt. Mark successful fast scans as `batch_status=scanned_unvalidated`,
+  `validator_status=deferred`, with `next_action` pointing to final validation.
 - If the program-analysis validator fails, perform at most one targeted repair
   pass for that program. If validation still fails, set
   `batch_status=failed_validator`, preserve the validator finding in
@@ -241,6 +285,13 @@ Final response:
 ```text
 使用 skill: legacy-ibmi-program-list-batch
 任务: 按 program list 批量执行 program scan，并编排 Copilot Chat prompt queue。
+
+如果目标是快速跑 Cline batch scan，初始化 queue 时使用
+--validation-mode deferred。deferred 模式下，每个 program prompt 不在
+Cline 内立即运行昂贵的 program-analysis validator；artifact 和 scaffold
+检查干净后，写入 batch_status=scanned_unvalidated、
+validator_status=deferred。后续真正用于 flow review、BRD/spec、SME signoff
+或 central delivery handoff 前，再统一运行 final validation。
 
 每处理一行 program 时，使用 skill: legacy-ibmi-program-analyzer
 目的: 一次分析一个 IBM i program，并为每个 program 生成有 evidence 支撑的
@@ -324,6 +375,9 @@ Program list 字段:
 - 不要因为文件生成了，就把 program 标记为 complete。
 - 只有 required artifacts 存在，并且 program-analysis validator 通过时，
   该 program 才算 complete。
+- 快速 deferred-validation scan 使用 `batch_status=scanned_unvalidated` 和
+  `validator_status=deferred`，不要伪装成 completed；后续真正使用前必须
+  再运行 final validation。
 - 如果 <PROGRAM>-program-analysis.md 或 <PROGRAM>-routine-logic-details.md
   仍包含 `Draft wrapper seed generated`、`pending semantic deep-read`、
   `pending semantic detail`、`placeholder`、`not-yet-deep-read` 或
@@ -341,8 +395,10 @@ Program list 字段:
   blocker。
 - 未解析的 message/status/code description 必须列为 TBD 或 blocker。
 - 只有当每个请求的 program 都被分类为 completed、
-  completed_with_warnings、skipped_not_program、blocked_missing_source、
-  failed_validator 或 failed_runtime 时，batch 才算 complete。
+  completed_with_warnings、scanned_unvalidated、skipped_not_program、
+  blocked_missing_source、failed_validator 或 failed_runtime 时，batch 才算
+  complete。`scanned_unvalidated` 只表示 fast scan ledger 可关闭，不表示
+  downstream-ready。
 
 重试 / 退出预算:
 - 不要围绕 Cline、model、network、tool 或 validator 失败构造无限重试。
@@ -357,6 +413,10 @@ Program list 字段:
   `last_error` 记录类似
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`，并在
   `next_action` 写明等 Cline/network 稳定后继续同一个 program。
+- deferred validation 模式下，不在 per-program prompt 里运行 validator。
+  成功快扫后写 `batch_status=scanned_unvalidated`、
+  `validator_status=deferred`，并在 `next_action` 写明下游使用前运行 final
+  validation。
 - 如果 program-analysis validator 失败，同一个 program 最多做一次
   targeted repair。仍然失败时，设置 `batch_status=failed_validator`，
   在 `last_error` 保留 validator finding，并写清楚 `next_action`。
@@ -401,6 +461,7 @@ reference_paths:
   - /path/to/message-catalog.csv
 control_files:
   - /path/to/status-code-table.csv
+validation_mode: deferred
 status: in_progress
 programs:
   - member: "@CC080"
@@ -414,6 +475,18 @@ programs:
     output_dir: modules/CAP-ID-0003-normal_program/@CC080
     blockers: []
     warnings: []
+  - member: "@CC080A"
+    object_type: program
+    source_kind: RPGLE
+    source_path: HCCILERPG/@CC080A.RPGLE
+    initial_size_tier: normal_program
+    final_size_tier: normal_program
+    scan_status: scanned_unvalidated
+    validator_status: deferred
+    output_dir: modules/CAP-ID-0003-normal_program/@CC080A
+    blockers: []
+    warnings:
+      - final validator deferred until downstream use
   - member: "@CC081"
     object_type: program
     source_kind: RPGLE
@@ -785,7 +858,10 @@ Rules:
   reader-useful detail in both <PROGRAM>-program-analysis.md and
   <PROGRAM>-routine-logic-details.md before this row can be marked complete.
 - Write required artifacts to the output directory.
-- Run the program-analysis validator before marking complete.
+- For fast batch scans, skip the program-analysis validator in this prompt and
+  mark the row `scanned_unvalidated` / `deferred` after artifacts and scaffold
+  checks are clean. For strict scans, run the validator before marking
+  `completed`.
 - Before writing `batch_status=completed`, open the generated
   <PROGRAM>-program-analysis.md and <PROGRAM>-routine-logic-details.md and
   confirm they do not contain scaffold language such as `Draft wrapper seed
@@ -810,6 +886,9 @@ Conditional output:
   continuation.
 
 Validation on Windows/Cline:
+Fast deferred-validation batch prompt: do not run now. Run later before
+downstream use:
+
 py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <output directory>
 
@@ -828,8 +907,32 @@ Manual operator checklist for each Copilot Chat session:
 - Confirm `program-batch-plan.md`, `program-list-status.csv`, and
   `batch-scan-manifest.yaml` were updated before moving to the next prompt.
 
-This is not fully automatic, but it preserves quality under a limited Copilot
-Chat environment because each program starts with a clean chat context.
+This is not fully automatic in a limited Copilot Chat environment, but it
+preserves quality because each program starts with a clean chat context.
+
+### Sub-Agent Parallel Mode
+
+When the runtime supports isolated workers, initialize with
+`--subagent-mode prepare`. The initializer writes:
+
+- `subagent-dispatch-plan.md`
+- `subagent-queue/*.md`
+- `subagent-results/`
+
+Launch rules:
+
+- Start at most the configured `--max-parallel-agents` workers at a time.
+- Give each worker exactly one file from `subagent-queue/`.
+- Do not assign the same prompt file twice.
+- Each worker writes only its program output directory and its own result JSON.
+- Workers do not edit `program-list-status.csv`, `program-batch-plan.md`, or
+  `batch-scan-manifest.yaml` directly.
+- After workers finish, run `merge_subagent_results.py --batch-dir <batch-dir>`
+  and then run the batch status validator.
+
+This mode is the preferred way to parallelize in Codex/Claude/OpenCode-style
+agent runtimes because it avoids multiple workers racing on the same CSV and
+manifest files.
 
 ### Copilot Chat Concurrency Rule
 
@@ -838,7 +941,8 @@ Copilot Chat does not provide reliable isolated workers inside one chat. A
 single chat shares context, source snippets, plans, and file state across all
 requested work, which makes evidence-heavy program analysis prone to drift.
 
-Safe concurrency means separate chats, not concurrent tasks inside one chat:
+Safe concurrency means separate chats or isolated sub-agents, not concurrent
+tasks inside one chat:
 
 ```text
 Operator A / Chat A -> @CC080
@@ -859,6 +963,8 @@ Parallel Copilot Chat rules:
   or a blocker/failure is clearly recorded.
 
 If the team cannot coordinate row claiming safely, run programs serially.
+For agent runtimes, prefer the generated `subagent-queue` + result JSON merge
+pattern over manual row claiming.
 
 ## Program Batch Plan And Status List
 
@@ -887,8 +993,10 @@ Recommended `program-list-status.csv` columns:
 | `size_tier` | Initial tier from repo scan. |
 | `tier_reason` | Initial tier reason from repo scan. |
 | `batch_status` | Current row status. |
-| `validator_status` | `not_run`, `pass`, `pass_with_warnings`, or `failed`. |
+| `validator_status` | `not_run`, `deferred`, `pass`, `pass_with_warnings`, or `failed`. |
 | `output_dir` | Per-program output folder. |
+| `subagent_prompt_path` | Optional sub-agent-safe prompt path. |
+| `subagent_result_path` | Optional result JSON path for parallel worker output. |
 | `owner` | Person/session currently working the row. |
 | `session_id` | Optional Copilot Chat/session identifier or manual label. |
 | `started_at` | ISO timestamp when work started. |
@@ -905,6 +1013,7 @@ Allowed `batch_status` values:
 | `in_progress` | Claimed by an operator/session. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
+| `scanned_unvalidated` | Fast scan artifacts exist, but final validator is deferred. |
 | `blocked_missing_source` | Source path cannot be resolved. |
 | `failed_validator` | Validator failed after the allowed targeted repair pass. |
 | `failed_runtime` | Runtime/tooling, Python availability, Cline Auto-Retry, or model/network/tool-call failure prevented valid output. |
