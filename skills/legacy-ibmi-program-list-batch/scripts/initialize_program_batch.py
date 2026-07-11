@@ -803,6 +803,14 @@ python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_sta
 def initialize(args: argparse.Namespace) -> None:
     program_list = Path(args.program_list).resolve()
     out_dir = Path(args.out_dir).resolve()
+    out_dir_name = out_dir.name.lower()
+    out_dir_warning = ""
+    if "program-list-batch" not in out_dir_name:
+        suggested_name = f"{safe_filename(args.review_name) or 'program'}-program-list-batch"
+        out_dir_warning = (
+            "Warning: --out-dir is not named like a dedicated program-list batch root. "
+            f"Recommended convention: {out_dir.parent / suggested_name}"
+        )
     if out_dir.exists() and any(out_dir.iterdir()) and not args.force:
         raise SystemExit(f"Output directory is not empty. Use --force to overwrite generated files: {out_dir}")
 
@@ -976,6 +984,8 @@ def initialize(args: argparse.Namespace) -> None:
             encoding="utf-8",
         )
     print(f"Initialized program batch: {out_dir}")
+    if out_dir_warning:
+        print(out_dir_warning)
     print(f"Prompt files: {len(list(prompt_dir.glob('*.md')))}")
     print(f"Cline serial Step 2 prompt: {out_dir / 'cline-serial-runner-prompt.md'}")
     if args.subagent_mode != "none":

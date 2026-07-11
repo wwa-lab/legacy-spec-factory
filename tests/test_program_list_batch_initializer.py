@@ -336,6 +336,7 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertIn("Cline serial Step 2 prompt:", result.stdout)
             self.assertIn("Kiro/agent worker prompt files: 2", result.stdout)
             self.assertIn("Kiro/agent parallel Step 2 prompt:", result.stdout)
+            self.assertIn("Warning: --out-dir is not named like a dedicated program-list batch root", result.stdout)
             self.assertEqual(
                 sorted(path.name for path in (out_dir / "subagent-queue").glob("*.md")),
                 ["0001-CC050.md", "0002-CC051.md"],
