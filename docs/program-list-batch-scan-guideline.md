@@ -96,12 +96,14 @@ program analysis.
 - 不要运行 program-analysis validator。
 - 不要把任何 program row 标记为 `completed`、`completed_with_warnings` 或 `scanned_unvalidated`。
 - 如果使用 `--scaffold-mode precreate`，只允许生成 deterministic scaffold；row 仍应保持 `batch_status=queued`，并写 `scaffold_status=present`。
+- Batch directory 必须使用独立 batch root，命名为 `<output-root>/<review-name>-program-list-batch`。
+- 不要把 batch directory 写成 `<output-root>/<review-name>`；这个目录容易和业务 review/tier 输出混在一起。
 - 初始化完成后立即停止，输出生成文件路径和 Cline 串行 Step 2 prompt 路径。
 
 请运行以下初始化命令，并只执行这一条命令对应的初始化工作：
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<batch-dir>" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<output-root>/<review-name>-program-list-batch" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
 
 初始化成功后的预期输出：
@@ -124,6 +126,14 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_b
 
 现在开始：运行初始化命令，生成 queue/state/scaffold 后停止并报告 Cline Step 2 应复制的 `cline-serial-runner-prompt.md` 路径；如果存在 Kiro 并行队列，也报告 `kiro-parallel-runner-prompt.md` 路径。
 ````
+
+Example:
+
+```text
+--review-name "Normal_program"
+--delivery-root "C:\...\HK-AMH-HCC-INT\outputs"
+--out-dir "C:\...\HK-AMH-HCC-INT\outputs\Normal_program-program-list-batch"
+```
 
 If this Step 1 prompt produces rich semantic files such as a filled
 `CU219B-program-analysis.md` and marks rows completed, the prompt used was too
@@ -249,7 +259,7 @@ Batch required output:
 Recommended initialization command:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
 
 After Kiro/agent workers finish, merge their result JSON files:

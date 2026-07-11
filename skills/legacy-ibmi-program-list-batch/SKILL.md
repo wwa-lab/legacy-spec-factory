@@ -265,8 +265,14 @@ fallback chains.
 Initialize a Copilot Chat queue:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
+
+Use a dedicated batch root for `--out-dir`, conventionally
+`<delivery-root>/<review-name>-program-list-batch`, such as
+`outputs\Normal_program-program-list-batch`. Do not use
+`<delivery-root>/<review-name>` as the batch root; that makes the queue/state
+files look like the review/tier output itself.
 
 Step 1 queue-only prompt for Cline must be short and command-oriented. It
 should tell Cline to run the initializer and stop. It must not include the
