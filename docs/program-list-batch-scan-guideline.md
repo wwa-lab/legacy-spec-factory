@@ -936,6 +936,69 @@ That prompt tells Cline to read `subagent-dispatch-plan.md`, start at most the
 configured number of isolated tasks, feed each task one `subagent-queue/*.md`
 file, wait for result JSON files, then merge and validate batch state.
 
+Step 2 Cline prompt, Chinese copy-ready template:
+
+````text
+你是运行在 Cline 中的并行 batch 执行器。
+
+目标：
+读取已经生成好的 program prompt queue，并并行启动多个独立 task 来处理每个 program。
+
+Batch directory:
+`<batch-dir>`
+
+Dispatch plan:
+`<batch-dir>/subagent-dispatch-plan.md`
+
+Parallel-safe prompt directory:
+`<batch-dir>/subagent-queue`
+
+Result directory:
+`<batch-dir>/subagent-results`
+
+最大并发数：
+`<max-parallel-agents>`
+
+执行规则：
+1. 先读取 `subagent-dispatch-plan.md`，确认待处理的 `subagent-queue/*.md` 文件清单。
+2. 按文件名自然排序处理 `subagent-queue/*.md`。
+3. 最多同时启动 `<max-parallel-agents>` 个独立 task/sub-agent。
+4. 每个 task 只能接收一个 `subagent-queue/*.md` 文件的完整内容。
+5. 每个 task 只处理该 prompt 中指定的一个 program。
+6. 不要把多个 program 合并到一个 task。
+7. 不要把同一个 prompt 文件分配给两个 task。
+8. 每个 task 只能写自己的 program output directory 和自己的 result JSON。
+9. 子 task 不允许直接修改这些共享文件：
+   - `program-list-status.csv`
+   - `program-batch-plan.md`
+   - `batch-scan-manifest.yaml`
+10. 子 task 必须在结束前写出 prompt 中指定的 `subagent-results/*.result.json`。
+11. 如果某个 task 失败，不要无限重试；让该 task 写出 `failed_runtime` 或 `failed_validator` result JSON。如果 task 无法写 JSON，由你为该 program 写一个 failed result JSON，记录具体错误。
+12. 一个 task 完成后，再从队列中启动下一个，直到所有 `subagent-queue/*.md` 都处理完。
+
+所有 task 完成后，运行 merge：
+
+```text
+python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir "<batch-dir>"
+```
+
+然后运行 batch status validator：
+
+```text
+python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "<batch-dir>"
+```
+
+如果当前 Cline 环境不能启动独立 task/sub-agent：
+- 不要尝试在一个上下文里处理多个 program。
+- 停止并报告：当前 Cline 环境不支持隔离并行 task。
+- 返回 `subagent-queue` 路径，让操作者手动开多个 Cline task 分别粘贴这些 prompt。
+
+现在开始：读取 dispatch plan，列出将处理的 prompt 文件和并发计划，然后启动第一批 task。
+````
+
+When the initializer generates `cline-parallel-runner-prompt.md`, it replaces
+`<batch-dir>` and `<max-parallel-agents>` with concrete values.
+
 Launch rules:
 
 - Start at most the configured `--max-parallel-agents` workers at a time.
