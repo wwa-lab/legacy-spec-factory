@@ -547,14 +547,11 @@ def render_subagent_prompt(
     result_path: Path,
     validation_mode: str,
 ) -> str:
+    if validation_mode != "immediate":
+        raise ValueError(
+            "Kiro/parallel sub-agent prompts require validation_mode=immediate"
+        )
     member = row.get("member", "")
-    success_status = "scanned_unvalidated" if validation_mode == "deferred" else "completed"
-    success_validator = "deferred" if validation_mode == "deferred" else "pass"
-    success_next_action = (
-        "run program-analysis validator before downstream use"
-        if validation_mode == "deferred"
-        else "ready for downstream program-list batch validation"
-    )
     return f"""# Sub-Agent Program Task: {member}
 
 You are one parallel worker for one IBM i program-analysis task.
@@ -583,6 +580,23 @@ parallel workers finish. If the embedded per-program prompt asks you to update
 shared batch state, follow the artifact/quality intent but write the row result
 to the JSON file instead.
 
+## Per-Program Validation Gate
+
+- This Kiro/parallel batch uses `validation_mode=immediate`.
+- Follow the embedded per-program analyzer prompt's full reader-first layout.
+  Do not replace the main analysis with a summary-only document or a reduced
+  custom layout.
+- The main analysis must retain all three required structure headings:
+  `Routine Index For Calculation Logic`, `Routine Index For Validation Logic`,
+  and `Routine Index For Exception Handling`.
+- After writing the semantic artifacts, run the full
+  `validate_program_analysis_contract.py` command from the embedded prompt.
+  Do not write `completed/pass` until that validator passes.
+- If validation fails, make at most one targeted repair. If it still fails,
+  write `failed_validator/failed` with the validator finding.
+- The parent merge will run the full validator again before accepting any
+  successful result. A worker-reported pass is not sufficient by itself.
+
 ## Result JSON Contract
 
 Always write `{result_path}` before finishing, even for blocked or failed work.
@@ -591,11 +605,11 @@ Use strict JSON with this shape:
 ```json
 {{
   "member": "{member}",
-  "batch_status": "{success_status}",
-  "validator_status": "{success_validator}",
+  "batch_status": "completed",
+  "validator_status": "pass",
   "completed_at": "<ISO-8601 UTC timestamp>",
   "last_error": "",
-  "next_action": "{success_next_action}",
+  "next_action": "ready for downstream program-list batch validation",
   "output_dir": "{row.get("output_dir", "")}",
   "artifacts": [
     "{member}-program-analysis.md",
@@ -663,8 +677,12 @@ def render_subagent_dispatch_plan(
 - Give each worker exactly one complete file from `subagent-queue/`.
 - Do not assign the same prompt file to two workers.
 - Worker tasks must not edit shared batch state files directly.
-- After all worker tasks finish, run the merge command above and then run the
-  batch status validator.
+- This Kiro/parallel batch requires `validation_mode=immediate`; do not create
+  or dispatch deferred worker prompts.
+- After all worker tasks finish, run the merge command above. The merge command
+  re-runs the full per-program analyzer validator for every worker result that
+  claims success, converts any failure to `failed_validator`, and only then
+  updates shared state. Run the batch status validator after that merge.
 
 ## Queue
 
@@ -813,6 +831,12 @@ Result directory:
 10. worker 必须在结束前写出 prompt 中指定的 `subagent-results/*.result.json`。
 11. 如果某个 worker 失败，不要无限重试；让该 worker 写出 `failed_runtime` 或 `failed_validator` result JSON。如果 worker 无法写 JSON，由父执行器为该 program 写一个 failed result JSON，记录具体错误。
 12. 一个 worker 完成后，再从队列中启动下一个，直到所有 `subagent-queue/*.md` 都处理完。
+13. 这个 Kiro batch 只接受 `validation_mode=immediate`。如果 manifest 是
+    `deferred`，不要启动 worker；要求重新运行 initializer 并使用
+    `--validation-mode immediate`。
+14. 每个 worker 必须遵循 embedded per-program prompt 的完整 analyzer layout，
+    保留三组 `Routine Index For ...` 结构标题，并在写 success result JSON 前
+    运行完整的 `validate_program_analysis_contract.py`。
 
 所有 worker 完成后，运行 merge：
 
@@ -820,7 +844,9 @@ Result directory:
 python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir "{out_dir}"
 ```
 
-然后运行 batch status validator：
+merge 会对每个 worker 报告成功的 output directory 再运行一次完整的
+`validate_program_analysis_contract.py`；只有 merge 通过这道 parent gate 后，
+才运行 batch status validator：
 
 ```text
 python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
@@ -836,6 +862,11 @@ python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_sta
 
 
 def initialize(args: argparse.Namespace) -> None:
+    if args.subagent_mode == "prepare" and args.validation_mode != "immediate":
+        raise SystemExit(
+            "Kiro/parallel sub-agent mode requires --validation-mode immediate. "
+            "Reinitialize the batch with --validation-mode immediate."
+        )
     program_list = Path(args.program_list).resolve()
     out_dir = Path(args.out_dir).resolve()
     out_dir_name = out_dir.name.lower()

@@ -83,6 +83,11 @@ directly.
   replaying source excerpts or generated artifacts in chat.
 - If Kiro or another runtime truly supports isolated sub-agents, safe
   parallelism means one worker per generated `subagent-queue/*.md` file.
+- Kiro/parallel sub-agent mode uses `validation_mode=immediate` only. Each
+  worker must preserve the full reader-first analyzer layout, keep all three
+  `Routine Index For ...` headings, and run the full per-program analyzer
+  validator before reporting `completed/pass`. The parent merge must rerun that
+  validator for every successful worker output before updating shared state.
 - Do not carry source excerpts, prior program summaries, or chat history into
   the next program.
 - Parallel workers must not edit `program-list-status.csv`,
@@ -306,10 +311,11 @@ Recommended validation-first two-phase mode:
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
 ```
 
-Use `--validation-mode immediate` or omit the option for Cline serial runs.
-`--validation-mode deferred` remains an explicit throughput mode for other
-runtimes, but the generated Cline serial runner rejects it because every Cline
-program scan must pass validation before the next program starts.
+Use `--validation-mode immediate` or omit the option for Cline serial and Kiro
+parallel runs. `--validation-mode deferred` remains an explicit throughput mode
+for non-Cline, non-Kiro runtimes only; the initializer rejects it for
+`--subagent-mode prepare` because parallel worker results must be validated
+before merge.
 
 Use `--scaffold-mode precreate` when source paths are available locally and the
 goal is to avoid spending every Cline prompt on deterministic scaffold
@@ -317,7 +323,8 @@ generation. Use `--scaffold-mode none` or omit the option when prompts should
 do all work themselves.
 
 Use `--subagent-mode prepare` when the operator wants to try Kiro/agent
-parallel handoff. This mode prepares `kiro-parallel-runner-prompt.md`,
+parallel handoff. This mode requires `--validation-mode immediate` and
+prepares `kiro-parallel-runner-prompt.md`,
 `subagent-queue/*.md` prompts, result JSON targets, and a dispatch plan; it
 does not make Cline/Copilot Chat itself concurrent. Cline should still use
 `cline-serial-runner-prompt.md`.
@@ -376,6 +383,9 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
 - Completed rows must not contain deterministic scaffold or pending deep-read
   text in `<PROGRAM>-program-analysis.md` or
   `<PROGRAM>-routine-logic-details.md`.
+- Kiro merge must re-run the full per-program validator for every worker result
+  claiming success; a worker-reported `completed/pass` is not accepted without
+  this parent validation gate.
 
 Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
@@ -386,6 +396,12 @@ for example `CU219B-program-analysis.md`, not shared generic names.
   - Made the generated Cline serial runner require `validation_mode=immediate`.
   - Required full per-program analyzer validation before advancing to the next
     prompt.
+
+- v0.1.14 (2026-07-12): Kiro validation-first parallel gate
+  - Required `validation_mode=immediate` for Kiro/parallel sub-agent batches.
+  - Required workers to preserve the full reader-first layout and validate
+    before reporting success.
+  - Added parent merge revalidation before accepting worker results.
 
 - v0.1.12 (2026-07-12): Deferred reader-first layout guard
   - Preserved the exact Routine Index headings in generated per-program

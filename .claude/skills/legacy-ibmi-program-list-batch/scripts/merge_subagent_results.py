@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -105,6 +106,94 @@ def load_result(path: Path) -> dict[str, Any]:
     return result
 
 
+def analyzer_validator_path() -> Path:
+    return (
+        SCRIPT_DIR.parent.parent
+        / "legacy-ibmi-program-analyzer"
+        / "scripts"
+        / "validate_program_analysis_contract.py"
+    )
+
+
+def resolve_output_dir(value: str, output_root: Any) -> Path:
+    output_path = Path(value)
+    if output_path.is_absolute():
+        return output_path
+    if output_root:
+        return Path(str(output_root)) / output_path
+    return output_path
+
+
+def run_program_validator(output_dir: Path) -> tuple[bool, str]:
+    validator = analyzer_validator_path()
+    if not validator.is_file():
+        return False, f"program_analysis_validator_not_found: {validator}"
+    if not output_dir.is_dir():
+        return False, f"program_output_directory_missing: {output_dir}"
+
+    result = subprocess.run(
+        [sys.executable, str(validator), "--analysis-dir", str(output_dir)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return True, ""
+    detail = (result.stderr or result.stdout or f"exit {result.returncode}").strip()
+    detail = "\n".join(detail.splitlines()[-20:])
+    return False, detail
+
+
+def apply_parent_validation_gate(
+    result: dict[str, Any],
+    *,
+    validation_mode: str,
+    output_root: Any,
+) -> dict[str, Any]:
+    """Revalidate successful worker outputs before merging shared state."""
+
+    if validation_mode != "immediate":
+        return result
+    if result.get("batch_status") in {
+        "blocked_missing_source",
+        "failed_runtime",
+        "failed_validator",
+        "skipped_not_program",
+    }:
+        return result
+
+    result = dict(result)
+    claimed_status = str(result.get("batch_status") or "")
+    claimed_validator = str(result.get("validator_status") or "")
+    if claimed_status == "scanned_unvalidated" or claimed_validator not in {
+        "pass",
+        "pass_with_warnings",
+    }:
+        result["batch_status"] = "failed_validator"
+        result["validator_status"] = "failed"
+        result["last_error"] = (
+            "parallel_merge_validator_failed: worker did not report an immediate "
+            f"validator pass (batch_status={claimed_status}, "
+            f"validator_status={claimed_validator})"
+        )
+        result["next_action"] = "Repair this program and rerun the Kiro worker before merging."
+        return result
+
+    output_value = str(result.get("output_dir") or "").strip()
+    if not output_value:
+        passed, detail = False, "worker_result_missing_output_dir"
+    else:
+        passed, detail = run_program_validator(
+            resolve_output_dir(output_value, output_root)
+        )
+    if not passed:
+        result["batch_status"] = "failed_validator"
+        result["validator_status"] = "failed"
+        result["last_error"] = "parallel_merge_validator_failed: " + detail
+        result["next_action"] = "Repair this program and rerun the Kiro worker before merging."
+    return result
+
+
 def merge_results(batch_dir: Path, results_dir: Path) -> int:
     status_path = batch_dir / "program-list-status.csv"
     manifest_path = batch_dir / "batch-scan-manifest.yaml"
@@ -112,6 +201,16 @@ def merge_results(batch_dir: Path, results_dir: Path) -> int:
         raise SystemExit(f"Missing status CSV: {status_path}")
     if not results_dir.is_dir():
         raise SystemExit(f"Missing sub-agent results directory: {results_dir}")
+
+    metadata = read_manifest_metadata(manifest_path)
+    validation_mode = str(metadata.get("validation_mode") or "immediate")
+    subagent_mode = str(metadata.get("subagent_mode") or "prepare")
+    output_root = metadata.get("output_root")
+    if subagent_mode == "prepare" and validation_mode != "immediate":
+        raise SystemExit(
+            "Kiro/parallel sub-agent merge requires validation_mode=immediate. "
+            "Reinitialize the batch with --validation-mode immediate."
+        )
 
     fieldnames, rows = read_csv(status_path)
     for column in (
@@ -138,7 +237,11 @@ def merge_results(batch_dir: Path, results_dir: Path) -> int:
 
     merged_count = 0
     for result_path in result_paths:
-        result = load_result(result_path)
+        result = apply_parent_validation_gate(
+            load_result(result_path),
+            validation_mode=validation_mode,
+            output_root=output_root,
+        )
         member_key = str(result["member"]).strip().upper()
         row = by_member.get(member_key)
         if row is None:
@@ -160,10 +263,8 @@ def merge_results(batch_dir: Path, results_dir: Path) -> int:
 
     write_csv(status_path, fieldnames, rows)
 
-    metadata = read_manifest_metadata(manifest_path)
     review_name = str(metadata.get("review_name") or "program list batch")
     program_list = Path(str(metadata.get("program_list") or batch_dir / "program-list.csv"))
-    validation_mode = str(metadata.get("validation_mode") or "immediate")
     scaffold_mode = str(metadata.get("scaffold_mode") or "none")
     subagent_mode = str(metadata.get("subagent_mode") or "prepare")
     max_parallel_agents = int(metadata.get("max_parallel_agents") or 4)
