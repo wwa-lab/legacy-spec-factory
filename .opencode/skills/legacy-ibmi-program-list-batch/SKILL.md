@@ -74,6 +74,10 @@ directly.
   blocker prevents safe progress. Do not stop early merely because the context
   is getting long, output is verbose, or the model worries later output quality
   may degrade.
+- The Cline serial runner uses `validation_mode=immediate`: after each program
+  writes its artifacts, it must run the full `legacy-ibmi-program-analyzer`
+  validator before starting the next prompt. `scanned_unvalidated` is not a
+  successful Cline serial completion state.
 - To preserve throughput, the Cline serial runner should keep chat output to a
   one-line ledger per program and use durable files as memory instead of
   replaying source excerpts or generated artifacts in chat.
@@ -118,8 +122,11 @@ directly.
     per-program prompt before marking a row `completed`.
   - `deferred`: skip the expensive validator command during the fast batch
     scan, write `batch_status=scanned_unvalidated` and
-    `validator_status=deferred`, then run final validation before downstream
-    flow/spec/central-delivery use.
+    `validator_status=deferred`, but still enforce the cheap reader-first
+    layout guard. The guard must find `Routine Index For Calculation Logic`,
+    `Routine Index For Validation Logic`, and `Routine Index For Exception
+    Handling` in their corresponding sections. Run final validation before
+    downstream flow/spec/central-delivery use.
 - Use scaffold mode deliberately:
   - `none` (default): generated prompts build deterministic indexes when each
     program prompt runs.
@@ -206,10 +213,11 @@ outputs/program-list-batch/
      current skill output. Do not treat old artifacts as a cache.
    - In `immediate` validation mode, validate the output directory before
      marking it complete.
-   - In `deferred` validation mode, do not run the expensive program-analysis
-     validator in this prompt. Perform the scaffold/artifact guard and mark the
-     row `scanned_unvalidated` / `deferred` so final validation can happen when
-     the artifacts are actually consumed.
+   - In explicit non-Cline `deferred` validation mode, do not run the expensive
+     program-analysis validator in this prompt. Perform the scaffold/artifact
+     guard and mark the row `scanned_unvalidated` / `deferred` so final
+     validation can happen when the artifacts are actually consumed. Cline
+     serial mode uses `immediate` and must validate before advancing.
    - Update the plan, status CSV, and manifest.
    - If Cline/model/network/tool execution is interrupted after its visible
      Auto-Retry cycle, mark this row `failed_runtime`,
@@ -265,7 +273,7 @@ fallback chains.
 Initialize a Copilot Chat queue:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\normal-program-program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --reference-path C:\path\to\reference-pack.md --reference-path C:\path\to\message-catalog.csv --control-file C:\path\to\status-code-table.csv --review-name "normal program batch" --scaffold-mode precreate --validation-mode immediate --subagent-mode prepare --max-parallel-agents 4
 ```
 
 Use a dedicated batch root for `--out-dir`, conventionally
@@ -279,18 +287,18 @@ should tell Cline to run the initializer and stop. It must not include the
 per-program analyzer contract, required per-program analysis outputs, or
 validator instructions; those belong to generated Step 2 prompts.
 
-Recommended fast two-phase mode:
+Recommended validation-first two-phase mode:
 
 1. Run the initializer with `--scaffold-mode precreate --validation-mode
-   deferred --subagent-mode prepare`. This creates the prompt queue, optional
+   immediate --subagent-mode prepare`. This creates the prompt queue, optional
    sub-agent queue, status files, manifest, and deterministic per-program
    scaffold artifacts quickly.
 2. In Cline, paste `cline-serial-runner-prompt.md` and let it process
    `prompt-queue/*.md` serially, one program at a time. Do not use
    `subagent-queue` or `subagent-results` in Cline.
 3. Each prompt starts from the scaffold and fills semantic analysis details.
-   Final validator execution is deferred until the artifacts are consumed
-   downstream or prepared for handoff.
+   The prompt runs the full program-analysis validator immediately after each
+   program and only then advances to the next program.
 4. In Kiro/agent parallel mode only, after parallel workers finish, merge
    result JSON files:
 
@@ -298,10 +306,10 @@ Recommended fast two-phase mode:
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
 ```
 
-Use `--validation-mode immediate` or omit the option when every per-program
-prompt should run the full validator before completion. Use
-`--validation-mode deferred` for faster Cline batch scans; deferred rows are
-not downstream-ready until the validator is run later and passes.
+Use `--validation-mode immediate` or omit the option for Cline serial runs.
+`--validation-mode deferred` remains an explicit throughput mode for other
+runtimes, but the generated Cline serial runner rejects it because every Cline
+program scan must pass validation before the next program starts.
 
 Use `--scaffold-mode precreate` when source paths are available locally and the
 goal is to avoid spending every Cline prompt on deterministic scaffold
@@ -360,8 +368,10 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
   unique result JSON file, and shared batch state is updated only by the merge
   script.
 - Completed rows have required per-program artifacts and validator status.
-- Fast-scan rows may use `scanned_unvalidated` only when artifacts exist,
-  scaffold text is gone, and `validator_status=deferred`.
+- Explicit non-Cline throughput runs may use `scanned_unvalidated` only when
+  artifacts exist, scaffold text is gone, and `validator_status=deferred`.
+  Cline serial runs must use `completed` / `completed_with_warnings` after the
+  per-program validator passes.
 - Blocked and failed rows have `last_error` and `next_action`.
 - Completed rows must not contain deterministic scaffold or pending deep-read
   text in `<PROGRAM>-program-analysis.md` or
@@ -371,6 +381,17 @@ Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.13 (2026-07-12): Cline validation-first serial gate
+  - Made the generated Cline serial runner require `validation_mode=immediate`.
+  - Required full per-program analyzer validation before advancing to the next
+    prompt.
+
+- v0.1.12 (2026-07-12): Deferred reader-first layout guard
+  - Preserved the exact Routine Index headings in generated per-program
+    prompts.
+  - Added a cheap batch-status structural check so deferred scans cannot pass
+    with missing Calculation / Validation / Exception routine indexes.
 
 - v0.1.11 (2026-07-11): Cline serial runner split
   - Added `cline-serial-runner-prompt.md` as the default Step 2 prompt for
@@ -408,7 +429,8 @@ for example `CU219B-program-analysis.md`, not shared generic names.
     validation.
 
 - v0.1.7 (2026-07-11): Deferred validation mode
-  - Added `--validation-mode deferred` for faster Cline batch scans.
+  - Added `--validation-mode deferred` as an explicit throughput mode for
+    runtimes that intentionally defer final validation.
   - Introduced `scanned_unvalidated` / `validator_status=deferred` as a
     durable state that keeps scan throughput high without pretending final
     validation passed.

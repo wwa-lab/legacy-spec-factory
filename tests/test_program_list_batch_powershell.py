@@ -55,6 +55,11 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
         self.assertIn("scaffold_status", initializer_text)
         self.assertIn("index-rpg-source.ps1", initializer_text)
 
+        status_validator_text = STATUS_VALIDATOR.read_text(encoding="utf-8")
+        self.assertIn("Routine Index For Calculation Logic", status_validator_text)
+        self.assertIn("Routine Index For Validation Logic", status_validator_text)
+        self.assertIn("Routine Index For Exception Handling", status_validator_text)
+
     @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
     def test_router_uses_native_fallback_when_both_python_launchers_fail(self) -> None:
         if os.name != "nt":

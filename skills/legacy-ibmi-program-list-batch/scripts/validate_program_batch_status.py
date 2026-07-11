@@ -45,6 +45,31 @@ SCAFFOLD_PATTERNS = (
     re.compile(r"\bnot-yet-deep-read\b", re.I),
 )
 
+READER_FIRST_LAYOUT_GROUPS = (
+    ("Program Reading Summary", ("## Program Reading Summary",)),
+    ("Calculation Logic", ("## Calculation Logic",)),
+    ("Calculation Logic Overview", ("### Calculation Logic Overview",)),
+    (
+        "Routine Index For Calculation Logic",
+        ("### Routine Index For Calculation Logic",),
+    ),
+    ("Validation Logic", ("## Validation Logic",)),
+    ("Validation Logic Overview", ("### Validation Logic Overview",)),
+    (
+        "Routine Index For Validation Logic",
+        ("### Routine Index For Validation Logic",),
+    ),
+    ("Exception Handling", ("## Exception Handling",)),
+    (
+        "Exception Handling Overview",
+        ("### Exception Flow Overview", "### Exception Handling Overview"),
+    ),
+    (
+        "Routine Index For Exception Handling",
+        ("### Routine Index For Exception Handling",),
+    ),
+)
+
 
 def artifact_program_prefix(program_name: str) -> str:
     prefix = ARTIFACT_SAFE_RE.sub("_", program_name.strip().upper())
@@ -63,6 +88,50 @@ def required_artifact_for_member(member: str, base_name: str) -> str:
 
 def scaffold_patterns_in(text: str) -> list[str]:
     return [pattern.pattern.replace("\\b", "") for pattern in SCAFFOLD_PATTERNS if pattern.search(text)]
+
+
+def reader_first_layout_findings(text: str) -> list[str]:
+    """Check the cheap, non-semantic front-loaded layout contract.
+
+    Deferred validation intentionally skips the full program analyzer
+    validator, but it must still prevent a semantic rewrite from deleting the
+    SME-facing navigation headings that make the main artifact readable.
+    """
+
+    positions: list[tuple[str, int]] = []
+    missing: list[str] = []
+    for label, candidates in READER_FIRST_LAYOUT_GROUPS:
+        match = None
+        for candidate in candidates:
+            match = re.search(rf"(?m)^{re.escape(candidate)}\s*$", text)
+            if match:
+                break
+        if match is None:
+            missing.append(label)
+        else:
+            positions.append((label, match.start()))
+
+    findings: list[str] = []
+    if missing:
+        findings.append(
+            "program-analysis.md missing reader-first layout heading(s): "
+            + ", ".join(missing)
+        )
+
+    if len(positions) == len(READER_FIRST_LAYOUT_GROUPS):
+        out_of_order = [
+            f"{previous} before {current}"
+            for (previous, previous_position), (current, current_position) in zip(
+                positions, positions[1:]
+            )
+            if previous_position >= current_position
+        ]
+        if out_of_order:
+            findings.append(
+                "program-analysis.md reader-first layout headings are out of order: "
+                + "; ".join(out_of_order)
+            )
+    return findings
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -174,6 +243,13 @@ def validate(args: argparse.Namespace) -> int:
                         "placeholder content before marking completed. Matched: "
                         + ", ".join(matches)
                     )
+
+            analysis_path = output_path / required_artifact_for_member(member, "program-analysis.md")
+            if analysis_path.is_file():
+                for finding in reader_first_layout_findings(
+                    analysis_path.read_text(encoding="utf-8-sig")
+                ):
+                    findings.append(f"Row {index} {member}: {finding}")
 
     for warning in warnings:
         print(f"WARNING: {warning}")
