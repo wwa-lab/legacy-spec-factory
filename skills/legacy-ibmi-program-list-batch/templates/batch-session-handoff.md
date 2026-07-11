@@ -19,10 +19,13 @@
 - Required source reads:
   - {{required_source_read}}
 - Required artifact updates:
-  - routine-logic-details.md / routine-logic-details.yaml for every
+  - <PROGRAM>-routine-logic-details.md / <PROGRAM>-routine-logic-details.yaml for every
     normal_program, complex_normal_program, and large_extreme_program row
-  - program-analysis-summary.yaml
-  - message-inventory.yaml
+  - <PROGRAM>-program-analysis-summary.yaml
+  - <PROGRAM>-message-inventory.yaml
+  - replace deterministic scaffold / pending deep-read text in
+    <PROGRAM>-program-analysis.md and <PROGRAM>-routine-logic-details.md before
+    marking the row complete
   - batch-scan-manifest.yaml
   - program-list-status.csv
   - program-batch-plan.md

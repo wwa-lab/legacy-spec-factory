@@ -188,26 +188,27 @@ Phase 2 - analyze every distinct program:
    legacy-ibmi-program-analyzer directly as needed.
 8. Write artifacts to the delivery working branch under the tier folder from
    the delivery profile.
-9. Build source-index.yaml first, then analyze the entry/mainline, validation,
-   calculation, file I/O or SQL update, exception/message, and external-call
-   routines needed for this SME flow.
+9. Build `<PROGRAM>-source-index.yaml` first, then analyze the entry/mainline,
+   validation, calculation, file I/O or SQL update, exception/message, and
+   external-call routines needed for this SME flow.
 10. Do not read more than five routine bodies per turn. For complex or large
     programs, continue in retained batches until the core SME sections can be
     supported.
 11. Normal programs must keep:
-   - program-analysis.md
-   - program-analysis-summary.yaml
-   - source-index.yaml
-   - routine-index.md
-   - message-inventory.yaml
-   - optional sidecars when observed or needed: file-io-inventory.yaml,
-     field-mutation-matrix.yaml, sql-inventory.yaml
+   - `<PROGRAM>-program-analysis.md`
+   - `<PROGRAM>-program-analysis-summary.yaml`
+   - `<PROGRAM>-source-index.yaml`
+   - `<PROGRAM>-routine-index.md`
+   - `<PROGRAM>-message-inventory.yaml`
+   - optional sidecars when observed or needed: `<PROGRAM>-file-io-inventory.yaml`,
+     `<PROGRAM>-field-mutation-matrix.yaml`, `<PROGRAM>-sql-inventory.yaml`
 12. Complex or large programs, or programs explicitly promoted for deep-read,
-    must also keep routine-logic-details.md, routine-logic-details.yaml, and
-    enough retained routine detail for weak-LLM handoff stability, such as
-    deep-read-plan.md, all-routine-coverage-ledger.md, and
-    routine-logic-details/deep-read-batch-*.md when more than one five-routine
-    batch is needed.
+    must also keep `<PROGRAM>-routine-logic-details.md`,
+    `<PROGRAM>-routine-logic-details.yaml`, and enough retained routine detail
+    for weak-LLM handoff stability, such as `<PROGRAM>-deep-read-plan.md`,
+    `<PROGRAM>-all-routine-coverage-ledger.md`, and
+    `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` when more than one
+    five-routine batch is needed.
 13. Reject placeholder-only program artifacts. If a program artifact only says
     lightweight scan, no CALL literal, no obvious messages, or otherwise lacks
     business logic rows, first check whether the program is normal_program and
@@ -240,8 +241,8 @@ Phase 3 - build and fill the program-set review:
     blocked_missing_source. It must not contain central_lookup_result or
     found_on_remote_main.
 18. Fill program-set-sme-core-review.md from the current-run per-program
-    artifacts. Prefer compact artifacts, and use program-analysis.md only for
-    targeted clarification. Keep rows grouped by the SME program order.
+    artifacts. Prefer compact artifacts, and use `<PROGRAM>-program-analysis.md`
+    only for targeted clarification. Keep rows grouped by the SME program order.
 19. The review must be self-contained for SME reading: do not make the SME jump
     to per-program documents to understand Calculation Logic, Validation Logic,
     Exception Handling, or Message Inventory.
@@ -355,25 +356,26 @@ Phase 2 - 分析每一个 distinct program:
    处理所有 program，则使用 legacy-ibmi-program-list-batch 生成队列；否则按需
    直接把每个 distinct program 路由给 legacy-ibmi-program-analyzer。
 8. 按 delivery profile 的 tier folder 写入 delivery working branch。
-9. 先生成 source-index.yaml，然后分析这个 SME flow 需要的 entry/mainline、
-   validation、calculation、file I/O 或 SQL update、exception/message、
-   external-call routines。
+9. 先生成 `<PROGRAM>-source-index.yaml`，然后分析这个 SME flow 需要的
+   entry/mainline、validation、calculation、file I/O 或 SQL update、
+   exception/message、external-call routines。
 10. 每轮不要读取超过 5 个 routine body。对于 complex 或 large program，要用
     retained batches 持续分析，直到四个 SME 核心区有足够证据支撑。
 11. normal program 至少需要:
-   - program-analysis.md
-   - program-analysis-summary.yaml
-   - source-index.yaml
-   - routine-index.md
-   - message-inventory.yaml
+   - `<PROGRAM>-program-analysis.md`
+   - `<PROGRAM>-program-analysis-summary.yaml`
+   - `<PROGRAM>-source-index.yaml`
+   - `<PROGRAM>-routine-index.md`
+   - `<PROGRAM>-message-inventory.yaml`
    - 如观察到或本次需要，还要有 optional sidecars:
-     file-io-inventory.yaml、field-mutation-matrix.yaml、sql-inventory.yaml
+     `<PROGRAM>-file-io-inventory.yaml`、`<PROGRAM>-field-mutation-matrix.yaml`、
+     `<PROGRAM>-sql-inventory.yaml`
 12. complex、large program，或明确触发 deep-read continuation 的 program，
-    还必须有 routine-logic-details.md、routine-logic-details.yaml，并保留足够
-    routine detail，保证弱 LLM 或不同执行者交接时输出稳定；如果超过一个
-    five-routine batch，需要保留 deep-read-plan.md、
-    all-routine-coverage-ledger.md 和
-    routine-logic-details/deep-read-batch-*.md。
+    还必须有 `<PROGRAM>-routine-logic-details.md`、
+    `<PROGRAM>-routine-logic-details.yaml`，并保留足够 routine detail，保证弱
+    LLM 或不同执行者交接时输出稳定；如果超过一个 five-routine batch，需要保留
+    `<PROGRAM>-deep-read-plan.md`、`<PROGRAM>-all-routine-coverage-ledger.md` 和
+    `routine-logic-details/<PROGRAM>-deep-read-batch-*.md`。
 13. 拒绝 placeholder-only program artifacts。如果某个 program artifact 只写了
     lightweight scan、no CALL literal、no obvious messages，或没有业务逻辑行，
     先判断它是否是 normal_program，且 required lightweight artifacts 是否已经
@@ -404,7 +406,8 @@ Phase 3 - build 并填完整 program-set review:
     blocked_missing_source。manifest 里不能有 central_lookup_result 或
     found_on_remote_main。
 18. 从 current-run per-program artifacts 填写 program-set-sme-core-review.md。
-    优先使用 compact artifacts，只在定点澄清时打开 program-analysis.md。
+    优先使用 compact artifacts，只在定点澄清时打开
+    `<PROGRAM>-program-analysis.md`。
     行顺序要按 SME 提供的 program flow 分组。
 19. 这个 review 必须让 SME 能直接读懂，不需要跳到各个 program 文档才能理解
     Calculation Logic、Validation Logic、Exception Handling 或 Message

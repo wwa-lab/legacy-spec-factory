@@ -81,7 +81,7 @@ be fully traced, or write "None."]
 
 Routine index rules:
 
-- Include one row for every RLOG declared in `routine-logic-details.yaml`.
+- Include one row for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`.
 - Keep RLOG numbering continuous and ordered.
 - Do not use this table as a routine-only ledger; each row needs category and
   reader-useful detail.
@@ -152,7 +152,7 @@ chains were not fully traced, or write "None."]
 
 Routine index rules:
 
-- Include one row for every RLOG declared in `routine-logic-details.yaml`.
+- Include one row for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`.
 - Keep RLOG numbering continuous and ordered.
 - Do not group Calculation, Validation, and Exception behavior into one
   routine-only ledger.
@@ -211,7 +211,7 @@ effect could not be traced, or write "None."]
 
 Routine index rules:
 
-- Include one row for every RLOG declared in `routine-logic-details.yaml`.
+- Include one row for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`.
 - Keep RLOG numbering continuous and ordered.
 - Do not leave a finalized routine marked as a stale `not deep-read` gap after
   coverage/source-index shows it has been normalized.
@@ -223,8 +223,9 @@ Routine index rules:
 Purpose: front-load a compact first-read summary of every observed message ID,
 status value, return code, response literal, SQLSTATE, CPF/MCH/RNX/CPD message,
 operator message, or shop-local message token. Detailed per-occurrence evidence
-belongs in `message-inventory.md` / `message-inventory.yaml` for segmented,
-large, or message-dense programs.
+belongs in `<PROGRAM>-message-inventory.md` /
+`<PROGRAM>-message-inventory.yaml` for segmented, large, or message-dense
+programs.
 
 | Message / Code / Literal | Short Description | Type | Occurrences | Primary Routine(s) | First Seen / Set By | Trigger / Handler Summary | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -247,8 +248,8 @@ Message inventory rules:
 - Cross-reference the related Validation Logic and Exception Handling rows so
   reviewers can trace message meaning to trigger and closure.
 - If there are more than 10 rows, or the program is segmented / large, keep this
-  section compact and store full details in `message-inventory.md` and
-  `message-inventory.yaml`.
+  section compact and store full details in `<PROGRAM>-message-inventory.md`
+  and `<PROGRAM>-message-inventory.yaml`.
 
 **Message inventory unresolved:** [state whether any observed message/code
 lacks description, source, carrier, trigger, or closure, or write "None."]
@@ -334,12 +335,12 @@ which claims are fully supported versus indexed-only.
 
 | Sidecar | Use In Review | Status |
 | --- | --- | --- |
-| `message-inventory.yaml` | Machine-readable message/code/literal occurrence detail synchronized with the main Message Inventory | present / pending |
-| `message-inventory.md` | Dense reviewer-readable message detail when more than 10 unique messages/status/codes appear | present / optional_triggered / not_written_by_default / pending |
-| `routine-logic-details.md` / `routine-logic-details.yaml` | Consolidated audit/checkpoint routine detail and RLOG coverage source, synchronized with main Routine Logic Details | present / not needed / pending |
-| `all-routine-coverage-ledger.md` / `deep-read-plan.md` | Batched deep-read planning when more than five windows or complex/large tier needs it | present / optional_triggered / not_written_by_default / pending |
-| `file-io-inventory.md` / `file-io-inventory.yaml` | Dense or state-changing native file operation evidence behind File I/O summary rows | present / optional_triggered / not_written_by_default / pending |
-| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Native and SQL persisted mutation detail behind Calculation Logic and File I/O rows | present / optional_triggered / not_written_by_default / pending |
+| `<PROGRAM>-message-inventory.yaml` | Machine-readable message/code/literal occurrence detail synchronized with the main Message Inventory | present / pending |
+| `<PROGRAM>-message-inventory.md` | Dense reviewer-readable message detail when more than 10 unique messages/status/codes appear | present / optional_triggered / not_written_by_default / pending |
+| `<PROGRAM>-routine-logic-details.md` / `<PROGRAM>-routine-logic-details.yaml` | Consolidated audit/checkpoint routine detail and RLOG coverage source, synchronized with main Routine Logic Details | present / not needed / pending |
+| `<PROGRAM>-all-routine-coverage-ledger.md` / `<PROGRAM>-deep-read-plan.md` | Batched deep-read planning when more than five windows or complex/large tier needs it | present / optional_triggered / not_written_by_default / pending |
+| `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml` | Dense or state-changing native file operation evidence behind File I/O summary rows | present / optional_triggered / not_written_by_default / pending |
+| `<PROGRAM>-field-mutation-matrix.md` / `<PROGRAM>-field-mutation-matrix.yaml` | Native and SQL persisted mutation detail behind Calculation Logic and File I/O rows | present / optional_triggered / not_written_by_default / pending |
 | `sql-inventory.md` / `sql-inventory.yaml` | SQLRPGLE/free-format embedded SQL statements, host variables, and status checks | present / optional_triggered / not_written_by_default / pending |
 
 ## Program Call Map
@@ -350,7 +351,7 @@ a business-process diagram.
 ### Visual Overview
 
 Evidence basis: source-level flow header + derived call analysis | derived call analysis only | header_only
-Visual coverage: complete | main dispatch and high-impact branches only (shows [N] of [TOTAL] routines); complete routine inventory is in `routine-index.md`, Node Inventory, and Call Evidence.
+Visual coverage: complete | main dispatch and high-impact branches only (shows [N] of [TOTAL] routines); complete routine inventory is in `<PROGRAM>-routine-index.md`, Node Inventory, and Call Evidence.
 
 ```text
 [PROGRAM] mainline
@@ -411,7 +412,7 @@ coverage value.
 Purpose: explain the internal logic of each load-bearing subroutine, procedure,
 paragraph, or mainline segment. For routine-dense programs, keep this main
 section table-led and readable, but include complete RLOG headings and
-reader-useful detail in `program-analysis.md`. Sidecars are audit,
+reader-useful detail in `<PROGRAM>-program-analysis.md`. Sidecars are audit,
 checkpoint, and machine-readable sources; they are not the only SME reading
 path.
 
@@ -425,11 +426,11 @@ Routine detail placement rules:
   main analysis.
 - `routine_count > 25`: keep the main analysis table-led, but include one
   continuous, ordered `### RLOG-[PROGRAM]-NNN / [ROUTINE]` heading per RLOG
-  declared in `routine-logic-details.yaml`, with enough detail for one-file SME
+  declared in `<PROGRAM>-routine-logic-details.yaml`, with enough detail for one-file SME
   reading.
 - `routine_count > 80` or source lines > 10,000: split full human-authored
-  semantic detail into `routine-logic-details/part-*.md` or
-  `routine-logic-details/deep-read-batch-*.md` retained batch checkpoint files by
+  semantic detail into `routine-logic-details/<PROGRAM>-part-*.md` or
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` retained batch checkpoint files by
   mainline/dispatch, state-changing routines, validation/message routines,
   external boundaries, and indexed utilities.
 - Each batch file must start with batch-scoped SME core logic:
@@ -444,10 +445,11 @@ Routine detail placement rules:
   blocks, or verbatim RPG/CL/COBOL/SQL statements. Use source identifiers,
   normalized logic summaries, source ranges, evidence IDs, and `RLOG-*` links
   instead.
-- Final SME review must happen in one consolidated `routine-logic-details.md`.
-  After batch deep-read is complete, merge all `part-*.md` /
-  `deep-read-batch-*.md` content into `program-analysis.md` and the final
-  `routine-logic-details.md` with whole-program `## Calculation Logic`,
+- Final SME review must happen in one consolidated
+  `<PROGRAM>-routine-logic-details.md`. After batch deep-read is complete,
+  merge all `<PROGRAM>-part-*.md` / `<PROGRAM>-deep-read-batch-*.md` content
+  into `<PROGRAM>-program-analysis.md` and the final
+  `<PROGRAM>-routine-logic-details.md` with whole-program `## Calculation Logic`,
   `## Validation Logic`, `## Exception Handling`, `## Message Inventory`,
   `## Routine Detail Index`, and `## Routine Details` sections. Keep
   part/deep-read batch files as audit checkpoints, but do not leave them as the
@@ -668,8 +670,8 @@ evidence-backed sections above.
 ## File I/O
 
 For file-I/O-dense or SQLRPGLE programs, keep this section as a compact
-SME-readable summary. Link to `file-io-inventory.md`,
-`field-mutation-matrix.md`, and `sql-inventory.md` detail IDs instead of
+SME-readable summary. Link to `<PROGRAM>-file-io-inventory.md`,
+`<PROGRAM>-field-mutation-matrix.md`, and `<PROGRAM>-sql-inventory.md` detail IDs instead of
 expanding every operation, assignment, or host variable inline.
 
 ### File Access Summary
@@ -792,14 +794,14 @@ Before approval, SME must validate:
 - [ ] Routine Cards cover every routine that affects calls, data, errors, or external boundaries
 - [ ] Deep Read Windows support all high-risk claims and state-changing behavior
 - [ ] Indexed-only routines are either technical utilities or routed to explicit review items
-- [ ] Routine Logic Details in `program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `routine-logic-details.yaml`
+- [ ] Routine Logic Details in `<PROGRAM>-program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`
 - [ ] Routine Logic Details explain field calculations, conditioned calculation blocks, carrier/lineage ties, routine-local exception closure, branch outcomes, source lines, and evidence; sidecars are audit/checkpoint sources, not the only SME reading path
 - [ ] Routine Logic Details include outcome reverse traces from material message/status/error/return outcomes back to branch guards, conditioned calculation blocks, comparison thresholds, intermediate variables, and source operands/carriers
 - [ ] No whole-program business summary exceeds the documented coverage
 - [ ] Program Call Map keeps a compact ASCII hierarchy Visual Overview and a traceable Call Evidence table
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Calculation Logic is front-loaded immediately after Program Reading Summary, covers material whole-program calculations/assignments, and links every row to supporting routine-level or ledger evidence
-- [ ] Calculation Logic, Validation Logic, and Exception Handling each include a reader-oriented overview plus `Routine Index For ...` rows covering every RLOG in `routine-logic-details.yaml`
+- [ ] Calculation Logic, Validation Logic, and Exception Handling each include a reader-oriented overview plus `Routine Index For ...` rows covering every RLOG in `<PROGRAM>-routine-logic-details.yaml`
 - [ ] Logic Decomposition Ledger preserves calculations, constants, branch priority, loops, and CASE/SELECT behavior
 - [ ] Routine / Window Data Flow shows input variables, transformations, output variables, side effects, source lines, and evidence
 - [ ] Data Touch Map captures critical carriers, keys, payloads, and state impacts
@@ -809,7 +811,7 @@ Before approval, SME must validate:
 - [ ] External and dynamic calls include caller routine, source lines, parameters, resolution status, purpose, and evidence
 - [ ] Validation Logic is front-loaded immediately after Calculation Logic, has one row per message/status/return/response/generic outcome with reverse trigger chains / Routine Logic links, and Error Handling closes each exception path through return, rollback, skip, log, or downstream impact
 - [ ] Exception Handling is front-loaded immediately after Validation Logic, covers every observed business/parameter/I/O/external/system/generic exception path, and links each row to closure evidence
-- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal from `message-inventory.yaml`, including late-round tokens, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
+- [ ] Message Inventory is front-loaded immediately after Exception Handling, has one summary row per explicit message/code/literal from `<PROGRAM>-message-inventory.yaml`, including late-round tokens, and preserves description source, carrier/destination, trigger/handler, related Validation/Exception row, and evidence status
 - [ ] Coverage/TBD wording is current; no stale legacy deep-read gap labels remain after RLOGs are normalized
 - [ ] Reference-pack lookups, if used, cite pack ID/version/file/row and do not override source-backed behavior
 - [ ] Inferred and unresolved meanings, calls, fields, and error codes are explicitly marked

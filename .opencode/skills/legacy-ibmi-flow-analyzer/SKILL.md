@@ -105,19 +105,21 @@ This skill supports these assembly modes:
 This skill does **not** re-analyze individual program semantics during the
 assembly step. Every program in the program set must first have program
 analysis evidence from a current working-branch scan. All program tiers require
-`program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`, and
-`routine-logic-details.yaml`. Routine detail sidecars are audit/checkpoint
-evidence for traceability; they do not replace the reader-first
-`program-analysis.md` and program-set review surfaces. Optional sidecars such
-as `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-`sql-inventory.yaml` are required only when program-analyzer triggers produced
-them or when the flow claim needs file I/O, persisted mutation, or SQL
-evidence. Complex and large programs must retain enough deep-read evidence,
-such as `deep-read-plan.md`,
-`all-routine-coverage-ledger.md`, and
-`routine-logic-details/deep-read-batch-*.md`, to make handoff stable under weak
-LLM constraints. If required core artifacts or claim-specific optional
+program-prefixed artifacts: `<PROGRAM>-program-analysis.md`,
+`<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
+`<PROGRAM>-routine-index.md`, `<PROGRAM>-message-inventory.yaml`,
+`<PROGRAM>-routine-logic-details.md`, and
+`<PROGRAM>-routine-logic-details.yaml`. Routine detail sidecars are
+audit/checkpoint evidence for traceability; they do not replace the
+reader-first `<PROGRAM>-program-analysis.md` and program-set review surfaces.
+Optional sidecars such as `<PROGRAM>-file-io-inventory.yaml`,
+`<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml` are
+required only when program-analyzer triggers produced them or when the flow
+claim needs file I/O, persisted mutation, or SQL evidence. Complex and large
+programs must retain enough deep-read evidence, such as
+`<PROGRAM>-deep-read-plan.md`, `<PROGRAM>-all-routine-coverage-ledger.md`, and
+`routine-logic-details/<PROGRAM>-deep-read-batch-*.md`, to make handoff stable
+under weak LLM constraints. If required core artifacts or claim-specific optional
 artifacts are missing, route only that program back to
 `legacy-ibmi-program-analyzer` instead of concatenating full Markdown analyses
 or restarting the whole flow.
@@ -195,13 +197,14 @@ Accept:
   - API / remote (remote PGM call, MQ message, HTTP, IFS drop)
 - **Current-run program analyses** for every program in the chain. Preferred
   core inputs are compact artifacts from `legacy-ibmi-program-analyzer`:
-  `program-analysis.md`, `program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
-  `routine-logic-details.md`, and `routine-logic-details.yaml`.
-  Optional sidecars (`file-io-inventory.yaml`,
-  `field-mutation-matrix.yaml`, `sql-inventory.yaml`) are required only when
-  present/triggered by the program tier or when the flow needs native file I/O,
-  persisted field mutation, or SQLRPGLE evidence.
+  `<PROGRAM>-program-analysis.md`, `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-routine-logic-details.md`, and
+  `<PROGRAM>-routine-logic-details.yaml`. Optional sidecars
+  (`<PROGRAM>-file-io-inventory.yaml`, `<PROGRAM>-field-mutation-matrix.yaml`,
+  `<PROGRAM>-sql-inventory.yaml`) are required only when present/triggered by
+  the program tier or when the flow needs native file I/O, persisted field
+  mutation, or SQLRPGLE evidence.
 - **Run resolution per program** — record one row per requested or discovered
   program with `run_resolution`: `analyzed_this_run`, `reused_same_run`,
   `reused_artifact_repo`, `pending_source`, or `blocked_missing_source`.
@@ -214,11 +217,12 @@ Accept:
 
 Each upstream program-analysis should expose the program-chain readiness
 sections and sidecars from `legacy-ibmi-program-analyzer` v0.2.5 or later:
-`program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
-`routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
-`routine-logic-details.yaml`, and triggered optional sidecars
-(`file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
-`sql-inventory.yaml`),
+`<PROGRAM>-program-analysis.md`, `<PROGRAM>-program-analysis-summary.yaml`,
+`<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+`<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-routine-logic-details.md`,
+`<PROGRAM>-routine-logic-details.yaml`, and triggered optional sidecars
+(`<PROGRAM>-file-io-inventory.yaml`, `<PROGRAM>-field-mutation-matrix.yaml`,
+`<PROGRAM>-sql-inventory.yaml`),
 `Program Call Map` with `Call Evidence`, `Logic Decomposition Ledger`,
 `Routine Logic Details` with conditioned calculation blocks, routine-local
 field lineage / carriers, and routine-local exception closure,
@@ -344,11 +348,13 @@ field-level rules. The summary below is normative for this skill.
   artifact must be routed back to `legacy-ibmi-program-analyzer`.
 - **Required for `assemble_existing`**: user-provided program analysis
   directories or artifact list, preferably including
-  `program-analysis.md`, `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
-  and `routine-logic-details.yaml` for each program,
-  plus optional `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-  `sql-inventory.yaml` when present/triggered or needed by a flow claim.
+  `<PROGRAM>-program-analysis.md`, `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-routine-logic-details.md`,
+  and `<PROGRAM>-routine-logic-details.yaml` for each program,
+  plus optional `<PROGRAM>-file-io-inventory.yaml`,
+  `<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml`
+  when present/triggered or needed by a flow claim.
   Missing required artifacts should be filled for only the affected program
   when source is available; otherwise record `TBD: missing_program_artifact`.
 - **Optional**: DSPF / PRTF / `*MENU` definitions (UI-aware flows);
@@ -412,13 +418,14 @@ field-level rules. The summary below is normative for this skill.
   `standalone_exploratory`, unresolved artifacts become downstream-readiness
   gaps unless they prevent identifying the flow itself.
 - **Coverage propagation**: consume each upstream program's compact artifacts
-  first: `program-analysis-summary.yaml`, `source-index.yaml`,
-  `routine-index.md`, `message-inventory.yaml`, `routine-logic-details.md`,
-  `routine-logic-details.yaml`,
-  `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-  `sql-inventory.yaml`. Use full
-  `program-analysis.md` / `program-analysis-<OBJ-ID>.md` only for targeted
-  clarification, not as the primary flow aggregation input. The compact
+  first: `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-routine-logic-details.md`,
+  `<PROGRAM>-routine-logic-details.yaml`,
+  `<PROGRAM>-file-io-inventory.yaml`, `<PROGRAM>-field-mutation-matrix.yaml`,
+  and `<PROGRAM>-sql-inventory.yaml`. Use full
+  `<PROGRAM>-program-analysis.md` / `<PROGRAM>-program-analysis-<OBJ-ID>.md`
+  only for targeted clarification, not as the primary flow aggregation input. The compact
   artifacts must expose Analysis Coverage & Scope, Routine Cards / routine
   summary, Routine Logic Details sidecar status, front-loaded Validation Logic
   references, Deep Read Windows, Call Evidence, Logic Decomposition Ledger,
@@ -547,11 +554,12 @@ to the orchestrator.
      alias rules.
    - For every SME-provided program, generate or verify current
      tier-appropriate program-level artifacts before assembly. Normal,
-     complex, and large programs require `program-analysis.md`,
-     `program-analysis-summary.yaml`, `source-index.yaml`, `routine-index.md`,
-     `message-inventory.yaml`, `routine-logic-details.md`, and
-     `routine-logic-details.yaml`. Retain deep-read batches and coverage
-     ledgers when needed for stable handoff.
+     complex, and large programs require `<PROGRAM>-program-analysis.md`,
+     `<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
+     `<PROGRAM>-routine-index.md`, `<PROGRAM>-message-inventory.yaml`,
+     `<PROGRAM>-routine-logic-details.md`, and
+     `<PROGRAM>-routine-logic-details.yaml`. Retain deep-read batches and
+     coverage ledgers when needed for stable handoff.
    - Do not check remote `main`, clone a remote-main snapshot, or mark programs
      as found/not-found on remote main for the default program-flow workflow.
      Existing historical artifacts may be compared later in Git review, but they
@@ -615,14 +623,16 @@ to the orchestrator.
      existing program analysis directories and asks to combine them into one
      flow.
    - In all modes, aggregation must prefer compact artifacts:
-     `program-analysis-summary.yaml`, `source-index.yaml`, `routine-index.md`,
-     `message-inventory.yaml`, `routine-logic-details.md`,
-     `routine-logic-details.yaml`,
-     `file-io-inventory.yaml`, `field-mutation-matrix.yaml`, and
-     `sql-inventory.yaml`.
-   - Do not concatenate full `program-analysis.md` / `program-analysis-*.md`
-     files across programs. Open full Markdown only for targeted human-readable
-     clarification when compact artifacts are insufficient.
+     `<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
+     `<PROGRAM>-routine-index.md`, `<PROGRAM>-message-inventory.yaml`,
+     `<PROGRAM>-routine-logic-details.md`,
+     `<PROGRAM>-routine-logic-details.yaml`,
+     `<PROGRAM>-file-io-inventory.yaml`,
+     `<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml`.
+   - Do not concatenate full `<PROGRAM>-program-analysis.md` /
+     `<PROGRAM>-program-analysis-*.md` files across programs. Open full
+     Markdown only for targeted human-readable clarification when compact
+     artifacts are insufficient.
    - If the user asks to merge multiple program-analysis results or provides a
      SME program flow for core SME review, generate
      `program-set-sme-core-review.md` from `templates/sme-core-review.md`.
@@ -678,11 +688,13 @@ to the orchestrator.
      - reference the program's `OBJ-*` (from inventory) and approved
        program-analysis artifact set
      - record artifact availability:
-       `program-analysis.md`, `program-analysis-summary.yaml`,
-       `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
-       `routine-logic-details.md`, `routine-logic-details.yaml`,
-       `file-io-inventory.yaml`, `field-mutation-matrix.yaml`,
-       `sql-inventory.yaml`, and optional object-ID-specific human-readable
+       `<PROGRAM>-program-analysis.md`, `<PROGRAM>-program-analysis-summary.yaml`,
+       `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+       `<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-routine-logic-details.md`,
+       `<PROGRAM>-routine-logic-details.yaml`,
+       `<PROGRAM>-file-io-inventory.yaml`,
+       `<PROGRAM>-field-mutation-matrix.yaml`, `<PROGRAM>-sql-inventory.yaml`,
+       and optional object-ID-specific human-readable
        `program-analysis-<OBJ-ID>.md`
      - record the program's role in the flow (entry / orchestrator /
        worker / data-access / reporter / exit)
@@ -1026,6 +1038,11 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical source.
 
 ## Version History
+
+- v0.2.13 (2026-07-11): RAG-friendly program-prefixed artifact consumption
+  - Required flow/program-set prompts and artifact discovery to prefer
+    `<PROGRAM>-<artifact>` filenames while retaining legacy bare-name fallback
+    for existing runs.
 
 - v0.2.11 (2026-07-10): Installed-skill Windows router
   - Added a skill-local Windows launcher so synced `.agents`, `.claude`,

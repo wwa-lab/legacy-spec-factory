@@ -51,6 +51,9 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
 
         initializer_text = INITIALIZER.read_text(encoding="utf-8")
         self.assertIn("exit 0", initializer_text)
+        self.assertIn("scaffoldmode", initializer_text.lower())
+        self.assertIn("scaffold_status", initializer_text)
+        self.assertIn("index-rpg-source.ps1", initializer_text)
 
     @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
     def test_router_uses_native_fallback_when_both_python_launchers_fail(self) -> None:
@@ -170,6 +173,117 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
             self.assertIn("member: @CU400P", manifest)
 
     @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_initializer_supports_deferred_validation_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            program_list = root / "program-list.csv"
+            out_dir = root / "batch"
+            program_list.write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason",
+                        "CC050,program,RPGLE,CC050.RPGLE,100,normal_program,test",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_powershell(
+                INITIALIZER,
+                "--program-list",
+                str(program_list),
+                "--out-dir",
+                str(out_dir),
+                "--delivery-root",
+                r"C:\delivery",
+                "--validation-mode",
+                "deferred",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            prompt = (out_dir / "prompt-queue" / "0001-CC050.md").read_text(
+                encoding="utf-8-sig"
+            )
+            self.assertIn("Skip the program-analysis validator in this batch prompt", prompt)
+            self.assertIn("batch_status=scanned_unvalidated", prompt)
+            self.assertIn("validator_status=deferred", prompt)
+            self.assertIn("Deferred in this batch prompt. Do not run this command now.", prompt)
+            manifest = (out_dir / "batch-scan-manifest.yaml").read_text(
+                encoding="utf-8-sig"
+            )
+            self.assertIn("validation_mode: deferred", manifest)
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_initializer_supports_scaffold_precreate_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_root = root / "source"
+            delivery_root = root / "delivery"
+            out_dir = root / "batch"
+            source_root.mkdir()
+            (source_root / "SIMPLE.RPGLE").write_text(
+                "\n".join(
+                    [
+                        "H DFTACTGRP(*NO)",
+                        "C     *ENTRY        PLIST",
+                        "C                   EXSR      SR100",
+                        "C                   SETON                                        LR",
+                        "C     SR100         BEGSR",
+                        "C                   EVAL      RESULT = 'Y'",
+                        "C                   ENDSR",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            program_list = root / "program-list.csv"
+            program_list.write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason",
+                        "SIMPLE,program,RPGLE,SIMPLE.RPGLE,7,normal_program,test",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_powershell(
+                INITIALIZER,
+                "--program-list",
+                str(program_list),
+                "--out-dir",
+                str(out_dir),
+                "--source-root",
+                str(source_root),
+                "--delivery-root",
+                str(delivery_root),
+                "--scaffold-mode",
+                "precreate",
+                "--validation-mode",
+                "deferred",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            output_dir = delivery_root / "modules" / "CAP-ID-0003-normal_program" / "SIMPLE"
+            self.assertTrue((output_dir / "SIMPLE-program-analysis.md").is_file())
+            self.assertTrue((output_dir / "SIMPLE-source-index.yaml").is_file())
+            with (out_dir / "program-list-status.csv").open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                row = next(csv.DictReader(handle))
+            self.assertEqual(row["batch_status"], "queued")
+            self.assertEqual(row["scaffold_status"], "present")
+            self.assertEqual(row["next_action"], "fill details from scaffold")
+            prompt = (out_dir / "prompt-queue" / "0001-SIMPLE.md").read_text(
+                encoding="utf-8-sig"
+            )
+            self.assertIn("Scaffold artifacts were precreated during batch initialization", prompt)
+            manifest = (out_dir / "batch-scan-manifest.yaml").read_text(
+                encoding="utf-8-sig"
+            )
+            self.assertIn("scaffold_mode: precreate", manifest)
+            self.assertIn("scaffold_status: present", manifest)
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
     def test_status_validator_enforces_completed_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -191,11 +305,11 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
                 encoding="utf-8",
             )
             for artifact in (
-                "program-analysis.md",
-                "source-index.yaml",
-                "program-analysis-summary.yaml",
-                "routine-index.md",
-                "message-inventory.yaml",
+                "CC050-program-analysis.md",
+                "CC050-source-index.yaml",
+                "CC050-program-analysis-summary.yaml",
+                "CC050-routine-index.md",
+                "CC050-message-inventory.yaml",
             ):
                 (output_dir / artifact).write_text("ok\n", encoding="utf-8")
 
@@ -208,8 +322,104 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
-            self.assertIn("routine-logic-details.md", result.stdout)
-            self.assertIn("routine-logic-details.yaml", result.stdout)
+            self.assertIn("CC050-routine-logic-details.md", result.stdout)
+            self.assertIn("CC050-routine-logic-details.yaml", result.stdout)
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_status_validator_rejects_completed_placeholder_scaffold(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            batch_dir = root / "batch"
+            output_dir = root / "delivery" / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            batch_dir.mkdir()
+            output_dir.mkdir(parents=True)
+            (batch_dir / "batch-scan-manifest.yaml").write_text(
+                "programs: []\n", encoding="utf-8"
+            )
+            (batch_dir / "program-batch-plan.md").write_text("# Plan\n", encoding="utf-8")
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,batch_status,validator_status,output_dir,owner,session_id,last_error,next_action",
+                        "CC050,completed,pass,modules/CAP-ID-0003-normal_program/CC050,,,,",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            artifact_text = {
+                "CC050-program-analysis.md": (
+                    "# Program Analysis: CC050\n\n"
+                    "Draft wrapper seed generated by deterministic indexing.\n\n"
+                    "## Program Reading Summary\n\n"
+                    "pending semantic deep-read\n"
+                ),
+                "CC050-routine-logic-details.md": (
+                    "# Routine Logic Details: CC050\n\n"
+                    "pending semantic detail\n"
+                ),
+                "CC050-source-index.yaml": "ok\n",
+                "CC050-program-analysis-summary.yaml": "ok\n",
+                "CC050-routine-index.md": "ok\n",
+                "CC050-message-inventory.yaml": "ok\n",
+                "CC050-routine-logic-details.yaml": "ok\n",
+            }
+            for artifact, text in artifact_text.items():
+                (output_dir / artifact).write_text(text, encoding="utf-8")
+
+            result = run_powershell(
+                STATUS_VALIDATOR,
+                "-BatchDir",
+                str(batch_dir),
+                "-DeliveryRoot",
+                str(root / "delivery"),
+            )
+
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("CC050-program-analysis.md still appears to be a scaffold", result.stdout)
+            self.assertIn("CC050-routine-logic-details.md still appears to be a scaffold", result.stdout)
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_status_validator_accepts_scanned_unvalidated_deferred_row(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            batch_dir = root / "batch"
+            output_dir = root / "delivery" / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            batch_dir.mkdir()
+            output_dir.mkdir(parents=True)
+            (batch_dir / "batch-scan-manifest.yaml").write_text(
+                "programs: []\n", encoding="utf-8"
+            )
+            (batch_dir / "program-batch-plan.md").write_text("# Plan\n", encoding="utf-8")
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,batch_status,validator_status,output_dir,owner,session_id,last_error,next_action",
+                        "CC050,scanned_unvalidated,deferred,modules/CAP-ID-0003-normal_program/CC050,,,,run final validation",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            artifact_text = {
+                "CC050-program-analysis.md": "# Program Analysis: CC050\n\nreader-first analysis filled\n",
+                "CC050-routine-logic-details.md": "# Routine Logic Details: CC050\n\nRLOG-CC050-001 has detail.\n",
+                "CC050-source-index.yaml": "ok\n",
+                "CC050-program-analysis-summary.yaml": "ok\n",
+                "CC050-routine-index.md": "ok\n",
+                "CC050-message-inventory.yaml": "ok\n",
+                "CC050-routine-logic-details.yaml": "ok\n",
+            }
+            for artifact, text in artifact_text.items():
+                (output_dir / artifact).write_text(text, encoding="utf-8")
+
+            result = run_powershell(
+                STATUS_VALIDATOR,
+                "-BatchDir",
+                str(batch_dir),
+                "-DeliveryRoot",
+                str(root / "delivery"),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
 
 
 if __name__ == "__main__":

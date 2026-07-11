@@ -62,6 +62,7 @@ DATA_READ_OPS = {"CHAIN", "SETLL", "READE", "READPE", "READP", "READ"}
 TRANSACTION_OPS = {"COMMIT", "ROLLBACK"}
 SQL_DML_OPS = {"INSERT", "UPDATE", "DELETE", "MERGE"}
 BATCH_SIZE = 5
+ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
 FREE_F_SPEC_BLOCKERS = {"FOR", "FROM"}
 FREE_ASSIGNMENT_BLOCKERS = {
     "IF",
@@ -84,6 +85,22 @@ FREE_PROC_CALL_BLOCKERS = {
     "RETURN",
     "EVAL",
 }
+
+
+def artifact_program_prefix(program_name: str) -> str:
+    """Return a filesystem-safe program prefix for RAG-friendly artifact names."""
+    prefix = ARTIFACT_SAFE_RE.sub("_", program_name.strip().upper())
+    prefix = prefix.strip("._-")
+    return prefix or "PROGRAM"
+
+
+def artifact_filename(program_name: str, base_name: str) -> str:
+    """Prefix a canonical artifact filename with the program name."""
+    return f"{artifact_program_prefix(program_name)}-{base_name}"
+
+
+def artifact_path(index: dict[str, Any], base_name: str) -> str:
+    return artifact_filename(str(index["program"]), base_name)
 
 
 def strip_sequence(raw_line: str) -> str:
@@ -305,8 +322,8 @@ def build_sql_inventory(
     return {
         "summary": summary,
         "details": details,
-        "sidecar_markdown": "sql-inventory.md",
-        "sidecar_yaml": "sql-inventory.yaml",
+        "sidecar_markdown": artifact_filename(program_name, "sql-inventory.md"),
+        "sidecar_yaml": artifact_filename(program_name, "sql-inventory.yaml"),
     }
 
 
@@ -501,8 +518,8 @@ def build_message_inventory(messages: list[dict[str, Any]], program_name: str) -
     return {
         "summary": summary,
         "details": details,
-        "sidecar_markdown": "message-inventory.md",
-        "sidecar_yaml": "message-inventory.yaml",
+        "sidecar_markdown": artifact_filename(program_name, "message-inventory.md"),
+        "sidecar_yaml": artifact_filename(program_name, "message-inventory.yaml"),
     }
 
 
@@ -524,6 +541,14 @@ def routine_role(routine: dict[str, Any]) -> str:
 
 
 def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
+    program_name = str(index["program"])
+    program_analysis_name = artifact_filename(program_name, "program-analysis.md")
+    routine_detail_name = artifact_filename(program_name, "routine-logic-details.md")
+    first_batch_name = f"routine-logic-details/{artifact_filename(program_name, 'deep-read-batch-001.md')}"
+    second_batch_name = f"routine-logic-details/{artifact_filename(program_name, 'deep-read-batch-002.md')}"
+    first_part_name = f"routine-logic-details/{artifact_filename(program_name, 'part-01-mainline-and-dispatch.md')}"
+    second_part_name = f"routine-logic-details/{artifact_filename(program_name, 'part-02-state-changing-routines.md')}"
+    third_part_name = f"routine-logic-details/{artifact_filename(program_name, 'part-03-validation-and-message-routines.md')}"
     details: list[dict[str, Any]] = []
     for number, routine in enumerate(index["routines"], start=1):
         detail_id = f"RLOG-{index['program']}-{number:03d}"
@@ -571,22 +596,22 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
     return {
         "summary": summary,
         "details": details,
-        "sidecar_markdown": "routine-logic-details.md",
-        "sidecar_yaml": "routine-logic-details.yaml",
+        "sidecar_markdown": artifact_filename(index["program"], "routine-logic-details.md"),
+        "sidecar_yaml": artifact_filename(index["program"], "routine-logic-details.yaml"),
         "sharding_guidance": {
             "main_document_limit": (
-                "for routines > 25, keep program-analysis.md table-led but "
+                f"for routines > 25, keep {program_analysis_name} table-led but "
                 "include continuous ordered RLOG headings and reader-useful "
                 "detail for every YAML RLOG"
             ),
             "batch_files_required_when": (
                 "program_size_tier is large_extreme_program; canonical seed files "
-                "use routine-logic-details/deep-read-batch-001.md and continue "
+                f"use {first_batch_name} and continue "
                 "in five-window batches"
             ),
             "part_file_front_matter": (
-                "Each routine-logic-details/part-*.md or "
-                "routine-logic-details/deep-read-batch-*.md file must use "
+                "Each routine-logic-details/<PROGRAM>-part-*.md or "
+                "routine-logic-details/<PROGRAM>-deep-read-batch-*.md file must use "
                 "top-level Calculation Logic, Validation Logic, Exception "
                 "Handling, Scope, Batch Coverage Summary, Message Inventory, "
                 "and Routine Details sections. Core logic must not contain "
@@ -594,19 +619,19 @@ def build_routine_logic_inventory(index: dict[str, Any]) -> dict[str, Any]:
             ),
             "final_consolidation_required": (
                 "After batch deep-read, merge all part files into the final "
-                "program-analysis.md reader-first wrapper and one "
-                "routine-logic-details.md consolidated audit document with "
+                f"{program_analysis_name} reader-first wrapper and one "
+                f"{routine_detail_name} consolidated audit document with "
                 "whole-program Calculation Logic, Validation Logic, Exception "
                 "Handling, Message Inventory, Routine Detail Index, and all "
                 "Routine Details. Batch files are retained audit surfaces and "
                 "checkpoints, but not the final SME reading surface."
             ),
             "part_file_examples": [
-                "routine-logic-details/deep-read-batch-001.md",
-                "routine-logic-details/deep-read-batch-002.md",
-                "routine-logic-details/part-01-mainline-and-dispatch.md",
-                "routine-logic-details/part-02-state-changing-routines.md",
-                "routine-logic-details/part-03-validation-and-message-routines.md",
+                first_batch_name,
+                second_batch_name,
+                first_part_name,
+                second_part_name,
+                third_part_name,
             ],
         },
     }
@@ -657,8 +682,8 @@ def build_file_io_inventory(file_operations: list[dict[str, Any]], program_name:
     return {
         "summary": summary,
         "details": details,
-        "sidecar_markdown": "file-io-inventory.md",
-        "sidecar_yaml": "file-io-inventory.yaml",
+        "sidecar_markdown": artifact_filename(program_name, "file-io-inventory.md"),
+        "sidecar_yaml": artifact_filename(program_name, "file-io-inventory.yaml"),
     }
 
 
@@ -727,8 +752,8 @@ def build_field_mutation_inventory(
     return {
         "summary": summary,
         "details": details,
-        "sidecar_markdown": "field-mutation-matrix.md",
-        "sidecar_yaml": "field-mutation-matrix.yaml",
+        "sidecar_markdown": artifact_filename(program_name, "field-mutation-matrix.md"),
+        "sidecar_yaml": artifact_filename(program_name, "field-mutation-matrix.yaml"),
     }
 
 
@@ -877,6 +902,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
     analysis_tier = index["program_size_tier"]
     full = analysis_tier == "large_extreme_program"
     complex_normal = analysis_tier == "complex_normal_program"
+    program_analysis_name = artifact_filename(str(index["program"]), "program-analysis.md")
     return {
         "deep_read_plan": {
             "write": full or complex_normal or counts["recommended_deep_read_windows"] > 5,
@@ -906,7 +932,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
                     operation["operation"] in {"WRITE", "UPDATE", "DELETE", "COMMIT", "ROLLBACK"}
                     for operation in index["file_operations"]
                 )
-                else "file I/O can remain summarized in program-analysis.md"
+                else f"file I/O can remain summarized in {program_analysis_name}"
             ),
         },
         "field_mutation_matrix": {
@@ -930,7 +956,7 @@ def optional_sidecar_triggers(index: dict[str, Any]) -> dict[str, dict[str, Any]
             "reason": (
                 "message inventory is dense"
                 if counts["unique_messages"] > 10
-                else "message-inventory.yaml is enough for concise reader-first review"
+                else f"{artifact_filename(str(index['program']), 'message-inventory.yaml')} is enough for concise reader-first review"
             ),
         },
     }
@@ -1258,6 +1284,12 @@ def analyze_source(lines: list[str], program_name: str, source_path: Path | None
         "schema_version": "0.1",
         "generated_by": "index_rpg_source.py",
         "program": program_name.upper(),
+        "artifact_naming": {
+            "program_prefix": artifact_program_prefix(program_name),
+            "prefix_source": "program/member folder name; preserve IBM i member-safe prefixes such as @",
+            "filename_pattern": "<PROGRAM>-<artifact-name>",
+            "rag_friendly": True,
+        },
         "source": {
             "path": str(source_path) if source_path else "stdin",
             "line_count": len(lines),
@@ -1458,6 +1490,7 @@ def render_deep_read_plan(index: dict[str, Any]) -> str:
 
 
 def render_message_inventory(index: dict[str, Any]) -> str:
+    program_analysis_name = artifact_path(index, "program-analysis.md")
     summary_rows = [
         [
             item["message"],
@@ -1477,7 +1510,7 @@ def render_message_inventory(index: dict[str, Any]) -> str:
     sections = [
         f"# Message Inventory: {index['program']}",
         "This sidecar keeps detailed observed message/status evidence out of the "
-        "front-loaded `program-analysis.md` summary. Descriptions remain unresolved "
+        f"front-loaded `{program_analysis_name}` summary. Descriptions remain unresolved "
         "until matched to an approved reference pack, runtime evidence, source "
         "comment, or SME confirmation.",
         "## Summary",
@@ -1545,6 +1578,7 @@ def render_message_inventory_yaml(index: dict[str, Any]) -> str:
 
 
 def render_file_io_inventory(index: dict[str, Any]) -> str:
+    program_analysis_name = artifact_path(index, "program-analysis.md")
     summary_rows = [
         [
             item["object"],
@@ -1579,7 +1613,7 @@ def render_file_io_inventory(index: dict[str, Any]) -> str:
         [
             f"# File I/O Inventory: {index['program']}",
             "This sidecar keeps dense file operation evidence out of the "
-            "front-loaded `program-analysis.md` summary while preserving every "
+            f"front-loaded `{program_analysis_name}` summary while preserving every "
             "observed read, write, update, delete, screen, and transaction boundary.",
             "## Summary",
             markdown_table(
@@ -1683,6 +1717,7 @@ def render_field_mutation_inventory(index: dict[str, Any]) -> str:
 
 
 def render_field_mutation_inventory_yaml(index: dict[str, Any]) -> str:
+    program_analysis_name = artifact_path(index, "program-analysis.md")
     payload = {
         "schema_version": "0.1",
         "generated_by": "index_rpg_source.py",
@@ -1691,7 +1726,7 @@ def render_field_mutation_inventory_yaml(index: dict[str, Any]) -> str:
         "field_mutation_inventory": index["field_mutation_inventory"],
         "contract_note": (
             "This matrix identifies mutation locations. Approved calculation "
-            "logic still belongs in `program-analysis.md` after semantic deep read."
+            f"logic still belongs in `{program_analysis_name}` after semantic deep read."
         ),
     }
     return to_yaml(payload) + "\n"
@@ -1775,6 +1810,12 @@ def render_sql_inventory_yaml(index: dict[str, Any]) -> str:
 
 
 def render_routine_logic_details(index: dict[str, Any]) -> str:
+    program_analysis_name = artifact_path(index, "program-analysis.md")
+    source_index_name = artifact_path(index, "source-index.yaml")
+    routine_detail_name = artifact_path(index, "routine-logic-details.md")
+    routine_detail_yaml_name = artifact_path(index, "routine-logic-details.yaml")
+    batch_pattern = f"routine-logic-details/{artifact_program_prefix(str(index['program']))}-deep-read-batch-*.md"
+    part_pattern = f"routine-logic-details/{artifact_program_prefix(str(index['program']))}-part-*.md"
     summary_rows = [
         [
             item["routine"],
@@ -1809,7 +1850,7 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
     sections = [
         f"# Routine Logic Details: {index['program']}",
         "This sidecar preserves audit/checkpoint routine detail behind the "
-        "reader-first `program-analysis.md`. The static index seeds routine "
+        f"reader-first `{program_analysis_name}`. The static index seeds routine "
         "IDs, line ranges, call/data evidence, and deep-read priorities; "
         "semantic logic remains `pending_deep_read` until source windows are "
         "analyzed.",
@@ -1817,7 +1858,7 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
         "Pending semantic deep-read. This consolidated section must be populated before final delivery.",
         markdown_table(
             ["Logic / Calculation", "Routine", "Target Field / Variable", "Source Operands", "Guard / Condition", "Output / Effect", "Detail Link", "Evidence"],
-            [["pending", "-", "pending", "pending", "pending", "pending", "RLOG pending", "source-index"]],
+            [["pending", "-", "pending", "pending", "pending", "pending", "RLOG pending", source_index_name]],
         ),
         "## Validation Logic",
         "Pending semantic deep-read and message/reference-pack lookup.",
@@ -1897,14 +1938,14 @@ def render_routine_logic_details(index: dict[str, Any]) -> str:
     sections.extend(
         [
             "## Sharding Guidance",
-            "- If routines <= 25, the main `program-analysis.md` may include full Routine Logic Details.",
-            "- If routines > 25, keep `program-analysis.md` table-led but include continuous ordered RLOG headings and reader-useful detail for every YAML RLOG.",
-            "- If routines > 80 or source lines > 10,000, split semantic details into retained `routine-logic-details/deep-read-batch-*.md` checkpoint files.",
-            "- Each `routine-logic-details/part-*.md` or `routine-logic-details/deep-read-batch-*.md` file must use the same top-level layout: `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, `## Scope`, `## Batch Coverage Summary`, `## Message Inventory`, `## Routine Details`.",
+            f"- If routines <= 25, the main `{program_analysis_name}` may include full Routine Logic Details.",
+            f"- If routines > 25, keep `{program_analysis_name}` table-led but include continuous ordered RLOG headings and reader-useful detail for every YAML RLOG.",
+            f"- If routines > 80 or source lines > 10,000, split semantic details into retained `{batch_pattern}` checkpoint files.",
+            f"- Each `{part_pattern}` or `{batch_pattern}` file must use the same top-level layout: `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`, `## Scope`, `## Batch Coverage Summary`, `## Message Inventory`, `## Routine Details`.",
             "- Batch core logic sections must not contain pasted source-code snippets or fenced code blocks; use identifiers, source ranges, evidence IDs, and RLOG links.",
             "- In part files, `## Message Inventory` must list every exact message/status/literal observed in that batch as its own row.",
-            "- After batch deep-read, merge all part files into the final reader-first `program-analysis.md` and this consolidated `routine-logic-details.md` audit document.",
-            "- `routine-logic-details.yaml` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
+            f"- After batch deep-read, merge all part files into the final reader-first `{program_analysis_name}` and this consolidated `{routine_detail_name}` audit document.",
+            f"- `{routine_detail_yaml_name}` is the RLOG coverage source of truth; the final Markdown must include every YAML `routine_logic_inventory.details[].detail_id`.",
             "- Before delivery, run `scripts/validate-program-analysis-contract.py --analysis-dir <DIR>` with the repository Python launcher convention.",
         ]
     )
@@ -1935,8 +1976,11 @@ def requires_routine_detail_sidecars(index: dict[str, Any]) -> bool:
     return True
 
 
-def routine_batch_path(batch_number: int) -> str:
-    return f"routine-logic-details/deep-read-batch-{batch_number:03d}.md"
+def routine_batch_path(index: dict[str, Any], batch_number: int) -> str:
+    return (
+        "routine-logic-details/"
+        + artifact_filename(index["program"], f"deep-read-batch-{batch_number:03d}.md")
+    )
 
 
 def routine_batch_groups(index: dict[str, Any]) -> list[list[dict[str, Any]]]:
@@ -1960,14 +2004,20 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
     triggers = index["optional_sidecar_triggers"]
     routine_details_status = "present"
     sidecars = {
-        "program_analysis": {"path": "program-analysis.md", "status": "present"},
-        "source_index": {"path": "source-index.yaml", "status": "present"},
-        "routine_index": {"path": "routine-index.md", "status": "present"},
-        "routine_logic_details": {"path": "routine-logic-details.md", "status": routine_details_status},
-        "routine_logic_details_yaml": {"path": "routine-logic-details.yaml", "status": routine_details_status},
-        "message_inventory_yaml": {"path": "message-inventory.yaml", "status": "present"},
+        "program_analysis": {"path": artifact_path(index, "program-analysis.md"), "status": "present"},
+        "source_index": {"path": artifact_path(index, "source-index.yaml"), "status": "present"},
+        "routine_index": {"path": artifact_path(index, "routine-index.md"), "status": "present"},
+        "routine_logic_details": {
+            "path": artifact_path(index, "routine-logic-details.md"),
+            "status": routine_details_status,
+        },
+        "routine_logic_details_yaml": {
+            "path": artifact_path(index, "routine-logic-details.yaml"),
+            "status": routine_details_status,
+        },
+        "message_inventory_yaml": {"path": artifact_path(index, "message-inventory.yaml"), "status": "present"},
         "message_inventory": {
-            "path": "message-inventory.md",
+            "path": artifact_path(index, "message-inventory.md"),
             "status": (
                 "optional_triggered"
                 if triggers["message_inventory_markdown"]["write"]
@@ -1975,7 +2025,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "coverage_ledger": {
-            "path": "all-routine-coverage-ledger.md",
+            "path": artifact_path(index, "all-routine-coverage-ledger.md"),
             "status": (
                 "optional_triggered"
                 if triggers["coverage_ledger"]["write"]
@@ -1983,7 +2033,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "deep_read_plan": {
-            "path": "deep-read-plan.md",
+            "path": artifact_path(index, "deep-read-plan.md"),
             "status": (
                 "optional_triggered"
                 if triggers["deep_read_plan"]["write"]
@@ -1991,7 +2041,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "file_io_inventory": {
-            "path": "file-io-inventory.md",
+            "path": artifact_path(index, "file-io-inventory.md"),
             "status": (
                 "optional_triggered"
                 if triggers["file_io_inventory"]["write"]
@@ -1999,7 +2049,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "file_io_inventory_yaml": {
-            "path": "file-io-inventory.yaml",
+            "path": artifact_path(index, "file-io-inventory.yaml"),
             "status": (
                 "optional_triggered"
                 if triggers["file_io_inventory"]["write"]
@@ -2007,7 +2057,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "field_mutation_matrix": {
-            "path": "field-mutation-matrix.md",
+            "path": artifact_path(index, "field-mutation-matrix.md"),
             "status": (
                 "optional_triggered"
                 if triggers["field_mutation_matrix"]["write"]
@@ -2015,7 +2065,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "field_mutation_matrix_yaml": {
-            "path": "field-mutation-matrix.yaml",
+            "path": artifact_path(index, "field-mutation-matrix.yaml"),
             "status": (
                 "optional_triggered"
                 if triggers["field_mutation_matrix"]["write"]
@@ -2023,7 +2073,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "sql_inventory": {
-            "path": "sql-inventory.md",
+            "path": artifact_path(index, "sql-inventory.md"),
             "status": (
                 "optional_triggered"
                 if triggers["sql_inventory"]["write"]
@@ -2031,7 +2081,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             ),
         },
         "sql_inventory_yaml": {
-            "path": "sql-inventory.yaml",
+            "path": artifact_path(index, "sql-inventory.yaml"),
             "status": (
                 "optional_triggered"
                 if triggers["sql_inventory"]["write"]
@@ -2042,7 +2092,7 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
     if requires_routine_batch_files(index):
         for batch_number, _windows in enumerate(routine_batch_groups(index), start=1):
             sidecars[f"routine_logic_deep_read_batch_{batch_number:03d}"] = {
-                "path": routine_batch_path(batch_number),
+                "path": routine_batch_path(index, batch_number),
                 "status": "present",
             }
     return sidecars
@@ -2051,6 +2101,9 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
 def render_program_analysis(index: dict[str, Any]) -> str:
     counts = index["counts"]
     program = index["program"]
+    program_analysis_name = artifact_path(index, "program-analysis.md")
+    source_index_name = artifact_path(index, "source-index.yaml")
+    routine_detail_yaml_name = artifact_path(index, "routine-logic-details.yaml")
     sidecar_rows = [
         [key, value["path"], value["status"]]
         for key, value in sidecar_declarations(index).items()
@@ -2084,7 +2137,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                 f"### {item['detail_ref']} / {item['routine']}",
                 (
                     "Pending semantic deep-read. Preserve this RLOG heading in "
-                    "`program-analysis.md`; replace this placeholder with "
+                    f"`{program_analysis_name}`; replace this placeholder with "
                     "reader-useful routine detail during final consolidation."
                 ),
             ]
@@ -2121,7 +2174,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
     call_rows = [
         [call["caller"], call["target"], call["call_type"], "pending deep read", call["line"], call["evidence"], "confirmed"]
         for call in index["calls"]
-    ] or [["MAIN", "-", "mainline", "N/A", "-", "source-index", "pending"]]
+    ] or [["MAIN", "-", "mainline", "N/A", "-", source_index_name, "pending"]]
     reverse_call_rows = [
         [routine["name"], routine["called_by"], "from static source index"]
         for routine in index["routines"]
@@ -2143,7 +2196,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
         for operation in index["file_operations"]
     ] or [["-", "-", "-", "-", "-", "-", "-", "-"]]
     file_io_rows = [
-        [item["object"], "-", "-", item["operations"], "pending DDS/copybook", "pending deep read", "pending deep read", "pending deep read", item["detail_refs"], "source-index"]
+        [item["object"], "-", "-", item["operations"], "pending DDS/copybook", "pending deep read", "pending deep read", "pending deep read", item["detail_refs"], source_index_name]
         for item in index["file_io_inventory"]["summary"]
     ] or [["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]]
     external_rows = [
@@ -2208,7 +2261,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             (
                 "Pending semantic deep-read. This section must explain the program "
                 "by processing layer/theme and let an IT SME read the final "
-                "`program-analysis.md` without following sidecar links."
+                f"`{program_analysis_name}` without following sidecar links."
             ),
             markdown_table(
                 ["Processing Layer", "Main Routines", "What To Understand First"],
@@ -2245,7 +2298,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                     "Supporting Detail Link",
                     "Evidence",
                 ],
-                [["pending deep read", "pending", "pending", "pending", "pending", "program-analysis.md Routine Logic Details", "source-index"]],
+                [["pending deep read", "pending", "pending", "pending", "pending", f"{program_analysis_name} Routine Logic Details", source_index_name]],
             ),
             "### Routine Index For Calculation Logic",
             markdown_table(
@@ -2326,7 +2379,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                     "Supporting Detail Link",
                     "Evidence",
                 ],
-                [["pending deep read", "pending", "pending", "pending", "pending", "pending", "program-analysis.md Routine Logic Details", "source-index"]],
+                [["pending deep read", "pending", "pending", "pending", "pending", "pending", f"{program_analysis_name} Routine Logic Details", source_index_name]],
             ),
             "### Routine Index For Exception Handling",
             markdown_table(
@@ -2406,9 +2459,9 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             "Evidence basis: derived call analysis only\n\n```text\n" + program + " mainline\n|-- see Call Evidence for indexed calls\n```",
             "### Node Inventory",
             markdown_table(["Node", "Node Type", "Defined At", "Role / Notes", "Evidence"], [
-                [routine["name"], routine["type"], f"{routine['start_line']}-{routine['end_line']}", routine_role(routine), "source-index"]
+                [routine["name"], routine["type"], f"{routine['start_line']}-{routine['end_line']}", routine_role(routine), source_index_name]
                 for routine in index["routines"]
-            ] or [["MAIN", "Mainline", "1", "entry orchestration", "source-index"]]),
+            ] or [["MAIN", "Mainline", "1", "entry orchestration", source_index_name]]),
             "### Call Evidence",
             markdown_table(["Caller", "Callee", "Call Type", "Condition", "Source Lines", "Evidence Source", "Resolution"], call_rows),
             "### Reverse Caller Index",
@@ -2425,7 +2478,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
                         routine["data_touches"],
                         routine["state_impact"],
                         routine["error_handling"],
-                        "source-index",
+                        source_index_name,
                         routine["coverage"],
                     ]
                     for routine in index["routines"]
@@ -2434,15 +2487,15 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             "## Routine Logic Details",
             markdown_table(["Routine", "Role", "Source Lines", "Coverage", "Semantic Status", "Detail"], routine_rows),
             (
-                "Final `program-analysis.md` must keep one continuous, ordered "
-                "RLOG heading per `routine-logic-details.yaml` entry. Sidecars "
+                f"Final `{program_analysis_name}` must keep one continuous, ordered "
+                f"RLOG heading per `{routine_detail_yaml_name}` entry. Sidecars "
                 "remain audit/checkpoint and machine-readable sources."
             ),
             "\n\n".join(routine_detail_seed_sections),
             "## Deep Read Windows",
             markdown_table(["Window ID", "Routine / Path", "Source Lines", "Why Selected", "Coverage Outcome", "Evidence"], deep_read_rows),
             "## Entry Points & Parameters",
-            markdown_table(["Entry Point", "Type", "Parameters", "Return", "Evidence"], [["MAIN", "Main Program", "pending source-header deep read", "pending", "source-index"]]),
+            markdown_table(["Entry Point", "Type", "Parameters", "Return", "Evidence"], [["MAIN", "Main Program", "pending source-header deep read", "pending", source_index_name]]),
             "## Object Dependencies",
             markdown_table(["Object", "Type", "Version", "Description", "Inventory ID", "Evidence"], dependency_rows),
             "## Logic Decomposition Ledger",
@@ -2469,7 +2522,7 @@ def render_program_analysis(index: dict[str, Any]) -> str:
             "## Review Checklist",
             "\n".join(
                 [
-                    "- [ ] `program-analysis.md` follows the required section order.",
+                    f"- [ ] `{program_analysis_name}` follows the required section order.",
                     "- [ ] Large-program batch files under `routine-logic-details/` are present when tier is `large_extreme_program`.",
                     "- [ ] Routine Logic Details and YAML contain matching `RLOG-*` IDs.",
                     "- [ ] Calculation, validation, exception, and message rows are source-backed before SME approval.",
@@ -2485,6 +2538,8 @@ def render_routine_logic_batch(
     batch_number: int,
     windows: list[dict[str, Any]],
 ) -> str:
+    routine_detail_name = artifact_path(index, "routine-logic-details.md")
+    source_index_name = artifact_path(index, "source-index.yaml")
     detail_by_routine = {
         detail["routine"]: detail
         for detail in index["routine_logic_inventory"]["details"]
@@ -2542,14 +2597,14 @@ def render_routine_logic_batch(
             (
                 "Batch seed generated by `index_rpg_source.py`. Update this "
                 "file while deep-reading the selected source windows, then "
-                "merge completed semantic detail into `routine-logic-details.md`. "
+                f"merge completed semantic detail into `{routine_detail_name}`. "
                 "Keep this batch file as an audit checkpoint."
             ),
             "## Calculation Logic",
             "Pending semantic deep-read for this batch.",
             markdown_table(
                 ["Logic / Calculation", "Routine", "Target Field / Variable", "Source Operands", "Guard / Condition", "Output / Effect", "Detail Link", "Evidence"],
-                [["pending", ", ".join(batch_routines), "pending", "pending", "pending", "pending", "RLOG pending", "source-index"]],
+                [["pending", ", ".join(batch_routines), "pending", "pending", "pending", "pending", "RLOG pending", source_index_name]],
             ),
             "## Validation Logic",
             "Pending semantic deep-read for this batch.",
@@ -2618,52 +2673,52 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
 def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = [
-        (out_dir / "program-analysis.md", render_program_analysis(index)),
-        (out_dir / "source-index.yaml", to_yaml(index) + "\n"),
-        (out_dir / "program-analysis-summary.yaml", render_program_analysis_summary_yaml(index)),
-        (out_dir / "routine-index.md", render_routine_index(index)),
-        (out_dir / "message-inventory.yaml", render_message_inventory_yaml(index)),
+        (out_dir / artifact_path(index, "program-analysis.md"), render_program_analysis(index)),
+        (out_dir / artifact_path(index, "source-index.yaml"), to_yaml(index) + "\n"),
+        (out_dir / artifact_path(index, "program-analysis-summary.yaml"), render_program_analysis_summary_yaml(index)),
+        (out_dir / artifact_path(index, "routine-index.md"), render_routine_index(index)),
+        (out_dir / artifact_path(index, "message-inventory.yaml"), render_message_inventory_yaml(index)),
     ]
     if requires_routine_detail_sidecars(index):
         files.extend(
             [
-                (out_dir / "routine-logic-details.md", render_routine_logic_details(index)),
-                (out_dir / "routine-logic-details.yaml", render_routine_logic_details_yaml(index)),
+                (out_dir / artifact_path(index, "routine-logic-details.md"), render_routine_logic_details(index)),
+                (out_dir / artifact_path(index, "routine-logic-details.yaml"), render_routine_logic_details_yaml(index)),
             ]
         )
     triggers = index["optional_sidecar_triggers"]
     if triggers["coverage_ledger"]["write"]:
-        files.append((out_dir / "all-routine-coverage-ledger.md", render_coverage_ledger(index)))
+        files.append((out_dir / artifact_path(index, "all-routine-coverage-ledger.md"), render_coverage_ledger(index)))
     if triggers["deep_read_plan"]["write"]:
-        files.append((out_dir / "deep-read-plan.md", render_deep_read_plan(index)))
+        files.append((out_dir / artifact_path(index, "deep-read-plan.md"), render_deep_read_plan(index)))
     if triggers["message_inventory_markdown"]["write"]:
-        files.append((out_dir / "message-inventory.md", render_message_inventory(index)))
+        files.append((out_dir / artifact_path(index, "message-inventory.md"), render_message_inventory(index)))
     if triggers["file_io_inventory"]["write"]:
         files.extend(
             [
-                (out_dir / "file-io-inventory.md", render_file_io_inventory(index)),
-                (out_dir / "file-io-inventory.yaml", render_file_io_inventory_yaml(index)),
+                (out_dir / artifact_path(index, "file-io-inventory.md"), render_file_io_inventory(index)),
+                (out_dir / artifact_path(index, "file-io-inventory.yaml"), render_file_io_inventory_yaml(index)),
             ]
         )
     if triggers["field_mutation_matrix"]["write"]:
         files.extend(
             [
-                (out_dir / "field-mutation-matrix.md", render_field_mutation_inventory(index)),
-                (out_dir / "field-mutation-matrix.yaml", render_field_mutation_inventory_yaml(index)),
+                (out_dir / artifact_path(index, "field-mutation-matrix.md"), render_field_mutation_inventory(index)),
+                (out_dir / artifact_path(index, "field-mutation-matrix.yaml"), render_field_mutation_inventory_yaml(index)),
             ]
         )
     if triggers["sql_inventory"]["write"]:
         files.extend(
             [
-                (out_dir / "sql-inventory.md", render_sql_inventory(index)),
-                (out_dir / "sql-inventory.yaml", render_sql_inventory_yaml(index)),
+                (out_dir / artifact_path(index, "sql-inventory.md"), render_sql_inventory(index)),
+                (out_dir / artifact_path(index, "sql-inventory.yaml"), render_sql_inventory_yaml(index)),
             ]
         )
     if requires_routine_batch_files(index):
         for batch_number, windows in enumerate(routine_batch_groups(index), start=1):
             files.append(
                 (
-                    out_dir / routine_batch_path(batch_number),
+                    out_dir / routine_batch_path(index, batch_number),
                     render_routine_logic_batch(index, batch_number, windows),
                 )
             )

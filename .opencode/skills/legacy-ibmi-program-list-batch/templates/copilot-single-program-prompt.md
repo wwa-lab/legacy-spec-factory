@@ -26,6 +26,16 @@ Reference and control inputs:
 
 Rules:
 - Build deterministic indexes first.
+{{scaffold_prompt_note}}
+- Deterministic indexes are pre-analysis scaffolds only. The generated
+  {{member}}-program-analysis.md seed, source index, and routine sidecars are
+  not final analysis until semantic deep-read replaces pending/thin content
+  with source-backed reader-first detail.
+- Do not stop after deterministic indexing. Read the generated
+  {{member}}-source-index.yaml, {{member}}-routine-logic-details.yaml, and the
+  source routine bodies; then fill {{member}}-program-analysis.md and
+  {{member}}-routine-logic-details.md with the actual calculation,
+  validation, exception, data movement, and outcome-trace details.
 - Analyze only this program.
 - Read the listed reference and control inputs when they are relevant to this
   program's observed messages, status values, control-file lookups, field
@@ -37,15 +47,23 @@ Rules:
 - Do not import prior program source or prior chat summaries.
 - Read at most 5 routine bodies per turn.
 - Keep normal_program output reader-first and compact, but still create
-  routine-logic-details.md and routine-logic-details.yaml as routine-level
-  audit/checkpoint evidence.
+  {{member}}-routine-logic-details.md and
+  {{member}}-routine-logic-details.yaml as routine-level audit/checkpoint
+  evidence.
 - Do not create deep-read-plan.md or retained batch deep-read files for a
   normal_program unless density triggers promote it to complex_normal_program /
   large_extreme_program or the user explicitly asks for deep-read.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
+- Every RLOG declared in {{member}}-routine-logic-details.yaml must have
+  reader-useful detail in both {{member}}-program-analysis.md and
+  {{member}}-routine-logic-details.md before this row can be marked complete.
+  At minimum, include trigger, guard/condition, key assignments/calculations,
+  validation or message/status outcomes, file or external side effects,
+  exception closure, and source-line evidence. If a routine is truly utility
+  only, say why and keep it concise rather than leaving it as indexed_only.
 - Write required artifacts to the output directory.
-- Run the program-analysis validator before marking complete.
+{{validation_policy}}
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
 - Do not generate or refresh program-set-sme-core-review.md in this
@@ -73,29 +91,24 @@ Retry / exit budget:
   self-retry helpers to bypass these limits unless the user explicitly asks.
 
 Required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- {{member}}-program-analysis.md
+- {{member}}-source-index.yaml
+- {{member}}-program-analysis-summary.yaml
+- {{member}}-routine-index.md
+- {{member}}-message-inventory.yaml
+- {{member}}-routine-logic-details.md
+- {{member}}-routine-logic-details.yaml
 
 Conditional output:
-- deep-read-plan.md, all-routine-coverage-ledger.md, and
-  routine-logic-details/deep-read-batch-*.md only when triggered by
+- {{member}}-deep-read-plan.md, {{member}}-all-routine-coverage-ledger.md,
+  and routine-logic-details/{{member}}-deep-read-batch-*.md only when triggered by
   complex/large tier or retained batch evidence.
 
 Validation:
-py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir "{{output_dir}}"
+{{validation_command_block}}
 
 Company Windows 11 / Cline note:
-- Run the generated `py -3 ...` command first. If the Python Launcher is
-  unavailable, run the same command again with `python` replacing `py -3`.
-- Do not replace it with PowerShell, `.cmd`, `.ps1`, shell continuations, or
-  `py ... || python ...`.
-- A validator failure is a result failure, not a reason to rerun it through
-  another route.
+{{validation_launcher_note}}
 - Keep Windows paths in code spans or fenced code blocks when reporting them.
   In Markdown, a raw `\@` can render as `@`, hiding the separator before
   program names such as `@CU400P`.

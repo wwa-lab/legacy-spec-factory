@@ -14,7 +14,8 @@ For a human-oriented explanation of the same strategy, see
 Treat normal programs as concise SME review problems, complex normal programs
 as targeted-evidence problems, and 20k-30k+ line RPG programs as
 evidence-driven program-understanding problems, not large-text summarization
-problems. The final SME artifact is still the main `program-analysis.md`;
+problems. The final SME artifact is still the main
+`<PROGRAM>-program-analysis.md`;
 large-program sidecars are audit, checkpoint, and machine-readable sources, not
 the default reader journey.
 
@@ -33,28 +34,30 @@ Use three SME-facing tiers:
 
 | Tier | When to use | Default output profile |
 | --- | --- | --- |
-| `normal_program` | Under 10,000 lines with no density trigger; recommended deep-read windows fit in one five-routine batch. | Concise reader-first `program-analysis.md` plus core RLOG/message machine-readable artifacts. |
+| `normal_program` | Under 10,000 lines with no density trigger; recommended deep-read windows fit in one five-routine batch. | Concise reader-first `<PROGRAM>-program-analysis.md` plus core RLOG/message machine-readable artifacts. |
 | `complex_normal_program` | Under large thresholds but dense in routines, file I/O, messages, SQL, field mutations, external calls, object dependencies, or recommended deep-read windows. | Reader-first SME review plus only triggered sidecars. |
-| `large_extreme_program` | Above large thresholds or cannot fit safely with evidence windows. | Reader-first final `program-analysis.md`, full index, full sidecar set, coverage ledger, deep-read plan, retained `routine-logic-details/deep-read-batch-001.md` style checkpoints, and automatic five-routine loop when possible. |
+| `large_extreme_program` | Above large thresholds or cannot fit safely with evidence windows. | Reader-first final `<PROGRAM>-program-analysis.md`, full index, full sidecar set, coverage ledger, deep-read plan, retained `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` style checkpoints, and automatic five-routine loop when possible. |
 
 ## Reader-First Final Wrapper Rule
 
-For every tier, including `normal_program`, the final `program-analysis.md`
-uses the same reader-first layout. Normal programs are shorter, not structurally
-different. For `large_extreme_program`, routine-dense programs, and user
-requests such as "open one file and read it without detail links", this rule is
-especially important: the final `program-analysis.md` must not be only a
-sidecar index. It must include:
+For every tier, including `normal_program`, the final
+`<PROGRAM>-program-analysis.md` uses the same reader-first layout. Normal
+programs are shorter, not structurally different. For `large_extreme_program`,
+routine-dense programs, and user requests such as "open one file and read it
+without detail links", this rule is especially important: the final
+`<PROGRAM>-program-analysis.md` must not be only a sidecar index. It must
+include:
 
 - `Program Reading Summary` immediately after the title
 - `Calculation Logic`, `Validation Logic`, and `Exception Handling` with
   reader-oriented thematic overview before routine ledgers
 - `Routine Index For Calculation Logic`, `Routine Index For Validation Logic`,
   and `Routine Index For Exception Handling`, each covering every RLOG declared
-  in `routine-logic-details.yaml`
-- `Message Inventory` synchronized with `message-inventory.yaml`
+  in `<PROGRAM>-routine-logic-details.yaml`
+- `Message Inventory` synchronized with `<PROGRAM>-message-inventory.yaml`
 - `Routine Logic Details` in the main file with continuous, ordered
-  `RLOG-<PROGRAM>-NNN` headings matching `routine-logic-details.yaml`
+  `RLOG-<PROGRAM>-NNN` headings matching
+  `<PROGRAM>-routine-logic-details.yaml`
 - No pending/placeholder Program Reading Summary, routine-index detail, or
   main-file RLOG detail; the final artifact must pass the reader-first golden
   gate in `validate_program_analysis_contract.py`
@@ -69,13 +72,13 @@ compact wrapper.
 For `normal_program`, produce a concise SME-first review with the same main
 layout and RLOG coverage contract as larger programs. Core artifacts are:
 
-- `program-analysis.md`
-- `program-analysis-summary.yaml`
-- `source-index.yaml`
-- `routine-index.md`
-- `routine-logic-details.md`
-- `routine-logic-details.yaml`
-- `message-inventory.yaml`
+- `<PROGRAM>-program-analysis.md`
+- `<PROGRAM>-program-analysis-summary.yaml`
+- `<PROGRAM>-source-index.yaml`
+- `<PROGRAM>-routine-index.md`
+- `<PROGRAM>-routine-logic-details.md`
+- `<PROGRAM>-routine-logic-details.yaml`
+- `<PROGRAM>-message-inventory.yaml`
 
 Do not generate dense file I/O, mutation, SQL, message Markdown, coverage, or
 deep-read planning sidecars by default. Generate them only when a trigger is
@@ -99,12 +102,12 @@ Optional sidecars are triggered independently:
 
 | Sidecar | Trigger |
 | --- | --- |
-| `deep-read-plan.md` | More than one five-routine batch is needed, or tier is complex/large. |
-| `all-routine-coverage-ledger.md` | More than one five-routine batch is needed, or tier is complex/large. |
-| `message-inventory.md` | More than 10 unique message/status/code rows, or large tier. |
-| `file-io-inventory.md` / `file-io-inventory.yaml` | More than 10 file operations, state-changing file I/O, commit, rollback, or large tier. |
-| `field-mutation-matrix.md` / `field-mutation-matrix.yaml` | Persisted native/SQL mutation evidence is observed, or large tier. |
-| `sql-inventory.md` / `sql-inventory.yaml` | Embedded SQL / SQLRPGLE evidence is observed, or large tier. |
+| `<PROGRAM>-deep-read-plan.md` | More than one five-routine batch is needed, or tier is complex/large. |
+| `<PROGRAM>-all-routine-coverage-ledger.md` | More than one five-routine batch is needed, or tier is complex/large. |
+| `<PROGRAM>-message-inventory.md` | More than 10 unique message/status/code rows, or large tier. |
+| `<PROGRAM>-file-io-inventory.md` / `<PROGRAM>-file-io-inventory.yaml` | More than 10 file operations, state-changing file I/O, commit, rollback, or large tier. |
+| `<PROGRAM>-field-mutation-matrix.md` / `<PROGRAM>-field-mutation-matrix.yaml` | Persisted native/SQL mutation evidence is observed, or large tier. |
+| `<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml` | Embedded SQL / SQLRPGLE evidence is observed, or large tier. |
 
 ## When To Use Large-Program Mode
 
@@ -191,36 +194,37 @@ Core artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
-| `program-analysis.md` | Stable SME review wrapper seed with all required sections in contract order. The seed starts as pending/draft and is filled during semantic deep-read. |
-| `source-index.yaml` | Machine-readable structure inventory: program profile, free-format statements, declarations, assignments, routines, calls, declared files, file operations, SQL, messages, recommended deep-read windows, and mode selection. |
-| `program-analysis-summary.yaml` | Compact machine-readable program summary for flow/module analyzers; prefer this over concatenating large Markdown analyses. |
-| `routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
-| `routine-logic-details.md` | Reviewer-readable sidecar seed for routine-level detail IDs, line ranges, call/data evidence, deep-read priority, and pending semantic detail. |
-| `routine-logic-details.yaml` | Machine-readable routine logic inventory for downstream flow/module/spec consumers and later semantic enrichment. |
-| `message-inventory.yaml` | Machine-readable detailed message inventory for downstream flow/module/spec consumers and reference-pack enrichment. |
+| `<PROGRAM>-program-analysis.md` | Stable SME review wrapper seed with all required sections in contract order. The seed starts as pending/draft and is filled during semantic deep-read. |
+| `<PROGRAM>-source-index.yaml` | Machine-readable structure inventory: program profile, free-format statements, declarations, assignments, routines, calls, declared files, file operations, SQL, messages, recommended deep-read windows, and mode selection. |
+| `<PROGRAM>-program-analysis-summary.yaml` | Compact machine-readable program summary for flow/module analyzers; prefer this over concatenating large Markdown analyses. |
+| `<PROGRAM>-routine-index.md` | Reviewer-readable seed for Routine Cards, Call Evidence, File Operation seed, and Message / Status seed. |
+| `<PROGRAM>-routine-logic-details.md` | Reviewer-readable sidecar seed for routine-level detail IDs, line ranges, call/data evidence, deep-read priority, and pending semantic detail. |
+| `<PROGRAM>-routine-logic-details.yaml` | Machine-readable routine logic inventory for downstream flow/module/spec consumers and later semantic enrichment. |
+| `<PROGRAM>-message-inventory.yaml` | Machine-readable detailed message inventory for downstream flow/module/spec consumers and reference-pack enrichment. |
 
 Optional artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
-| `all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
-| `deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
-| `message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
-| `file-io-inventory.md` | Reviewer-readable detailed sidecar for every observed native file operation, screen/report boundary, and transaction boundary. |
-| `file-io-inventory.yaml` | Machine-readable file I/O inventory for downstream flow/module/spec consumers. |
-| `field-mutation-matrix.md` | Reviewer-readable mutation sidecar for native WRITE/UPDATE/DELETE and embedded SQL DML. |
-| `field-mutation-matrix.yaml` | Machine-readable field mutation matrix for downstream flow/module/spec consumers. |
-| `sql-inventory.md` | Reviewer-readable embedded SQL sidecar for SQLRPGLE/free-format statements, host variables, table/view targets, and status-handling seeds. |
-| `sql-inventory.yaml` | Machine-readable embedded SQL inventory for downstream flow/module/spec consumers. |
+| `<PROGRAM>-all-routine-coverage-ledger.md` | Initial coverage ledger showing every routine as `indexed_only` until semantic deep read proves stronger claims. |
+| `<PROGRAM>-deep-read-plan.md` | Recommended semantic windows for entry paths, state changers, external calls, transaction boundaries, and message/error paths. |
+| `<PROGRAM>-message-inventory.md` | Reviewer-readable detailed sidecar for every observed message/code/literal, including description status, occurrence count, routines, source lines, and unresolved lookup gaps. |
+| `<PROGRAM>-file-io-inventory.md` | Reviewer-readable detailed sidecar for every observed native file operation, screen/report boundary, and transaction boundary. |
+| `<PROGRAM>-file-io-inventory.yaml` | Machine-readable file I/O inventory for downstream flow/module/spec consumers. |
+| `<PROGRAM>-field-mutation-matrix.md` | Reviewer-readable mutation sidecar for native WRITE/UPDATE/DELETE and embedded SQL DML. |
+| `<PROGRAM>-field-mutation-matrix.yaml` | Machine-readable field mutation matrix for downstream flow/module/spec consumers. |
+| `<PROGRAM>-sql-inventory.md` | Reviewer-readable embedded SQL sidecar for SQLRPGLE/free-format statements, host variables, table/view targets, and status-handling seeds. |
+| `<PROGRAM>-sql-inventory.yaml` | Machine-readable embedded SQL inventory for downstream flow/module/spec consumers. |
 
 Large/extreme artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
-| `routine-logic-details/deep-read-batch-001.md` | Required first retained checkpoint for large/extreme batched deep-read. Additional batches continue as `deep-read-batch-002.md`, `deep-read-batch-003.md`, and so on, with at most five routines/windows per batch. |
+| `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` | Required first retained checkpoint for large/extreme batched deep-read. Additional batches continue as `<PROGRAM>-deep-read-batch-002.md`, `<PROGRAM>-deep-read-batch-003.md`, and so on, with at most five routines/windows per batch. |
 
 These files are allowed intermediate artifacts. They do not replace
-`program-analysis.md`, and they must not be treated as business conclusions.
+`<PROGRAM>-program-analysis.md`, and they must not be treated as business
+conclusions.
 
 Capture:
 
@@ -250,10 +254,11 @@ Capture:
   handlers
 
 For large or message-dense programs, keep the front-loaded `Message Inventory`
-inside `program-analysis.md` as a compact summary. Store per-occurrence message
-details in `message-inventory.md` and machine-readable details in
-`message-inventory.yaml`; link summary rows to stable `MSG-<PROGRAM>-NNN`
-detail IDs instead of expanding every occurrence in the main analysis.
+inside `<PROGRAM>-program-analysis.md` as a compact summary. Store
+per-occurrence message details in `<PROGRAM>-message-inventory.md` and
+machine-readable details in `<PROGRAM>-message-inventory.yaml`; link summary
+rows to stable `MSG-<PROGRAM>-NNN` detail IDs instead of expanding every
+occurrence in the main analysis.
 Observed message/status/code values without descriptions are not meaningful
 SME review output. If descriptions are missing, mark each row unresolved and
 create a blocking message-description TBD; do not pass final validation until a
@@ -261,15 +266,15 @@ message file/catalog/reference pack, source literal/comment, runtime evidence,
 or SME-approved description source resolves the row.
 
 For routine-dense programs, keep `Routine Logic Details` inside
-`program-analysis.md` table-led and reader-friendly, but include every RLOG
-declared in `routine-logic-details.yaml` as a continuous, ordered main-file
-heading. Store duplicate/audit per-routine semantic detail in
-`routine-logic-details.md` and machine-readable detail in
-`routine-logic-details.yaml`. When a program has more than 80 routines or more
-than 10,000 source lines, split human-authored semantic detail into
-`routine-logic-details/deep-read-batch-*.md` retained checkpoint files by
-five-routine/window batches, or `routine-logic-details/part-*.md` files by
-semantic shard such as mainline/dispatch,
+`<PROGRAM>-program-analysis.md` table-led and reader-friendly, but include
+every RLOG declared in `<PROGRAM>-routine-logic-details.yaml` as a continuous,
+ordered main-file heading. Store duplicate/audit per-routine semantic detail in
+`<PROGRAM>-routine-logic-details.md` and machine-readable detail in
+`<PROGRAM>-routine-logic-details.yaml`. When a program has more than 80
+routines or more than 10,000 source lines, split human-authored semantic detail
+into `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` retained checkpoint
+files by five-routine/window batches, or
+`routine-logic-details/<PROGRAM>-part-*.md` files by semantic shard such as mainline/dispatch,
 state-changing routines, validation/message routines, external boundaries, and
 indexed utilities.
 
@@ -286,10 +291,11 @@ source code into the batch core sections; use identifiers, normalized logic,
 source ranges, evidence IDs, and `RLOG-*` links instead.
 
 The retained batch/shard files must be consolidated after batch deep-read. The
-final `program-analysis.md` is the primary SME review document and the final
-`routine-logic-details.md` is the consolidated audit/checkpoint document for all
-routine detail, even for very large programs. Both must cover every RLOG from
-`routine-logic-details.yaml`. The routine detail sidecar must contain whole-program
+final `<PROGRAM>-program-analysis.md` is the primary SME review document and
+the final `<PROGRAM>-routine-logic-details.md` is the consolidated
+audit/checkpoint document for all routine detail, even for very large programs.
+Both must cover every RLOG from `<PROGRAM>-routine-logic-details.yaml`. The
+routine detail sidecar must contain whole-program
 `## Calculation Logic`, `## Validation Logic`, `## Exception Handling`,
 `## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
 sections, with every routine included and every exact message/status/literal
@@ -297,13 +303,13 @@ listed. Keep the main file readable; do not force SMEs to review only by
 sidecar, batch, or part files. Keep the batch files as checkpoints so reviewers can audit
 what was processed in each five-routine/window pass.
 
-For large and segmented programs, the final `program-analysis.md` is still the
-contracted SME wrapper. It may stay table-led, but it must include every
-required section from `references/output-contract.md`, include reader-oriented
-core logic before routine ledgers, include the complete RLOG and message
-coverage required by the output contract, and pass the Program Artifact
-Finalization Gate. Each `routine-logic-details/part-*.md` or
-`routine-logic-details/deep-read-batch-*.md` checkpoint file must front-load SME
+For large and segmented programs, the final `<PROGRAM>-program-analysis.md` is
+still the contracted SME wrapper. It may stay table-led, but it must include
+every required section from `references/output-contract.md`, include
+reader-oriented core logic before routine ledgers, include the complete RLOG and
+message coverage required by the output contract, and pass the Program Artifact
+Finalization Gate. Each `routine-logic-details/<PROGRAM>-part-*.md` or
+`routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoint file must front-load SME
 core logic (`Calculation Logic`, `Validation Logic`, and `Exception Handling`)
 before per-routine detail, and the core logic must not contain fenced code
 blocks or copied RPG/CL/COBOL/SQL source snippets. Do not replace the wrapper with a compressed
@@ -315,24 +321,28 @@ macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-di
 ```
 
 The gate checks required wrapper sections, declared sidecar files, RLOG coverage
-from `routine-logic-details.yaml` to both `program-analysis.md` and
-`routine-logic-details.md`, core logic routine-index coverage, stale deep-read
-gap wording, and message inventory synchronization.
+from `<PROGRAM>-routine-logic-details.yaml` to both
+`<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`, core
+logic routine-index coverage, stale deep-read gap wording, and message
+inventory synchronization.
 
 For file-I/O-dense or SQLRPGLE programs, keep `File I/O` and `Key File & Field
-Logic` inside `program-analysis.md` as SME-readable summaries. Store complete
-operation detail in `file-io-inventory.md` / `file-io-inventory.yaml`,
-persisted native and SQL mutations in `field-mutation-matrix.md` /
-`field-mutation-matrix.yaml`, and embedded SQL detail in `sql-inventory.md` /
-`sql-inventory.yaml`. Link main analysis rows to stable `FIO-*`, `MUT-*`, and
-`SQL-*` detail IDs instead of expanding every operation or host variable inline.
+Logic` inside `<PROGRAM>-program-analysis.md` as SME-readable summaries. Store
+complete operation detail in `<PROGRAM>-file-io-inventory.md` /
+`<PROGRAM>-file-io-inventory.yaml`, persisted native and SQL mutations in
+`<PROGRAM>-field-mutation-matrix.md` /
+`<PROGRAM>-field-mutation-matrix.yaml`, and embedded SQL detail in
+`<PROGRAM>-sql-inventory.md` / `<PROGRAM>-sql-inventory.yaml`. Link main
+analysis rows to stable `FIO-*`, `MUT-*`, and `SQL-*` detail IDs instead of
+expanding every operation or host variable inline.
 
-Downstream flow/module analyzers must prefer `program-analysis-summary.yaml`,
-`source-index.yaml`, `routine-logic-details.yaml`, and
-`message-inventory.yaml`, `file-io-inventory.yaml`,
-`field-mutation-matrix.yaml`, and `sql-inventory.yaml` when aggregating
-multiple programs. They should not concatenate multiple full
-`program-analysis.md` files; human-readable Markdown is for targeted
+Downstream flow/module analyzers must prefer
+`<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
+`<PROGRAM>-routine-logic-details.yaml`, and
+`<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-file-io-inventory.yaml`,
+`<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml` when
+aggregating multiple programs. They should not concatenate multiple full
+`<PROGRAM>-program-analysis.md` files; human-readable Markdown is for targeted
 clarification only.
 
 ## Routine Card

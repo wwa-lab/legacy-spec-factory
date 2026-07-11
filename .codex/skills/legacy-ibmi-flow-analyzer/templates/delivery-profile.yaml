@@ -17,6 +17,11 @@ program_artifact_resolution_profile:
   program_folder_patterns:
     - modules/*/{PROGRAM}
   artifact_file_patterns:
+    - "{PROGRAM}-program-analysis.md"
+    - "{PROGRAM}-program-analysis-*.md"
+    - "{PROGRAM}-program-analysis-summary.yaml"
+    - "{PROGRAM}-routine-logic-details.yaml"
+    - "{PROGRAM}-message-inventory.yaml"
     - program-analysis.md
     - program-analysis-*.md
     - program-analysis-summary.yaml
@@ -43,6 +48,11 @@ delivery_artifact_lookup_profile:
   program_folder_patterns:
     - modules/*/{PROGRAM}
   artifact_file_patterns:
+    - "{PROGRAM}-program-analysis.md"
+    - "{PROGRAM}-program-analysis-*.md"
+    - "{PROGRAM}-program-analysis-summary.yaml"
+    - "{PROGRAM}-routine-logic-details.yaml"
+    - "{PROGRAM}-message-inventory.yaml"
     - program-analysis.md
     - program-analysis-*.md
     - program-analysis-summary.yaml

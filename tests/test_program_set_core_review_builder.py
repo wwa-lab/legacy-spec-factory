@@ -41,8 +41,13 @@ def load_program_set_builder():
 BUILDER = load_program_set_builder()
 
 
-def write_compact_artifacts(artifact_root: Path, missing: set[str] | None = None) -> None:
+def write_compact_artifacts(
+    artifact_root: Path,
+    missing: set[str] | None = None,
+    program: str | None = None,
+) -> None:
     missing = missing or set()
+    program = program or artifact_root.name
     artifact_root.mkdir(parents=True)
     all_artifacts = (
         BUILDER.REQUIRED_COMPACT_ARTIFACTS
@@ -52,7 +57,8 @@ def write_compact_artifacts(artifact_root: Path, missing: set[str] | None = None
     for filename in all_artifacts:
         if filename in missing:
             continue
-        (artifact_root / filename).write_text(
+        artifact_filename = BUILDER.program_artifact_filename(program, filename)
+        (artifact_root / artifact_filename).write_text(
             f"schema_version: '0.1'\nartifact: {filename}\n",
             encoding="utf-8",
         )
@@ -296,7 +302,8 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertIn("| Cross-Run Reuse | false |", review_text)
             self.assertIn("| @CU118 |", review_text)
             self.assertIn("| CU118 |", review_text)
-            self.assertIn("routine-logic-details.yaml=present", review_text)
+            self.assertIn("@CU118-routine-logic-details.yaml=present", review_text)
+            self.assertIn("CC050-routine-logic-details.yaml=present", review_text)
             self.assertNotIn("optional_not_required", review_text)
             self.assertNotIn(
                 "| Program | Expected In Scope From | Run Resolution | Calculation Logic | Validation Logic | Exception Handling |",

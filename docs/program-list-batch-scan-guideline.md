@@ -7,7 +7,7 @@ program list.
 中文摘要: 这份文档用于按 `program-list.csv` 批量执行 IBM i program scan。
 核心原则是外层按清单批量调度，内层仍然使用
 `legacy-ibmi-program-analyzer` 一次分析一个 program。不要把多个 program
-合并进同一个 `program-analysis.md`。
+合并进同一个 `<PROGRAM>-program-analysis.md`。
 
 Canonical skill entry: `legacy-ibmi-program-list-batch`.
 
@@ -55,6 +55,81 @@ Program-set SME review is not part of this batch step. It is a downstream
 `legacy-ibmi-flow-analyzer` step only after a specific flow/list or discovered
 call-flow defines a meaningful program set.
 
+For faster Cline batch scans, use the two-phase mode:
+
+1. Initialize with `--scaffold-mode precreate --validation-mode deferred`.
+   This creates the prompt queue, status files, manifest, and deterministic
+   per-program scaffold artifacts up front.
+2. In Cline, paste the generated `cline-serial-runner-prompt.md`. Cline should
+   process `prompt-queue/*.md` serially and should not use `subagent-queue` or
+   `subagent-results`.
+3. Add `--subagent-mode prepare` only when the operator also wants to try
+   Kiro/agent parallel execution. Kiro should use
+   `kiro-parallel-runner-prompt.md` and the `subagent-queue/*.md` prompts.
+4. Each prompt starts from the existing scaffold and fills semantic
+   reader-first details from source. Final validation is deferred until
+   downstream use or handoff.
+
+Deferred mode skips the expensive program-analysis validator inside each
+per-program prompt and writes `batch_status=scanned_unvalidated` /
+`validator_status=deferred` after the artifacts and scaffold guard are clean.
+Run the validator later before any downstream flow review, BRD/spec
+generation, SME signoff, or central delivery handoff. Use the default
+`--validation-mode immediate` when every row must be validator-clean during the
+scan.
+
+## Step 1 Queue-Only Cline Prompt
+
+Use this short prompt for the first Cline task. Its only job is to generate the
+batch queue and optional deterministic scaffolds. It must not start semantic
+program analysis.
+
+````text
+/legacy-ibmi-program-list-batch
+
+任务：只初始化 program-list batch，生成 prompt queue 和 batch state。不要扫描任何 program。
+
+严格边界：
+- 不要调用 `legacy-ibmi-program-analyzer`。
+- 不要逐行分析 program source。
+- 不要填充 reader-first semantic details。
+- 不要运行 program-analysis validator。
+- 不要把任何 program row 标记为 `completed`、`completed_with_warnings` 或 `scanned_unvalidated`。
+- 如果使用 `--scaffold-mode precreate`，只允许生成 deterministic scaffold；row 仍应保持 `batch_status=queued`，并写 `scaffold_status=present`。
+- 初始化完成后立即停止，输出生成文件路径和 Cline 串行 Step 2 prompt 路径。
+
+请运行以下初始化命令，并只执行这一条命令对应的初始化工作：
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list "<program-list.csv>" --out-dir "<batch-dir>" --source-root "<source-root>" --delivery-root "<output-root>" --reference-path "<reference-pack-or-folder>" --control-file "<control-file-or-folder>" --review-name "<review-name>" --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+```
+
+初始化成功后的预期输出：
+- `<batch-dir>/program-batch-plan.md`
+- `<batch-dir>/program-list-status.csv`
+- `<batch-dir>/batch-scan-manifest.yaml`
+- `<batch-dir>/prompt-queue/*.md`
+- `<batch-dir>/cline-serial-runner-prompt.md`
+- 如果使用 `--subagent-mode prepare`，还应生成：
+  - `<batch-dir>/subagent-queue/*.md`
+  - `<batch-dir>/kiro-parallel-runner-prompt.md`
+  - `<batch-dir>/subagent-dispatch-plan.md`
+  - `<batch-dir>/subagent-results/`
+
+验收检查：
+- `program-list-status.csv` 中 program rows 仍是 `queued`，除非 source 缺失或非 program row。
+- 如果 scaffold precreate 成功，`scaffold_status=present`。
+- 不应出现因 Step 1 产生的 final semantic analysis 结论。
+- 不应因为 Step 1 而显示 batch scan completed。
+
+现在开始：运行初始化命令，生成 queue/state/scaffold 后停止并报告 Cline Step 2 应复制的 `cline-serial-runner-prompt.md` 路径；如果存在 Kiro 并行队列，也报告 `kiro-parallel-runner-prompt.md` 路径。
+````
+
+If this Step 1 prompt produces rich semantic files such as a filled
+`CU219B-program-analysis.md` and marks rows completed, the prompt used was too
+broad and has started Step 2 work accidentally. Regenerate the batch with the
+queue-only prompt above.
+
 ## Input List Contract
 
 Minimum useful columns:
@@ -80,7 +155,12 @@ Input checks before scanning:
 - Names such as `@CC080` and `CC080` are treated as distinct unless a reviewed
   delivery profile explicitly defines aliases.
 
-## English Copilot Prompt
+## Legacy Full Batch Prompt Reference
+
+The following long prompt is a reference for full prompt-driven batch
+execution. Do not paste it as Step 1 queue initialization. It includes
+per-program analyzer and artifact rules, so Cline may start scanning programs
+instead of only generating queue files.
 
 ```text
 Use skill: legacy-ibmi-program-list-batch
@@ -125,7 +205,15 @@ Execution rules:
   messages, statuses, control-file lookups, field meanings, or validation
   rules. Treat them as supporting evidence only.
 - Run legacy-ibmi-program-analyzer for each queued program row.
-- Do not combine multiple programs into one program-analysis.md.
+- If the batch was initialized with `--scaffold-mode precreate`, treat the
+  generated scaffold as phase-1 setup only. Start each prompt by reading the
+  existing source index, routine index, and routine logic YAML, then fill the
+  source-backed semantic detail.
+- Treat deterministic indexes as pre-analysis scaffolds only. After index
+  generation, read the source-index, routine-logic YAML, and source routine
+  bodies; replace pending/thin scaffold content with source-backed semantic
+  analysis before marking the row complete.
+- Do not combine multiple programs into one <PROGRAM>-program-analysis.md.
 - Each program must have its own output folder.
 - Read at most 5 routine bodies per program-analysis turn.
 - Keep normal_program output lightweight unless a density trigger appears:
@@ -138,18 +226,18 @@ Execution rules:
 - Continue from the next unprocessed row if interrupted or resumed.
 
 Per-program required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 Conditional per-program output:
-- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
-  routine-logic-details/deep-read-batch-*.md only when complex/large tier or
-  explicit deep-read continuation triggers require them.
+- <PROGRAM>-deep-read-plan.md, <PROGRAM>-all-routine-coverage-ledger.md, and
+  retained routine-logic-details/<PROGRAM>-deep-read-batch-*.md only when
+  complex/large tier or explicit deep-read continuation triggers require them.
 
 Batch required output:
 - batch-scan-manifest.yaml
@@ -157,6 +245,24 @@ Batch required output:
 - program-batch-plan.md
 - program-list-status.csv
 - prompt-queue/*.md
+
+Recommended initialization command:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
+```
+
+After Kiro/agent workers finish, merge their result JSON files:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
+```
+
+The Cline serial Step 2 prompt is generated at:
+
+```text
+outputs\program-list-batch\cline-serial-runner-prompt.md
+```
 
 Output folder rules:
 - normal_program outputs go under the configured normal_program tier root.
@@ -169,6 +275,14 @@ Quality gates:
 - Do not mark a program complete only because files were generated.
 - A program is complete only when required artifacts exist and the
   program-analysis validator passes.
+- In fast deferred-validation scans, use `batch_status=scanned_unvalidated`
+  and `validator_status=deferred` instead of `completed`; run final validation
+  before downstream use.
+- Do not mark a program complete if <PROGRAM>-program-analysis.md or
+  <PROGRAM>-routine-logic-details.md still contains scaffold wording such as
+  `Draft wrapper seed generated`, `pending semantic deep-read`,
+  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
+  `not deep-read`.
 - Validate each generated program-analysis artifact before marking that program
   complete.
 - Do not mark the batch complete if required per-program artifacts are missing.
@@ -183,8 +297,10 @@ Quality gates:
 - Unresolved message/status/code descriptions must be listed as TBDs or
   blockers.
 - The batch is complete only when every requested program is classified as
-  completed, completed_with_warnings, skipped_not_program,
-  blocked_missing_source, failed_validator, or failed_runtime.
+  completed, completed_with_warnings, scanned_unvalidated,
+  skipped_not_program, blocked_missing_source, failed_validator, or
+  failed_runtime. `scanned_unvalidated` closes the fast scan ledger only; it is
+  not downstream-ready.
 
 Retry / exit budget:
 - Do not build an unbounded retry loop around Cline, model, network, tool, or
@@ -200,6 +316,9 @@ Retry / exit budget:
   `last_error` such as
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`, and set
   `next_action` to resume the same program after the environment is stable.
+- In deferred validation mode, do not run the validator inside the per-program
+  prompt. Mark successful fast scans as `batch_status=scanned_unvalidated`,
+  `validator_status=deferred`, with `next_action` pointing to final validation.
 - If the program-analysis validator fails, perform at most one targeted repair
   pass for that program. If validation still fails, set
   `batch_status=failed_validator`, preserve the validator finding in
@@ -232,6 +351,13 @@ Final response:
 ```text
 使用 skill: legacy-ibmi-program-list-batch
 任务: 按 program list 批量执行 program scan，并编排 Copilot Chat prompt queue。
+
+如果目标是快速跑 Cline batch scan，初始化 queue 时使用
+--validation-mode deferred。deferred 模式下，每个 program prompt 不在
+Cline 内立即运行昂贵的 program-analysis validator；artifact 和 scaffold
+检查干净后，写入 batch_status=scanned_unvalidated、
+validator_status=deferred。后续真正用于 flow review、BRD/spec、SME signoff
+或 central delivery handoff 前，再统一运行 final validation。
 
 每处理一行 program 时，使用 skill: legacy-ibmi-program-analyzer
 目的: 一次分析一个 IBM i program，并为每个 program 生成有 evidence 支撑的
@@ -272,7 +398,11 @@ Program list 字段:
   status、control-file lookup、field meaning 或 validation rule 有关时，
   读取它们作为 supporting evidence。
 - 对每个 queued program row 执行 legacy-ibmi-program-analyzer。
-- 不要把多个 program 合并进同一个 program-analysis.md。
+- deterministic source index 只是 pre-analysis scaffold。index 生成后必须
+  继续读取 source-index、routine-logic YAML 和 source routine bodies，把
+  pending/thin scaffold 内容替换成有 source evidence 的 semantic analysis，
+  然后才能把该 row 标记为 complete。
+- 不要把多个 program 合并进同一个 <PROGRAM>-program-analysis.md。
 - 每个 program 必须有自己的输出目录。
 - 每一轮 program-analysis 最多读取 5 个 routine body。
 - 如果是 normal_program，且没有密集度触发，保持轻量输出。
@@ -282,18 +412,18 @@ Program list 字段:
 - 如果执行中断或恢复，从下一个未处理的 program 继续。
 
 每个 program 必须产出:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 条件性产出:
-- deep-read-plan.md、all-routine-coverage-ledger.md，以及保留的
-  routine-logic-details/deep-read-batch-*.md 只在 complex/large tier 或明确
-  deep-read continuation 触发时产出。
+- <PROGRAM>-deep-read-plan.md、<PROGRAM>-all-routine-coverage-ledger.md，以及
+  保留的 routine-logic-details/<PROGRAM>-deep-read-batch-*.md 只在
+  complex/large tier 或明确 deep-read continuation 触发时产出。
 
 批量执行必须产出:
 - batch-scan-manifest.yaml
@@ -311,6 +441,13 @@ Program list 字段:
 - 不要因为文件生成了，就把 program 标记为 complete。
 - 只有 required artifacts 存在，并且 program-analysis validator 通过时，
   该 program 才算 complete。
+- 快速 deferred-validation scan 使用 `batch_status=scanned_unvalidated` 和
+  `validator_status=deferred`，不要伪装成 completed；后续真正使用前必须
+  再运行 final validation。
+- 如果 <PROGRAM>-program-analysis.md 或 <PROGRAM>-routine-logic-details.md
+  仍包含 `Draft wrapper seed generated`、`pending semantic deep-read`、
+  `pending semantic detail`、`placeholder`、`not-yet-deep-read` 或
+  `not deep-read`，不要标记为 complete。
 - 每个 program 生成后，先验证 program-analysis artifact，再标记该
   program complete。
 - 如果缺少 required per-program artifacts，不要标记 batch complete。
@@ -324,8 +461,10 @@ Program list 字段:
   blocker。
 - 未解析的 message/status/code description 必须列为 TBD 或 blocker。
 - 只有当每个请求的 program 都被分类为 completed、
-  completed_with_warnings、skipped_not_program、blocked_missing_source、
-  failed_validator 或 failed_runtime 时，batch 才算 complete。
+  completed_with_warnings、scanned_unvalidated、skipped_not_program、
+  blocked_missing_source、failed_validator 或 failed_runtime 时，batch 才算
+  complete。`scanned_unvalidated` 只表示 fast scan ledger 可关闭，不表示
+  downstream-ready。
 
 重试 / 退出预算:
 - 不要围绕 Cline、model、network、tool 或 validator 失败构造无限重试。
@@ -340,6 +479,10 @@ Program list 字段:
   `last_error` 记录类似
   `cline_auto_retry_exhausted: net::ERR_INCOMPLETE_CHUNKED_ENCODING`，并在
   `next_action` 写明等 Cline/network 稳定后继续同一个 program。
+- deferred validation 模式下，不在 per-program prompt 里运行 validator。
+  成功快扫后写 `batch_status=scanned_unvalidated`、
+  `validator_status=deferred`，并在 `next_action` 写明下游使用前运行 final
+  validation。
 - 如果 program-analysis validator 失败，同一个 program 最多做一次
   targeted repair。仍然失败时，设置 `batch_status=failed_validator`，
   在 `last_error` 保留 validator finding，并写清楚 `next_action`。
@@ -384,6 +527,7 @@ reference_paths:
   - /path/to/message-catalog.csv
 control_files:
   - /path/to/status-code-table.csv
+validation_mode: deferred
 status: in_progress
 programs:
   - member: "@CC080"
@@ -397,6 +541,18 @@ programs:
     output_dir: modules/CAP-ID-0003-normal_program/@CC080
     blockers: []
     warnings: []
+  - member: "@CC080A"
+    object_type: program
+    source_kind: RPGLE
+    source_path: HCCILERPG/@CC080A.RPGLE
+    initial_size_tier: normal_program
+    final_size_tier: normal_program
+    scan_status: scanned_unvalidated
+    validator_status: deferred
+    output_dir: modules/CAP-ID-0003-normal_program/@CC080A
+    blockers: []
+    warnings:
+      - final validator deferred until downstream use
   - member: "@CC081"
     object_type: program
     source_kind: RPGLE
@@ -487,9 +643,10 @@ Additional safeguards:
   artifacts forward in chat. Read only the next required source window and the
   compact state files.
 - Treat these files as the memory layer:
-  `batch-scan-manifest.yaml`, `program-analysis-summary.yaml`,
-  `source-index.yaml`, `routine-index.md`, `message-inventory.yaml`,
-  conditional `routine-logic-details.yaml`, deep-read checkpoint files, and
+  `batch-scan-manifest.yaml`, `<PROGRAM>-program-analysis-summary.yaml`,
+  `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-index.md`,
+  `<PROGRAM>-message-inventory.yaml`, conditional
+  `<PROGRAM>-routine-logic-details.yaml`, deep-read checkpoint files, and
   validator output.
 - After every successful batch, update the manifest and the relevant compact
   sidecars before doing more reading.
@@ -522,10 +679,11 @@ checkpoint:
     - source_path: HCCILERPG/@CC081.RPGLE
       line_range: "16659-17400"
   required_updates:
-    - routine-logic-details.md / routine-logic-details.yaml only when this is
-      complex_normal_program, large_extreme_program, or explicit deep-read
-    - program-analysis-summary.yaml
-    - message-inventory.yaml
+    - <PROGRAM>-routine-logic-details.md / <PROGRAM>-routine-logic-details.yaml
+      only when this is complex_normal_program, large_extreme_program, or
+      explicit deep-read
+    - <PROGRAM>-program-analysis-summary.yaml
+    - <PROGRAM>-message-inventory.yaml
     - batch-scan-manifest.yaml
   resume_instruction: >
     Validation passed for the previous batch. Continue with the next bounded
@@ -620,10 +778,11 @@ Recommended handoff content:
 - Required source reads:
   - <source path>:<line range>
 - Required artifact updates:
-  - routine-logic-details.md / routine-logic-details.yaml only when this is
-    complex_normal_program, large_extreme_program, or explicit deep-read
-  - program-analysis-summary.yaml
-  - message-inventory.yaml
+  - <PROGRAM>-routine-logic-details.md / <PROGRAM>-routine-logic-details.yaml
+    only when this is complex_normal_program, large_extreme_program, or
+    explicit deep-read
+  - <PROGRAM>-program-analysis-summary.yaml
+  - <PROGRAM>-message-inventory.yaml
   - batch-scan-manifest.yaml
 
 ## Copy-Ready Resume Prompt
@@ -740,6 +899,15 @@ Reference and control inputs:
 
 Rules:
 - Build deterministic indexes first.
+- Deterministic indexes are pre-analysis scaffolds only. The generated
+  <PROGRAM>-program-analysis.md seed, source index, and routine sidecars are
+  not final analysis until semantic deep-read replaces pending/thin content
+  with source-backed reader-first detail.
+- Do not stop after deterministic indexing. Read the generated
+  <PROGRAM>-source-index.yaml, <PROGRAM>-routine-logic-details.yaml, and the
+  source routine bodies; then fill <PROGRAM>-program-analysis.md and
+  <PROGRAM>-routine-logic-details.md with the actual calculation, validation,
+  exception, data movement, and outcome-trace details.
 - Analyze only this program.
 - Read the listed reference and control inputs when they are relevant to this
   program's observed messages, status values, control-file lookups, field
@@ -752,26 +920,41 @@ Rules:
   named theme subsections before each routine index.
 - Do not paste long source excerpts into the output.
 - Do not treat indexed_only routines as confirmed business logic.
+- Every RLOG declared in <PROGRAM>-routine-logic-details.yaml must have
+  reader-useful detail in both <PROGRAM>-program-analysis.md and
+  <PROGRAM>-routine-logic-details.md before this row can be marked complete.
 - Write required artifacts to the output directory.
-- Run the program-analysis validator before marking complete.
+- For fast batch scans, skip the program-analysis validator in this prompt and
+  mark the row `scanned_unvalidated` / `deferred` after artifacts and scaffold
+  checks are clean. For strict scans, run the validator before marking
+  `completed`.
+- Before writing `batch_status=completed`, open the generated
+  <PROGRAM>-program-analysis.md and <PROGRAM>-routine-logic-details.md and
+  confirm they do not contain scaffold language such as `Draft wrapper seed
+  generated`, `pending semantic deep-read`, `pending semantic detail`,
+  `placeholder`, `not-yet-deep-read`, or `not deep-read`.
 - Update program-batch-plan.md, program-list-status.csv, and
   batch-scan-manifest.yaml with scanned, blocked, or failed status.
 
 Required output:
-- program-analysis.md
-- source-index.yaml
-- program-analysis-summary.yaml
-- routine-index.md
-- message-inventory.yaml
-- routine-logic-details.md
-- routine-logic-details.yaml
+- <PROGRAM>-program-analysis.md
+- <PROGRAM>-source-index.yaml
+- <PROGRAM>-program-analysis-summary.yaml
+- <PROGRAM>-routine-index.md
+- <PROGRAM>-message-inventory.yaml
+- <PROGRAM>-routine-logic-details.md
+- <PROGRAM>-routine-logic-details.yaml
 
 Conditional output:
-- deep-read-plan.md, all-routine-coverage-ledger.md, and retained
-  routine-logic-details/deep-read-batch-*.md only for complex_normal_program,
-  large_extreme_program, or explicit deep-read continuation.
+- <PROGRAM>-deep-read-plan.md, <PROGRAM>-all-routine-coverage-ledger.md, and
+  retained routine-logic-details/<PROGRAM>-deep-read-batch-*.md only for
+  complex_normal_program, large_extreme_program, or explicit deep-read
+  continuation.
 
 Validation on Windows/Cline:
+Fast deferred-validation batch prompt: do not run now. Run later before
+downstream use:
+
 py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py
   --analysis-dir <output directory>
 
@@ -790,8 +973,111 @@ Manual operator checklist for each Copilot Chat session:
 - Confirm `program-batch-plan.md`, `program-list-status.csv`, and
   `batch-scan-manifest.yaml` were updated before moving to the next prompt.
 
-This is not fully automatic, but it preserves quality under a limited Copilot
-Chat environment because each program starts with a clean chat context.
+This is not fully automatic in a limited Copilot Chat environment, but it
+preserves quality because each program starts with a clean chat context.
+
+### Cline Serial Mode
+
+For Cline, Step 2 is serial by default. The initializer writes
+`cline-serial-runner-prompt.md`; paste that file into Cline after Step 1.
+Cline should consume `prompt-queue/*.md` one by one. It should not read
+`subagent-queue`, call `use_subagents`, write `subagent-results/*.json`, or run
+the merge script.
+
+Step 2 Cline prompt, Chinese serial copy-ready template:
+
+````text
+你是运行在 Cline 中的串行 batch 执行器。
+
+目标：
+读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
+
+Cline 执行边界：
+- Cline 中只做串行，不做并行。
+- 不要调用 `use_subagents`。
+- 不要读取 `subagent-queue`，不要生成 `subagent-results`。
+- 每次只执行一个 `prompt-queue/*.md` 的完整内容。
+- 本 Step 2 的目标是处理完当前 `prompt-queue` 中所有可处理的 program；不要设置 3/5/10 个 program 之类的自我停止上限。
+- 不要仅仅因为上下文变长、输出很多、或者担心后续质量不稳定就提前停止。
+- 不要在 chat 里复述完整 source、完整 artifact 或历史分析；每个 program 完成后只输出一行 ledger 摘要，然后继续下一个 prompt。
+
+Batch directory:
+`<batch-dir>`
+
+Program prompt directory:
+`<batch-dir>/prompt-queue`
+
+Batch status file:
+`<batch-dir>/program-list-status.csv`
+
+Batch manifest:
+`<batch-dir>/batch-scan-manifest.yaml`
+
+执行规则：
+1. 先读取 `program-batch-plan.md`、`program-list-status.csv` 和 `batch-scan-manifest.yaml`，确认当前 batch 状态。
+2. 按文件名自然排序处理 `prompt-queue/*.md`。
+3. 每次只处理一个 prompt 文件。
+4. 每个 prompt 只对应一个 program；不要把多个 program 合并到一次分析。
+5. 处理当前 program 时，完整执行该 prompt 的内容。
+6. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
+7. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
+8. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
+9. 如果某个 program 的 artifact/validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
+10. 如果 batch 是 deferred validation 模式，不要在每个 prompt 里运行昂贵的 final validator；按 prompt 要求写入 `scanned_unvalidated` / `validator_status=deferred`。
+11. 每完成一个 program，都必须更新：
+    - `program-list-status.csv`
+    - `program-batch-plan.md`
+    - `batch-scan-manifest.yaml`
+12. 每完成一个 program，只在 chat 里报告：program、status、validator_status、关键 artifact 路径、下一条 prompt；不要粘贴大段分析内容。
+13. 只要工具仍能读写文件并执行下一个 prompt，就必须继续处理下一个 program。
+14. 只有遇到硬性阻断才允许停止，例如 Cline/model/network/tool Auto-Retry 用尽、文件读写失败、当前 session 已无法安全读取或写入下一个 prompt。
+15. 如果发生硬性阻断，停在当前 program 边界，写好 durable state 和 `batch-session-handoff.md`，报告精确的下一个待处理 prompt。不要把尚未执行的后续 program 标记为 failed。
+
+建议处理顺序：
+1. 列出 `prompt-queue/*.md` 文件清单。
+2. 找到第一个尚未完成的 program prompt。
+3. 读取该 prompt 的完整内容。
+4. 执行该 prompt。
+5. 更新 batch state。
+6. 输出一行 ledger 摘要，不输出完整 artifact 内容。
+7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
+
+全部处理完成后，运行 batch status validator：
+
+```text
+python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "<batch-dir>"
+```
+
+现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
+````
+
+When the initializer generates `cline-serial-runner-prompt.md`, it replaces
+`<batch-dir>` with the concrete batch directory.
+
+### Kiro Parallel Mode
+
+Use this only when Kiro or another agent runtime can reliably launch isolated
+workers and pass one complete Markdown prompt to each worker. Initialize with
+`--subagent-mode prepare`; the initializer writes:
+
+- `kiro-parallel-runner-prompt.md`
+- `subagent-dispatch-plan.md`
+- `subagent-queue/*.md`
+- `subagent-results/`
+
+Parallel worker rules:
+
+- Start at most the configured `--max-parallel-agents` workers at a time.
+- Give each worker exactly one complete file from `subagent-queue/`.
+- Do not assign the same prompt file twice.
+- Each worker writes only its program output directory and its own result JSON.
+- Workers do not edit `program-list-status.csv`, `program-batch-plan.md`, or
+  `batch-scan-manifest.yaml` directly.
+- After workers finish, run `merge_subagent_results.py --batch-dir <batch-dir>`
+  and then run the batch status validator.
+
+If Kiro cannot guarantee isolated worker execution, fall back to
+`cline-serial-runner-prompt.md`.
 
 ### Copilot Chat Concurrency Rule
 
@@ -800,7 +1086,8 @@ Copilot Chat does not provide reliable isolated workers inside one chat. A
 single chat shares context, source snippets, plans, and file state across all
 requested work, which makes evidence-heavy program analysis prone to drift.
 
-Safe concurrency means separate chats, not concurrent tasks inside one chat:
+Safe concurrency means separate chats or isolated sub-agents, not concurrent
+tasks inside one chat:
 
 ```text
 Operator A / Chat A -> @CC080
@@ -821,6 +1108,8 @@ Parallel Copilot Chat rules:
   or a blocker/failure is clearly recorded.
 
 If the team cannot coordinate row claiming safely, run programs serially.
+For agent runtimes, prefer the generated `subagent-queue` + result JSON merge
+pattern over manual row claiming.
 
 ## Program Batch Plan And Status List
 
@@ -849,8 +1138,10 @@ Recommended `program-list-status.csv` columns:
 | `size_tier` | Initial tier from repo scan. |
 | `tier_reason` | Initial tier reason from repo scan. |
 | `batch_status` | Current row status. |
-| `validator_status` | `not_run`, `pass`, `pass_with_warnings`, or `failed`. |
+| `validator_status` | `not_run`, `deferred`, `pass`, `pass_with_warnings`, or `failed`. |
 | `output_dir` | Per-program output folder. |
+| `subagent_prompt_path` | Optional sub-agent-safe prompt path. |
+| `subagent_result_path` | Optional result JSON path for parallel worker output. |
 | `owner` | Person/session currently working the row. |
 | `session_id` | Optional Copilot Chat/session identifier or manual label. |
 | `started_at` | ISO timestamp when work started. |
@@ -867,6 +1158,7 @@ Allowed `batch_status` values:
 | `in_progress` | Claimed by an operator/session. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
+| `scanned_unvalidated` | Fast scan artifacts exist, but final validator is deferred. |
 | `blocked_missing_source` | Source path cannot be resolved. |
 | `failed_validator` | Validator failed after the allowed targeted repair pass. |
 | `failed_runtime` | Runtime/tooling, Python availability, Cline Auto-Retry, or model/network/tool-call failure prevented valid output. |

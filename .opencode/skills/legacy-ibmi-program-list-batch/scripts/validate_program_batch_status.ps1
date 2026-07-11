@@ -25,6 +25,7 @@ foreach ($status in @(
     "in_progress",
     "completed",
     "completed_with_warnings",
+    "scanned_unvalidated",
     "blocked_missing_source",
     "failed_validator",
     "failed_runtime",
@@ -41,6 +42,27 @@ $RequiredArtifacts = @(
     "message-inventory.yaml",
     "routine-logic-details.md",
     "routine-logic-details.yaml"
+)
+
+$ArtifactRequiredStatuses = @(
+    "completed",
+    "completed_with_warnings",
+    "scanned_unvalidated"
+)
+
+$ArtifactUnsafePattern = '[\s<>:"/\\|?*]+'
+$ScaffoldTextBaseNames = @(
+    "program-analysis.md",
+    "routine-logic-details.md"
+)
+$ScaffoldPatterns = @(
+    '\bDraft wrapper seed generated\b',
+    '\bpending reader-oriented summary\b',
+    '\bpending semantic deep-read\b',
+    '\bpending semantic detail\b',
+    '\breplace this placeholder\b',
+    '\bplaceholder content\b',
+    '\bnot-yet-deep-read\b'
 )
 
 function Get-CommandLineOptions {
@@ -92,6 +114,37 @@ function Get-FieldValue {
         return ""
     }
     return ([string]$property.Value).Trim()
+}
+
+function Get-ArtifactProgramPrefix {
+    param([AllowEmptyString()][string]$ProgramName)
+
+    $prefix = [regex]::Replace($ProgramName.Trim().ToUpperInvariant(), $script:ArtifactUnsafePattern, "_")
+    $prefix = $prefix.Trim("._-")
+    if ([string]::IsNullOrEmpty($prefix)) {
+        return "PROGRAM"
+    }
+    return $prefix
+}
+
+function Get-RequiredArtifactName {
+    param(
+        [Parameter(Mandatory = $true)][string]$Member,
+        [Parameter(Mandatory = $true)][string]$BaseName
+    )
+    return "$(Get-ArtifactProgramPrefix -ProgramName $Member)-$BaseName"
+}
+
+function Find-ScaffoldPatterns {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $matches = New-Object System.Collections.Generic.List[string]
+    foreach ($pattern in $script:ScaffoldPatterns) {
+        if ($Text -match $pattern) {
+            $matches.Add($pattern.Replace('\b', ''))
+        }
+    }
+    return @($matches)
 }
 
 function Resolve-OutputDirectory {
@@ -198,7 +251,13 @@ function Invoke-Validation {
         if ($status -eq "completed_with_warnings" -and $validatorStatus -notin @("pass", "pass_with_warnings")) {
             $findings.Add("Row $index ${member}: completed_with_warnings requires validator_status pass/pass_with_warnings")
         }
-        if ($status -in @("completed", "completed_with_warnings")) {
+        if ($status -eq "scanned_unvalidated" -and $validatorStatus -ne "deferred") {
+            $findings.Add("Row $index ${member}: scanned_unvalidated requires validator_status deferred")
+        }
+        if ($status -eq "scanned_unvalidated" -and [string]::IsNullOrEmpty((Get-FieldValue -Row $row -Name "next_action"))) {
+            $findings.Add("Row $index ${member}: scanned_unvalidated requires next_action for final validation")
+        }
+        if ($status -in $script:ArtifactRequiredStatuses) {
             if ($null -eq $outputPath) {
                 $warnings.Add("Row $index ${member}: cannot verify placeholder/empty output_dir '$outputDirectoryValue'")
                 continue
@@ -207,13 +266,33 @@ function Invoke-Validation {
                 $findings.Add("Row $index ${member}: output_dir does not exist: $outputPath")
                 continue
             }
-            $missing = @(
+            $requiredArtifactsForMember = @(
                 $script:RequiredArtifacts |
+                    ForEach-Object { Get-RequiredArtifactName -Member $member -BaseName $_ }
+            )
+            $missing = @(
+                $requiredArtifactsForMember |
                     Where-Object { -not (Test-Path -LiteralPath (Join-Path $outputPath $_) -PathType Leaf) } |
                     Sort-Object
             )
             if ($missing.Count -gt 0) {
                 $findings.Add("Row $index ${member}: missing required artifacts: $($missing -join ', ')")
+            }
+            foreach ($baseName in $script:ScaffoldTextBaseNames) {
+                $artifactName = Get-RequiredArtifactName -Member $member -BaseName $baseName
+                $artifactPath = Join-Path $outputPath $artifactName
+                if (-not (Test-Path -LiteralPath $artifactPath -PathType Leaf)) {
+                    continue
+                }
+                $artifactText = [System.IO.File]::ReadAllText($artifactPath, [System.Text.Encoding]::UTF8)
+                $matchedPatterns = @(Find-ScaffoldPatterns -Text $artifactText)
+                if ($matchedPatterns.Count -gt 0) {
+                    $findings.Add(
+                        "Row $index ${member}: $artifactName still appears to be a scaffold or pending deep-read artifact; " +
+                        "run semantic source deep-read and replace placeholder content before marking completed. Matched: " +
+                        ($matchedPatterns -join ', ')
+                    )
+                }
             }
         }
     }
