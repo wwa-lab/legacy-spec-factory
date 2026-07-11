@@ -997,6 +997,9 @@ Cline 执行边界：
 - 不要调用 `use_subagents`。
 - 不要读取 `subagent-queue`，不要生成 `subagent-results`。
 - 每次只执行一个 `prompt-queue/*.md` 的完整内容。
+- 本 Step 2 的目标是处理完当前 `prompt-queue` 中所有可处理的 program；不要设置 3/5/10 个 program 之类的自我停止上限。
+- 不要仅仅因为上下文变长、输出很多、或者担心后续质量不稳定就提前停止。
+- 不要在 chat 里复述完整 source、完整 artifact 或历史分析；每个 program 完成后只输出一行 ledger 摘要，然后继续下一个 prompt。
 
 Batch directory:
 `<batch-dir>`
@@ -1025,7 +1028,10 @@ Batch manifest:
     - `program-list-status.csv`
     - `program-batch-plan.md`
     - `batch-scan-manifest.yaml`
-12. 如果 Cline 上下文开始变长或不稳定，停止在当前 program 边界，写好 durable state，并报告下一个待处理 prompt。
+12. 每完成一个 program，只在 chat 里报告：program、status、validator_status、关键 artifact 路径、下一条 prompt；不要粘贴大段分析内容。
+13. 只要工具仍能读写文件并执行下一个 prompt，就必须继续处理下一个 program。
+14. 只有遇到硬性阻断才允许停止，例如 Cline/model/network/tool Auto-Retry 用尽、文件读写失败、当前 session 已无法安全读取或写入下一个 prompt。
+15. 如果发生硬性阻断，停在当前 program 边界，写好 durable state 和 `batch-session-handoff.md`，报告精确的下一个待处理 prompt。不要把尚未执行的后续 program 标记为 failed。
 
 建议处理顺序：
 1. 列出 `prompt-queue/*.md` 文件清单。
@@ -1033,7 +1039,8 @@ Batch manifest:
 3. 读取该 prompt 的完整内容。
 4. 执行该 prompt。
 5. 更新 batch state。
-6. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime。
+6. 输出一行 ledger 摘要，不输出完整 artifact 内容。
+7. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime，或遇到硬性阻断并已写好 handoff。
 
 全部处理完成后，运行 batch status validator：
 

@@ -106,6 +106,14 @@ In Cline, use `cline-serial-runner-prompt.md` and process `prompt-queue/*.md`
 serially. Cline must not use `subagent-queue`, must not call `use_subagents`,
 and must not write `subagent-results/*.json`.
 
+The Cline serial runner should not impose its own small stop limit. Continue
+through every available prompt in the assigned batch while file reads/writes
+and tool calls are still working. A soft context warning, verbose output, or
+general concern about future quality is not a status transition. If a hard
+Cline/model/network/tool/file I/O blocker prevents safe progress, write
+`batch-session-handoff.md` with the exact next prompt and leave later rows
+queued or in their current state; do not mark unattempted rows failed.
+
 In `--subagent-mode prepare`, each Kiro/agent worker must write its result JSON
 and avoid direct edits to shared batch state. Use this mode only in runtimes
 that can reliably launch isolated workers and pass one complete Markdown

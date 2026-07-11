@@ -69,6 +69,14 @@ directly.
   2 and process `prompt-queue/*.md` serially. Do not ask one parent task to
   launch child tasks with `use_subagents`, pass full Markdown prompts through
   XML/JSON/tool-call parameters, or write `subagent-results/*.json`.
+- The Cline serial runner should process every available `prompt-queue/*.md`
+  row in its assigned batch unless a hard Cline/model/network/tool/file I/O
+  blocker prevents safe progress. Do not stop early merely because the context
+  is getting long, output is verbose, or the model worries later output quality
+  may degrade.
+- To preserve throughput, the Cline serial runner should keep chat output to a
+  one-line ledger per program and use durable files as memory instead of
+  replaying source excerpts or generated artifacts in chat.
 - If Kiro or another runtime truly supports isolated sub-agents, safe
   parallelism means one worker per generated `subagent-queue/*.md` file.
 - Do not carry source excerpts, prior program summaries, or chat history into

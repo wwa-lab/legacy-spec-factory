@@ -346,6 +346,10 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertFalse((out_dir / "cline-parallel-runner-prompt.md").exists())
             self.assertIn("你是运行在 Cline 中的串行 batch 执行器", serial_prompt)
             self.assertIn("不要读取 `subagent-queue`", serial_prompt)
+            self.assertIn("不要设置 3/5/10 个 program 之类的自我停止上限", serial_prompt)
+            self.assertIn("不要仅仅因为上下文变长", serial_prompt)
+            self.assertIn("只有遇到硬性阻断才允许停止", serial_prompt)
+            self.assertIn("不要把尚未执行的后续 program 标记为 failed", serial_prompt)
             self.assertIn("prompt-queue", serial_prompt)
             self.assertTrue((out_dir / "subagent-results").is_dir())
             subagent_prompt = (out_dir / "subagent-queue" / "0001-CC050.md").read_text(

@@ -59,6 +59,12 @@ because the context budget is approaching a soft limit. If the session cannot
 safely continue, write an explicit checkpoint and stop.
 ```
 
+For Cline serial batch runs, "cannot safely continue" means a hard blocker:
+tool/model/network Auto-Retry exhaustion, file read/write failure, or inability
+to read and execute the next prompt. It does not mean the chat is merely long,
+the output is verbose, or the model is worried future output quality may
+degrade. Leave unattempted rows queued when a hard blocker forces handoff.
+
 Bounded means:
 
 - One program at a time.
