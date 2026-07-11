@@ -369,6 +369,7 @@ def render_plan(
 - Program list: {program_list}
 - Status list: {out_dir / "program-list-status.csv"}
 - Manifest: {out_dir / "batch-scan-manifest.yaml"}
+- Cline serial runner prompt: {out_dir / "cline-serial-runner-prompt.md"}
 - Source root: {source_root or ""}
 - Output root: {delivery_root or ""}
 - Validation mode: {validation_mode}
@@ -436,6 +437,7 @@ def build_manifest(
         "program_list": str(program_list),
         "status_list": str(out_dir / "program-list-status.csv"),
         "program_batch_plan": str(out_dir / "program-batch-plan.md"),
+        "cline_serial_runner_prompt": str(out_dir / "cline-serial-runner-prompt.md"),
         "source_root": source_root,
         "output_root": delivery_root,
         "validation_mode": validation_mode,
@@ -443,7 +445,8 @@ def build_manifest(
         "subagent_mode": subagent_mode,
         "max_parallel_agents": max_parallel_agents,
         "subagent_dispatch_plan": str(out_dir / "subagent-dispatch-plan.md") if subagent_mode != "none" else "",
-        "cline_parallel_runner_prompt": str(out_dir / "cline-parallel-runner-prompt.md") if subagent_mode != "none" else "",
+        "kiro_parallel_runner_prompt": str(out_dir / "kiro-parallel-runner-prompt.md") if subagent_mode != "none" else "",
+        "cline_parallel_runner_prompt": "",
         "subagent_queue": str(out_dir / "subagent-queue") if subagent_mode != "none" else "",
         "subagent_results_dir": str(out_dir / "subagent-results") if subagent_mode != "none" else "",
         "reference_paths": reference_paths or [],
@@ -629,24 +632,27 @@ def render_subagent_dispatch_plan(
     )
     if not queue_rows:
         queue_rows = "|  |  |  |  |  |"
-    return f"""# Sub-Agent Dispatch Plan
+    return f"""# Kiro / Agent Parallel Dispatch Plan
 
 ## Batch
 
 - Batch directory: {out_dir}
-- Sub-agent queue: {out_dir / "subagent-queue"}
+- Per-task prompt queue: {out_dir / "subagent-queue"}
 - Result directory: {out_dir / "subagent-results"}
-- Cline runner prompt: {out_dir / "cline-parallel-runner-prompt.md"}
-- Max parallel agents: {max_parallel_agents}
+- Kiro/agent parallel runner prompt: {out_dir / "kiro-parallel-runner-prompt.md"}
+- Recommended max parallel workers: {max_parallel_agents}
 - Merge command: `python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir {out_dir}`
 
 ## Launch Rules
 
-- Start at most {max_parallel_agents} sub-agents at the same time.
-- Give each sub-agent exactly one file from `subagent-queue/`.
-- Do not assign the same prompt file to two sub-agents.
-- Sub-agents must not edit shared batch state files directly.
-- After all sub-agents finish, run the merge command above and then run the
+- Do not run this plan in Cline. Cline should use `cline-serial-runner-prompt.md`.
+- Use this plan only in Kiro or another runtime that can reliably launch
+  isolated workers and pass one complete Markdown prompt to each worker.
+- Start at most {max_parallel_agents} workers at the same time.
+- Give each worker exactly one complete file from `subagent-queue/`.
+- Do not assign the same prompt file to two workers.
+- Worker tasks must not edit shared batch state files directly.
+- After all worker tasks finish, run the merge command above and then run the
   batch status validator.
 
 ## Queue
@@ -657,15 +663,82 @@ def render_subagent_dispatch_plan(
 """
 
 
-def render_cline_parallel_runner_prompt(
+def render_cline_serial_runner_prompt(
+    *,
+    out_dir: Path,
+) -> str:
+    return f"""你是运行在 Cline 中的串行 batch 执行器。
+
+目标：
+读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
+
+Cline 执行边界：
+- Cline 中只做串行，不做并行。
+- 不要调用 `use_subagents`。
+- 不要读取 `subagent-queue`，不要生成 `subagent-results`。
+- 每次只执行一个 `prompt-queue/*.md` 的完整内容。
+
+Batch directory:
+`{out_dir}`
+
+Program prompt directory:
+`{out_dir / "prompt-queue"}`
+
+Batch status file:
+`{out_dir / "program-list-status.csv"}`
+
+Batch manifest:
+`{out_dir / "batch-scan-manifest.yaml"}`
+
+执行规则：
+1. 先读取 `program-batch-plan.md`、`program-list-status.csv` 和 `batch-scan-manifest.yaml`，确认当前 batch 状态。
+2. 按文件名自然排序处理 `prompt-queue/*.md`。
+3. 每次只处理一个 prompt 文件。
+4. 每个 prompt 只对应一个 program；不要把多个 program 合并到一次分析。
+5. 处理当前 program 时，完整执行该 prompt 的内容。
+6. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
+7. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
+8. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
+9. 如果某个 program 的 artifact/validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
+10. 如果 batch 是 deferred validation 模式，不要在每个 prompt 里运行昂贵的 final validator；按 prompt 要求写入 `scanned_unvalidated` / `validator_status=deferred`。
+11. 每完成一个 program，都必须更新：
+    - `program-list-status.csv`
+    - `program-batch-plan.md`
+    - `batch-scan-manifest.yaml`
+12. 如果 Cline 上下文开始变长或不稳定，停止在当前 program 边界，写好 durable state，并报告下一个待处理 prompt。
+
+建议处理顺序：
+1. 列出 `prompt-queue/*.md` 文件清单。
+2. 找到第一个尚未完成的 program prompt。
+3. 读取该 prompt 的完整内容。
+4. 执行该 prompt。
+5. 更新 batch state。
+6. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime。
+
+全部处理完成后，运行 batch status validator：
+
+```text
+python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
+```
+
+现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
+"""
+
+
+def render_kiro_parallel_runner_prompt(
     *,
     out_dir: Path,
     max_parallel_agents: int,
 ) -> str:
-    return f"""你是运行在 Cline 中的并行 batch 执行器。
+    return f"""你是运行在 Kiro 或支持隔离 worker 的 agent runtime 中的并行 batch 执行器。
 
 目标：
-读取已经生成好的 program prompt queue，并并行启动多个独立 task 来处理每个 program。
+读取已经生成好的 subagent queue，并并行启动多个独立 worker 来处理每个 program。
+
+重要边界：
+- 这个 prompt 不给 Cline 使用。Cline 请使用 `cline-serial-runner-prompt.md`。
+- 只有当 Kiro/agent runtime 能可靠启动隔离 worker，并能把一个完整 Markdown prompt 交给一个 worker 时，才使用本 prompt。
+- 如果 runtime 不能保证 worker 隔离，停止并改用 Cline serial prompt。
 
 Batch directory:
 `{out_dir}`
@@ -673,33 +746,33 @@ Batch directory:
 Dispatch plan:
 `{out_dir / "subagent-dispatch-plan.md"}`
 
-Parallel-safe prompt directory:
+Per-task prompt directory:
 `{out_dir / "subagent-queue"}`
 
 Result directory:
 `{out_dir / "subagent-results"}`
 
-最大并发数：
+最大并发 worker 数：
 `{max_parallel_agents}`
 
 执行规则：
 1. 先读取 `subagent-dispatch-plan.md`，确认待处理的 `subagent-queue/*.md` 文件清单。
 2. 按文件名自然排序处理 `subagent-queue/*.md`。
-3. 最多同时启动 `{max_parallel_agents}` 个独立 task/sub-agent。
-4. 每个 task 只能接收一个 `subagent-queue/*.md` 文件的完整内容。
-5. 每个 task 只处理该 prompt 中指定的一个 program。
-6. 不要把多个 program 合并到一个 task。
-7. 不要把同一个 prompt 文件分配给两个 task。
-8. 每个 task 只能写自己的 program output directory 和自己的 result JSON。
-9. 子 task 不允许直接修改这些共享文件：
+3. 最多同时启动 `{max_parallel_agents}` 个独立 worker。
+4. 每个 worker 只能接收一个 `subagent-queue/*.md` 文件的完整内容。
+5. 每个 worker 只处理该 prompt 中指定的一个 program。
+6. 不要把多个 program 合并到一个 worker。
+7. 不要把同一个 prompt 文件分配给两个 worker。
+8. 每个 worker 只能写自己的 program output directory 和自己的 result JSON。
+9. worker 不允许直接修改这些共享文件：
    - `program-list-status.csv`
    - `program-batch-plan.md`
    - `batch-scan-manifest.yaml`
-10. 子 task 必须在结束前写出 prompt 中指定的 `subagent-results/*.result.json`。
-11. 如果某个 task 失败，不要无限重试；让该 task 写出 `failed_runtime` 或 `failed_validator` result JSON。如果 task 无法写 JSON，由你为该 program 写一个 failed result JSON，记录具体错误。
-12. 一个 task 完成后，再从队列中启动下一个，直到所有 `subagent-queue/*.md` 都处理完。
+10. worker 必须在结束前写出 prompt 中指定的 `subagent-results/*.result.json`。
+11. 如果某个 worker 失败，不要无限重试；让该 worker 写出 `failed_runtime` 或 `failed_validator` result JSON。如果 worker 无法写 JSON，由父执行器为该 program 写一个 failed result JSON，记录具体错误。
+12. 一个 worker 完成后，再从队列中启动下一个，直到所有 `subagent-queue/*.md` 都处理完。
 
-所有 task 完成后，运行 merge：
+所有 worker 完成后，运行 merge：
 
 ```text
 python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir "{out_dir}"
@@ -711,12 +784,12 @@ python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py 
 python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
 ```
 
-如果当前 Cline 环境不能启动独立 task/sub-agent：
+如果当前 runtime 不能可靠启动隔离 worker：
 - 不要尝试在一个上下文里处理多个 program。
-- 停止并报告：当前 Cline 环境不支持隔离并行 task。
-- 返回 `subagent-queue` 路径，让操作者手动开多个 Cline task 分别粘贴这些 prompt。
+- 停止并报告：当前 runtime 不支持隔离并行 worker。
+- 改用 `{out_dir / "cline-serial-runner-prompt.md"}` 在 Cline 中串行处理。
 
-现在开始：读取 dispatch plan，列出将处理的 prompt 文件和并发计划，然后启动第一批 task。
+现在开始：读取 dispatch plan，列出将处理的 prompt 文件和并发计划，然后启动第一批 worker。
 """
 
 
@@ -875,6 +948,10 @@ def initialize(args: argparse.Namespace) -> None:
         control_files=args.control_file,
     )
     (out_dir / "batch-scan-manifest.yaml").write_text(to_yaml(manifest) + "\n", encoding="utf-8")
+    (out_dir / "cline-serial-runner-prompt.md").write_text(
+        render_cline_serial_runner_prompt(out_dir=out_dir),
+        encoding="utf-8",
+    )
     if args.subagent_mode == "prepare":
         (out_dir / "subagent-dispatch-plan.md").write_text(
             render_subagent_dispatch_plan(
@@ -884,8 +961,8 @@ def initialize(args: argparse.Namespace) -> None:
             ),
             encoding="utf-8",
         )
-        (out_dir / "cline-parallel-runner-prompt.md").write_text(
-            render_cline_parallel_runner_prompt(
+        (out_dir / "kiro-parallel-runner-prompt.md").write_text(
+            render_kiro_parallel_runner_prompt(
                 out_dir=out_dir,
                 max_parallel_agents=args.max_parallel_agents,
             ),
@@ -893,8 +970,10 @@ def initialize(args: argparse.Namespace) -> None:
         )
     print(f"Initialized program batch: {out_dir}")
     print(f"Prompt files: {len(list(prompt_dir.glob('*.md')))}")
+    print(f"Cline serial Step 2 prompt: {out_dir / 'cline-serial-runner-prompt.md'}")
     if args.subagent_mode != "none":
-        print(f"Sub-agent prompt files: {len(list(subagent_dir.glob('*.md')))}")
+        print(f"Kiro/agent worker prompt files: {len(list(subagent_dir.glob('*.md')))}")
+        print(f"Kiro/agent parallel Step 2 prompt: {out_dir / 'kiro-parallel-runner-prompt.md'}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -950,15 +1029,15 @@ def build_parser() -> argparse.ArgumentParser:
         default="none",
         help=(
             "none only generates the normal prompt queue; prepare also writes "
-            "subagent-queue prompts and a subagent dispatch plan for runtimes "
-            "that can launch isolated parallel workers"
+            "subagent-queue prompts, result JSON targets, and a Kiro/agent "
+            "parallel dispatch plan for isolated per-program worker tasks"
         ),
     )
     parser.add_argument(
         "--max-parallel-agents",
         type=int,
         default=4,
-        help="Maximum parallel sub-agents recommended in the generated dispatch plan",
+        help="Maximum manual parallel worker tasks recommended in the generated dispatch plan",
     )
     parser.add_argument("--python-launcher", help=argparse.SUPPRESS)
     parser.add_argument("--force", action="store_true", help="Overwrite generated files in an existing output directory")

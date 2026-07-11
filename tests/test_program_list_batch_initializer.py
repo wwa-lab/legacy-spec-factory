@@ -333,11 +333,20 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
                 check=True,
             )
 
-            self.assertIn("Sub-agent prompt files: 2", result.stdout)
+            self.assertIn("Cline serial Step 2 prompt:", result.stdout)
+            self.assertIn("Kiro/agent worker prompt files: 2", result.stdout)
+            self.assertIn("Kiro/agent parallel Step 2 prompt:", result.stdout)
             self.assertEqual(
                 sorted(path.name for path in (out_dir / "subagent-queue").glob("*.md")),
                 ["0001-CC050.md", "0002-CC051.md"],
             )
+            serial_prompt = (out_dir / "cline-serial-runner-prompt.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertFalse((out_dir / "cline-parallel-runner-prompt.md").exists())
+            self.assertIn("你是运行在 Cline 中的串行 batch 执行器", serial_prompt)
+            self.assertIn("不要读取 `subagent-queue`", serial_prompt)
+            self.assertIn("prompt-queue", serial_prompt)
             self.assertTrue((out_dir / "subagent-results").is_dir())
             subagent_prompt = (out_dir / "subagent-queue" / "0001-CC050.md").read_text(
                 encoding="utf-8"
@@ -363,25 +372,30 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertEqual(rows[2]["subagent_prompt_path"], "")
 
             dispatch_plan = (out_dir / "subagent-dispatch-plan.md").read_text(encoding="utf-8")
-            self.assertIn("- Max parallel agents: 2", dispatch_plan)
+            self.assertIn("- Recommended max parallel workers: 2", dispatch_plan)
             self.assertIn("merge_subagent_results.py --batch-dir", dispatch_plan)
-            self.assertIn("cline-parallel-runner-prompt.md", dispatch_plan)
-            cline_prompt = (out_dir / "cline-parallel-runner-prompt.md").read_text(
+            self.assertIn("kiro-parallel-runner-prompt.md", dispatch_plan)
+            self.assertIn("Do not run this plan in Cline", dispatch_plan)
+            kiro_prompt = (out_dir / "kiro-parallel-runner-prompt.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("你是运行在 Cline 中的并行 batch 执行器", cline_prompt)
-            self.assertIn("最多同时启动 `2` 个独立 task/sub-agent", cline_prompt)
-            self.assertIn("subagent-queue", cline_prompt)
-            self.assertIn("merge_subagent_results.py", cline_prompt)
-            self.assertIn("validate_program_batch_status.py", cline_prompt)
+            self.assertIn("你是运行在 Kiro 或支持隔离 worker", kiro_prompt)
+            self.assertIn("这个 prompt 不给 Cline 使用", kiro_prompt)
+            self.assertIn("最大并发 worker 数", kiro_prompt)
+            self.assertIn("subagent-queue", kiro_prompt)
+            self.assertIn("merge_subagent_results.py", kiro_prompt)
+            self.assertIn("validate_program_batch_status.py", kiro_prompt)
             plan_text = (out_dir / "program-batch-plan.md").read_text(encoding="utf-8")
+            self.assertIn("cline-serial-runner-prompt.md", plan_text)
             self.assertIn("- Sub-agent mode: prepare", plan_text)
             self.assertIn("- Max parallel agents: 2", plan_text)
             manifest_text = (out_dir / "batch-scan-manifest.yaml").read_text(encoding="utf-8")
+            self.assertIn("cline_serial_runner_prompt:", manifest_text)
+            self.assertIn("kiro_parallel_runner_prompt:", manifest_text)
             self.assertIn("subagent_mode: prepare", manifest_text)
             self.assertIn("max_parallel_agents: 2", manifest_text)
             self.assertIn("subagent_dispatch_plan:", manifest_text)
-            self.assertIn("cline_parallel_runner_prompt:", manifest_text)
+            self.assertIn('cline_parallel_runner_prompt: ""', manifest_text)
 
     def test_merge_subagent_results_updates_status_plan_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -10,9 +10,10 @@ Use this reference when creating or checking the durable state files for
 | `program-batch-plan.md` | Operators and SMEs | Human-readable progress, next action, and blockers. |
 | `program-list-status.csv` | Excel / spreadsheet users | Working copy of the program list with status columns. |
 | `batch-scan-manifest.yaml` | Tools and resume logic | Machine-readable execution state and audit record. |
-| `cline-parallel-runner-prompt.md` | Cline parent task | Optional copy-ready second prompt that launches isolated program workers. |
-| `subagent-dispatch-plan.md` | Parent agents/operators | Optional launch plan for isolated parallel sub-agents. |
-| `subagent-queue/*.md` | Sub-agents | Optional one-program worker prompts safe for parallel fan-out. |
+| `cline-serial-runner-prompt.md` | Cline operators | Default Step 2 prompt for Cline. Processes `prompt-queue/*.md` serially. |
+| `kiro-parallel-runner-prompt.md` | Kiro / agent runtimes | Optional Step 2 prompt for runtimes that can launch isolated parallel workers. |
+| `subagent-dispatch-plan.md` | Parent agents/operators | Optional dispatch plan for Kiro/isolated parallel worker tasks. |
+| `subagent-queue/*.md` | Kiro / isolated agent workers | Optional one-program worker prompts safe for parallel fan-out. |
 | `subagent-results/*.json` | Merge script | Optional per-worker result files used to update shared batch state. |
 
 Keep the original `program-list.csv` or Excel export read-only when possible.
@@ -101,8 +102,14 @@ not a completion signal. The next Cline/Copilot prompt must still read source,
 replace pending/thin scaffold text with semantic analysis, and then write the
 final row status according to the selected validation mode.
 
-In `--subagent-mode prepare`, each worker must write its result JSON and avoid
-direct edits to shared batch state. The parent agent or operator runs
+In Cline, use `cline-serial-runner-prompt.md` and process `prompt-queue/*.md`
+serially. Cline must not use `subagent-queue`, must not call `use_subagents`,
+and must not write `subagent-results/*.json`.
+
+In `--subagent-mode prepare`, each Kiro/agent worker must write its result JSON
+and avoid direct edits to shared batch state. Use this mode only in runtimes
+that can reliably launch isolated workers and pass one complete Markdown
+prompt to each worker. The parent agent or operator runs
 `merge_subagent_results.py` after workers finish. That merge step is the only
 place parallel worker results should update `program-list-status.csv`,
 `program-batch-plan.md`, or `batch-scan-manifest.yaml`.
@@ -165,8 +172,9 @@ handoff must run the program-analysis validator first and promote the row to
 ## Update Rules
 
 - Update state files after every program before starting another.
-- In sub-agent mode, update shared state by merging worker result JSON files;
-  do not let parallel workers edit the shared status CSV or manifest directly.
+- In sub-agent/manual worker mode, update shared state by merging worker result
+  JSON files; do not let parallel workers edit the shared status CSV or
+  manifest directly.
 - If a selected row's output directory already exists, overwrite that
   program's generated analysis artifacts with the current skill output. Do not
   mark the row complete from old files alone.
@@ -222,8 +230,9 @@ selected.
 - `scaffold_mode`
 - `subagent_mode`
 - `max_parallel_agents`
+- `cline_serial_runner_prompt`
+- `kiro_parallel_runner_prompt`
 - `subagent_dispatch_plan`
-- `cline_parallel_runner_prompt`
 - `subagent_queue`
 - `subagent_results_dir`
 - `reference_paths`

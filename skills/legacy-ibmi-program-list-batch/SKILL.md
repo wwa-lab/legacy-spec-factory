@@ -22,12 +22,12 @@ Retain this notice in substantial copies or derived versions.
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program scan queue with durable status files. |
 | Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
-| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `cline-parallel-runner-prompt.md`, optional `subagent-queue/*.md`, optional `subagent-dispatch-plan.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
+| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, `cline-serial-runner-prompt.md`, optional `kiro-parallel-runner-prompt.md`, optional `subagent-queue/*.md`, optional `subagent-dispatch-plan.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
 | Core prompt strategy | Keep work isolated: one program, one prompt, one fresh chat or sub-agent, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
 | Downstream skill | `legacy-ibmi-program-analyzer` for each program; later `legacy-ibmi-flow-analyzer` only when a specific flow/program set should be assembled from completed program artifacts. |
 | Validation standard | Every row is represented, status values are legal, completed rows have required artifacts and validator status, and output folders are unique. |
-| Known risk | Treating one Copilot Chat or one shared batch-state file as a concurrent runner; this causes context contamination, write conflicts, and status drift. |
+| Known risk | Treating one Copilot Chat, one Cline parent task, or one shared batch-state file as a concurrent runner; this causes context contamination, prompt transport failures, write conflicts, and status drift. |
 
 ## Purpose
 
@@ -48,8 +48,9 @@ Use this skill when:
 - The user has a selected program subset and wants generated prompt files only
   for those programs, in the supplied order.
 - The team can only use Copilot Chat and cannot run a true agent batch worker.
-- The runtime supports isolated sub-agents and the user wants to fan out
-  independent program prompts in parallel.
+- The user wants to fan out independent program prompts in parallel by opening
+  separate Cline/Copilot tasks manually or by using a runtime that truly
+  supports isolated sub-agents.
 - Context limits require one program per session.
 - The team needs resumable progress across sessions.
 - The user asks for a "program batch plan", status columns in CSV/Excel, prompt
@@ -64,14 +65,18 @@ directly.
 - One prompt file names exactly one program.
 - Do not ask one Copilot Chat session to process multiple programs
   concurrently.
-- If the runtime supports isolated sub-agents, safe parallelism means one
-  sub-agent per generated `subagent-queue/*.md` file.
+- In current Cline environments, use `cline-serial-runner-prompt.md` for Step
+  2 and process `prompt-queue/*.md` serially. Do not ask one parent task to
+  launch child tasks with `use_subagents`, pass full Markdown prompts through
+  XML/JSON/tool-call parameters, or write `subagent-results/*.json`.
+- If Kiro or another runtime truly supports isolated sub-agents, safe
+  parallelism means one worker per generated `subagent-queue/*.md` file.
 - Do not carry source excerpts, prior program summaries, or chat history into
   the next program.
-- Parallel sub-agents must not edit `program-list-status.csv`,
+- Parallel workers must not edit `program-list-status.csv`,
   `program-batch-plan.md`, or `batch-scan-manifest.yaml` directly. Each
-  sub-agent writes only its program artifacts and one result JSON under
-  `subagent-results/`; the parent agent merges results afterward.
+  worker writes only its program artifacts and one result JSON under
+  `subagent-results/`; the parent agent or operator merges results afterward.
 - If reference packs, dictionaries, message catalogs, code tables, or control
   files are provided, include their paths in every per-program prompt so each
   fresh Copilot Chat session can inspect the same supporting inputs.
@@ -167,20 +172,22 @@ outputs/program-list-batch/
    - In `--scaffold-mode precreate`, also create each program's deterministic
      scaffold artifacts up front and set the row's `next_action` to
      `fill details from scaffold`.
+   - Create `cline-serial-runner-prompt.md` as the default Step 2 prompt for
+     Cline.
    - In `--subagent-mode prepare`, also create `subagent-queue/*.md`,
      `subagent-results/`, `subagent-dispatch-plan.md`, and
-     `cline-parallel-runner-prompt.md` for runtimes that can launch isolated
-     parallel workers.
+     `kiro-parallel-runner-prompt.md` for Kiro or runtimes that can launch
+     isolated parallel workers.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
    - Stop after initialization. Do not start semantic program scans in this
      step. Program rows should remain `queued` unless they are blocked or
      skipped; scaffolded rows use `scaffold_status=present`.
 
-2. **Run one program in Copilot Chat or one sub-agent**
+2. **Run one program in Copilot Chat or one worker task**
    - Open a fresh chat.
    - Paste the next prompt file, or give one `subagent-queue/*.md` file to one
-     isolated sub-agent.
+     isolated worker task.
    - Let `legacy-ibmi-program-analyzer` analyze only that program.
    - If the row has `scaffold_status=present`, start from the precreated
      source index, routine index, and routine logic YAML. Fill the reader-first
@@ -204,8 +211,8 @@ outputs/program-list-batch/
      self-retry helpers unless the user explicitly asks for that recovery
      path.
 
-3. **Merge parallel sub-agent results**
-   - When sub-agent mode is used, each worker writes one
+3. **Merge parallel worker results**
+   - When sub-agent/manual worker mode is used, each worker writes one
      `subagent-results/*.json` file.
    - Run `merge_subagent_results.py` after the workers finish.
    - The merge step updates `program-list-status.csv`,
@@ -264,14 +271,14 @@ Recommended fast two-phase mode:
    deferred --subagent-mode prepare`. This creates the prompt queue, optional
    sub-agent queue, status files, manifest, and deterministic per-program
    scaffold artifacts quickly.
-2. In a manual Cline/Copilot workflow, paste generated prompt files one by one.
-   In a sub-agent-capable Cline runtime, paste
-   `cline-parallel-runner-prompt.md`; it tells Cline to launch up to
-   `--max-parallel-agents` isolated workers using `subagent-queue/*.md`.
+2. In Cline, paste `cline-serial-runner-prompt.md` and let it process
+   `prompt-queue/*.md` serially, one program at a time. Do not use
+   `subagent-queue` or `subagent-results` in Cline.
 3. Each prompt starts from the scaffold and fills semantic analysis details.
    Final validator execution is deferred until the artifacts are consumed
    downstream or prepared for handoff.
-4. After parallel workers finish, merge result JSON files:
+4. In Kiro/agent parallel mode only, after parallel workers finish, merge
+   result JSON files:
 
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
@@ -287,9 +294,11 @@ goal is to avoid spending every Cline prompt on deterministic scaffold
 generation. Use `--scaffold-mode none` or omit the option when prompts should
 do all work themselves.
 
-Use `--subagent-mode prepare` when the runtime can launch isolated workers.
-This mode prepares `cline-parallel-runner-prompt.md`, `subagent-queue/*.md`
-prompts, and a dispatch plan; it does not make Copilot Chat itself concurrent.
+Use `--subagent-mode prepare` when the operator wants to try Kiro/agent
+parallel handoff. This mode prepares `kiro-parallel-runner-prompt.md`,
+`subagent-queue/*.md` prompts, result JSON targets, and a dispatch plan; it
+does not make Cline/Copilot Chat itself concurrent. Cline should still use
+`cline-serial-runner-prompt.md`.
 
 `--programs-file` is optional. Use it when an operator or SME provides a
 selected program list, such as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C`, and you
@@ -327,12 +336,15 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
 - `program-batch-plan.md` shows progress, current/next action, queue, and
   blockers.
 - `batch-scan-manifest.yaml` records every row.
+- `cline-serial-runner-prompt.md` exists and tells Cline to process
+  `prompt-queue/*.md` serially.
 - Every prompt file names exactly one program.
 - No two active rows share the same output directory.
 - In scaffold precreate mode, queued program rows with available source have
   `scaffold_status=present` and `next_action=fill details from scaffold`.
-- In sub-agent mode, each generated sub-agent prompt writes to one unique
-  result JSON file, and shared batch state is updated only by the merge script.
+- In sub-agent/manual worker mode, each generated worker prompt writes to one
+  unique result JSON file, and shared batch state is updated only by the merge
+  script.
 - Completed rows have required per-program artifacts and validator status.
 - Fast-scan rows may use `scanned_unvalidated` only when artifacts exist,
   scaffold text is gone, and `validator_status=deferred`.
@@ -346,7 +358,27 @@ for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
 
+- v0.1.11 (2026-07-11): Cline serial runner split
+  - Added `cline-serial-runner-prompt.md` as the default Step 2 prompt for
+    Cline.
+  - Re-scoped parallel prompts to Kiro/agent runtimes via
+    `kiro-parallel-runner-prompt.md`.
+  - Documented that Cline must not write `subagent-results/*.json`; those are
+    reserved for true isolated worker runtimes.
+
+- v0.1.10 (2026-07-11): Manual Cline parallel dispatch
+  - Superseded for current Cline by v0.1.11 serial runner guidance.
+  - Clarified that current Cline environments may not reliably launch child
+    tasks from one parent prompt or pass complete Markdown prompts through
+    tool-call XML/JSON parameters.
+  - Recast `cline-parallel-runner-prompt.md` as a manual dispatch guide:
+    operators open separate Cline tasks and paste one full
+    `subagent-queue/*.md` prompt per task.
+  - Kept `merge_subagent_results.py` as the controlled shared-state merge
+    point after manually parallel workers finish.
+
 - v0.1.9 (2026-07-11): Parallel sub-agent dispatch preparation
+  - Superseded for current Cline by v0.1.10 manual dispatch guidance.
   - Added `--subagent-mode prepare` to generate sub-agent-safe per-program
     prompts, a dispatch plan, and result JSON locations.
   - Added `cline-parallel-runner-prompt.md` as the copy-ready second prompt

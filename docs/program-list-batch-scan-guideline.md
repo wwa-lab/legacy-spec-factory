@@ -60,10 +60,13 @@ For faster Cline batch scans, use the two-phase mode:
 1. Initialize with `--scaffold-mode precreate --validation-mode deferred`.
    This creates the prompt queue, status files, manifest, and deterministic
    per-program scaffold artifacts up front.
-2. If the runtime supports isolated workers, add `--subagent-mode prepare` and
-   paste `cline-parallel-runner-prompt.md` into Cline. Otherwise paste the
-   generated per-program prompt files into Cline/Copilot serially.
-3. Each prompt starts from the existing scaffold and fills semantic
+2. In Cline, paste the generated `cline-serial-runner-prompt.md`. Cline should
+   process `prompt-queue/*.md` serially and should not use `subagent-queue` or
+   `subagent-results`.
+3. Add `--subagent-mode prepare` only when the operator also wants to try
+   Kiro/agent parallel execution. Kiro should use
+   `kiro-parallel-runner-prompt.md` and the `subagent-queue/*.md` prompts.
+4. Each prompt starts from the existing scaffold and fills semantic
    reader-first details from source. Final validation is deferred until
    downstream use or handoff.
 
@@ -93,7 +96,7 @@ program analysis.
 - 不要运行 program-analysis validator。
 - 不要把任何 program row 标记为 `completed`、`completed_with_warnings` 或 `scanned_unvalidated`。
 - 如果使用 `--scaffold-mode precreate`，只允许生成 deterministic scaffold；row 仍应保持 `batch_status=queued`，并写 `scaffold_status=present`。
-- 初始化完成后立即停止，输出生成文件路径和下一步 Cline prompt 路径。
+- 初始化完成后立即停止，输出生成文件路径和 Cline 串行 Step 2 prompt 路径。
 
 请运行以下初始化命令，并只执行这一条命令对应的初始化工作：
 
@@ -106,10 +109,12 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_b
 - `<batch-dir>/program-list-status.csv`
 - `<batch-dir>/batch-scan-manifest.yaml`
 - `<batch-dir>/prompt-queue/*.md`
-- `<batch-dir>/subagent-queue/*.md`
-- `<batch-dir>/cline-parallel-runner-prompt.md`
-- `<batch-dir>/subagent-dispatch-plan.md`
-- `<batch-dir>/subagent-results/`
+- `<batch-dir>/cline-serial-runner-prompt.md`
+- 如果使用 `--subagent-mode prepare`，还应生成：
+  - `<batch-dir>/subagent-queue/*.md`
+  - `<batch-dir>/kiro-parallel-runner-prompt.md`
+  - `<batch-dir>/subagent-dispatch-plan.md`
+  - `<batch-dir>/subagent-results/`
 
 验收检查：
 - `program-list-status.csv` 中 program rows 仍是 `queued`，除非 source 缺失或非 program row。
@@ -117,7 +122,7 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_b
 - 不应出现因 Step 1 产生的 final semantic analysis 结论。
 - 不应因为 Step 1 而显示 batch scan completed。
 
-现在开始：运行初始化命令，生成 queue/state/scaffold 后停止并报告下一步应该复制哪个 Step 2 prompt。
+现在开始：运行初始化命令，生成 queue/state/scaffold 后停止并报告 Cline Step 2 应复制的 `cline-serial-runner-prompt.md` 路径；如果存在 Kiro 并行队列，也报告 `kiro-parallel-runner-prompt.md` 路径。
 ````
 
 If this Step 1 prompt produces rich semantic files such as a filled
@@ -247,16 +252,16 @@ Recommended initialization command:
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\initialize_program_batch.py --program-list outputs\repo-scan\program-list.csv --programs-file programs.txt --out-dir outputs\program-list-batch --source-root C:\path\to\source-repo --delivery-root C:\path\to\delivery-work --scaffold-mode precreate --validation-mode deferred --subagent-mode prepare --max-parallel-agents 4
 ```
 
-After isolated sub-agents finish, merge their result JSON files:
+After Kiro/agent workers finish, merge their result JSON files:
 
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
 ```
 
-The second Cline prompt is generated at:
+The Cline serial Step 2 prompt is generated at:
 
 ```text
-outputs\program-list-batch\cline-parallel-runner-prompt.md
+outputs\program-list-batch\cline-serial-runner-prompt.md
 ```
 
 Output folder rules:
@@ -971,88 +976,13 @@ Manual operator checklist for each Copilot Chat session:
 This is not fully automatic in a limited Copilot Chat environment, but it
 preserves quality because each program starts with a clean chat context.
 
-### Sub-Agent Parallel Mode
+### Cline Serial Mode
 
-When the runtime supports isolated workers, initialize with
-`--subagent-mode prepare`. The initializer writes:
-
-- `cline-parallel-runner-prompt.md`
-- `subagent-dispatch-plan.md`
-- `subagent-queue/*.md`
-- `subagent-results/`
-
-Step 2 Cline usage:
-
-```text
-Copy and paste <batch-dir>/cline-parallel-runner-prompt.md into Cline.
-```
-
-That prompt tells Cline to read `subagent-dispatch-plan.md`, start at most the
-configured number of isolated tasks, feed each task one `subagent-queue/*.md`
-file, wait for result JSON files, then merge and validate batch state.
-
-Step 2 Cline prompt, Chinese copy-ready template:
-
-````text
-你是运行在 Cline 中的并行 batch 执行器。
-
-目标：
-读取已经生成好的 program prompt queue，并并行启动多个独立 task 来处理每个 program。
-
-Batch directory:
-`<batch-dir>`
-
-Dispatch plan:
-`<batch-dir>/subagent-dispatch-plan.md`
-
-Parallel-safe prompt directory:
-`<batch-dir>/subagent-queue`
-
-Result directory:
-`<batch-dir>/subagent-results`
-
-最大并发数：
-`<max-parallel-agents>`
-
-执行规则：
-1. 先读取 `subagent-dispatch-plan.md`，确认待处理的 `subagent-queue/*.md` 文件清单。
-2. 按文件名自然排序处理 `subagent-queue/*.md`。
-3. 最多同时启动 `<max-parallel-agents>` 个独立 task/sub-agent。
-4. 每个 task 只能接收一个 `subagent-queue/*.md` 文件的完整内容。
-5. 每个 task 只处理该 prompt 中指定的一个 program。
-6. 不要把多个 program 合并到一个 task。
-7. 不要把同一个 prompt 文件分配给两个 task。
-8. 每个 task 只能写自己的 program output directory 和自己的 result JSON。
-9. 子 task 不允许直接修改这些共享文件：
-   - `program-list-status.csv`
-   - `program-batch-plan.md`
-   - `batch-scan-manifest.yaml`
-10. 子 task 必须在结束前写出 prompt 中指定的 `subagent-results/*.result.json`。
-11. 如果某个 task 失败，不要无限重试；让该 task 写出 `failed_runtime` 或 `failed_validator` result JSON。如果 task 无法写 JSON，由你为该 program 写一个 failed result JSON，记录具体错误。
-12. 一个 task 完成后，再从队列中启动下一个，直到所有 `subagent-queue/*.md` 都处理完。
-
-所有 task 完成后，运行 merge：
-
-```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir "<batch-dir>"
-```
-
-然后运行 batch status validator：
-
-```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "<batch-dir>"
-```
-
-如果当前 Cline 环境不能启动独立 task/sub-agent：
-- 不要尝试在一个上下文里处理多个 program。
-- 停止并报告：当前 Cline 环境不支持隔离并行 task。
-- 返回 `subagent-queue` 路径，让操作者手动开多个 Cline task 分别粘贴这些 prompt。
-
-现在开始：读取 dispatch plan，列出将处理的 prompt 文件和并发计划，然后启动第一批 task。
-````
-
-When the initializer generates `cline-parallel-runner-prompt.md`, it replaces
-`<batch-dir>` and `<max-parallel-agents>` with concrete values.
+For Cline, Step 2 is serial by default. The initializer writes
+`cline-serial-runner-prompt.md`; paste that file into Cline after Step 1.
+Cline should consume `prompt-queue/*.md` one by one. It should not read
+`subagent-queue`, call `use_subagents`, write `subagent-results/*.json`, or run
+the merge script.
 
 Step 2 Cline prompt, Chinese serial copy-ready template:
 
@@ -1061,6 +991,12 @@ Step 2 Cline prompt, Chinese serial copy-ready template:
 
 目标：
 读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
+
+Cline 执行边界：
+- Cline 中只做串行，不做并行。
+- 不要调用 `use_subagents`。
+- 不要读取 `subagent-queue`，不要生成 `subagent-results`。
+- 每次只执行一个 `prompt-queue/*.md` 的完整内容。
 
 Batch directory:
 `<batch-dir>`
@@ -1099,13 +1035,33 @@ Batch manifest:
 5. 更新 batch state。
 6. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime。
 
+全部处理完成后，运行 batch status validator：
+
+```text
+python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "<batch-dir>"
+```
+
 现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
 ````
 
-Launch rules:
+When the initializer generates `cline-serial-runner-prompt.md`, it replaces
+`<batch-dir>` with the concrete batch directory.
+
+### Kiro Parallel Mode
+
+Use this only when Kiro or another agent runtime can reliably launch isolated
+workers and pass one complete Markdown prompt to each worker. Initialize with
+`--subagent-mode prepare`; the initializer writes:
+
+- `kiro-parallel-runner-prompt.md`
+- `subagent-dispatch-plan.md`
+- `subagent-queue/*.md`
+- `subagent-results/`
+
+Parallel worker rules:
 
 - Start at most the configured `--max-parallel-agents` workers at a time.
-- Give each worker exactly one file from `subagent-queue/`.
+- Give each worker exactly one complete file from `subagent-queue/`.
 - Do not assign the same prompt file twice.
 - Each worker writes only its program output directory and its own result JSON.
 - Workers do not edit `program-list-status.csv`, `program-batch-plan.md`, or
@@ -1113,9 +1069,8 @@ Launch rules:
 - After workers finish, run `merge_subagent_results.py --batch-dir <batch-dir>`
   and then run the batch status validator.
 
-This mode is the preferred way to parallelize in Codex/Claude/OpenCode-style
-agent runtimes because it avoids multiple workers racing on the same CSV and
-manifest files.
+If Kiro cannot guarantee isolated worker execution, fall back to
+`cline-serial-runner-prompt.md`.
 
 ### Copilot Chat Concurrency Rule
 
