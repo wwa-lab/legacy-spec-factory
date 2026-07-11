@@ -61,8 +61,8 @@ For faster Cline batch scans, use the two-phase mode:
    This creates the prompt queue, status files, manifest, and deterministic
    per-program scaffold artifacts up front.
 2. If the runtime supports isolated workers, add `--subagent-mode prepare` and
-   launch workers from `subagent-dispatch-plan.md`. Otherwise paste the
-   generated prompt files into Cline/Copilot serially.
+   paste `cline-parallel-runner-prompt.md` into Cline. Otherwise paste the
+   generated per-program prompt files into Cline/Copilot serially.
 3. Each prompt starts from the existing scaffold and fills semantic
    reader-first details from source. Final validation is deferred until
    downstream use or handoff.
@@ -196,6 +196,12 @@ After isolated sub-agents finish, merge their result JSON files:
 
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir outputs\program-list-batch
+```
+
+The second Cline prompt is generated at:
+
+```text
+outputs\program-list-batch\cline-parallel-runner-prompt.md
 ```
 
 Output folder rules:
@@ -915,9 +921,20 @@ preserves quality because each program starts with a clean chat context.
 When the runtime supports isolated workers, initialize with
 `--subagent-mode prepare`. The initializer writes:
 
+- `cline-parallel-runner-prompt.md`
 - `subagent-dispatch-plan.md`
 - `subagent-queue/*.md`
 - `subagent-results/`
+
+Step 2 Cline usage:
+
+```text
+Copy and paste <batch-dir>/cline-parallel-runner-prompt.md into Cline.
+```
+
+That prompt tells Cline to read `subagent-dispatch-plan.md`, start at most the
+configured number of isolated tasks, feed each task one `subagent-queue/*.md`
+file, wait for result JSON files, then merge and validate batch state.
 
 Launch rules:
 

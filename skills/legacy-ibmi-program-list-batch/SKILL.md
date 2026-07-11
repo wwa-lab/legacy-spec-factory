@@ -22,7 +22,7 @@ Retain this notice in substantial copies or derived versions.
 | --- | --- |
 | Problem solved | Turns a `program-list.csv` / Excel export into a Copilot Chat-friendly per-program scan queue with durable status files. |
 | Input | Program list rows with `member`, `object_type`, `source_kind`, `path`, `total_lines`, `size_tier`, and `tier_reason`; optional source root, output root, reference paths, and control file paths. |
-| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `subagent-queue/*.md`, optional `subagent-dispatch-plan.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
+| Output | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md`, optional `cline-parallel-runner-prompt.md`, optional `subagent-queue/*.md`, optional `subagent-dispatch-plan.md`, optional `batch-session-handoff.md`, and per-program analyzer artifacts named `<PROGRAM>-<artifact-name>` under each program folder. |
 | Core prompt strategy | Keep work isolated: one program, one prompt, one fresh chat or sub-agent, durable state in files. |
 | Upstream skill | `legacy-ibmi-inventory` or repo scan output that produced the program list. |
 | Downstream skill | `legacy-ibmi-program-analyzer` for each program; later `legacy-ibmi-flow-analyzer` only when a specific flow/program set should be assembled from completed program artifacts. |
@@ -163,8 +163,9 @@ outputs/program-list-batch/
      scaffold artifacts up front and set the row's `next_action` to
      `fill details from scaffold`.
    - In `--subagent-mode prepare`, also create `subagent-queue/*.md`,
-     `subagent-results/`, and `subagent-dispatch-plan.md` for runtimes that
-     can launch isolated parallel workers.
+     `subagent-results/`, `subagent-dispatch-plan.md`, and
+     `cline-parallel-runner-prompt.md` for runtimes that can launch isolated
+     parallel workers.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
 
@@ -251,8 +252,9 @@ Recommended fast two-phase mode:
    sub-agent queue, status files, manifest, and deterministic per-program
    scaffold artifacts quickly.
 2. In a manual Cline/Copilot workflow, paste generated prompt files one by one.
-   In a sub-agent-capable runtime, launch up to `--max-parallel-agents`
-   isolated workers using `subagent-dispatch-plan.md`.
+   In a sub-agent-capable Cline runtime, paste
+   `cline-parallel-runner-prompt.md`; it tells Cline to launch up to
+   `--max-parallel-agents` isolated workers using `subagent-queue/*.md`.
 3. Each prompt starts from the scaffold and fills semantic analysis details.
    Final validator execution is deferred until the artifacts are consumed
    downstream or prepared for handoff.
@@ -273,8 +275,8 @@ generation. Use `--scaffold-mode none` or omit the option when prompts should
 do all work themselves.
 
 Use `--subagent-mode prepare` when the runtime can launch isolated workers.
-This mode prepares `subagent-queue/*.md` prompts and a dispatch plan; it does
-not make Copilot Chat itself concurrent.
+This mode prepares `cline-parallel-runner-prompt.md`, `subagent-queue/*.md`
+prompts, and a dispatch plan; it does not make Copilot Chat itself concurrent.
 
 `--programs-file` is optional. Use it when an operator or SME provides a
 selected program list, such as `PROGRAM-A -> PROGRAM-B -> PROGRAM-C`, and you
@@ -334,6 +336,8 @@ for example `CU219B-program-analysis.md`, not shared generic names.
 - v0.1.9 (2026-07-11): Parallel sub-agent dispatch preparation
   - Added `--subagent-mode prepare` to generate sub-agent-safe per-program
     prompts, a dispatch plan, and result JSON locations.
+  - Added `cline-parallel-runner-prompt.md` as the copy-ready second prompt
+    for Cline to fan out generated per-program prompts.
   - Added `merge_subagent_results.py` so parallel workers avoid shared-state
     write conflicts and the parent agent can merge results after fan-out.
 

@@ -10,6 +10,7 @@ Use this reference when creating or checking the durable state files for
 | `program-batch-plan.md` | Operators and SMEs | Human-readable progress, next action, and blockers. |
 | `program-list-status.csv` | Excel / spreadsheet users | Working copy of the program list with status columns. |
 | `batch-scan-manifest.yaml` | Tools and resume logic | Machine-readable execution state and audit record. |
+| `cline-parallel-runner-prompt.md` | Cline parent task | Optional copy-ready second prompt that launches isolated program workers. |
 | `subagent-dispatch-plan.md` | Parent agents/operators | Optional launch plan for isolated parallel sub-agents. |
 | `subagent-queue/*.md` | Sub-agents | Optional one-program worker prompts safe for parallel fan-out. |
 | `subagent-results/*.json` | Merge script | Optional per-worker result files used to update shared batch state. |
@@ -222,6 +223,7 @@ selected.
 - `subagent_mode`
 - `max_parallel_agents`
 - `subagent_dispatch_plan`
+- `cline_parallel_runner_prompt`
 - `subagent_queue`
 - `subagent_results_dir`
 - `reference_paths`
