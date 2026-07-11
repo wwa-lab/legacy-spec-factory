@@ -999,6 +999,54 @@ python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_sta
 When the initializer generates `cline-parallel-runner-prompt.md`, it replaces
 `<batch-dir>` and `<max-parallel-agents>` with concrete values.
 
+Step 2 Cline prompt, Chinese serial copy-ready template:
+
+````text
+你是运行在 Cline 中的串行 batch 执行器。
+
+目标：
+读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
+
+Batch directory:
+`<batch-dir>`
+
+Program prompt directory:
+`<batch-dir>/prompt-queue`
+
+Batch status file:
+`<batch-dir>/program-list-status.csv`
+
+Batch manifest:
+`<batch-dir>/batch-scan-manifest.yaml`
+
+执行规则：
+1. 先读取 `program-batch-plan.md`、`program-list-status.csv` 和 `batch-scan-manifest.yaml`，确认当前 batch 状态。
+2. 按文件名自然排序处理 `prompt-queue/*.md`。
+3. 每次只处理一个 prompt 文件。
+4. 每个 prompt 只对应一个 program；不要把多个 program 合并到一次分析。
+5. 处理当前 program 时，完整执行该 prompt 的内容。
+6. 当前 program 完成、blocked 或 failed，并且 durable state 已更新后，才开始下一个 prompt。
+7. 不要并行启动多个 task，也不要在同一个上下文里同时分析多个 program。
+8. 如果某个 program 遇到 Cline/model/network/tool 错误，不要无限重试；按该 prompt 的 retry / exit budget 写入 `failed_runtime`、`last_error` 和 `next_action`，然后继续下一个可处理 prompt。
+9. 如果某个 program 的 artifact/validator 失败，最多做一次 targeted repair；仍失败则写入 `failed_validator`、`last_error` 和 `next_action`。
+10. 如果 batch 是 deferred validation 模式，不要在每个 prompt 里运行昂贵的 final validator；按 prompt 要求写入 `scanned_unvalidated` / `validator_status=deferred`。
+11. 每完成一个 program，都必须更新：
+    - `program-list-status.csv`
+    - `program-batch-plan.md`
+    - `batch-scan-manifest.yaml`
+12. 如果 Cline 上下文开始变长或不稳定，停止在当前 program 边界，写好 durable state，并报告下一个待处理 prompt。
+
+建议处理顺序：
+1. 列出 `prompt-queue/*.md` 文件清单。
+2. 找到第一个尚未完成的 program prompt。
+3. 读取该 prompt 的完整内容。
+4. 执行该 prompt。
+5. 更新 batch state。
+6. 继续下一个 prompt，直到所有 program 都被分类为 completed、completed_with_warnings、scanned_unvalidated、skipped_not_program、blocked_missing_source、failed_validator 或 failed_runtime。
+
+现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
+````
+
 Launch rules:
 
 - Start at most the configured `--max-parallel-agents` workers at a time.
