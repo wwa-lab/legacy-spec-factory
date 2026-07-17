@@ -213,7 +213,7 @@ that still need source scan.
 
 ## Validation Logic
 
-| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| Message / Status / Outcome | Description | Program | Routine | Condition / Evidence | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | STATUS-ACTIVE-CHECK | The program checks account activity before allowing posting to continue. | @CU118 | RLOG-AUTH-002 | entry dispatch -> account status validation -> continue or decline | response status field | inactive accounts receive a decline/status response instead of finalization | RLOG-AUTH-002; MSG-AUTH-001 | confirmed |
 | STATUS-POSTING-READY | The finalization program accepts only requests that still carry a clean validation status. | CC050 | RLOG-AUTH-011 | calculation result -> validation guard -> finalization | posting indicator carrier | prevents final update when upstream validation failed | RLOG-AUTH-011; MSG-AUTH-002 | confirmed |
@@ -227,7 +227,7 @@ that still need source scan.
 
 ## Message Inventory
 
-| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
+| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Condition / Handler | Effect | Detail Refs | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | STATUS-ACTIVE-CHECK | Account activity validation status used before posting can continue. | status | @CU118 RLOG-AUTH-002 | 1 | account status validation | controls continue versus decline outcome | MSG-AUTH-001; RLOG-AUTH-002 | confirmed |
 | STATUS-ACCOUNT-MISSING | Account lookup failed and the request cannot be finalized. | status | @CU118 RLOG-AUTH-003 | 1 | file access status check | stops finalization and returns a reviewable failure | MSG-AUTH-003; RLOG-AUTH-003 | confirmed |
@@ -520,7 +520,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 findings,
             )
 
-    def test_validator_rejects_missing_normal_program_routine_logic_details(self) -> None:
+    def test_builder_marks_missing_normal_program_routine_logic_details_pending(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             working_root = temp_root / "delivery-work"
@@ -543,7 +543,11 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
 
             findings = BUILDER.validate(manifest_path, review_path)
 
-            self.assertTrue(
+            entry = manifest["programs"][0]
+            self.assertEqual(manifest["review_status"], "partial_pending_program")
+            self.assertEqual(entry["run_resolution"], "pending_source")
+            self.assertIsNone(entry["artifact_root"])
+            self.assertFalse(
                 any("CC050 analyzed_this_run missing required compact artifacts" in finding for finding in findings),
                 findings,
             )

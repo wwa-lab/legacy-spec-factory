@@ -32,13 +32,15 @@ function Read-BuildArguments {
         ReviewName = $null; ProgramsFile = $null; WorkingRoot = $null; OutputRoot = $null
         ArtifactRepoMode = 'current_run'; DeliveryRoot = $null; ForceRescanFile = $null
         SourceRoot = $null; InventoryDir = $null; ProgramFirst = $false; Profile = $null
-        OutputDir = $null; WorkingBranch = $null
+        OutputDir = $null; WorkingBranch = $null; CoreReviewProfile = $null; ReviewId = $null
+        FlowSlug = $null; ProgramSetSlug = $null
     }
     $names = @{
         reviewname = 'ReviewName'; programsfile = 'ProgramsFile'; workingroot = 'WorkingRoot'
         outputroot = 'OutputRoot'; artifactrepomode = 'ArtifactRepoMode'; deliveryroot = 'DeliveryRoot'
         forcerescanfile = 'ForceRescanFile'; sourceroot = 'SourceRoot'; inventorydir = 'InventoryDir'
         programfirst = 'ProgramFirst'; profile = 'Profile'; outputdir = 'OutputDir'; workingbranch = 'WorkingBranch'
+        corereviewprofile = 'CoreReviewProfile'; reviewid = 'ReviewId'; flowslug = 'FlowSlug'; programsetslug = 'ProgramSetSlug'
     }
     for ($index = 0; $index -lt $Arguments.Count; $index++) {
         $raw = [string]$Arguments[$index]
@@ -84,7 +86,7 @@ try {
     if ($programs.Count -eq 0) { throw 'programs file has no program names' }
     $config = Read-FlowYamlFile $options.Profile
     if ($config -isnot [System.Collections.IDictionary]) { throw 'delivery profile must be a YAML mapping' }
-    $manifest = New-FlowCoreReviewManifest -ReviewName $options.ReviewName -Programs $programs -ArtifactRoot ([IO.Path]::GetFullPath($artifactRoot)) -Config $config -WorkingBranch $options.WorkingBranch -SourceRoot $options.SourceRoot -InventoryDir $options.InventoryDir -ProgramFirst ([bool]$options.ProgramFirst) -ArtifactRepoMode $options.ArtifactRepoMode
+    $manifest = New-FlowCoreReviewManifest -ReviewName $options.ReviewName -Programs $programs -ArtifactRoot ([IO.Path]::GetFullPath($artifactRoot)) -Config $config -WorkingBranch $options.WorkingBranch -SourceRoot $options.SourceRoot -InventoryDir $options.InventoryDir -ProgramFirst ([bool]$options.ProgramFirst) -ArtifactRepoMode $options.ArtifactRepoMode -CoreReviewProfile $options.CoreReviewProfile -ReviewId $options.ReviewId -FlowSlug $options.FlowSlug -ProgramSetSlug $options.ProgramSetSlug
     $paths = @(Write-FlowCoreReviewOutputs -Manifest $manifest -OutputDirectory ([IO.Path]::GetFullPath($options.OutputDir)))
     foreach ($path in $paths) { Write-Output "Wrote $path" }
     exit 0

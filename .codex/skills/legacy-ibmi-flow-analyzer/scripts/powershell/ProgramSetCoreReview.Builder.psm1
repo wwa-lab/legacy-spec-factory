@@ -28,6 +28,15 @@ $script:OptionalArtifacts = @(
     'field-mutation-matrix.yaml',
     'sql-inventory.yaml'
 )
+$script:CoreReadingSections = @(
+    'Program Set Reading Summary', 'Cross-Program Processing Overview',
+    'Calculation Logic', 'Validation Logic', 'Exception Handling'
+)
+$script:AuditSections = @('Core Completeness Ledger', 'Sources', 'Run Profile', 'Source Inventory Cache')
+$script:CanonicalReviewFilename = 'program-set-sme-core-review.md'
+$script:CoreFactsFilename = 'program-set-core-facts.yaml'
+$script:GeneratorVersion = '0.3.0'
+$script:TemplateVersion = '0.3.0'
 $script:Utf8NoBom = New-Object -TypeName System.Text.UTF8Encoding -ArgumentList $false
 
 function Get-FlowMapValue {
@@ -50,6 +59,24 @@ function Get-FlowProfileSection {
     return $value
 }
 
+function Get-FlowCoreReviewProfile {
+    param($Config, [AllowNull()][string]$RequestedName)
+    $selected = Get-FlowMapValue $Config 'core_review_profile' ([ordered]@{})
+    $name = if ($RequestedName) { $RequestedName } else { [string](Get-FlowMapValue $selected 'name' 'standard_reader_first') }
+    $includeMessages = $name -eq 'standard_reader_first'
+    if ($selected -is [System.Collections.IDictionary]) {
+        if (Get-FlowMapValue $selected 'include_message_inventory' $null) { $includeMessages = [bool](Get-FlowMapValue $selected 'include_message_inventory') }
+    }
+    $sections = @($script:CoreReadingSections)
+    if ($includeMessages) { $sections += 'Message Inventory' }
+    return [ordered]@{
+        name = $name
+        core_sections = $sections
+        include_message_inventory = $includeMessages
+        include_audit_sections = [bool](Get-FlowMapValue $selected 'include_audit_sections' $true)
+    }
+}
+
 function ConvertTo-FlowArtifactKey {
     param([Parameter(Mandatory = $true)][string]$Filename)
     return $Filename.Replace('-', '_').Replace('.', '_')
@@ -60,6 +87,23 @@ function ConvertTo-FlowReviewSlug {
     $slug = [regex]::Replace($Value.Trim().ToLowerInvariant(), '[^a-z0-9]+', '_').Trim('_')
     if ($slug) { return $slug }
     return 'program_set_review'
+}
+
+function Get-FlowProgramSetIdentitySlug {
+    param([string[]]$Programs)
+    $identityValues = @($Programs | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { ([string]$_).Trim().ToUpperInvariant() } | Sort-Object -Unique)
+    if ($identityValues.Count -eq 0) { return 'program_set_review' }
+    $readable = ($identityValues | ForEach-Object { ConvertTo-FlowReviewSlug $_ }) -join '_'
+    if ($readable.Length -gt 64) { $readable = $readable.Substring(0, 64).Trim('_') }
+    if (-not $readable) { $readable = 'programs' }
+    $identity = [string]::Join("`n", $identityValues)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [Text.Encoding]::UTF8.GetBytes($identity)
+        $digest = ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant().Substring(0, 8)
+    }
+    finally { $sha.Dispose() }
+    return "program_set_${readable}_${digest}"
 }
 
 function Get-FlowRelativePath {
@@ -125,15 +169,22 @@ function Find-FlowProgramArtifactRoot {
 }
 
 function Get-FlowArtifactStatuses {
-    param([Parameter(Mandatory = $true)][string]$Root, [AllowNull()][string]$ArtifactRoot)
+    param([Parameter(Mandatory = $true)][string]$Root, [AllowNull()][string]$ArtifactRoot, [AllowNull()][string]$Program)
     $statuses = [ordered]@{}
     foreach ($filename in @($script:RequiredArtifacts + $script:OptionalArtifacts)) {
         $key = ConvertTo-FlowArtifactKey $filename
+        $prefix = if ($Program) { ([regex]::Replace($Program.Trim().ToUpperInvariant(), '[\s<>:"/\\|?*]+', '_')).Trim('._-') + '-' } else { '' }
         if (-not $ArtifactRoot) {
-            $statuses[$key] = [ordered]@{ path = $filename; status = 'missing' }
+            $statuses[$key] = [ordered]@{ path = $(if ($prefix) { $prefix + $filename } else { $filename }); status = 'missing' }
             continue
         }
-        $candidate = Join-Path (Join-Path $Root $ArtifactRoot) $filename
+        $artifactPath = Join-Path $Root $ArtifactRoot
+        $candidates = @(
+            $(if ($prefix) { Join-Path $artifactPath ($prefix + $filename) }),
+            Join-Path $artifactPath $filename
+        ) | Where-Object { $_ }
+        $candidate = @($candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })[0]
+        if (-not $candidate) { $candidate = $candidates[0] }
         $statuses[$key] = [ordered]@{
             path = Get-FlowRelativePath $Root $candidate
             status = $(if (Test-Path -LiteralPath $candidate -PathType Leaf) { 'present' } else { 'missing' })
@@ -199,16 +250,22 @@ function New-FlowProgramEntries {
             $warnings.Add("Program $normalized matched multiple artifact folders; using $($found.Root): " + (@($found.Matches) -join ', '))
         }
         $hasArtifact = $null -ne $found.Root
+        $compactArtifacts = Get-FlowArtifactStatuses $ArtifactRoot $found.Root $normalized
+        $missingRequired = @($script:RequiredArtifacts | Where-Object {
+            $artifact = Get-FlowMapValue $compactArtifacts (ConvertTo-FlowArtifactKey $_) ([ordered]@{})
+            (Get-FlowMapValue $artifact 'status' 'missing') -ne 'present'
+        })
+        $usableArtifact = $hasArtifact -and $missingRequired.Count -eq 0
         $entry = [ordered]@{
             input_name = $inputName
             normalized_name = $normalized
             order = $index + 1
-            run_resolution = $(if ($hasArtifact) { $(if ($approved) { 'reused_artifact_repo' } else { 'analyzed_this_run' }) } else { 'pending_source' })
-            artifact_root = $found.Root
-            artifact_source = $(if ($hasArtifact) { $(if ($approved) { 'approved_document_repo' } else { 'delivery_working_branch' }) } else { 'source_scan_required' })
+            run_resolution = $(if ($usableArtifact) { $(if ($approved) { 'reused_artifact_repo' } else { 'analyzed_this_run' }) } else { 'pending_source' })
+            artifact_root = $(if ($usableArtifact) { $found.Root } else { $null })
+            artifact_source = $(if ($usableArtifact) { $(if ($approved) { 'approved_document_repo' } else { 'delivery_working_branch' }) } else { 'source_scan_required' })
             tier = Get-FlowProgramTier $found.Root $workspace
-            compact_artifacts = Get-FlowArtifactStatuses $ArtifactRoot $found.Root
-            follow_up = $(if ($hasArtifact) { $(if ($approved) { 'none - approved document repo artifact present' } else { 'none - analysis artifact present in current run' }) } elseif ($approved) { 'add or refresh this program in the approved document repo' } else { 'scan this program in current run' })
+            compact_artifacts = $compactArtifacts
+            follow_up = $(if ($usableArtifact) { $(if ($approved) { 'none - approved document repo artifact present' } else { 'none - analysis artifact present in current run' }) } elseif ($hasArtifact) { 'refresh missing required artifacts: ' + ($missingRequired -join ', ') } elseif ($approved) { 'add or refresh this program in the approved document repo' } else { 'scan this program in current run' })
         }
         $entries.Add($entry)
         $seen[$normalized] = $entry
@@ -339,11 +396,15 @@ function Get-FlowSourceInventoryStatus {
 }
 
 function New-FlowCoreReviewManifest {
-    param([string]$ReviewName, [string[]]$Programs, [string]$ArtifactRoot, $Config, [AllowNull()][string]$WorkingBranch, [AllowNull()][string]$SourceRoot, [AllowNull()][string]$InventoryDir, [bool]$ProgramFirst, [string]$ArtifactRepoMode)
+    param([string]$ReviewName, [string[]]$Programs, [string]$ArtifactRoot, $Config, [AllowNull()][string]$WorkingBranch, [AllowNull()][string]$SourceRoot, [AllowNull()][string]$InventoryDir, [bool]$ProgramFirst, [string]$ArtifactRepoMode, [AllowNull()][string]$CoreReviewProfile, [AllowNull()][string]$ReviewId, [AllowNull()][string]$FlowSlug, [AllowNull()][string]$ProgramSetSlug)
     $lookup = Get-FlowProfileSection $Config 'program_artifact_resolution_profile' 'delivery_artifact_lookup_profile'
     $workspace = Get-FlowProfileSection $Config 'delivery_workspace_profile'
     $built = New-FlowProgramEntries $Programs $ArtifactRoot $Config $ArtifactRepoMode
     $inventory = Get-FlowSourceInventoryStatus $built.Entries $SourceRoot $InventoryDir $Config
+    $profile = Get-FlowCoreReviewProfile $Config $CoreReviewProfile
+    $reviewSlug = ConvertTo-FlowReviewSlug $ReviewName
+    $stableFlowSlug = if ($FlowSlug) { ConvertTo-FlowReviewSlug $FlowSlug } else { $reviewSlug }
+    $stableProgramSetSlug = if ($ProgramSetSlug) { ConvertTo-FlowReviewSlug $ProgramSetSlug } else { Get-FlowProgramSetIdentitySlug @($built.Entries | ForEach-Object { $_.normalized_name }) }
     foreach ($entry in $built.Entries) {
         if ($inventory.freshness -eq 'fresh' -and $entry.run_resolution -eq 'pending_source') {
             $matchingRows = @($inventory.programs | Where-Object { $_.program -eq $entry.normalized_name })
@@ -355,9 +416,13 @@ function New-FlowCoreReviewManifest {
             }
         }
     }
+    $hasPending = @($built.Entries | Where-Object { $_.run_resolution -in @('pending_source', 'blocked_missing_source') }).Count -gt 0
+    $reviewStatus = if ($hasPending) { 'partial_pending_program' } else { 'complete_exploratory' }
     return [ordered]@{
-        schema_version = '0.1'; generated_by = 'program_set_core_review.ps1'; generated_at = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
-        review_name = $ReviewName; review_slug = ConvertTo-FlowReviewSlug $ReviewName
+        schema_version = '0.2'; generated_by = 'program_set_core_review.py'; generator_version = $script:GeneratorVersion; template_version = $script:TemplateVersion; generated_at = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+        review_id = $(if ($ReviewId) { $ReviewId } else { "review-$stableFlowSlug--$stableProgramSetSlug" }); review_name = $ReviewName; review_slug = $reviewSlug
+        flow_slug = $stableFlowSlug; program_set_slug = $stableProgramSetSlug; folder_slug = "$stableFlowSlug--$stableProgramSetSlug"; display_name = $ReviewName
+        canonical_filename = $script:CanonicalReviewFilename; artifact_version = '0.2'; review_status = $reviewStatus; core_review_profile = $profile
         run_profile = [ordered]@{
             repo = $(if (Get-FlowMapValue $lookup 'repo') { Get-FlowMapValue $lookup 'repo' } else { Get-FlowMapValue $workspace 'repo' })
             working_branch = $WorkingBranch; artifact_root = [IO.Path]::GetFullPath($ArtifactRoot); artifact_repo_mode = $ArtifactRepoMode
@@ -405,6 +470,17 @@ function ConvertTo-FlowCoreReviewSkeleton {
     param($Manifest)
     $tables = Get-FlowReviewTables $Manifest
     $run = $Manifest.run_profile; $resolution = $Manifest.program_resolution_profile; $workspace = $Manifest.workspace_profile; $inventory = $Manifest.source_inventory
+    $profile = $Manifest.core_review_profile
+    $messageSection = if ([bool]$profile.include_message_inventory) {
+@"
+## Message Inventory
+
+<!-- Standard profile only: include every exact message/status/literal row. -->
+
+| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Condition / Handler | Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+"@
+    } else { '' }
     $patterns = @($resolution.program_folder_patterns) -join ', '
     $runTable = @('| Field | Value |', '| --- | --- |', "| Repo | $($run.repo) |", "| Working Branch | $($run.working_branch) |", "| Artifact Root | $($run.artifact_root) |", "| Artifact Repo Mode | $($run.artifact_repo_mode) |", "| Reuse Policy | $($run.reuse_policy) |", "| Cross-Run Reuse | $(([string]$run.cross_run_reuse).ToLowerInvariant()) |", "| Program Folder Patterns | $patterns |", "| Program Set Review Parent | $($workspace.program_set_review_parent) |") -join "`n"
     $programListLabel = [IO.Path]::GetFileName([string]$inventory.program_list.path); $summaryLabel = [IO.Path]::GetFileName([string]$inventory.scan_summary.path)
@@ -419,19 +495,18 @@ function ConvertTo-FlowCoreReviewSkeleton {
 ## Program Set Reading Summary
 
 <!-- Replace this placeholder with a SME-readable summary of what this program
-set does, which processing layers it covers, and whether the review is
-standalone_exploratory, draft, or chain_ready. Do not leave an artifact list as
-the summary. -->
+set covers, what the merged core sections show, and whether the review is
+complete_exploratory or partial_pending_program. Do not leave an artifact list
+as the summary. -->
 
 ## Cross-Program Processing Overview
 
 | Processing Layer | Programs / Main Routines | What To Understand First |
 | --- | --- | --- |
-| Entry / dispatch | [programs and main routines] | [reader-first explanation] |
+| Program scope | [programs and main routines] | [what this set covers] |
 | Calculation | [programs and main routines] | [reader-first explanation] |
 | Validation | [programs and main routines] | [reader-first explanation] |
 | Exception / message | [programs and main routines] | [reader-first explanation] |
-| Persistence / finalization | [programs and main routines] | [reader-first explanation] |
 
 ## Calculation Logic
 
@@ -446,7 +521,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 <!-- Self-contained SME view: write the actual validation condition, status/code, carrier, and outcome here.
 Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
-| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| Message / Status / Outcome | Description | Program | Routine | Condition / Evidence | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Exception Handling
@@ -457,13 +532,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 | Exception / Error Path | Program | Routine | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
-## Message Inventory
-
-<!-- Self-contained SME view: include exact message/status/literal text and meaning here.
-Use Detail Refs for traceability only, not as a substitute for the explanation. -->
-
-| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+$messageSection
 
 ## Core Completeness Ledger
 
@@ -487,10 +556,30 @@ function Write-FlowCoreReviewOutputs {
     param($Manifest, [Parameter(Mandatory = $true)][string]$OutputDirectory)
     [IO.Directory]::CreateDirectory($OutputDirectory) | Out-Null
     $manifestPath = Join-Path $OutputDirectory 'program-set-core-input-manifest.yaml'
-    $reviewPath = Join-Path $OutputDirectory 'program-set-sme-core-review.md'
+    $factsPath = Join-Path $OutputDirectory $script:CoreFactsFilename
+    $reviewPath = Join-Path $OutputDirectory $script:CanonicalReviewFilename
+    $factPrograms = foreach ($entry in @($Manifest.programs)) {
+        $complete = $entry.run_resolution -in @('analyzed_this_run', 'reused_same_run', 'reused_artifact_repo')
+        [ordered]@{
+            program = $entry.normalized_name
+            run_resolution = $entry.run_resolution
+            source_status = $(if ($complete) { 'complete' } else { 'pending' })
+            source_files = @()
+            facts = [ordered]@{ calculations = @(); validations = @(); exceptions = @(); messages = @() }
+            unresolved_reason = $(if ($complete) { 'PowerShell fallback does not synthesize facts; use explicit compact-artifact rows only.' } else { 'program-analysis compact artifacts are unavailable for this manifest program' })
+        }
+    }
+    $facts = [ordered]@{
+        schema_version = '0.1'; generated_by = 'program_set_core_review.py'; generator_version = $script:GeneratorVersion
+        review_id = $Manifest.review_id; review_status = $Manifest.review_status; review_profile = $Manifest.core_review_profile
+        flow_slug = $Manifest.flow_slug; program_set_slug = $Manifest.program_set_slug; folder_slug = $Manifest.folder_slug
+        programs = @($factPrograms)
+        evidence_boundary = 'Facts are copied only from explicit compact-artifact rows; program order is not a source-confirmed call edge.'
+    }
     [IO.File]::WriteAllText($manifestPath, (ConvertTo-FlowYamlText $Manifest), $script:Utf8NoBom)
+    [IO.File]::WriteAllText($factsPath, (ConvertTo-FlowYamlText $facts), $script:Utf8NoBom)
     [IO.File]::WriteAllText($reviewPath, (ConvertTo-FlowCoreReviewSkeleton $Manifest), $script:Utf8NoBom)
-    return @($manifestPath, $reviewPath)
+    return @($manifestPath, $factsPath, $reviewPath)
 }
 
 Export-ModuleMember -Function Read-FlowProgramsFile, New-FlowCoreReviewManifest, Write-FlowCoreReviewOutputs

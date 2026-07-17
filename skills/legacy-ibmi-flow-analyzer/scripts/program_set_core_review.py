@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import re
 import subprocess
 import sys
@@ -22,6 +23,23 @@ from pathlib import Path
 from typing import Any
 
 
+CORE_READING_SECTIONS = (
+    "Program Set Reading Summary",
+    "Cross-Program Processing Overview",
+    "Calculation Logic",
+    "Validation Logic",
+    "Exception Handling",
+)
+
+OPTIONAL_READING_SECTIONS = ("Message Inventory",)
+
+AUDIT_CONTROL_SECTIONS = (
+    "Core Completeness Ledger",
+    "Sources",
+    "Run Profile",
+    "Source Inventory Cache",
+)
+
 CORE_SECTIONS = (
     "Calculation Logic",
     "Validation Logic",
@@ -30,20 +48,39 @@ CORE_SECTIONS = (
 )
 
 READER_FIRST_SECTIONS = (
-    "Program Set Reading Summary",
-    "Cross-Program Processing Overview",
-    *CORE_SECTIONS,
-    "Core Completeness Ledger",
-    "Sources",
-    "Run Profile",
-    "Source Inventory Cache",
+    *CORE_READING_SECTIONS,
+    *OPTIONAL_READING_SECTIONS,
+    *AUDIT_CONTROL_SECTIONS,
 )
 
-AUDIT_CONTROL_SECTIONS = (
-    "Core Completeness Ledger",
-    "Sources",
-    "Run Profile",
-    "Source Inventory Cache",
+CORE_REVIEW_PROFILE_MINIMAL = "minimal_reader_first"
+CORE_REVIEW_PROFILE_DEFAULT = "standard_reader_first"
+CORE_REVIEW_PROFILE_STANDARD = "standard_reader_first"
+CORE_REVIEW_PROFILES = {
+    CORE_REVIEW_PROFILE_MINIMAL: {
+        "name": CORE_REVIEW_PROFILE_MINIMAL,
+        "core_sections": list(CORE_READING_SECTIONS),
+        "include_message_inventory": False,
+        "include_audit_sections": True,
+    },
+    CORE_REVIEW_PROFILE_STANDARD: {
+        "name": CORE_REVIEW_PROFILE_STANDARD,
+        "core_sections": [*CORE_READING_SECTIONS, "Message Inventory"],
+        "include_message_inventory": True,
+        "include_audit_sections": True,
+    },
+}
+
+REVIEW_STATUS_COMPLETE = "complete_exploratory"
+REVIEW_STATUS_PARTIAL = "partial_pending_program"
+CANONICAL_REVIEW_FILENAME = "program-set-sme-core-review.md"
+CORE_FACTS_FILENAME = "program-set-core-facts.yaml"
+GENERATOR_VERSION = "0.3.0"
+TEMPLATE_VERSION = "0.3.0"
+
+FORBIDDEN_LEGACY_TERMS = (
+    "Program-Level SME Core Review",
+    "Program-Set Logic Rollup",
 )
 
 FORBIDDEN_FULL_FLOW_SECTIONS = (
@@ -147,6 +184,19 @@ def slugify(value: str) -> str:
     return slug or "program_set_review"
 
 
+def program_set_identity_slug(programs: list[str]) -> str:
+    """Create a readable, stable slug that distinguishes program-set inputs."""
+    identity_values = sorted(
+        {str(program).strip().upper() for program in programs if str(program).strip()}
+    )
+    if not identity_values:
+        return "program_set_review"
+    readable = "_".join(slugify(program) for program in identity_values)
+    readable = readable[:64].rstrip("_") or "programs"
+    digest = hashlib.sha256("\n".join(identity_values).encode("utf-8")).hexdigest()[:8]
+    return f"program_set_{readable}_{digest}"
+
+
 def read_programs_file(path: Path) -> list[str]:
     programs: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -179,6 +229,60 @@ def profile_workspace(config: dict[str, Any]) -> dict[str, Any]:
 
 def profile_source_inventory(config: dict[str, Any]) -> dict[str, Any]:
     return config.get("source_inventory_profile", {}) or {}
+
+
+def resolve_core_review_profile(
+    config: dict[str, Any], requested_name: str | None = None
+) -> dict[str, Any]:
+    configured = config.get("core_review_profiles", {}) or {}
+    profiles = dict(CORE_REVIEW_PROFILES)
+    if isinstance(configured, dict):
+        for name, value in configured.items():
+            if isinstance(value, dict):
+                profiles[str(name)] = {**profiles.get(str(name), {}), **value}
+
+    selected = (
+        {"name": requested_name}
+        if requested_name
+        else config.get("core_review_profile", {}) or {}
+    )
+    if isinstance(selected, str):
+        selected = {"name": selected}
+    if not isinstance(selected, dict):
+        selected = {}
+    name = requested_name or selected.get("name") or CORE_REVIEW_PROFILE_DEFAULT
+    name = str(name)
+    profile = dict(profiles.get(name, profiles[CORE_REVIEW_PROFILE_DEFAULT]))
+    profile.update({key: value for key, value in selected.items() if key != "name"})
+    profile["name"] = name
+    profile.setdefault("core_sections", list(CORE_READING_SECTIONS))
+    profile.setdefault("include_message_inventory", name == CORE_REVIEW_PROFILE_STANDARD)
+    profile.setdefault("include_audit_sections", True)
+    profile["core_sections"] = [str(section) for section in profile["core_sections"]]
+    return profile
+
+
+def required_review_sections(profile: dict[str, Any]) -> tuple[str, ...]:
+    sections = tuple(str(section) for section in profile.get("core_sections", []))
+    if profile.get("include_message_inventory") and "Message Inventory" not in sections:
+        sections = (*sections, "Message Inventory")
+    if profile.get("include_audit_sections", True):
+        sections = (*sections, *AUDIT_CONTROL_SECTIONS)
+    return sections
+
+
+def review_status_for_programs(programs: list[dict[str, Any]]) -> str:
+    if any(
+        entry.get("run_resolution") in {RUN_PENDING, RUN_BLOCKED}
+        or any(
+            ((entry.get("compact_artifacts") or {}).get(artifact_key(filename), {}) or {}).get("status")
+            != "present"
+            for filename in REQUIRED_COMPACT_ARTIFACTS
+        )
+        for entry in programs
+    ):
+        return REVIEW_STATUS_PARTIAL
+    return REVIEW_STATUS_COMPLETE
 
 
 def relative_path(root: Path, path: Path) -> str:
@@ -400,27 +504,45 @@ def build_program_entries(
                 f"Program {normalized} matched multiple artifact folders; using {found_artifact_root}: "
                 + ", ".join(matches)
             )
-        if found_artifact_root:
+        compact_artifacts = collect_artifact_statuses(
+            artifact_root,
+            found_artifact_root,
+            normalized,
+        )
+        missing_required = [
+            program_artifact_filename(normalized, filename)
+            for filename in REQUIRED_COMPACT_ARTIFACTS
+            if not (
+                compact_artifacts.get(artifact_key(filename))
+                and compact_artifacts[artifact_key(filename)].status == "present"
+            )
+        ]
+        if found_artifact_root and not missing_required:
             run_resolution = present_resolution
             source = present_source
             follow_up = present_follow_up
+            resolved_artifact_root = found_artifact_root
+        elif found_artifact_root:
+            run_resolution = RUN_PENDING
+            source = "source_scan_required"
+            follow_up = "refresh missing required artifacts: " + ", ".join(missing_required)
+            # A partially populated folder is only a candidate location. Do not
+            # treat it as usable evidence or expose it as the resolved root.
+            resolved_artifact_root = None
         else:
             run_resolution = RUN_PENDING
             source = "source_scan_required"
             follow_up = missing_follow_up
+            resolved_artifact_root = None
         entry = ProgramEntry(
             input_name=program,
             normalized_name=normalized,
             order=index,
             run_resolution=run_resolution,
-            artifact_root=found_artifact_root,
+            artifact_root=resolved_artifact_root,
             artifact_source=source,
             tier=infer_tier(found_artifact_root, workspace),
-            compact_artifacts=collect_artifact_statuses(
-                artifact_root,
-                found_artifact_root,
-                normalized,
-            ),
+            compact_artifacts=compact_artifacts,
             follow_up=follow_up,
         )
         entries.append(entry)
@@ -695,9 +817,16 @@ def build_manifest(
     inventory_dir: Path | None = None,
     program_first: bool = False,
     artifact_repo_mode: str = ARTIFACT_REPO_CURRENT_RUN,
+    core_review_profile: str | None = None,
+    review_id: str | None = None,
+    flow_slug: str | None = None,
+    program_set_slug: str | None = None,
 ) -> dict[str, Any]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
+    review_slug = slugify(review_name)
+    resolved_flow_slug = slugify(flow_slug or review_name)
+    resolved_profile = resolve_core_review_profile(config, core_review_profile)
     entries, warnings = build_program_entries(
         programs,
         artifact_root,
@@ -711,12 +840,29 @@ def build_manifest(
         config=config,
     )
     entries = apply_source_inventory_blockers(entries, source_inventory)
+    resolved_program_set_slug = slugify(program_set_slug) if program_set_slug else program_set_identity_slug(
+        [entry.normalized_name for entry in entries]
+    )
+    entry_dicts = [entry_to_dict(entry) for entry in entries]
+    review_status = review_status_for_programs(entry_dicts)
+    stable_review_id = review_id or f"review-{resolved_flow_slug}--{resolved_program_set_slug}"
     return {
-        "schema_version": "0.1",
+        "schema_version": "0.2",
         "generated_by": "program_set_core_review.py",
+        "generator_version": GENERATOR_VERSION,
+        "template_version": TEMPLATE_VERSION,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "review_id": stable_review_id,
         "review_name": review_name,
-        "review_slug": slugify(review_name),
+        "review_slug": review_slug,
+        "flow_slug": resolved_flow_slug,
+        "program_set_slug": resolved_program_set_slug,
+        "folder_slug": f"{resolved_flow_slug}--{resolved_program_set_slug}",
+        "display_name": review_name,
+        "canonical_filename": CANONICAL_REVIEW_FILENAME,
+        "artifact_version": "0.2",
+        "review_status": review_status,
+        "core_review_profile": resolved_profile,
         "run_profile": {
             "repo": lookup.get("repo") or workspace.get("repo"),
             "working_branch": working_branch,
@@ -740,7 +886,7 @@ def build_manifest(
             "write_to_main": workspace.get("write_to_main", False),
         },
         "source_inventory": source_inventory,
-        "programs": [entry_to_dict(entry) for entry in entries],
+        "programs": entry_dicts,
         "warnings": warnings,
     }
 
@@ -891,26 +1037,269 @@ def render_source_inventory(manifest: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _fact_value(row: dict[str, str], *names: str) -> str:
+    normalized = {key.strip().lower(): value.strip() for key, value in row.items()}
+    for name in names:
+        value = normalized.get(name.strip().lower())
+        if value:
+            return value
+    return ""
+
+
+def extract_markdown_table_records(block: str, required_headers: tuple[str, ...]) -> list[dict[str, str]]:
+    """Extract only explicitly tabulated facts from an analyzer artifact."""
+    raw_lines = block.splitlines()
+    records: list[dict[str, str]] = []
+    index = 0
+    while index < len(raw_lines):
+        line = raw_lines[index].strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            index += 1
+            continue
+        headers = [cell.strip() for cell in line.strip("|").split("|")]
+        normalized_headers = {header.lower() for header in headers}
+        if not all(header.lower() in normalized_headers for header in required_headers):
+            index += 1
+            continue
+        if index + 1 >= len(raw_lines) or not is_table_separator(raw_lines[index + 1]):
+            index += 1
+            continue
+        index += 2
+        while index < len(raw_lines):
+            data_line = raw_lines[index].strip()
+            if not (data_line.startswith("|") and data_line.endswith("|")):
+                break
+            if is_table_separator(data_line):
+                index += 1
+                continue
+            cells = [cell.strip() for cell in data_line.strip("|").split("|")]
+            if len(cells) < len(headers):
+                cells.extend([""] * (len(headers) - len(cells)))
+            records.append(dict(zip(headers, cells)))
+            index += 1
+    return records
+
+
+def extract_first_markdown_table_records(
+    block: str, header_options: tuple[tuple[str, ...], ...]
+) -> list[dict[str, str]]:
+    for headers in header_options:
+        records = extract_markdown_table_records(block, headers)
+        if records:
+            return records
+    return []
+
+
+def fact_unresolved_reason(evidence_status: str, *values: str) -> str | None:
+    if evidence_status and evidence_status.lower() in {"confirmed", "confirmed_from_code", "present"}:
+        return None
+    joined = " ".join(value for value in values if value).lower()
+    if any(marker in joined for marker in ("unresolved", "pending", "missing", "tbd", "not available")):
+        return "source artifact marks this fact unresolved or pending"
+    return "evidence status is not source-confirmed"
+
+
+def _fact_from_calculation(program: str, row: dict[str, str], source: str) -> dict[str, Any]:
+    evidence_status = _fact_value(row, "Evidence Status", "Status") or "unresolved"
+    return {
+        "program": program,
+        "routine": _fact_value(row, "Routine"),
+        "calculation": _fact_value(row, "Calculation / Assignment", "Calculation", "Assignment"),
+        "target_carrier": _fact_value(row, "Target Field / Carrier", "Target Field / Variable", "Target Field", "Target Carrier"),
+        "source_carrier": _fact_value(row, "Source Operands / Carriers", "Source Carrier", "Source Operands"),
+        "guard": _fact_value(row, "Guard / Branch", "Guard", "Branch"),
+        "effect": _fact_value(row, "Effect", "Output / Business Effect"),
+        "evidence_reference": _fact_value(row, "Supporting Detail", "Supporting Detail Link", "Evidence Reference", "Evidence", "Detail Refs") or source,
+        "evidence_status": evidence_status,
+        "unresolved_reason": fact_unresolved_reason(evidence_status, *row.values()),
+    }
+
+
+def _fact_from_validation(program: str, row: dict[str, str], source: str) -> dict[str, Any]:
+    evidence_status = _fact_value(row, "Evidence Status", "Status") or "unresolved"
+    return {
+        "program": program,
+        "routine": _fact_value(row, "Routine"),
+        "exact_code_status": _fact_value(row, "Message / Status / Outcome", "Exact Message / Status / Outcome", "Message / Status Code", "Message", "Status"),
+        "trigger_chain": _fact_value(row, "Trigger Chain", "Trigger Condition", "Trigger"),
+        "carrier_destination": _fact_value(row, "Carrier / Destination", "Output Carrier", "Carrier", "Destination"),
+        "effect": _fact_value(row, "Effect", "Downstream Effect"),
+        "evidence_reference": _fact_value(row, "Supporting Detail", "Supporting Detail Link", "Evidence Reference", "Evidence", "Detail Refs") or source,
+        "evidence_status": evidence_status,
+        "unresolved_reason": fact_unresolved_reason(evidence_status, *row.values()),
+    }
+
+
+def _fact_from_exception(program: str, row: dict[str, str], source: str) -> dict[str, Any]:
+    evidence_status = _fact_value(row, "Evidence Status", "Status") or "unresolved"
+    return {
+        "program": program,
+        "routine": _fact_value(row, "Routine"),
+        "detection_mechanism": _fact_value(row, "Detection Mechanism", "Detection"),
+        "fields_messages_set": _fact_value(row, "Fields / Messages Set", "Fields / Messages", "Messages Set"),
+        "exception_action": _fact_value(row, "Handling Action", "Action"),
+        "flow_level_effect": _fact_value(row, "Flow-Level Effect", "Downstream Effect", "Effect"),
+        "evidence_reference": _fact_value(row, "Supporting Detail", "Supporting Detail Link", "Evidence Reference", "Evidence", "Detail Refs") or source,
+        "evidence_status": evidence_status,
+        "unresolved_reason": fact_unresolved_reason(evidence_status, *row.values()),
+    }
+
+
+def _fact_from_message(program: str, row: dict[str, str], source: str) -> dict[str, Any]:
+    evidence_status = _fact_value(row, "Evidence Status", "Status") or "unresolved"
+    return {
+        "program": program,
+        "routine": _fact_value(row, "Routine", "Program / Routine Sources", "Program / Routine"),
+        "exact_message_status_literal": _fact_value(row, "Message / Status / Literal", "Message", "Status", "Literal"),
+        "description": _fact_value(row, "Description"),
+        "trigger_handler": _fact_value(row, "Trigger / Handler", "Trigger", "Handler"),
+        "effect": _fact_value(row, "Effect"),
+        "evidence_reference": _fact_value(row, "Detail Refs", "Evidence Reference", "Supporting Detail") or source,
+        "evidence_status": evidence_status,
+        "unresolved_reason": fact_unresolved_reason(evidence_status, *row.values()),
+    }
+
+
+def build_core_facts(manifest: dict[str, Any], artifact_root: Path) -> dict[str, Any]:
+    """Build a bounded intermediate from explicit compact-artifact evidence.
+
+    This deliberately reads rows that already exist in program-analysis
+    artifacts. It never creates business rules, modernization decisions, or
+    cross-program call edges from program order.
+    """
+    programs: list[dict[str, Any]] = []
+    for entry in manifest.get("programs", []) or []:
+        program = str(entry.get("normalized_name") or "")
+        artifact_relative = entry.get("artifact_root")
+        artifact_dir = artifact_root / str(artifact_relative) if artifact_relative else None
+        source_status = (
+            "complete"
+            if entry.get("run_resolution") in {RUN_ANALYZED, RUN_REUSED, RUN_ARTIFACT_REPO}
+            else "pending"
+        )
+        program_facts: dict[str, list[dict[str, Any]]] = {
+            "calculations": [],
+            "validations": [],
+            "exceptions": [],
+            "messages": [],
+        }
+        source_files: list[str] = []
+        if artifact_dir and artifact_dir.is_dir():
+            analysis_name = program_artifact_filename(program, "program-analysis.md")
+            analysis_path = next(
+                (
+                    artifact_dir / candidate
+                    for candidate in program_artifact_candidates(program, "program-analysis.md")
+                    if (artifact_dir / candidate).is_file()
+                ),
+                artifact_dir / analysis_name,
+            )
+            if analysis_path.is_file():
+                source_files.append(relative_path(artifact_root, analysis_path))
+                markdown = analysis_path.read_text(encoding="utf-8")
+                program_facts["calculations"] = [
+                    _fact_from_calculation(program, row, relative_path(artifact_root, analysis_path))
+                    for row in extract_first_markdown_table_records(
+                        h2_section_block(markdown, "Calculation Logic"),
+                        (
+                            ("Routine", "Target Field / Carrier", "Effect"),
+                            ("Target Field / Variable", "Output / Business Effect", "Evidence"),
+                        ),
+                    )
+                ]
+                program_facts["validations"] = [
+                    _fact_from_validation(program, row, relative_path(artifact_root, analysis_path))
+                    for row in extract_first_markdown_table_records(
+                        h2_section_block(markdown, "Validation Logic"),
+                        (
+                            ("Routine", "Trigger Chain", "Effect"),
+                            ("Message / Status Code", "Trigger Condition", "Output Carrier", "Downstream Effect", "Evidence Status"),
+                        ),
+                    )
+                ]
+                program_facts["exceptions"] = [
+                    _fact_from_exception(program, row, relative_path(artifact_root, analysis_path))
+                    for row in extract_first_markdown_table_records(
+                        h2_section_block(markdown, "Exception Handling"),
+                        (
+                            ("Routine", "Handling Action", "Effect"),
+                            ("Exception / Error Path", "Detection Mechanism", "Handling Action", "Downstream Effect", "Evidence"),
+                        ),
+                    )
+                ]
+                program_facts["messages"] = [
+                    _fact_from_message(program, row, relative_path(artifact_root, analysis_path))
+                    for row in extract_markdown_table_records(
+                        h2_section_block(markdown, "Message Inventory"),
+                        ("Message / Status / Literal", "Description", "Effect"),
+                    )
+                ]
+        unresolved_reason = None
+        if source_status != "complete":
+            unresolved_reason = "program-analysis compact artifacts are unavailable for this manifest program"
+        elif not source_files:
+            unresolved_reason = "required program-analysis.md artifact was not found"
+        programs.append(
+            {
+                "program": program,
+                "run_resolution": entry.get("run_resolution"),
+                "source_status": source_status,
+                "source_files": source_files,
+                "facts": program_facts,
+                "unresolved_reason": unresolved_reason,
+            }
+        )
+
+    return {
+        "schema_version": "0.1",
+        "generated_by": "program_set_core_review.py",
+        "generator_version": GENERATOR_VERSION,
+        "review_id": manifest.get("review_id"),
+        "review_status": manifest.get("review_status"),
+        "review_profile": manifest.get("core_review_profile"),
+        "flow_slug": manifest.get("flow_slug"),
+        "program_set_slug": manifest.get("program_set_slug"),
+        "folder_slug": manifest.get("folder_slug"),
+        "programs": programs,
+        "evidence_boundary": (
+            "Facts are copied only from explicit rows in program-analysis.md; "
+            "program order is not a source-confirmed call edge."
+        ),
+    }
+
+
 def render_review_skeleton(manifest: dict[str, Any]) -> str:
     programs = manifest.get("programs", []) or []
+    profile = manifest.get("core_review_profile", {}) or {}
+    include_messages = bool(profile.get("include_message_inventory"))
+    message_section = """
+## Message Inventory
+
+<!-- Standard profile only: include every exact message/status/literal observed
+across the participating program analyses. This is a reading surface, not an
+artifact link list. -->
+
+| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Condition / Handler | Effect | Detail Refs | Evidence Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+""" if include_messages else ""
+    status = manifest.get("review_status") or REVIEW_STATUS_COMPLETE
     return f"""# Program Set SME Core Review: {manifest["review_name"]}
 
 ## Program Set Reading Summary
 
 <!-- Replace this placeholder with a SME-readable summary of what this program
-set does, which processing layers it covers, and whether the review is
-standalone_exploratory, draft, or chain_ready. Do not leave an artifact list as
-the summary. -->
+set covers, what the merged core sections show, and whether the review is
+{status}. Do not leave an artifact list as the summary. Do not infer a
+relationship from program names or the order supplied by the SME. -->
 
 ## Cross-Program Processing Overview
 
 | Processing Layer | Programs / Main Routines | What To Understand First |
 | --- | --- | --- |
-| Entry / dispatch | [programs and main routines] | [reader-first explanation] |
+| Program scope | [programs and main routines] | [what this set covers] |
 | Calculation | [programs and main routines] | [reader-first explanation] |
 | Validation | [programs and main routines] | [reader-first explanation] |
 | Exception / message | [programs and main routines] | [reader-first explanation] |
-| Persistence / finalization | [programs and main routines] | [reader-first explanation] |
 
 ## Calculation Logic
 
@@ -925,7 +1314,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 <!-- Self-contained SME view: write the actual validation condition, status/code, carrier, and outcome here.
 Use Supporting Detail for traceability only, not as a substitute for the explanation. -->
 
-| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| Message / Status / Outcome | Description | Program | Routine | Condition / Evidence | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Exception Handling
@@ -936,13 +1325,7 @@ Use Supporting Detail for traceability only, not as a substitute for the explana
 | Exception / Error Path | Program | Routine | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
-## Message Inventory
-
-<!-- Self-contained SME view: include exact message/status/literal text and meaning here.
-Use Detail Refs for traceability only, not as a substitute for the explanation. -->
-
-| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+{message_section}
 
 ## Core Completeness Ledger
 
@@ -965,9 +1348,14 @@ Use Detail Refs for traceability only, not as a substitute for the explanation. 
 def write_build_outputs(manifest: dict[str, Any], output_dir: Path) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = output_dir / "program-set-core-input-manifest.yaml"
-    review_path = output_dir / "program-set-sme-core-review.md"
+    review_path = output_dir / CANONICAL_REVIEW_FILENAME
+    facts_path = output_dir / CORE_FACTS_FILENAME
     manifest_path.write_text(dump_yaml(manifest), encoding="utf-8")
     review_path.write_text(render_review_skeleton(manifest), encoding="utf-8")
+    facts_path.write_text(
+        dump_yaml(build_core_facts(manifest, Path(str(manifest["run_profile"]["artifact_root"]))),),
+        encoding="utf-8",
+    )
     return manifest_path, review_path
 
 
@@ -1141,6 +1529,30 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     programs = manifest.get("programs")
     if not isinstance(programs, list) or not programs:
         return ["manifest has no programs[] entries"]
+    profile = resolve_core_review_profile(
+        manifest if isinstance(manifest, dict) else {},
+        str((manifest.get("core_review_profile") or {}).get("name"))
+        if isinstance(manifest.get("core_review_profile"), dict)
+        else None,
+    )
+    if manifest.get("canonical_filename") not in {None, CANONICAL_REVIEW_FILENAME}:
+        findings.append(
+            f"manifest canonical_filename must remain {CANONICAL_REVIEW_FILENAME}"
+        )
+    if manifest.get("review_status") not in {
+        None,
+        REVIEW_STATUS_COMPLETE,
+        REVIEW_STATUS_PARTIAL,
+        "standalone_exploratory",
+        "draft",
+        "chain_ready",
+    }:
+        findings.append(f"manifest has invalid review_status: {manifest.get('review_status')}")
+    for key in ("review_id", "review_slug", "flow_slug", "program_set_slug"):
+        if manifest.get(key) is not None and not str(manifest.get(key)).strip():
+            findings.append(f"manifest {key} must not be empty")
+    if not isinstance(profile.get("core_sections"), list) or not profile.get("core_sections"):
+        findings.append("manifest core_review_profile has no core_sections")
     run_profile = manifest.get("run_profile", {}) or {}
     artifact_repo_mode = run_profile.get("artifact_repo_mode") or ARTIFACT_REPO_CURRENT_RUN
     by_name: dict[str, list[dict[str, Any]]] = {}
@@ -1210,15 +1622,23 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
 
 def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
     findings: list[str] = []
+    manifest_profile = manifest.get("core_review_profile", {}) or {}
+    profile_name = (
+        str(manifest_profile.get("name"))
+        if isinstance(manifest_profile, dict) and manifest_profile.get("name")
+        else CORE_REVIEW_PROFILE_DEFAULT
+    )
+    profile = resolve_core_review_profile({"core_review_profile": manifest_profile}, profile_name)
+    required_sections = required_review_sections(profile)
     positions = h2_positions(markdown)
-    missing_sections = [section for section in READER_FIRST_SECTIONS if section not in positions]
+    missing_sections = [section for section in required_sections if section not in positions]
     if missing_sections:
         findings.append(
             "program-set review missing required reader-first ## sections: "
             + ", ".join(missing_sections)
         )
     else:
-        ordered = [positions[section] for section in READER_FIRST_SECTIONS]
+        ordered = [positions[section] for section in required_sections]
         if ordered != sorted(ordered):
             findings.append(
                 "program-set review reader-first core sections must appear before audit/control sections"
@@ -1226,6 +1646,18 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
     for section in FORBIDDEN_FULL_FLOW_SECTIONS:
         if re.search(rf"^##\s+{re.escape(section)}\s*$", markdown, re.M):
             findings.append(f"program-set review contains forbidden full-flow section: {section}")
+    for term in FORBIDDEN_LEGACY_TERMS:
+        if re.search(rf"^##\s+{re.escape(term)}\s*$", markdown, re.M) or re.search(
+            rf"\b{re.escape(term)}\b", markdown
+        ):
+            findings.append(f"program-set review contains forbidden legacy form: {term}")
+    if re.search(
+        r"SME\s+navigation\s+order.{0,100}source[- ]confirmed\s+call|"
+        r"source[- ]confirmed\s+call.{0,100}SME\s+navigation\s+order",
+        markdown,
+        re.I | re.S,
+    ):
+        findings.append("SME navigation order must not be treated as a source-confirmed call")
 
     summary_block = h2_section_block(markdown, "Program Set Reading Summary")
     if summary_block:
@@ -1233,18 +1665,19 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
         layer_terms = sum(
             1
             for term in (
-                "entry",
-                "dispatch",
                 "calculation",
                 "validation",
                 "exception",
                 "message",
-                "persistence",
-                "finalization",
+                "outcome",
             )
             if re.search(rf"\b{term}\b", summary_detail, re.I)
         )
-        has_status = re.search(r"\b(standalone_exploratory|chain_ready|draft)\b", summary_detail, re.I)
+        has_status = re.search(
+            r"\b(complete_exploratory|partial_pending_program|standalone_exploratory|chain_ready|draft)\b",
+            summary_detail,
+            re.I,
+        )
         if (
             not has_reader_useful_detail(summary_block, minimum_words=25)
             or layer_terms < 2
@@ -1252,8 +1685,14 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
             or ARTIFACT_REF_RE.search(summary_detail)
         ):
             findings.append(
-                "Program Set Reading Summary is placeholder/artifact-only or missing reader-useful flow context"
+                "Program Set Reading Summary is placeholder/artifact-only or missing reader-useful program-set context"
             )
+        if manifest.get("review_status") == REVIEW_STATUS_PARTIAL and not re.search(
+            r"\b(partial|pending|unresolved|missing|blocked|source\s+scan)\b",
+            summary_detail,
+            re.I,
+        ):
+            findings.append("partial_pending_program review summary must state the missing or pending program")
 
     overview_block = h2_section_block(markdown, "Cross-Program Processing Overview")
     if overview_block:
@@ -1272,10 +1711,117 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
                 findings.append("Cross-Program Processing Overview has placeholder processing-layer detail")
                 break
 
-    for section in CORE_SECTIONS:
+    section_headers: dict[str, tuple[str, ...]] = {
+        "Calculation Logic": (
+            "Calculation / Assignment",
+            "Program",
+            "Routine",
+            "Target Field / Carrier",
+            "Source Operands / Carriers",
+            "Guard / Branch",
+            "Effect",
+            "Evidence Status",
+        ),
+        "Validation Logic": (
+            "Message / Status / Outcome",
+            "Program",
+            "Routine",
+            "Condition / Evidence",
+            "Carrier / Destination",
+            "Effect",
+            "Evidence Status",
+        ),
+        "Exception Handling": (
+            "Exception / Error Path",
+            "Program",
+            "Routine",
+            "Detection Mechanism",
+            "Fields / Messages Set",
+            "Handling Action",
+            "Effect",
+            "Evidence Status",
+        ),
+        "Message Inventory": (
+            "Message / Status / Literal",
+            "Description",
+            "Type",
+            "Program / Routine Sources",
+            "Occurrences",
+            "Condition / Handler",
+            "Effect",
+            "Evidence Status",
+        ),
+    }
+    core_programs: dict[str, set[str]] = {}
+    all_core_text: list[str] = []
+    for section, required_headers in section_headers.items():
         block = h2_section_block(markdown, section)
-        if block and not has_reader_useful_detail(block):
+        is_required = section in required_sections
+        if not block:
+            if is_required:
+                findings.append(f"{section} lacks reader-useful detail")
+            continue
+        records = extract_markdown_table_records(block, required_headers)
+        if not records:
+            if is_required:
+                findings.append(
+                    f"{section} lacks reader-useful detail: missing required row columns or data rows"
+                )
+            continue
+        distinct_programs: set[str] = set()
+        section_text: list[str] = []
+        for record in records:
+            values = list(record.values())
+            section_text.extend(values)
+            program = _fact_value(record, "Program")
+            if not program:
+                program = _fact_value(record, "Program / Routine Sources")
+            if program:
+                distinct_programs.add(program)
+            for header in required_headers:
+                value = _fact_value(record, header)
+                if is_placeholder_cell(value):
+                    findings.append(f"{section} row has missing required column: {header}")
+                    break
+            detail = " ".join(values)
+            if not has_reader_useful_detail(detail, minimum_words=3) and not re.search(
+                r"\b(unresolved|pending|missing|not available|tbd)\b", detail, re.I
+            ):
+                findings.append(f"{section} contains link-only or summary-only row")
+        if distinct_programs:
+            core_programs[section] = distinct_programs
+        all_core_text.extend(section_text)
+        if is_required and not has_reader_useful_detail(block):
             findings.append(f"{section} lacks reader-useful detail")
+
+    manifest_program_names = {
+        str(entry.get("normalized_name") or "")
+        for entry in manifest.get("programs", []) or []
+        if entry.get("normalized_name")
+    }
+    if len(manifest_program_names) >= 2 and not any(
+        len(programs) >= 2 for programs in core_programs.values()
+    ):
+        findings.append("at least one core section must contain rows for two or more programs")
+    if manifest_program_names and not re.search(
+        r"\b(carrier|return\s*(?:status|code)|queue|file|output|handoff)\b",
+        " ".join(all_core_text),
+        re.I,
+    ):
+        findings.append("at least one core row must show a carrier, return status, queue, file, or output handoff")
+
+    for section in required_sections:
+        if section in {"Program Set Reading Summary", "Cross-Program Processing Overview"}:
+            continue
+        if section not in section_headers:
+            continue
+        block = h2_section_block(markdown, section)
+        if not block:
+            continue
+        if ARTIFACT_REF_RE.search(prose_and_table_detail(block)) and not extract_markdown_table_records(
+            block, section_headers[section]
+        ):
+            findings.append(f"{section} cannot be artifact-link-only")
 
     sources_block = h2_section_block(markdown, "Sources")
     ledger_block = h2_section_block(markdown, "Core Completeness Ledger")
@@ -1292,6 +1838,30 @@ def validate_review(markdown: str, manifest: dict[str, Any]) -> list[str]:
         resolution = str(entry.get("run_resolution") or "")
         if resolution and program in ledger_rows and resolution not in ledger_rows[program]:
             findings.append(f"{program} run_resolution {resolution} missing from Core Completeness Ledger")
+        uses_new_partial_contract = bool(
+            re.search(r"\bpartial_pending_program\b", summary_block, re.I)
+        )
+        if resolution in {RUN_PENDING, RUN_BLOCKED} and uses_new_partial_contract:
+            ledger_detail = " ".join(ledger_rows.get(program, []))
+            if not re.search(r"\b(pending|unresolved|missing|blocked|scan)\b", ledger_detail, re.I):
+                findings.append(f"{program} missing program must remain explicitly pending/unresolved")
+            unresolved_core_row = any(
+                program in programs and re.search(
+                    r"\b(unresolved|pending|missing|not available|tbd)\b",
+                    " ".join(
+                        value
+                        for record in extract_markdown_table_records(
+                            h2_section_block(markdown, section),
+                            section_headers.get(section, ()),
+                        )
+                        for value in record.values()
+                    ),
+                    re.I,
+                )
+                for section, programs in core_programs.items()
+            )
+            if not unresolved_core_row:
+                findings.append(f"{program} missing program requires an explicit unresolved core row")
     return findings
 
 
@@ -1341,6 +1911,10 @@ def build_command(args: argparse.Namespace) -> int:
         inventory_dir=args.inventory_dir,
         program_first=args.program_first,
         artifact_repo_mode=args.artifact_repo_mode,
+        core_review_profile=args.core_review_profile,
+        review_id=args.review_id,
+        flow_slug=args.flow_slug,
+        program_set_slug=args.program_set_slug,
     )
     manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
     print(f"Wrote {manifest_path}")
@@ -1400,6 +1974,14 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--profile", type=Path, required=True)
     build.add_argument("--output-dir", type=Path, required=True)
     build.add_argument("--working-branch")
+    build.add_argument(
+        "--core-review-profile",
+        choices=[CORE_REVIEW_PROFILE_DEFAULT, CORE_REVIEW_PROFILE_MINIMAL],
+        help="Select standard_reader_first (default) or minimal_reader_first.",
+    )
+    build.add_argument("--review-id")
+    build.add_argument("--flow-slug")
+    build.add_argument("--program-set-slug")
     build.set_defaults(func=build_command)
 
     validate_parser = subparsers.add_parser("validate", help="Validate a completed review")

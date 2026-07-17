@@ -1,32 +1,34 @@
 # Program Set SME Core Review: [Program Set Name]
 
-Purpose: compact SME review view that merges multiple program-analysis results
-without the engineering flow sections. Use this as
+Purpose: compact reader-first SME review view that merges multiple
+program-analysis results without the engineering flow sections. Use this as
 `program-set-sme-core-review.md` for SME-provided program-flow/list input.
-The four core sections are self-contained SME reading surfaces: use supporting
-detail references for traceability, but do not require the reader to open
-per-program documents to understand the logic.
+`standard_reader_first` is the default profile and includes Message Inventory
+after Exception Handling. `minimal_reader_first` remains available when a
+more compact reading path is explicitly requested. In both profiles, logic rows are self-contained:
+supporting references provide traceability but are never the only explanation.
+These are self-contained SME reading surfaces.
 
 ## Program Set Reading Summary
 
 Explain in SME-readable language what this program list / program set is,
 what business or operational path it helps review, which programs are complete
 or still pending source scan, and whether the review is
-`standalone_exploratory`, `draft`, or `chain_ready`.
+`complete_exploratory` or `partial_pending_program`. Missing programs stay
+visible and must not receive invented logic.
 
-Cover the processing layers in prose: entry/dispatch, calculation, validation,
-exception/message handling, and persistence/finalization. Do not leave this as
-an artifact list, file inventory, or pending placeholder.
+Cover the merged core sections in prose: calculation, validation,
+exception/message handling, and the observed outcomes in the program analyses.
+Do not leave this as an artifact list, file inventory, or pending placeholder.
 
 ## Cross-Program Processing Overview
 
 | Processing Layer | Programs / Main Routines | What To Understand First |
 | --- | --- | --- |
-| Entry / dispatch | [PROGRAM MAIN / RLOG-*] | [what starts, dispatches, or orders the set] |
+| Program scope | [PROGRAM MAIN / RLOG-*] | [what this set covers] |
 | Calculation | [PROGRAM RLOG-*] | [what calculated values or assignments matter first] |
 | Validation | [PROGRAM RLOG-*] | [what checks decide continue / stop / status] |
 | Exception / message | [PROGRAM RLOG-* / MSG-*] | [what failure/status paths the SME should read first] |
-| Persistence / finalization | [PROGRAM RLOG-* / file/status carrier] | [what completes, persists, or hands off the result] |
 
 ## Calculation Logic
 
@@ -36,7 +38,7 @@ an artifact list, file inventory, or pending placeholder.
 
 ## Validation Logic
 
-| Message / Status / Outcome | Description | Program | Routine | Trigger Chain | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
+| Message / Status / Outcome | Description | Program | Routine | Condition / Evidence | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [exact code/status/literal] | [description or unresolved - message description not available] | [PROGRAM] | [MAIN / SRxxx / procedure] | [guard -> calculation -> outcome] | [response / return parameter / queue / message / file] | [approve / decline / abort / skip / continue / rollback] | [MSG-* / RLOG-* / EXCHAIN-* / TBD-*] | confirmed / inferred / unresolved |
 
@@ -48,7 +50,10 @@ an artifact list, file inventory, or pending placeholder.
 
 ## Message Inventory
 
-| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Trigger / Handler | Effect | Detail Refs | Evidence Status |
+Use this section only for `standard_reader_first`; `minimal_reader_first`
+keeps it outside the primary reading path.
+
+| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Condition / Handler | Effect | Detail Refs | Evidence Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [exact message ID / status value / return code / response literal / operator text] | [description or unresolved - message description not available] | message / status / return_code / response / SQLSTATE / operator_text / generic_handler | [PROGRAM SRxxx; PROGRAM SRyyy] | [count] | [condition or handler summary] | [outcome affected / not flow-affecting] | [MSG-* / RLOG-* / TBD-*] | confirmed / inferred / unresolved |
 
@@ -95,20 +100,27 @@ an artifact list, file inventory, or pending placeholder.
 Rules:
 
 - This artifact starts with Program Set Reading Summary and Cross-Program
-  Processing Overview, then Calculation Logic, Validation Logic, Exception
-  Handling, and Message Inventory. Run Profile, Source Inventory Cache,
+  Processing Overview, then Calculation Logic, Validation Logic, and Exception
+  Handling. `standard_reader_first` adds Message Inventory immediately after
+  Exception Handling. Run Profile, Source Inventory Cache,
   Sources, and Core Completeness Ledger are audit/control sections and must
   appear after the reader-first core.
-- The four core sections must contain the merged business/technical logic
+- The three logic core sections must contain the merged business/technical logic
   itself: conditions, assignments, carriers, outcomes, handling actions, and
   exact messages/status values. `Supporting Detail` and `Detail Refs` are for
   traceability only; they must not be the only explanation.
 - Do not include Nodes, Edges, Transaction Call Map, Replay, Persistence,
   Lineage, UI Surfaces, Capability Seeds, flow-level TBD tables, or SME
   Checklist.
+- Do not emit `Program-Level SME Core Review`, `Program-Set Logic Rollup`,
+  per-program long summaries, artifact-link-only sections, or any old full-flow
+  heading in this compact review.
+- Treat the SME program order as navigation evidence only. Do not convert it to
+  a source-confirmed call edge. Prefer the evidence-bounded chain
+  `producer -> carrier -> consumer -> outcome` when the artifacts support it.
 - No program may be omitted from the Core Completeness Ledger. Programs with no
   artifact remain in the row set as `pending_source` or
-  `blocked_missing_source`; satisfy rows from existing artifacts only when the
+  `blocked_missing_source`; use existing repository artifacts only when the
   manifest explicitly uses `run_profile.artifact_repo_mode:
   approved_document_repo` and `run_resolution: reused_artifact_repo`.
 - Normal, complex, and large programs all require
@@ -118,4 +130,5 @@ Rules:
   is `fresh`; otherwise rerun repo-level inventory before targeted program scan.
 - Message Inventory must list every exact message/status/literal observed
   across the participating program analyses. Do not replace individual rows
-  with grouped labels.
+  with grouped labels. This rule is required for `standard_reader_first`; in
+  `minimal_reader_first`, Message Inventory is not a required primary section.
