@@ -82,7 +82,7 @@ delivery_workspace_profile:
 
   # Program-set reviews are cross-tier and live under one configured parent.
   program_set_review_parent: modules/CAP-ID-0004-program_set_reviews
-  program_set_review_path_pattern: "{REVIEW_SLUG}"
+  program_set_review_path_pattern: "{FLOW_SLUG}--{PROGRAM_SET_SLUG}"
   review_slug_source: review_name
   review_slug_collision_strategy: append_sequence
 
@@ -99,3 +99,42 @@ source_inventory_profile:
   scan_summary_filename: scan-summary.yaml
   freshness_policy: clean_git_head_must_match
   missing_or_stale_action: rerun_repo_inventory_scan
+
+# The core_review_only assembly mode defaults to the standard reader-first
+# profile so the main review includes the exact Message Inventory surface.
+# Keep minimal_reader_first available for teams that explicitly want a more
+# compact reading path.
+core_review_profiles:
+  minimal_reader_first:
+    name: minimal_reader_first
+    core_sections:
+      - Program Set Reading Summary
+      - Cross-Program Processing Overview
+      - Calculation Logic
+      - Validation Logic
+      - Exception Handling
+    include_message_inventory: false
+    include_audit_sections: true
+  standard_reader_first:
+    name: standard_reader_first
+    core_sections:
+      - Program Set Reading Summary
+      - Cross-Program Processing Overview
+      - Calculation Logic
+      - Validation Logic
+      - Exception Handling
+      - Message Inventory
+    include_message_inventory: true
+    include_audit_sections: true
+
+core_review_profile:
+  name: standard_reader_first
+  core_sections:
+    - Program Set Reading Summary
+    - Cross-Program Processing Overview
+    - Calculation Logic
+    - Validation Logic
+    - Exception Handling
+    - Message Inventory
+  include_message_inventory: true
+  include_audit_sections: true

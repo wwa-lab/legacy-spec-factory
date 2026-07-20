@@ -196,8 +196,9 @@ def bullet_list(label: str, values: list[str] | None) -> str:
     return "\n".join(lines)
 
 
-def tier_root(size_tier: str) -> str:
-    return TIER_ROOTS.get(size_tier.strip(), TIER_ROOTS["normal_program"])
+def tier_root(size_tier: str, tier_roots: dict[str, str] | None = None) -> str:
+    configured = tier_roots or TIER_ROOTS
+    return configured.get(size_tier.strip(), configured.get("normal_program", TIER_ROOTS["normal_program"]))
 
 
 def validation_policy(mode: str, member: str) -> str:
@@ -918,7 +919,15 @@ def initialize(args: argparse.Namespace) -> None:
         object_type = normalized.get("object_type", "")
         size_tier = normalized.get("size_tier", "")
         is_program = object_type.lower() == "program"
-        output_dir = join_display(args.delivery_root, tier_root(size_tier), member) if member and is_program else ""
+        output_dir = (
+            join_display(
+                args.delivery_root,
+                tier_root(size_tier, getattr(args, "tier_roots", None)),
+                member,
+            )
+            if member and is_program
+            else ""
+        )
         prompt_path = ""
         if is_program:
             prompt_path = str(prompt_dir / f"{index:04d}-{safe_filename(member)}.md")

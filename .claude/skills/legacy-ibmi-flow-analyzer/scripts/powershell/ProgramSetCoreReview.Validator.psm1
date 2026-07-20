@@ -14,12 +14,12 @@ Set-StrictMode -Version 2.0
 
 Import-Module (Join-Path $PSScriptRoot 'FlowYaml.psm1') -Force
 
-$script:CoreSections = @('Calculation Logic', 'Validation Logic', 'Exception Handling', 'Message Inventory')
-$script:ReaderFirstSections = @(
+$script:CoreReadingSections = @(
     'Program Set Reading Summary', 'Cross-Program Processing Overview',
-    'Calculation Logic', 'Validation Logic', 'Exception Handling', 'Message Inventory',
-    'Core Completeness Ledger', 'Sources', 'Run Profile', 'Source Inventory Cache'
+    'Calculation Logic', 'Validation Logic', 'Exception Handling'
 )
+$script:CoreSections = @('Calculation Logic', 'Validation Logic', 'Exception Handling', 'Message Inventory')
+$script:AuditSections = @('Core Completeness Ledger', 'Sources', 'Run Profile', 'Source Inventory Cache')
 $script:ForbiddenFlowSections = @(
     'Metadata', 'Trigger Context', 'Transaction Call Map', 'Nodes', 'Nodes (Programs in the Chain)',
     'Edges', 'Edges (Calls Between Nodes)', 'Common Dependencies', 'Cross-Program Data Flow',
@@ -36,6 +36,7 @@ $script:RequiredCompactArtifacts = @(
 $script:PlaceholderPattern = '\b(todo|tbd|pending|placeholder|fill\s+in|to\s+be\s+completed|artifact\s+list|reader-first explanation|programs and main routines)\b'
 $script:ArtifactReferencePattern = '\b(?:program-analysis(?:-summary)?|source-index|routine-index|message-inventory|routine-logic-details|file-io-inventory|field-mutation-matrix|sql-inventory)\.(?:md|ya?ml)\b'
 $script:DetailReferencePattern = '\b(?:RLOG|MSG|LINEAGE|PERSIST|DATA|EXCHAIN|TBD|EV)-[A-Za-z0-9_-]+\b'
+$script:ForbiddenLegacyTerms = @('Program-Level SME Core Review', 'Program-Set Logic Rollup')
 
 function Get-ReviewMapValue {
     param($Map, [Parameter(Mandatory = $true)][string]$Key, $Default = $null)
@@ -127,6 +128,19 @@ function Test-ReviewTableHeaders {
     return $false
 }
 
+function Get-ReviewMatchingHeaderCells {
+    param([AllowEmptyString()][string]$Block, [string[]]$RequiredHeaders)
+    foreach ($line in @(Get-ReviewTableLines $Block)) {
+        $normalized = @($line.Cells | ForEach-Object { $_.ToLowerInvariant() })
+        $allFound = $true
+        foreach ($header in $RequiredHeaders) {
+            if ($normalized -notcontains $header.ToLowerInvariant()) { $allFound = $false; break }
+        }
+        if ($allFound) { return @($line.Cells) }
+    }
+    return @()
+}
+
 function Get-ReviewRowsByFirstColumn {
     param([AllowEmptyString()][string]$Block)
     $rows = [System.Collections.Hashtable]::new([System.StringComparer]::Ordinal)
@@ -193,6 +207,14 @@ function Test-ReviewPlaceholderCell {
 function Test-FlowCoreReviewManifest {
     param($Manifest)
     $findings = New-Object System.Collections.Generic.List[string]
+    $canonical = [string](Get-ReviewMapValue $Manifest 'canonical_filename' '')
+    if ($canonical -and $canonical -ne 'program-set-sme-core-review.md') { $findings.Add('manifest canonical_filename must remain program-set-sme-core-review.md') }
+    $reviewStatus = [string](Get-ReviewMapValue $Manifest 'review_status' '')
+    if ($reviewStatus -and $reviewStatus -notin @('complete_exploratory', 'partial_pending_program', 'standalone_exploratory', 'draft', 'chain_ready')) { $findings.Add("manifest has invalid review_status: $reviewStatus") }
+    foreach ($key in @('review_id', 'review_slug', 'flow_slug', 'program_set_slug')) {
+        $value = [string](Get-ReviewMapValue $Manifest $key '')
+        if ($null -ne (Get-ReviewMapValue $Manifest $key $null) -and -not $value.Trim()) { $findings.Add("manifest $key must not be empty") }
+    }
     $programsValue = Get-ReviewMapValue $Manifest 'programs'
     $programs = @($programsValue)
     if ($null -eq $programsValue -or $programs.Count -eq 0) { return @('manifest has no programs[] entries') }
@@ -255,25 +277,35 @@ function Test-FlowCoreReviewManifest {
 function Test-FlowCoreReviewMarkdown {
     param([Parameter(Mandatory = $true)][string]$Markdown, $Manifest)
     $findings = New-Object System.Collections.Generic.List[string]
+    $profile = Get-ReviewMapValue $Manifest 'core_review_profile' ([ordered]@{})
+    $requiredSections = @($script:CoreReadingSections)
+    if ([bool](Get-ReviewMapValue $profile 'include_message_inventory' $false)) { $requiredSections += 'Message Inventory' }
+    if ([bool](Get-ReviewMapValue $profile 'include_audit_sections' $true)) { $requiredSections += $script:AuditSections }
     $positions = Get-ReviewH2Positions $Markdown
-    $missingSections = @($script:ReaderFirstSections | Where-Object { -not $positions.ContainsKey($_) })
+    $missingSections = @($requiredSections | Where-Object { -not $positions.ContainsKey($_) })
     if ($missingSections.Count) { $findings.Add('program-set review missing required reader-first ## sections: ' + ($missingSections -join ', ')) }
     else {
-        $ordered = @($script:ReaderFirstSections | ForEach-Object { [int]$positions[$_] })
+        $ordered = @($requiredSections | ForEach-Object { [int]$positions[$_] })
         $sorted = @($ordered | Sort-Object)
         if (($ordered -join ',') -ne ($sorted -join ',')) { $findings.Add('program-set review reader-first core sections must appear before audit/control sections') }
     }
     foreach ($section in $script:ForbiddenFlowSections) {
         if ([regex]::IsMatch($Markdown, '^##\s+' + [regex]::Escape($section) + '\s*$', 'Multiline')) { $findings.Add("program-set review contains forbidden full-flow section: $section") }
     }
+    foreach ($term in $script:ForbiddenLegacyTerms) {
+        if ([regex]::IsMatch($Markdown, '\b' + [regex]::Escape($term) + '\b', 'IgnoreCase')) { $findings.Add("program-set review contains forbidden legacy form: $term") }
+    }
+    if ($Markdown -match '(?is)SME\s+navigation\s+order.{0,100}source[- ]confirmed\s+call|source[- ]confirmed\s+call.{0,100}SME\s+navigation\s+order') {
+        $findings.Add('SME navigation order must not be treated as a source-confirmed call')
+    }
     $summaryBlock = Get-ReviewH2Block $Markdown 'Program Set Reading Summary'
     if ($summaryBlock) {
         $summaryDetail = Get-ReviewProseAndTableDetail $summaryBlock
         $layerTerms = 0
-        foreach ($term in @('entry', 'dispatch', 'calculation', 'validation', 'exception', 'message', 'persistence', 'finalization')) { if ([regex]::IsMatch($summaryDetail, "\b$term\b", 'IgnoreCase')) { $layerTerms++ } }
-        $hasStatus = [regex]::IsMatch($summaryDetail, '\b(standalone_exploratory|chain_ready|draft)\b', 'IgnoreCase')
+        foreach ($term in @('calculation', 'validation', 'exception', 'message', 'outcome')) { if ([regex]::IsMatch($summaryDetail, "\b$term\b", 'IgnoreCase')) { $layerTerms++ } }
+        $hasStatus = [regex]::IsMatch($summaryDetail, '\b(complete_exploratory|partial_pending_program)\b', 'IgnoreCase')
         if (-not (Test-ReviewReaderUsefulDetail $summaryBlock 25) -or $layerTerms -lt 2 -or -not $hasStatus -or [regex]::IsMatch($summaryDetail, $script:ArtifactReferencePattern, 'IgnoreCase')) {
-            $findings.Add('Program Set Reading Summary is placeholder/artifact-only or missing reader-useful flow context')
+            $findings.Add('Program Set Reading Summary is placeholder/artifact-only or missing reader-useful program-set context')
         }
     }
     $overview = Get-ReviewH2Block $Markdown 'Cross-Program Processing Overview'
@@ -286,10 +318,42 @@ function Test-FlowCoreReviewMarkdown {
             if ($row.Count -lt 3 -or (Test-ReviewPlaceholderCell $row[0]) -or (Test-ReviewPlaceholderCell $row[1]) -or (Test-ReviewPlaceholderCell $row[2])) { $findings.Add('Cross-Program Processing Overview has placeholder processing-layer detail'); break }
         }
     }
+    $sectionHeaders = [ordered]@{
+        'Calculation Logic' = @('Calculation / Assignment', 'Program', 'Routine', 'Target Field / Carrier', 'Source Operands / Carriers', 'Guard / Branch', 'Effect', 'Evidence Status')
+        'Validation Logic' = @('Message / Status / Outcome', 'Program', 'Routine', 'Condition / Evidence', 'Carrier / Destination', 'Effect', 'Evidence Status')
+        'Exception Handling' = @('Exception / Error Path', 'Program', 'Routine', 'Detection Mechanism', 'Fields / Messages Set', 'Handling Action', 'Effect', 'Evidence Status')
+        'Message Inventory' = @('Message / Status / Literal', 'Description', 'Type', 'Program / Routine Sources', 'Occurrences', 'Condition / Handler', 'Effect', 'Evidence Status')
+    }
+    $allCoreDetail = New-Object System.Collections.Generic.List[string]
+    $coreProgramSets = New-Object System.Collections.Generic.List[object]
     foreach ($section in $script:CoreSections) {
         $block = Get-ReviewH2Block $Markdown $section
-        if ($block -and -not (Test-ReviewReaderUsefulDetail $block)) { $findings.Add("$section lacks reader-useful detail") }
+        if (-not $block) { continue }
+        $requiredHeaders = @($sectionHeaders[$section])
+        $headers = @(Get-ReviewMatchingHeaderCells $block $requiredHeaders)
+        if ($headers.Count -eq 0) {
+            if ($section -in $requiredSections) { $findings.Add("$section lacks reader-useful detail: missing required row columns or data rows") }
+            continue
+        }
+        $rows = @(Get-ReviewTableDataRows $block)
+        if ($rows.Count -eq 0) { $findings.Add("$section lacks reader-useful detail: missing required row columns or data rows"); continue }
+        $programIndex = [Array]::IndexOf($headers, 'Program')
+        $programs = New-Object System.Collections.Generic.HashSet[string]([StringComparer]::Ordinal)
+        foreach ($rowRecord in $rows) {
+            $row = @($rowRecord.Cells)
+            $allCoreDetail.Add(($row -join ' '))
+            if ($programIndex -ge 0 -and $programIndex -lt $row.Count -and $row[$programIndex]) { $programs.Add([string]$row[$programIndex]) | Out-Null }
+            foreach ($header in $requiredHeaders) {
+                $columnIndex = [Array]::IndexOf($headers, $header)
+                if ($columnIndex -ge $row.Count -or (Test-ReviewPlaceholderCell $row[$columnIndex])) { $findings.Add("$section row has missing required column: $header"); break }
+            }
+        }
+        $coreProgramSets.Add($programs)
+        if ($section -in $requiredSections -and -not (Test-ReviewReaderUsefulDetail $block)) { $findings.Add("$section lacks reader-useful detail") }
     }
+    $manifestPrograms = @((Get-ReviewMapValue $Manifest 'programs' @()) | ForEach-Object { [string](Get-ReviewMapValue $_ 'normalized_name' '') } | Where-Object { $_ })
+    if ($manifestPrograms.Count -ge 2 -and -not (@($coreProgramSets | Where-Object { $_.Count -ge 2 }).Count)) { $findings.Add('at least one core section must contain rows for two or more programs') }
+    if ($manifestPrograms.Count -and -not [regex]::IsMatch(($allCoreDetail -join ' '), '\b(carrier|return\s*(status|code)|queue|file|output|handoff)\b', 'IgnoreCase')) { $findings.Add('at least one core row must show a carrier, return status, queue, file, or output handoff') }
     $sourceRows = Get-ReviewRowsByFirstColumn (Get-ReviewH2Block $Markdown 'Sources')
     $ledgerRows = Get-ReviewRowsByFirstColumn (Get-ReviewH2Block $Markdown 'Core Completeness Ledger')
     foreach ($entry in @(Get-ReviewMapValue $Manifest 'programs' @())) {
