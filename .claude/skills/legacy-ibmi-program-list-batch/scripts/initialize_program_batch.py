@@ -204,10 +204,13 @@ def tier_root(size_tier: str, tier_roots: dict[str, str] | None = None) -> str:
 def validation_policy(mode: str, member: str) -> str:
     scaffold_check = (
         f"- Before writing final row status, open the generated "
-        f"{member}-program-analysis.md and {member}-routine-logic-details.md "
+        f"{member}-program-analysis.md, {member}-routine-logic-details.md, "
+        f"{member}-routine-logic-details.yaml, and every retained "
+        f"routine-logic-details/{member}-deep-read-batch-*.md "
         "and confirm they do not contain scaffold language such as `Draft wrapper "
-        "seed generated`, `pending semantic deep-read`, `pending semantic detail`, "
-        "`placeholder`, `not-yet-deep-read`, or `not deep-read`."
+        "seed generated`, `pending_deep_read`, `pending semantic "
+        "deep-read`, `pending semantic detail`, `placeholder`, `not-yet-deep-read`, "
+        "or `not deep-read`."
     )
     layout_check = (
         "- Always preserve the reader-first layout headings in the main file: "
@@ -779,8 +782,11 @@ Batch manifest:
 全部处理完成后，运行 batch status validator：
 
 ```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
+py -3 .agents/skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}" --require-terminal
 ```
+
+如果 Windows Python Launcher 不可用，只把上述命令开头的 `py -3` 替换为
+`python` 后重试一次；不要更换校验路径或移除 `--require-terminal`。
 
 现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
 """
@@ -850,7 +856,7 @@ merge 会对每个 worker 报告成功的 output directory 再运行一次完整
 才运行 batch status validator：
 
 ```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
+python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}" --require-terminal
 ```
 
 如果当前 runtime 不能可靠启动隔离 worker：

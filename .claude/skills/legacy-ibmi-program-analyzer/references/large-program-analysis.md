@@ -226,6 +226,40 @@ These files are allowed intermediate artifacts. They do not replace
 `<PROGRAM>-program-analysis.md`, and they must not be treated as business
 conclusions.
 
+### Retained Batch Completion Loop
+
+When one or more retained deep-read checkpoints exist, complete the whole set;
+the presence of batch 001 is not permission to stop after batch 001.
+
+1. Discover checkpoint paths from both the summary/YAML declarations and the
+   actual `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files.
+2. Sort by the numeric batch suffix in natural order (`001`, `002`, ...,
+   `010`), not by an arbitrary filesystem iteration order.
+3. Open only the source windows assigned to the current checkpoint, with at
+   most five routines/windows in that checkpoint.
+4. Replace all deterministic pending seed content with source-backed semantic
+   detail, then persist the checkpoint before opening the next one.
+5. In the same checkpoint step, atomically update the matching
+   `routine_logic_inventory.summary[]` and `routine_logic_inventory.details[]` entries in
+   `<PROGRAM>-routine-logic-details.yaml`. A routine completed in the batch
+   moves from `coverage: indexed_only` to `coverage: deep_read`, sets
+   `semantic_status: deep_read_complete`, and receives an execution trigger, ordered logic, calculation
+   and branch detail, carrier/lineage ties, outcomes, exception closure, and
+   evidence.
+6. Update the all-routine coverage ledger when present, then continue until no
+   retained checkpoint is pending.
+7. Only after every checkpoint is persisted, merge the full set into
+   `<PROGRAM>-routine-logic-details.md` and the reader-first
+   `<PROGRAM>-program-analysis.md`.
+
+`semantic_status: pending_deep_read` is never valid in final routine YAML. A
+pure technical utility that was not assigned to any retained deep-read batch
+may retain `coverage: indexed_only`, but only with
+`semantic_status: source_backed_complete`, a
+status, source-backed concise semantic detail, and an explicit reason/evidence
+for remaining index-only. This exception does not apply to a routine that was
+assigned to a completed retained batch.
+
 Capture:
 
 - source line count
@@ -290,7 +324,8 @@ core calculations, validations, exception paths, or messages. Do not paste
 source code into the batch core sections; use identifiers, normalized logic,
 source ranges, evidence IDs, and `RLOG-*` links instead.
 
-The retained batch/shard files must be consolidated after batch deep-read. The
+The retained batch/shard files must be consolidated after every retained
+checkpoint has completed the loop above. The
 final `<PROGRAM>-program-analysis.md` is the primary SME review document and
 the final `<PROGRAM>-routine-logic-details.md` is the consolidated
 audit/checkpoint document for all routine detail, even for very large programs.
@@ -320,7 +355,8 @@ Windows/Cline: py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validat
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
-The gate checks required wrapper sections, declared sidecar files, RLOG coverage
+The gate checks required wrapper sections, declared and discovered retained
+batch files, pending checkpoint/YAML seed state, RLOG coverage
 from `<PROGRAM>-routine-logic-details.yaml` to both
 `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`, core
 logic routine-index coverage, stale deep-read gap wording, and message

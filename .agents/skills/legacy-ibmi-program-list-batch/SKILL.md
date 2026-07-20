@@ -141,12 +141,27 @@ directly.
     detail fill.
 - Deterministic source indexes are pre-analysis scaffolds only. A row is not
   complete until semantic source deep-read has replaced pending/thin content in
-  `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`.
+  `<PROGRAM>-program-analysis.md`, `<PROGRAM>-routine-logic-details.md`, every
+  retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoint,
+  and the matching `<PROGRAM>-routine-logic-details.yaml` entries.
+- For a program with retained deep-read checkpoints, Step 2 must discover all
+  declared and actual batch files, natural-sort their numeric suffixes, and
+  process every checkpoint. Each checkpoint covers at most five
+  routines/windows; persist it and write back matching routine YAML
+  `summary[]`/`details[]` state
+  before advancing, then merge the completed set into the consolidated routine
+  detail and main analysis files.
 - Do not mark a row `completed` or `completed_with_warnings` when the main
-  analysis or routine detail file still contains scaffold wording such as
+  analysis, consolidated routine detail, retained checkpoint, or routine YAML
+  still contains scaffold state such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
-  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
-  `not deep-read`.
+  `pending semantic detail`, `semantic_status: pending_deep_read`,
+  `placeholder`, `not-yet-deep-read`, or `not deep-read`. A routine completed
+  in a retained batch must use `coverage: deep_read` and
+  `semantic_status: deep_read_complete`. An unbatched pure technical utility
+  may retain `coverage: indexed_only` only with
+  `semantic_status: source_backed_complete` and
+  source-backed concise semantic detail and explicit reason/evidence.
 - Do not generate `program-set-sme-core-review.md` as part of this batch step.
   This skill only prepares, tracks, and validates independent per-program
   scans. Use `legacy-ibmi-flow-analyzer` later when an SME-provided flow or
@@ -213,6 +228,14 @@ outputs/program-list-batch/
      source index, routine index, and routine logic YAML. Fill the reader-first
      semantic details from source instead of spending the prompt turn on
      deterministic scaffold generation again.
+   - When retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md`
+     files exist, natural-sort and complete all of them. Work on at most five
+     assigned routines/windows in the current checkpoint; persist it, update
+     matching routine YAML `summary[]`/`details[]` records and coverage; use
+     `semantic_status: deep_read_complete` and non-empty structured semantic
+     values for each batched RLOG, and
+     then advance. Do not stop
+     after batch 001 or consolidate before the full retained set is complete.
    - If the program output directory already contains artifacts from an older
      run, overwrite that program's generated analysis artifacts with the
      current skill output. Do not treat old artifacts as a cache.
@@ -249,7 +272,11 @@ outputs/program-list-batch/
      artifacts and must pass validation again before staying `completed`.
 
 5. **Finish the batch**
-   - Validate status consistency.
+   - Validate final status consistency with
+     `validate_program_batch_status.py --batch-dir <batch-dir> --require-terminal`.
+     The same validator without `--require-terminal` is
+     resume-safe during Step 1 and active Step 2 work, so queued or in-progress
+     rows are not finalization errors in that default mode.
    - Treat the batch as complete when every requested row is classified as
      `completed`, `completed_with_warnings`, `skipped_not_program`,
      `blocked_missing_source`, `failed_validator`, or `failed_runtime`.
@@ -341,6 +368,14 @@ Validate batch state:
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch
 ```
 
+The command above is the resume-safe state check and may be run while rows are
+still `queued` or `in_progress`. At final batch close, require terminal row
+states:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch --require-terminal
+```
+
 ## References
 
 - Read `references/status-contract.md` when creating, updating, or validating
@@ -381,8 +416,14 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
   per-program validator passes.
 - Blocked and failed rows have `last_error` and `next_action`.
 - Completed rows must not contain deterministic scaffold or pending deep-read
-  text in `<PROGRAM>-program-analysis.md` or
-  `<PROGRAM>-routine-logic-details.md`.
+  state in `<PROGRAM>-program-analysis.md`,
+  `<PROGRAM>-routine-logic-details.md`, any retained batch checkpoint, or
+  `<PROGRAM>-routine-logic-details.yaml`.
+- Every retained batch checkpoint is completed in natural numeric order with
+  at most five routines/windows, persisted before the next batch, and merged
+  into both final reader surfaces after the complete loop.
+- The final batch status command includes `--require-terminal`; routine
+  resume/progress checks omit it.
 - Kiro merge must re-run the full per-program validator for every worker result
   claiming success; a worker-reported `completed/pass` is not accepted without
   this parent validation gate.
@@ -391,6 +432,16 @@ Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.15 (2026-07-20): Retained deep-read batch completion gate
+  - Requires Step 2 to process every retained checkpoint in natural numeric
+    order, at most five routines/windows per checkpoint, with durable YAML
+    write-back before advancing and final consolidation afterward.
+  - Expands the completion guard to nested checkpoint files and pending
+    routine YAML state while preserving source-backed index-only technical
+    utility coverage.
+  - Adds `--require-terminal` for final batch close while retaining the
+    resume-safe validator default during initialization and active work.
 
 - v0.1.13 (2026-07-12): Cline validation-first serial gate
   - Made the generated Cline serial runner require `validation_mode=immediate`.

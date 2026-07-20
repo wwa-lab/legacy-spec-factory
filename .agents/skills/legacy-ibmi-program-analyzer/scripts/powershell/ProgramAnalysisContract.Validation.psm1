@@ -17,6 +17,10 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'ProgramAnalysisContract.Common.psm1') -Force
 
+# Final completion surfaces include routine-logic-details.md/yaml, every
+# *-deep-read-batch-*.md checkpoint, and explicit pending_deep_read or
+# semantic_status: indexed_only seed states.
+
 $RequiredProgramSections = @(
     'Program Reading Summary',
     'Calculation Logic',
@@ -446,20 +450,38 @@ function Validate-NoStaleGapWording {
 function Get-BatchDetailFiles {
     param([string]$AnalysisDir)
 
-    $batchDir = Join-Path $AnalysisDir 'routine-logic-details'
-    if (-not (Test-Path -LiteralPath $batchDir -PathType Container)) { return @() }
-    $files = New-Object System.Collections.ArrayList
-    foreach ($filter in @('part-*.md', 'deep-read-batch-*.md', 'deep-batch-*.md')) {
-        foreach ($file in @(Get-ChildItem -LiteralPath $batchDir -Filter $filter -File -ErrorAction SilentlyContinue)) {
-            if (-not ($files | Where-Object { $_.FullName -eq $file.FullName })) { [void]$files.Add($file) }
+    $filesByPath = @{}
+    $summaryPath = Find-RoutineArtifactPath $AnalysisDir 'program-analysis-summary.yaml'
+    if ($summaryPath) {
+        $entries = Get-SidecarEntries $summaryPath
+        foreach ($key in $entries.Keys) {
+            $entry = $entries[$key]
+            if ($key.StartsWith('routine_logic_deep_read_batch_') -and [string]$entry.path -ne '') {
+                $declaredPath = Join-Path $AnalysisDir ([string]$entry.path)
+                if (Test-Path -LiteralPath $declaredPath -PathType Leaf) {
+                    $file = Get-Item -LiteralPath $declaredPath
+                    $filesByPath[$file.FullName] = $file
+                }
+            }
         }
     }
-    return @($files.ToArray() | Sort-Object FullName)
+    $batchDir = Join-Path $AnalysisDir 'routine-logic-details'
+    if (Test-Path -LiteralPath $batchDir -PathType Container) {
+        foreach ($filter in @('part-*.md', '*-part-*.md', 'deep-read-batch-*.md', '*-deep-read-batch-*.md', 'deep-batch-*.md', '*-deep-batch-*.md')) {
+            foreach ($file in @(Get-ChildItem -LiteralPath $batchDir -Filter $filter -File -ErrorAction SilentlyContinue)) {
+                $filesByPath[$file.FullName] = $file
+            }
+        }
+    }
+    return @($filesByPath.Values | Sort-Object @{
+        Expression = { if ($_.BaseName -match '(\d+)$') { [int]$Matches[1] } else { [int]::MaxValue } }
+    }, Name)
 }
 
 function Test-RequiresLargeProgramBatches {
     param([string]$SummaryPath)
 
+    if ([string]::IsNullOrEmpty($SummaryPath)) { return $false }
     if (-not (Test-Path -LiteralPath $SummaryPath -PathType Leaf)) { return $false }
     $lines = Get-YamlLines $SummaryPath
     if ((Get-YamlRootScalar $lines 'program_size_tier') -eq 'large_extreme_program') { return $true }
@@ -475,7 +497,7 @@ function Test-RequiresLargeProgramBatches {
 function Validate-LargeProgramBatches {
     param([string]$AnalysisDir)
 
-    $summaryPath = Join-Path $AnalysisDir 'program-analysis-summary.yaml'
+    $summaryPath = Find-RoutineArtifactPath $AnalysisDir 'program-analysis-summary.yaml'
     if (-not (Test-RequiresLargeProgramBatches $summaryPath)) { return @() }
     $batches = @(Get-BatchDetailFiles $AnalysisDir)
     if ($batches.Count -eq 0) {
@@ -484,10 +506,8 @@ function Validate-LargeProgramBatches {
             'batch checkpoint files'
         )
     }
-    $canonical = Join-Path (Join-Path $AnalysisDir 'routine-logic-details') 'deep-read-batch-001.md'
-    $alias = Join-Path (Join-Path $AnalysisDir 'routine-logic-details') 'deep-batch-001.md'
-    if (-not (Test-Path -LiteralPath $canonical -PathType Leaf) -and
-        -not (Test-Path -LiteralPath $alias -PathType Leaf)) {
+    $firstBatches = @($batches | Where-Object { $_.Name -match '(?:deep-read-batch|deep-batch)-0*1\.md$' })
+    if ($firstBatches.Count -eq 0) {
         return @(
             'large_extreme_program requires a first batch checkpoint: ' +
             'routine-logic-details/deep-read-batch-001.md'
@@ -541,8 +561,8 @@ function Validate-RoutineDetailReviewSurfaces {
     $batches = @(Get-BatchDetailFiles $AnalysisDir)
     if ($batches.Count -eq 0) { return @() }
     $findings = New-Object System.Collections.ArrayList
-    $routinePath = Join-Path $AnalysisDir 'routine-logic-details.md'
-    if (Test-Path -LiteralPath $routinePath -PathType Leaf) {
+    $routinePath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.md'
+    if ($routinePath) {
         foreach ($finding in @(Validate-OrderedHeadings (Read-Utf8Text $routinePath) $RoutineFinalSections 'routine-logic-details.md')) {
             [void]$findings.Add($finding)
         }
@@ -550,10 +570,30 @@ function Validate-RoutineDetailReviewSurfaces {
     foreach ($batch in $batches) {
         $batchText = Read-Utf8Text $batch.FullName
         $batchLabel = $batch.FullName.Substring($AnalysisDir.TrimEnd('\', '/').Length).TrimStart('\', '/')
+        $seedMatches = @(Get-SemanticSeedMatches $batchText)
+        if ($seedMatches.Count -gt 0) {
+            [void]$findings.Add(
+                "$batchLabel still contains pending semantic deep-read content; " +
+                'complete this retained batch before validation. Matched: ' +
+                ($seedMatches -join ', ')
+            )
+        }
         foreach ($finding in @(Validate-OrderedHeadings $batchText $BatchRequiredSections $batchLabel $true)) {
             [void]$findings.Add($finding)
         }
         foreach ($finding in @(Validate-BatchCoreNoSourceSnippets $batchText $batchLabel)) {
+            [void]$findings.Add($finding)
+        }
+        foreach ($finding in @(Get-PendingCoreTableFindings $batchText $batchLabel $BatchCoreSections)) {
+            [void]$findings.Add($finding)
+        }
+        $windowCount = @(Get-BatchAssignedWindowIds $batchText).Count
+        $routineSection = Get-H2SectionText $batchText 'Routine Details'
+        $assignedIds = @(Get-BatchAssignedRlogIds $batchText)
+        $scopeCount = [Math]::Max($windowCount, $assignedIds.Count)
+        if ($scopeCount -gt 5) { [void]$findings.Add("$batchLabel contains more than 5 deep-read routines/windows ($scopeCount)") }
+        if ($assignedIds.Count -eq 0) { $assignedIds = $null }
+        foreach ($finding in @(Get-RlogSemanticQualityFindings $routineSection $assignedIds $batchLabel)) {
             [void]$findings.Add($finding)
         }
         $positions = Get-HeadingMap $batchText $false
@@ -722,6 +762,8 @@ function Invoke-ContractValidation {
     }
     foreach ($finding in @(Validate-SidecarSet $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-RlogCoverage $AnalysisDir)) { [void]$findings.Add($finding) }
+    foreach ($finding in @(Get-RoutineSemanticCompletionFindings $AnalysisDir)) { [void]$findings.Add($finding) }
+    foreach ($finding in @(Get-BatchYamlSemanticCompletionFindings $AnalysisDir @(Get-BatchDetailFiles $AnalysisDir))) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-LargeProgramBatches $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-RoutineDetailReviewSurfaces $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-MessageDescriptions $AnalysisDir)) { [void]$findings.Add($finding) }

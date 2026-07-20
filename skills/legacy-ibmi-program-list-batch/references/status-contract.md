@@ -102,6 +102,15 @@ not a completion signal. The next Cline/Copilot prompt must still read source,
 replace pending/thin scaffold text with semantic analysis, and then write the
 final row status according to the selected validation mode.
 
+If retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoints
+exist, semantic completion is a durable multi-checkpoint loop. Discover both
+declared and actual checkpoint files, natural-sort by numeric suffix, process
+at most five assigned routines/windows in each checkpoint, persist that
+checkpoint and its matching routine YAML `summary[]`/`details[]` write-back,
+and only then advance.
+After all retained checkpoints are complete, merge the full set into the
+consolidated routine detail and reader-first main analysis.
+
 In Cline, use `cline-serial-runner-prompt.md` and process `prompt-queue/*.md`
 serially. Cline must not use `subagent-queue`, must not call `use_subagents`,
 and must not write `subagent-results/*.json`. Cline serial batches use
@@ -174,10 +183,24 @@ Before a row can stay `completed`, `completed_with_warnings`, or
 - `<PROGRAM>-routine-logic-details.md` must contain reader-useful routine
   details for the RLOG IDs declared in
   `<PROGRAM>-routine-logic-details.yaml`.
-- Neither file may still contain scaffold wording such as
+- Every retained
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoint must be
+  complete, use the required section layout, contain no more than five
+  routines/windows, and be represented in the final consolidated surfaces.
+- The main analysis, consolidated routine detail, and retained checkpoints may
+  not still contain scaffold wording such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
   `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
   `not deep-read`.
+- `<PROGRAM>-routine-logic-details.yaml` may not retain
+  `semantic_status: pending_deep_read`. A routine assigned to a completed
+  retained batch must move from `coverage: indexed_only` to
+  `coverage: deep_read`, set `semantic_status: deep_read_complete`, and replace
+  empty structured seed arrays with source-backed or explanatory values. An
+  unbatched pure technical utility may retain `coverage: indexed_only` only
+  when it has `semantic_status: source_backed_complete`,
+  source-backed concise semantic detail, and explicit reason/evidence for
+  remaining index-only.
 - The main file must preserve the reader-first navigation headings, including
   `### Routine Index For Calculation Logic`,
   `### Routine Index For Validation Logic`, and
@@ -227,6 +250,17 @@ ready to close when every requested row is classified as `completed`,
 rows must satisfy the required per-program artifact and validator rules.
 `scanned_unvalidated` rows are acceptable for closing a fast scan batch but
 remain blocked from downstream use until final validation passes.
+
+Use the batch validator in two distinct modes:
+
+- Resume-safe progress check (default):
+  `validate_program_batch_status.py --batch-dir <batch-dir>`. This validates
+  state and completed artifact consistency while allowing rows that are still
+  `queued` or `in_progress`.
+- Final batch close:
+  `validate_program_batch_status.py --batch-dir <batch-dir> --require-terminal`.
+  This rejects non-terminal `queued` and `in_progress`
+  rows. Use it before reporting the batch finished.
 
 Do not require `program-set-core-input-manifest.yaml`,
 `program-set-sme-core-review.md`, or the program-set validator for this batch

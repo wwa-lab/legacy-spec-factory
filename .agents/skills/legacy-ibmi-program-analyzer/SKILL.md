@@ -115,6 +115,12 @@ Produce:
   `<PROGRAM>-file-io-inventory.yaml`,
   `<PROGRAM>-field-mutation-matrix.yaml`, and
   `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`.
+- When retained deep-read batch checkpoints exist, they are required
+  completion surfaces. Process every checkpoint in natural numeric order
+  (`001`, `002`, ...), keep each checkpoint to at most five routines/windows,
+  persist its semantic detail before advancing, update the corresponding
+  routine YAML `summary[]` and `details[]` entries atomically, and only then merge the completed set into the
+  consolidated routine detail and main analysis files.
 - `central_lookup_result` when a central delivery artifact is checked before
   source analysis. Values:
   - `found_on_remote_main` — program folder exists on the delivery repo remote
@@ -275,7 +281,10 @@ field-level rules. The summary below is normative for this skill.
     deep-read in batches of at most five routines/windows. The artifact set
     must include retained batch checkpoint files under
     `routine-logic-details/`, starting with
-    `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`. The final
+    `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`. Process all
+    retained batches in natural numeric order, with no more than five
+    routines/windows in any batch, and persist each completed batch before
+    reading the next. The final
     `<PROGRAM>-program-analysis.md` remains the reader-first SME surface and must not be
     only a compact wrapper that points to sidecars.
 - When the source file is accessible on disk, first run
@@ -586,6 +595,22 @@ Run this gate before delivering `<PROGRAM>-program-analysis.md`.
   whole-program `Calculation Logic`, `Validation Logic`, `Exception Handling`,
   `Message Inventory`, `Routine Detail Index`, and `Routine Details`; do not
   deliver only the latest batch, a delta, or a summary of recent batches.
+- Discover both declared retained checkpoints and actual
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files, sort them by
+  numeric batch suffix, and complete all of them. Each checkpoint covers at
+  most five routines/windows. Persist the completed checkpoint and matching
+  `<PROGRAM>-routine-logic-details.yaml` `summary[]`/`details[]` updates before advancing to the next;
+  merge into the consolidated routine detail and main wrapper only after the
+  entire retained set is complete.
+- `routine_logic_inventory.details[].semantic_status: pending_deep_read` is
+  always an invalid final state. A routine assigned to a completed retained
+  batch must move from `coverage: indexed_only` to `coverage: deep_read`, set
+  `semantic_status: deep_read_complete`, and receive non-pending structured
+  semantic detail (use an explanatory value instead of an empty seed array
+  when a category does not apply). A pure technical utility that was not
+  assigned to a deep-read batch may retain `coverage: indexed_only` only when
+  it has `semantic_status: source_backed_complete`, source-backed concise semantic
+  detail, and an explicit reason/evidence for remaining index-only.
 - `Calculation Logic`, `Validation Logic`, and `Exception Handling` must each
   start with a reader-oriented overview and contain `Routine Index For ...`
   rows that cover every RLOG in `<PROGRAM>-routine-logic-details.yaml`, with a category
@@ -715,7 +740,17 @@ Run this gate before delivering `<PROGRAM>-program-analysis.md`.
        detailed routine sections below those summaries. Core sections must not
        contain real source-code snippets or fenced code blocks; preserve
        evidence through source ranges and identifiers, not pasted code.
-       After batch deep-read is complete, merge every part file back into the
+       Enumerate every retained batch file in natural numeric order rather
+       than filesystem lexicographic order. Deep-read at most five
+       routines/windows for the current checkpoint, replace its pending seed
+       content, persist it, and update the matching RLOG entries in
+       `<PROGRAM>-routine-logic-details.yaml` (both duplicated `summary[]` and
+       canonical `details[]` semantic state) before moving to the next batch.
+       Routines completed in a retained batch move from
+       `coverage: indexed_only` to `coverage: deep_read` and set
+       `semantic_status: deep_read_complete`; do not stop after
+       batch 001 while later retained checkpoints exist.
+       After all batch deep-read is complete, merge every part file back into the
        final `<PROGRAM>-program-analysis.md` reader-first wrapper and one final
        `<PROGRAM>-routine-logic-details.md` audit document. The final routine document
        must contain whole-program `## Calculation Logic`,
@@ -1155,6 +1190,8 @@ The generated `program-analysis-<OBJ-ID>.md` must include a checklist. Before ap
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Program Reading Summary appears immediately after the title and explains the program by processing layer for one-file SME reading
 - [ ] Reader-first golden gate is clean: no pending/placeholder Program Reading Summary, routine-index detail, or main-file RLOG detail remains
+- [ ] Every retained deep-read batch checkpoint was processed in natural numeric order, contains at most five routines/windows, and no checkpoint still contains deterministic pending scaffold content
+- [ ] `<PROGRAM>-routine-logic-details.yaml` has no final `semantic_status: pending_deep_read`; routines completed in retained batches use `coverage: deep_read`, while any unbatched technical utility left at `coverage: indexed_only` has a non-pending semantic status, source-backed concise detail, and reason/evidence
 - [ ] Routine Logic Details in `<PROGRAM>-program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`
 - [ ] Routine Logic Details explain field calculations, carrier/lineage ties, routine-local exception closure, branch outcomes, exits, and evidence for each deep-read load-bearing routine; sidecars are audit/checkpoint sources, not the only SME reading path
 - [ ] Routine Logic Details break out every material conditioned calculation block, including RPG conditioning indicators / condition groups such as `Condition 5`, with guarded statements, calculation order, target fields, intermediate variables, final output/error effect, and source evidence
@@ -1192,6 +1229,16 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
+
+- v0.2.23 (2026-07-20): Retained batch semantic completion gate
+  - Requires every retained deep-read checkpoint to be processed in natural
+    numeric order, at most five routines/windows at a time, with each batch
+    persisted before the next begins.
+  - Requires routine YAML state to be updated with each checkpoint and blocks
+    final delivery when `semantic_status: pending_deep_read` remains.
+  - Distinguishes completed batched routines (`coverage: deep_read`) from
+    source-backed unbatched technical utilities that may remain
+    `coverage: indexed_only` with a non-pending semantic status.
 
 - v0.2.22 (2026-07-11): RAG-friendly per-program artifact names
   - Standardized generated analyzer outputs as `<PROGRAM>-<artifact-name>`

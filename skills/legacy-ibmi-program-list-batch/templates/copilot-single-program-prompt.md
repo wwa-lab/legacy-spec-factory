@@ -71,7 +71,15 @@ Rules:
   program, overwrite this program's generated analysis artifacts with the
   current skill output. Do not skip the row solely because old artifacts exist.
 - Do not import prior program source or prior chat summaries.
-- Read at most 5 routine bodies per turn.
+- When retained deep-read batch files exist (including every complex/large scaffold), complete this loop without stopping after the first batch:
+  1. Process every existing `routine-logic-details/{{member}}-deep-read-batch-*.md` in natural numeric order.
+     Also include checkpoint paths declared by the summary sidecar and supported `*-part-*.md`, `*-deep-batch-*.md`, and unprefixed aliases; de-duplicate them and apply the same natural numeric ordering.
+  2. Deep-read no more than 5 source windows per batch, using that batch's Scope and Batch Coverage Summary to select the exact source windows.
+  3. Persist each completed batch file before starting the next batch; replace every pending table cell, pending semantic field, and pending RLOG body with source-backed detail.
+  4. Update `{{member}}-routine-logic-details.yaml` as each batch completes: for routines assigned to that batch, replace `semantic_status: pending_deep_read` and `coverage: indexed_only` with `semantic_status: deep_read_complete` and `coverage: deep_read`; atomically synchronize both `routine_logic_inventory.summary[]` and `routine_logic_inventory.details[]`, and fill each detail's trigger, logic, calculations, outcomes, lineage, and exception closure with explicit source-backed values (use an explanatory `none observed` entry when a category truly does not apply; do not leave seed arrays empty).
+  5. Keep `{{member}}-all-routine-coverage-ledger.md` synchronized when that ledger exists, but do not perform final consolidation while later retained batches remain.
+  6. After every retained deep-read batch is complete, merge the full set's semantic detail into `{{member}}-routine-logic-details.md` and `{{member}}-program-analysis.md`. Only after every retained deep-read batch is complete and consolidated, run the program-analysis validator.
+- For normal programs without retained batch files, deep-read no more than 5 routine bodies per source-reading turn and continue until every declared RLOG is complete.
 - Keep normal_program output reader-first and compact, but still create
   {{member}}-routine-logic-details.md and
   {{member}}-routine-logic-details.yaml as routine-level audit/checkpoint
@@ -87,7 +95,10 @@ Rules:
   At minimum, include trigger, guard/condition, key assignments/calculations,
   validation or message/status outcomes, file or external side effects,
   exception closure, and source-line evidence. If a routine is truly utility
-  only, say why and keep it concise rather than leaving it as indexed_only.
+  only and was not assigned to a retained batch, it may keep
+  `coverage: indexed_only` only with
+  `semantic_status: source_backed_complete`, a concise source-backed
+  explanation, reason, and evidence.
 - Write required artifacts to the output directory.
 {{validation_policy}}
 - Update program-batch-plan.md, program-list-status.csv, and
@@ -128,7 +139,8 @@ Required output:
 Conditional output:
 - {{member}}-deep-read-plan.md, {{member}}-all-routine-coverage-ledger.md,
   and routine-logic-details/{{member}}-deep-read-batch-*.md only when triggered by
-  complex/large tier or retained batch evidence.
+  complex/large tier or retained batch evidence. Once these files exist, they
+  are mandatory completion surfaces and must not retain indexer pending seeds.
 
 Validation:
 {{validation_command_block}}

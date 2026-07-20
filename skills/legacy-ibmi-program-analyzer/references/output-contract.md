@@ -104,6 +104,23 @@ compressed narrative summary. Before delivery, validate the artifact set:
   `Message Inventory`, `Routine Details`. The first three core sections must
   appear before per-routine RLOG detail and must not contain pasted source
   code, fenced code blocks, or verbatim RPG/CL/COBOL/SQL statements.
+- When retained deep-read checkpoints exist, discover both the declared paths
+  and actual `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files and
+  process every checkpoint in natural numeric order. A checkpoint contains at
+  most five routines/windows. Persist its completed semantic content and the
+  matching routine YAML `summary[]`/`details[]` updates before reading the next checkpoint; merge the
+  set into the consolidated routine detail and main wrapper only after all
+  retained checkpoints are complete.
+- Final `<PROGRAM>-routine-logic-details.yaml` must not contain
+  `routine_logic_inventory.details[].semantic_status: pending_deep_read`.
+  Routines assigned to a completed retained batch must use
+  `coverage: deep_read` and `semantic_status: deep_read_complete`. Structured
+  semantic fields must contain source-backed entries; use an explanatory
+  `none observed` entry instead of preserving an empty indexer seed array.
+  An unbatched pure technical utility may retain
+  `coverage: indexed_only` only with
+  `semantic_status: source_backed_complete` and
+  its concise semantic detail, reason, and evidence are source-backed.
 - `Calculation Logic`, `Validation Logic`, and `Exception Handling` must each
   start with reader-oriented thematic overview material and include
   `Routine Index For <section>` rows that cover every RLOG declared in
@@ -843,6 +860,12 @@ not force SMEs to open sidecar links to understand routine behavior:
   `## Message Inventory`, `## Routine Detail Index`, and `## Routine Details`
   with every routine's detail section. Do not require SMEs to jump across part
   files or sidecars for final review.
+- Process retained batch files as a durable loop: natural-sort every declared
+  and discovered numeric batch suffix, deep-read no more than five assigned
+  routines/windows, persist the current checkpoint, write back its matching
+  YAML `summary[]`/`details[]` semantic records and coverage atomically, then
+  advance. Do not consolidate early or
+  stop after a successful first checkpoint while later retained files exist.
 
 ```markdown
 ## Routine Logic Details
@@ -922,7 +945,9 @@ in any routine, one row per message/code/literal.]
 part file.]
 
 ## Routine Details
-[All routine detail sections, including indexed_only/pending routines.]
+[All routine detail sections. Batched routines use deep_read coverage; any
+unbatched technical utility left indexed_only has completed concise semantic
+detail, a non-pending semantic status, and source-backed reason/evidence.]
 ```
 
 ### SR120 ValidateExposure
@@ -993,8 +1018,12 @@ transaction amount is loaded.
   The routine sidecar may duplicate or checkpoint detail, but it must not be
   the only place the SME can read the routine logic.
 - Technical utility routines may keep concise `indexed_only` detail, but their
-  RLOG heading and Routine Index rows still remain. Explain why no
-  business/state claims depend on them in Routine Cards or Open Items.
+  RLOG heading and Routine Index rows still remain. This applies only when the
+  utility was not assigned to a retained deep-read batch, its
+  `semantic_status` is `source_backed_complete`, and its concise semantic detail plus the
+  reason/evidence for remaining index-only are source-backed. A routine
+  completed in a retained batch must use `coverage: deep_read` and
+  `semantic_status: deep_read_complete`.
 - Step-by-step logic must preserve branch order, nested conditions, loop
   scope, early exits, fallback paths, and calls that change behavior.
 - Field calculations and assignments must list each critical target field or
@@ -1795,6 +1824,8 @@ Before approval, SME must validate:
 - [ ] Entry points are correct and complete (no missing callable subroutines)
 - [ ] Program Reading Summary appears immediately after the title and explains the program by processing layer for one-file SME reading
 - [ ] Reader-first golden gate is clean: no pending/placeholder Program Reading Summary, routine-index detail, or main-file RLOG detail remains
+- [ ] Every retained deep-read checkpoint was processed in natural numeric order, contains at most five routines/windows, was persisted before the next checkpoint, and has no pending scaffold content
+- [ ] Routine YAML has no final `semantic_status: pending_deep_read`; completed batched routines use `coverage: deep_read`, and any unbatched technical utility kept at `coverage: indexed_only` has non-pending source-backed concise detail and reason/evidence
 - [ ] Program Call Map keeps Visual Overview compact and uses Call Evidence for auditable caller/callee evidence
 - [ ] Parameter contracts match actual usage (no invented parameters)
 - [ ] Routine Logic Details in `<PROGRAM>-program-analysis.md` include continuous, ordered `RLOG-*` headings for every RLOG declared in `<PROGRAM>-routine-logic-details.yaml`

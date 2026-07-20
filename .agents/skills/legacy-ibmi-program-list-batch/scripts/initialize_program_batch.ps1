@@ -257,7 +257,7 @@ function Get-ValidationPolicy {
         [Parameter(Mandatory = $true)][string]$Mode,
         [Parameter(Mandatory = $true)][string]$Member
     )
-    $scaffoldCheck = "- Before writing final row status, open the generated ${Member}-program-analysis.md and ${Member}-routine-logic-details.md and confirm they do not contain scaffold language such as ``Draft wrapper seed generated``, ``pending semantic deep-read``, ``pending semantic detail``, ``placeholder``, ``not-yet-deep-read``, or ``not deep-read``."
+    $scaffoldCheck = "- Before writing final row status, open the generated ${Member}-program-analysis.md, ${Member}-routine-logic-details.md, ${Member}-routine-logic-details.yaml, and every retained routine-logic-details/${Member}-deep-read-batch-*.md and confirm they do not contain scaffold language such as ``Draft wrapper seed generated``, ``pending_deep_read``, ``pending semantic deep-read``, ``pending semantic detail``, ``placeholder``, ``not-yet-deep-read``, or ``not deep-read``."
     $layoutCheck = "- Always preserve the reader-first layout headings in the main file: ``### Routine Index For Calculation Logic``, ``### Routine Index For Validation Logic``, and ``### Routine Index For Exception Handling``, in that order under their corresponding H2 sections. Deferred mode still runs this cheap structural check; only the expensive semantic validator is deferred."
     if ($Mode -eq "deferred") {
         return @(

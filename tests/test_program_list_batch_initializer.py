@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import subprocess
 import sys
@@ -24,6 +25,13 @@ STATUS_VALIDATOR = (
     / "scripts"
     / "validate_program_batch_status.py"
 )
+STATUS_SPEC = importlib.util.spec_from_file_location(
+    "program_batch_status_validator", STATUS_VALIDATOR
+)
+if STATUS_SPEC is None or STATUS_SPEC.loader is None:
+    raise RuntimeError(f"Cannot load status validator: {STATUS_VALIDATOR}")
+STATUS_MODULE = importlib.util.module_from_spec(STATUS_SPEC)
+STATUS_SPEC.loader.exec_module(STATUS_MODULE)
 MERGE_SUBAGENT_RESULTS = (
     REPO_ROOT
     / "skills"
@@ -34,6 +42,140 @@ MERGE_SUBAGENT_RESULTS = (
 
 
 class ProgramListBatchInitializerTests(unittest.TestCase):
+    def test_retained_yaml_seed_patterns_are_key_specific(self) -> None:
+        retained_patterns = STATUS_MODULE.RETAINED_SEMANTIC_PATTERNS
+        for seed in (
+            "semantic_status: indexed_only",
+            'semantic_status: "indexed_only"',
+            "execution_trigger: pending deep read",
+            "execution_trigger: 'pending deep read'",
+            "unresolved_routine_logic: pending deep read",
+            'unresolved_routine_logic: "pending deep read"',
+        ):
+            with self.subTest(seed=seed):
+                self.assertTrue(
+                    STATUS_MODULE.scaffold_patterns_in(seed, retained_patterns), seed
+                )
+
+        self.assertEqual(
+            STATUS_MODULE.scaffold_patterns_in(
+                "coverage: indexed_only",
+                retained_patterns,
+            ),
+            [],
+        )
+        self.assertEqual(
+            STATUS_MODULE.scaffold_patterns_in(
+                'coverage: "indexed_only"',
+                retained_patterns,
+            ),
+            [],
+        )
+        self.assertEqual(STATUS_MODULE.scaffold_patterns_in("| PENDING |"), [])
+        self.assertTrue(
+            STATUS_MODULE.scaffold_patterns_in("| PENDING |", retained_patterns)
+        )
+
+    def test_retained_yaml_seed_patterns_match_multiline_artifacts(self) -> None:
+        retained_patterns = STATUS_MODULE.RETAINED_SEMANTIC_PATTERNS
+        for artifact in (
+            "semantic_status: indexed_only\ncoverage: indexed_only\n",
+            'semantic_status: "indexed_only"  # index seed\ncoverage: deep_read\n',
+            "execution_trigger: pending deep read\nstep_by_step_logic:\n  - pending\n",
+            (
+                "unresolved_routine_logic: 'pending deep read'  # seed\n"
+                "semantic_status: deep_read_complete\n"
+            ),
+        ):
+            with self.subTest(artifact=artifact):
+                self.assertTrue(
+                    STATUS_MODULE.scaffold_patterns_in(artifact, retained_patterns),
+                    artifact,
+                )
+
+        self.assertEqual(
+            STATUS_MODULE.scaffold_patterns_in(
+                'semantic_status: source_backed_complete\ncoverage: "indexed_only"\n',
+                retained_patterns,
+            ),
+            [],
+        )
+
+    def test_large_program_prompt_requires_every_deep_read_batch_before_validation(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            program_list = temp_root / "program-list.csv"
+            out_dir = temp_root / "batch"
+            program_list.write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason",
+                        "SS380,program,RPGLE,SS380.RPGLE,3200,large_extreme_program,test",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(INITIALIZER),
+                    "--program-list",
+                    str(program_list),
+                    "--out-dir",
+                    str(out_dir),
+                    "--source-root",
+                    str(temp_root / "source"),
+                    "--delivery-root",
+                    str(temp_root / "delivery"),
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+
+            prompt_text = (out_dir / "prompt-queue" / "0001-SS380.md").read_text(
+                encoding="utf-8"
+            )
+            required_steps = [
+                (
+                    "Process every existing "
+                    "`routine-logic-details/SS380-deep-read-batch-*.md` in natural numeric order"
+                ),
+                "Deep-read no more than 5 source windows per batch",
+                "Persist each completed batch file before starting the next batch",
+                (
+                    "Update `SS380-routine-logic-details.yaml` as each batch completes: "
+                    "for routines assigned to that batch, "
+                    "replace `semantic_status: pending_deep_read` and "
+                    "`coverage: indexed_only`"
+                ),
+                "`semantic_status: deep_read_complete` and `coverage: deep_read`",
+                (
+                    "`routine_logic_inventory.summary[]` and "
+                    "`routine_logic_inventory.details[]`"
+                ),
+                "do not leave seed arrays empty",
+                (
+                    "do not perform final consolidation while later retained batches remain"
+                ),
+                (
+                    "After every retained deep-read batch is complete, merge the full set's "
+                    "semantic detail into `SS380-routine-logic-details.md`"
+                ),
+                (
+                    "Only after every retained deep-read batch is complete and consolidated, "
+                    "run the program-analysis validator"
+                ),
+            ]
+            for step in required_steps:
+                self.assertIn(step, prompt_text)
+
+            positions = [prompt_text.index(step) for step in required_steps]
+            self.assertEqual(positions, sorted(positions))
+
     def test_windows_output_dir_preserves_separator_before_at_program(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -573,6 +715,61 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("not found in program-list.csv: MISSING", result.stderr)
 
+    def test_status_validator_require_terminal_rejects_active_rows_only_when_requested(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            batch_dir = Path(temp_dir) / "batch"
+            batch_dir.mkdir()
+            (batch_dir / "batch-scan-manifest.yaml").write_text(
+                "programs: []\n", encoding="utf-8"
+            )
+            (batch_dir / "program-batch-plan.md").write_text(
+                "# Plan\n", encoding="utf-8"
+            )
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,batch_status,validator_status,output_dir,owner,session_id,last_error,next_action",
+                        "QUEUED,queued,not_run,,,,,run next prompt",
+                        "ACTIVE,in_progress,not_run,,worker-1,,,",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            consistency_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(STATUS_VALIDATOR),
+                    "--batch-dir",
+                    str(batch_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(
+                consistency_result.returncode,
+                0,
+                consistency_result.stderr + consistency_result.stdout,
+            )
+
+            terminal_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(STATUS_VALIDATOR),
+                    "--batch-dir",
+                    str(batch_dir),
+                    "--require-terminal",
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertNotEqual(terminal_result.returncode, 0)
+            self.assertIn("queued", terminal_result.stdout)
+            self.assertIn("in_progress", terminal_result.stdout)
+            self.assertIn("terminal", terminal_result.stdout.lower())
+
     def test_status_validator_requires_routine_details_for_normal_program(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -674,6 +871,111 @@ class ProgramListBatchInitializerTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("CC050-program-analysis.md still appears to be a scaffold", result.stdout)
             self.assertIn("CC050-routine-logic-details.md still appears to be a scaffold", result.stdout)
+
+    def test_status_validator_rejects_completed_row_with_pending_nested_deep_read_batch(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            batch_dir = temp_root / "batch"
+            output_dir = (
+                temp_root
+                / "delivery"
+                / "modules"
+                / "CAP-ID-0001-large_extreme_program"
+                / "SS380"
+            )
+            deep_read_dir = output_dir / "routine-logic-details"
+            batch_dir.mkdir()
+            deep_read_dir.mkdir(parents=True)
+            (batch_dir / "batch-scan-manifest.yaml").write_text(
+                "programs: []\n", encoding="utf-8"
+            )
+            (batch_dir / "program-batch-plan.md").write_text(
+                "# Plan\n", encoding="utf-8"
+            )
+            (batch_dir / "program-list-status.csv").write_text(
+                "\n".join(
+                    [
+                        "member,object_type,source_kind,path,total_lines,size_tier,tier_reason,batch_status,validator_status,output_dir,prompt_path,owner,session_id,started_at,completed_at,last_error,next_action,handoff_path",
+                        "SS380,program,RPGLE,SS380.RPGLE,3200,large_extreme_program,test,completed,pass,modules/CAP-ID-0001-large_extreme_program/SS380,,,,,,,,",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            artifact_text = {
+                "SS380-program-analysis.md": (
+                    "# Program Analysis: SS380\n\n"
+                    "## Program Reading Summary\n\n"
+                    "Reader-first processing context is filled.\n\n"
+                    "## Calculation Logic\n\n"
+                    "### Calculation Logic Overview\n\n"
+                    "Calculation overview is source-backed.\n\n"
+                    "### Routine Index For Calculation Logic\n\n"
+                    "RLOG-SS380-001 calculation detail.\n\n"
+                    "## Validation Logic\n\n"
+                    "### Validation Logic Overview\n\n"
+                    "Validation overview is source-backed.\n\n"
+                    "### Routine Index For Validation Logic\n\n"
+                    "RLOG-SS380-001 validation detail.\n\n"
+                    "## Exception Handling\n\n"
+                    "### Exception Flow Overview\n\n"
+                    "Exception overview is source-backed.\n\n"
+                    "### Routine Index For Exception Handling\n\n"
+                    "RLOG-SS380-001 exception detail.\n"
+                ),
+                "SS380-routine-logic-details.md": (
+                    "# Routine Logic Details: SS380\n\n"
+                    "RLOG-SS380-001 contains source-backed semantic detail.\n"
+                ),
+                "SS380-source-index.yaml": "ok\n",
+                "SS380-program-analysis-summary.yaml": "ok\n",
+                "SS380-routine-index.md": "ok\n",
+                "SS380-message-inventory.yaml": "ok\n",
+                "SS380-routine-logic-details.yaml": "ok\n",
+            }
+            for artifact, text in artifact_text.items():
+                (output_dir / artifact).write_text(text, encoding="utf-8")
+
+            pending_batch = deep_read_dir / "SS380-deep-read-batch-002.md"
+            pending_batch.write_text(
+                "\n\n".join(
+                    [
+                        "# Routine Logic Details: SS380 - Deep Read Batch 002",
+                        (
+                            "Batch seed generated by `index_rpg_source.py`. Update this file "
+                            "while deep-reading the selected source windows."
+                        ),
+                        "## Calculation Logic\n\nPending semantic deep-read for this batch.",
+                        "## Validation Logic\n\nPending semantic deep-read for this batch.",
+                        "## Exception Handling\n\nPending semantic deep-read for this batch.",
+                        (
+                            "## Routine Details\n\n### RLOG-SS380-001 - SR400\n\n"
+                            "**Semantic status:** pending_deep_read\n\n"
+                            "- Step-by-step logic: pending deep read."
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(STATUS_VALIDATOR),
+                    "--batch-dir",
+                    str(batch_dir),
+                    "--delivery-root",
+                    str(temp_root / "delivery"),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("SS380-deep-read-batch-002.md", result.stdout)
+            self.assertIn("pending", result.stdout.lower())
 
     def test_status_validator_allows_review_checklist_placeholder_wording(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
