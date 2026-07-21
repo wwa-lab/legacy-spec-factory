@@ -267,118 +267,131 @@ Deep-read 优先级:
 
 ---
 
-## 3. Merge Multiple Program Results Into One Core SME Review
+## 3. Reader-First Program Analysis Merger
 
-Use this after several programs have already been analyzed and the SME wants a
-single compact review that contains only the core information.
+Use this after every requested program has a finalized `program-analysis.md`
+and the SME wants one evidence-complete review of the selected program set.
+This v0.4.0 workflow does not reconstruct a transaction flow.
 
 ### English
 
 ```text
-Use legacy-ibmi-flow-analyzer.
+Use legacy-ibmi-flow-analyzer v0.4.0.
 
-Merge these existing program-analysis results into one compact SME core review.
+Prepare and complete one Reader-First Program Analysis Merger run.
 
-Review name: <business flow or program set name>
-Programs / analysis directories:
-- <PROGRAM_A analysis directory>
-- <PROGRAM_B analysis directory>
-- <PROGRAM_C analysis directory>
+Review name: <business-readable review name>
+Programs file: <one program per line or supported CSV>
+Program artifact root: <current-run delivery workspace or approved local clone>
+Output parent: <parent directory for the generated bundle>
+Profile: standard_reader_first
+Artifact repo mode: current_run
+Source root: <optional; only for targeted recovery of missing programs>
 
-Intent: standalone_exploratory
+Input and readiness rules:
+- Resolve each distinct requested program exactly once and run the upstream
+  final contract validator for each artifact.
+- For every program, use the complete content of these five H2 sections in
+  program-analysis.md as the semantic primary input:
+  1. Program Reading Summary
+  2. Calculation Logic
+  3. Validation Logic
+  4. Exception Handling
+  5. Message Inventory
+- Sidecars support readiness and reconciliation; they do not replace those
+  five complete sections.
+- Use current_run by default. Use approved_document_repo only when I explicitly
+  select it and provide the approved local clone. Never fall back to arbitrary
+  historical or remote output.
+- If any requested program is missing, ambiguous, incomplete, non-terminal, or
+  invalid, write no formal review. Create a targeted missing-program queue only
+  for exact paths from fresh inventory; put unresolved paths in
+  blocked-programs.csv. Do not launch a whole-repository scan.
 
-Rules:
-- Do not re-read full source members.
-- Do not concatenate full program-analysis.md files.
-- Use compact artifacts first:
-  program-analysis-summary.yaml,
-  routine-logic-details.yaml,
-  message-inventory.yaml,
-  source-index.yaml,
-  and optional sidecars only when they already exist and are needed.
-- Use program-analysis.md only for targeted clarification.
-- Create program-set-sme-core-review.md.
-- Preserve the SME-provided order as navigation evidence, but do not generate
-  flow-<FLOW-SLUG>.md unless full transaction-flow analysis is explicitly
-  requested.
+Preparation and synthesis rules:
+- Deterministic tooling prepares the manifest, readiness ledger, lossless
+  reader-first source pack, normalized source facts, and pending coverage. It
+  must not write a review skeleton, claim semantic completion, or call an
+  external LLM service.
+- As the LLM executing this skill, read the entire source pack and synthesize
+  cross-program themes while preserving program, routine, carrier, guard,
+  effect/outcome, exact messages/status/literals, evidence, and source_fact_id.
+- The bundle folder and formal filename must use the unique flow-plus-program-
+  set identity. Write exactly one
+  <folder_slug>/<folder_slug>--sme-core-review.md and no generic alias.
+- Before writing the formal review, reconcile every fact as included, merged,
+  or specifically justified excluded_non_core. Final coverage must contain
+  zero pending items, and every included/merged fact must appear on the same
+  visible anchored review row as its source fact reference and typed values.
+- Run final five-way manifest/source-pack/facts/coverage/review validation and
+  repair every finding before SME/Dify handoff.
 
-The output must contain only these sections:
-1. Calculation Logic
-2. Validation Logic
-3. Exception Handling
-4. Message Inventory
-
-Do not include:
-- Nodes
-- Edges
-- Transaction Call Map
-- Flow Replay Path
-- Persistence Matrix
-- Field Lineage
-- UI Surfaces
-- Capability Seeds
-- SME Checklist
-
-Message Inventory rule:
-- Include every exact message ID, status value, return code, response literal,
-  SQLSTATE, CPF/MCH/RNX/CPD message, operator text, or shop-local token observed.
-- Do not replace individual messages with grouped labels.
-- If the same exact message appears in multiple programs with the same meaning
-  and trigger, one row may list all sources.
-- If trigger, handling, carrier, or meaning differs, split into separate rows.
+Safety rules:
+- Treat the SME program order as navigation only, never as a confirmed call or
+  execution sequence.
+- Do not reconstruct or invent a full flow, calls, business rules, service
+  boundaries, or modernization decisions.
+- Do not add Trigger Inventory, Nodes, Edges, Transaction Call Map, Replay,
+  Persistence, Lineage, UI Surfaces, Capability Seeds, or SME Checklist.
+- Preserve every exact message ID, status value, return code, response literal,
+  SQLSTATE, CPF/MCH/RNX/CPD message, operator text, and shop-local token.
 ```
 
 ### 中文
 
 ```text
-请使用 legacy-ibmi-flow-analyzer。
+请使用 legacy-ibmi-flow-analyzer v0.4.0。
 
-请把这些已经生成的 program-analysis 结果合并成一份 compact SME core review。
+请准备并完成一次 Reader-First Program Analysis Merger。
 
-Review name: <business flow 或 program set 名称>
-Programs / analysis directories:
-- <PROGRAM_A analysis 目录>
-- <PROGRAM_B analysis 目录>
-- <PROGRAM_C analysis 目录>
+Review name: <业务可读的 review 名称>
+Programs file: <每行一个 program 或受支持的 CSV>
+Program artifact root: <本轮 delivery workspace 或 approved local clone>
+Output parent: <生成 bundle 的父目录>
+Profile: standard_reader_first
+Artifact repo mode: current_run
+Source root: <可选；仅用于缺失 program 的 targeted recovery>
 
-Intent: standalone_exploratory
+输入与 readiness 规则:
+- 每个 distinct requested program 只解析一次，并对每份 artifact 运行 upstream
+  final contract validator。
+- 每个 program 都要把 program-analysis.md 中以下五个 H2 的完整内容作为主要
+  语义输入：
+  1. Program Reading Summary
+  2. Calculation Logic
+  3. Validation Logic
+  4. Exception Handling
+  5. Message Inventory
+- Sidecars 只支持 readiness 与 reconciliation，不能替代这五个完整 section。
+- 默认使用 current_run。只有我显式选择 approved_document_repo 并提供 approved
+  local clone 时才允许复用；不得回退到任意历史或 remote output。
+- 任一 requested program 缺失、歧义、不完整、未达到 terminal status 或校验
+  失败时，不得写 formal review。只能根据 fresh inventory 中的 exact path 创建
+  targeted missing-program queue；无法确认路径的写入 blocked-programs.csv，
+  不得触发 whole-repository scan。
 
-规则:
-- 不要重新读取完整 source。
-- 不要拼接完整 program-analysis.md。
-- 优先使用 compact artifacts:
-  program-analysis-summary.yaml、
-  routine-logic-details.yaml、
-  message-inventory.yaml、
-  source-index.yaml、
-  以及已经存在且本次确实需要的 optional sidecars。
-- program-analysis.md 只允许用于定点澄清。
-- 生成 program-set-sme-core-review.md。
-- 保留 SME 输入顺序作为 navigation evidence，但除非明确要求 full
-  transaction-flow analysis，不生成 flow-<FLOW-SLUG>.md。
+准备与综合规则:
+- Deterministic tooling 只准备 manifest、readiness ledger、无损 reader-first
+  source pack、normalized source facts 和 pending coverage；不得写 review
+  skeleton、声称语义完成或调用 external LLM service。
+- 由当前执行这个 skill 的 LLM 读取完整 source pack，按跨程序主题综合，同时
+  保留 program、routine、carrier、guard、effect/outcome、exact message/status/
+  literal、evidence 和 source_fact_id。
+- Bundle folder 与 formal filename 必须使用唯一的 flow-plus-program-set identity。
+  只写一份 <folder_slug>/<folder_slug>--sme-core-review.md，不创建 generic alias。
+- 写 formal review 前，每个 fact 必须被标记为 included、merged 或有具体理由的
+  excluded_non_core。最终 coverage 必须 zero pending；每个 included/merged fact
+  必须与 source fact reference 及 typed values 一起出现在同一个可见、带 anchor
+  的 review row 中。
+- SME/Dify handoff 前运行 manifest/source-pack/facts/coverage/review 五方 final
+  validation，并修复全部 finding。
 
-输出只能包含这四个 section:
-1. Calculation Logic
-2. Validation Logic
-3. Exception Handling
-4. Message Inventory
-
-不要包含:
-- Nodes
-- Edges
-- Transaction Call Map
-- Flow Replay Path
-- Persistence Matrix
-- Field Lineage
-- UI Surfaces
-- Capability Seeds
-- SME Checklist
-
-Message Inventory 规则:
-- 必须包含 every exact message ID、status value、return code、response
-  literal、SQLSTATE、CPF/MCH/RNX/CPD message、operator text、shop-local token。
-- 不要用 grouped labels 代替每条 message。
-- 如果同一条 exact message 在多个 program 中含义和触发条件相同，可以合并成
-  一行并列出全部来源。
-- 如果 trigger、handling、carrier、meaning 不同，必须拆成多行。
+安全规则:
+- SME program 顺序只用于 navigation，不能写成 confirmed call 或执行顺序。
+- 不得重建或编造 full flow、calls、business rules、service boundaries 或
+  modernization decisions。
+- 不得加入 Trigger Inventory、Nodes、Edges、Transaction Call Map、Replay、
+  Persistence、Lineage、UI Surfaces、Capability Seeds 或 SME Checklist。
+- 保留每个 exact message ID、status value、return code、response literal、
+  SQLSTATE、CPF/MCH/RNX/CPD message、operator text 和 shop-local token。
 ```

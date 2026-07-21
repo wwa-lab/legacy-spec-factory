@@ -9,7 +9,7 @@ FLOW_ANALYZER_DIR = REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer"
 PROGRAM_ANALYZER_DIR = REPO_ROOT / "skills" / "legacy-ibmi-program-analyzer"
 
 
-class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
+class FlowAnalyzerReaderFirstGuidanceTests(unittest.TestCase):
     def test_flow_analyzer_is_a_program_analysis_merger(self) -> None:
         skill_text = (FLOW_ANALYZER_DIR / "SKILL.md").read_text(encoding="utf-8")
         contract_text = (FLOW_ANALYZER_DIR / "references" / "output-contract.md").read_text(
@@ -25,29 +25,32 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
             self.assertIn("routine-logic-details.yaml", text)
             self.assertIn("message-inventory.yaml", text)
 
-        self.assertIn("Merge existing IBM i program-analysis artifacts", skill_text)
+        self.assertIn("Reader-First Program Analysis Merger", skill_text)
         self.assertIn("missing-program-list-batch", skill_text)
         self.assertIn("prepare_program_set_core_review.py", skill_text)
-        self.assertIn("partial", skill_text)
+        self.assertIn("blocked_artifact_readiness", skill_text)
+        self.assertIn("lossless source pack", skill_text)
         self.assertIn("Never concatenate complete program-analysis files", contract_text)
         self.assertNotIn("orchestrated", skill_text)
         self.assertNotIn("assemble_existing", skill_text)
         self.assertNotIn("seven trigger", skill_text)
 
-    def test_program_analyzer_handoff_prefers_compact_flow_inputs(self) -> None:
+    def test_program_analyzer_handoff_uses_complete_reader_first_main_input(self) -> None:
         large_program_text = (
             PROGRAM_ANALYZER_DIR / "references" / "large-program-analysis.md"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("Downstream flow/module analyzers must prefer", large_program_text)
+        self.assertIn("must prefer the finalized reader-first main", large_program_text)
+        self.assertIn("semantic primary input", large_program_text)
+        self.assertIn("lossless source pack", large_program_text)
         self.assertIn("program-analysis-summary.yaml", large_program_text)
         self.assertIn("routine-logic-details.yaml", large_program_text)
         self.assertIn("message-inventory.yaml", large_program_text)
         self.assertIn("file-io-inventory.yaml", large_program_text)
         self.assertIn("field-mutation-matrix.yaml", large_program_text)
         self.assertIn("sql-inventory.yaml", large_program_text)
-        self.assertIn("should not", large_program_text)
-        self.assertIn("concatenate", large_program_text)
+        self.assertIn("do not replace the final", large_program_text)
+        self.assertIn("synthesize rather than concatenate", large_program_text)
 
     def test_flow_analyzer_defaults_to_standard_reader_first(self) -> None:
         skill_text = (FLOW_ANALYZER_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -63,7 +66,7 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
             self.assertIn("Validation Logic", text)
             self.assertIn("Exception Handling", text)
             self.assertIn("Message Inventory", text)
-            self.assertIn("partial_pending_program", text)
+            self.assertIn("blocked_artifact_readiness", text)
             self.assertNotIn("orchestrated", text)
             self.assertNotIn("assemble_existing", text)
 
@@ -80,6 +83,7 @@ class FlowAnalyzerCompactArtifactGuidanceTests(unittest.TestCase):
             "## Exception Handling",
             "## Message Inventory",
             "## Core Completeness Ledger",
+            "## Coverage Reconciliation",
             "## Sources",
             "## Run Profile",
             "## Source Inventory Cache",

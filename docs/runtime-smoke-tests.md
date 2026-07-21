@@ -1005,7 +1005,93 @@ Return only:
   call/data evidence, and deep-read windows support it
 - does not create or edit files
 
-### `legacy-ibmi-flow-analyzer`
+### `legacy-ibmi-flow-analyzer` v0.4.0 Reader-First Merger
+
+#### Active Scenario (Positive — Complete Program Set)
+
+```text
+Use /legacy-ibmi-flow-analyzer.
+Contract-only no-write smoke test. Do not create or edit files.
+
+Review name: Credit check
+Programs in SME navigation order: CU106, CU101A
+Artifact repo mode: current_run
+Profile: standard_reader_first
+
+Assume both current-run program directories contain finalized upstream
+artifacts, the upstream validator returns approved, retained deep-read batches
+are terminal, and each program-analysis.md contains complete Program Reading
+Summary, Calculation Logic, Validation Logic, Exception Handling, and Message
+Inventory sections.
+
+Return only the merger decision, deterministic preparation artifacts, LLM
+synthesis responsibility, unique final filename pattern, formal section order,
+and final coverage gates. Do not infer a call chain from the program order.
+```
+
+Pass criteria:
+
+- identifies the skill as a Program Analysis Merger, not a transaction-flow
+  reconstructor;
+- uses complete reader-first `program-analysis.md` sections as the primary
+  source and sidecars for readiness/reconciliation;
+- reports deterministic preparation as `ready_for_synthesis` with
+  `artifact_readiness: ready` and `merge_coverage: pending`;
+- names program list, manifest, readiness, lossless source pack, normalized
+  facts, and pending coverage artifacts, while stating scripts do not write a
+  review skeleton;
+- assigns thematic synthesis to the executing skill LLM and names only
+  `<folder_slug>--sme-core-review.md` as the formal result;
+- preserves the reader-first section order and exact message/status/literal,
+  carrier, RLOG, evidence, and source-fact references;
+- requires zero pending facts, valid anchors, exact-value preservation, and
+  five-way manifest/source-pack/facts/coverage/review reconciliation before
+  `complete_exploratory`;
+- explicitly says program-list order is navigation only and emits no
+  Nodes/Edges/Transaction Call Map/Replay/Lineage/Persistence/Capability Seeds;
+- creates or edits no files.
+
+#### Active Scenario (Negative — CCB11 Not Ready)
+
+```text
+Use /legacy-ibmi-flow-analyzer.
+Contract-only no-write smoke test. Do not create or edit files.
+
+Review name: Credit check
+Programs: CU106, CCB11
+Artifact repo mode: current_run
+
+CU106 passes the upstream final validator. CCB11 has artifact files, but its
+retained deep-read batch is non-terminal and one observed message description
+is unresolved. The available repository inventory is stale.
+
+Return only readiness, permitted control artifacts, prohibited artifacts,
+targeted recovery behavior, and next action.
+```
+
+Pass criteria:
+
+- reports `blocked_artifact_readiness`, top-level `artifact_readiness:
+  not_ready`, and `merge_coverage: blocked`;
+- does not create or propose a formal or partial CU106 review, source pack, or
+  normalized facts from an incomplete set;
+- treats CCB11 as the only recovery target and never queues CU106;
+- because inventory is stale, records CCB11 in `blocked-programs.csv` without
+  guessing a path and requests a fresh externally prepared inventory or exact
+  source mapping;
+- does not launch or recommend an automatic whole-repository scan;
+- creates or edits no files.
+
+Use the standard Codex, Claude Code, and OpenCode no-write command shapes from
+the preceding skill sections, substituting either active prompt above. Record
+actual runtime results in `docs/runtime-matrix.md` before lifting the 9.0
+portability cap.
+
+#### Historical v0.2.x Transaction-Flow Scenarios (Non-Active)
+
+> Everything below through the next skill heading is retained as prior-version
+> evidence only. Do not run it against v0.4.0 and do not use its expected
+> Nodes/Edges/Replay/Lineage output as current acceptance criteria.
 
 #### Scenario (Positive — Scheduler + Batch Job Flow)
 

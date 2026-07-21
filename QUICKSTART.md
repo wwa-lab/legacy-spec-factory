@@ -141,20 +141,23 @@ while some programs remain; `3b Program Analysis Done` when all approved.
 
 ---
 
-## Step 6 — Flow analysis (Stage 3b → Stage 3d)
+## Step 6 — Reader-first program-set review (Stage 3b)
 
-Now trace one complete business transaction end-to-end across all the
-programs it touches. `legacy-ibmi-flow-analyzer` handles seven trigger
-models (batch, menu, subfile dispatch, F-key, DB trigger, scheduler,
-API).
+Use `legacy-ibmi-flow-analyzer` v0.4.0 to validate finalized program analyses,
+preserve all five reader-first sections in a lossless source pack, and let the
+executing skill LLM synthesize one coverage-complete SME/Dify review. The skill
+does not reconstruct triggers, calls, replay, or lineage; program order is
+navigation only.
 
 Output:
 ```
-docs/<project>/03_flows/<MODULE>/flow-<FLOW-SLUG>.md
+<program-set-review-parent>/<folder_slug>/
+  <folder_slug>--sme-core-review.md
 ```
 
-A flow covers trigger context, sequence, cross-program data flow, error
-propagation, commit boundaries, and business-capability seeds (`CAP-*`).
+The formal review is written only after all program artifacts are ready and
+coverage has zero pending facts. Direct module/BRD/spec routing waits for a
+separately migrated compatibility contract.
 
 ---
 

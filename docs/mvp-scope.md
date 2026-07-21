@@ -1,5 +1,12 @@
 # MVP Scope
 
+> **v0.4.0 routing override:** references below to
+> `legacy-ibmi-flow-analyzer` producing `flow-*.md`, call-chain replay, lineage,
+> or direct module/spec input describe the retired v0.2.x contract. The active
+> skill is the Reader-First Program Analysis Merger and guarantees only a
+> coverage-complete SME/Dify Core Review. Direct downstream routing waits for a
+> separately migrated compatibility contract.
+
 The MVP must deliver an **end-to-end (e2e) production-ready pilot bundle**
 that can be imported into a client's air-gapped IBM i environment and run
 against real legacy code without requiring further skill development outside

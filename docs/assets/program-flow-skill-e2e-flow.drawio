@@ -29,7 +29,7 @@
         <mxCell id="guardrail2" value="Same-run repeat only&#xa;If a program repeats inside this run, reuse the artifact produced earlier in the same batch." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#22c55e;fontColor=#14532d;fontSize=14;spacing=12;" vertex="1" parent="1">
           <mxGeometry x="680" y="500" width="440" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="guardrail3" value="Self-contained SME review&#xa;Calculation Logic, Validation Logic, Exception Handling, and Message Inventory live in program-set-sme-core-review.md." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#7c2d12;fontSize=14;spacing=12;" vertex="1" parent="1">
+        <mxCell id="guardrail3" value="Self-contained SME review&#xa;The executing-skill LLM writes the unique &lt;folder_slug&gt;--sme-core-review.md only after readiness and zero-pending coverage." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#7c2d12;fontSize=14;spacing=12;" vertex="1" parent="1">
           <mxGeometry x="1220" y="500" width="440" height="100" as="geometry" />
         </mxCell>
         <mxCell id="batch_folder" value="Program batch folder&#xa;outputs/program-list-batch/{review_slug}/&#xa;program-list-status.csv | batch-scan-manifest.yaml | program-batch-plan.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#ca8a04;fontColor=#713f12;fontSize=14;fontStyle=1;spacing=12;" vertex="1" parent="1">

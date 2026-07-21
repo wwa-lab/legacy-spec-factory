@@ -6,12 +6,13 @@ Original author: Leo L Zhang
 License: Apache License 2.0
 
 .SYNOPSIS
-Builds a program-set core-review manifest and reader-first skeleton.
+Prepares the controlled inputs for an LLM reader-first program-set merger.
 
 .DESCRIPTION
-Native Windows PowerShell 5.1 fallback for the deterministic flow-review
-builder. It accepts the same GNU-style options as the existing wrapper and has
-no external runtime or third-party module dependency.
+Native Windows PowerShell 5.1 fallback for the deterministic preparation step.
+It validates every program-analysis artifact and writes only merger inputs and
+coverage controls. It never writes a draft or formal SME core review; the
+executing skill's LLM owns that synthesis step.
 
 CLI contract:
   --review-name --programs-file --working-root --output-root
@@ -24,6 +25,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 $moduleRoot = Join-Path $PSScriptRoot 'powershell'
+Import-Module (Join-Path $moduleRoot 'FlowYaml.psm1') -Force
 Import-Module (Join-Path $moduleRoot 'ProgramSetCoreReview.Builder.psm1') -Force
 
 function Read-BuildArguments {
@@ -86,8 +88,9 @@ try {
     if ($programs.Count -eq 0) { throw 'programs file has no program names' }
     $config = Read-FlowYamlFile $options.Profile
     if ($config -isnot [System.Collections.IDictionary]) { throw 'delivery profile must be a YAML mapping' }
-    $manifest = New-FlowCoreReviewManifest -ReviewName $options.ReviewName -Programs $programs -ArtifactRoot ([IO.Path]::GetFullPath($artifactRoot)) -Config $config -WorkingBranch $options.WorkingBranch -SourceRoot $options.SourceRoot -InventoryDir $options.InventoryDir -ProgramFirst ([bool]$options.ProgramFirst) -ArtifactRepoMode $options.ArtifactRepoMode -CoreReviewProfile $options.CoreReviewProfile -ReviewId $options.ReviewId -FlowSlug $options.FlowSlug -ProgramSetSlug $options.ProgramSetSlug
+    $manifest = New-FlowCoreReviewManifest -ReviewName $options.ReviewName -Programs $programs -ArtifactRoot ([IO.Path]::GetFullPath($artifactRoot)) -Config $config -WorkingBranch $options.WorkingBranch -SourceRoot $options.SourceRoot -InventoryDir $options.InventoryDir -ProgramFirst ([bool]$options.ProgramFirst) -ArtifactRepoMode $options.ArtifactRepoMode -CoreReviewProfile $options.CoreReviewProfile -ReviewId $options.ReviewId -FlowSlug $options.FlowSlug -ProgramSetSlug $options.ProgramSetSlug -ProgramsFile ([IO.Path]::GetFullPath($options.ProgramsFile))
     $paths = @(Write-FlowCoreReviewOutputs -Manifest $manifest -OutputDirectory ([IO.Path]::GetFullPath($options.OutputDir)))
+    if ($paths.Count) { Write-Output "OUTPUT_DIR=$([IO.Path]::GetDirectoryName([string]$paths[0]))" }
     foreach ($path in $paths) { Write-Output "Wrote $path" }
     exit 0
 }

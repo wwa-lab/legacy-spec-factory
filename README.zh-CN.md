@@ -110,10 +110,11 @@ ARCAD REF / XREF data
    source-member hints。
 5. 使用 `legacy-ibmi-program-list-batch` 准备可恢复的 code-scan queue。
 6. 对 flow 上的每个 program 使用 `legacy-ibmi-program-analyzer`。
-7. 使用 `legacy-ibmi-flow-analyzer` 将 program findings 连接成一条业务可读的
-   behavior chain。
-8. 与 SME 审查生成的 `BEH-*`、`BR-*` 和 `TBD-*` evidence，再进入 BRD、
-   gap analysis 或 target-architecture planning。
+7. 使用 `legacy-ibmi-flow-analyzer` 验证 finalized program analyses，并由执行
+   skill 的 LLM 合并成一份逐事实 coverage 完整的 SME/Dify Core Review；program
+   顺序只是 navigation，不是 confirmed call chain。
+8. 与 SME 审查 Core Review；进入 module/BRD/spec 前，先确认对应 downstream
+   compatibility contract 已完成迁移与验证。
 
 ## Sample Output Package
 
@@ -232,7 +233,7 @@ outputs/      生成结果或本地运行输出
 | `legacy-ibmi-program-list-batch` | 准备可恢复的 program-list 扫描批次和 one-program prompt 队列。 |
 | `legacy-current-state-discovery` | 从文档/RAG 证据抽取 current-state functional discovery 报告和 catalogs。 |
 | `legacy-ibmi-program-analyzer` | 分析单个 IBM i program，并提取 source-backed behavior evidence。 |
-| `legacy-ibmi-flow-analyzer` | 分析跨多个 programs 的端到端 transaction flow。 |
+| `legacy-ibmi-flow-analyzer` | 把 finalized reader-first program analyses 受控合并为一份 coverage-complete SME/Dify Core Review；不重建 transaction flow。 |
 | `legacy-ibmi-module-analyzer` | 将已审查的 program / flow evidence 组装成 module-level context。 |
 | `legacy-brd-writer` | 基于已批准 module context 生成 evidence-backed BRD package。 |
 | `legacy-step-validator` | 判断 artifact 是否可以继续、带 warning 继续，或必须阻塞。 |

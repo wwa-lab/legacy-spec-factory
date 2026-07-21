@@ -247,7 +247,7 @@ Runtime-specific folders such as `.claude/`, `.opencode/`, `.agents/`, and
 | `legacy-ibmi-program-list-batch` | Prepare resumable program-list scan batches and one-program prompt queues. |
 | `legacy-current-state-discovery` | Extract document/RAG-backed current-state functional discovery reports and catalogs. |
 | `legacy-ibmi-program-analyzer` | Analyze one IBM i program and extract source-backed behavior evidence. |
-| `legacy-ibmi-flow-analyzer` | Merge multiple program-analysis results into one SME review. |
+| `legacy-ibmi-flow-analyzer` | Validate finalized reader-first program analyses, prepare lossless facts/coverage controls, and let the executing LLM synthesize one uniquely named SME/Dify Core Review; it does not reconstruct a transaction flow. |
 | `legacy-ibmi-module-analyzer` | Assemble reviewed program / flow evidence into module-level context. |
 | `legacy-brd-writer` | Produce evidence-backed BRD packages from approved module context. |
 | `legacy-step-validator` | Validate whether an artifact can move forward, move with warnings, or must block. |

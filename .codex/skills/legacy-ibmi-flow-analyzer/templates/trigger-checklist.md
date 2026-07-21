@@ -1,3 +1,9 @@
+# Historical, Non-Active Template
+
+> Retained for provenance of the former transaction-flow analyzer. Trigger
+> identification is not part of the active Reader-First Program Analysis
+> Merger and this checklist must not gate a merger run.
+
 # Trigger Identification Checklist
 
 Use this checklist at step 1 of the workflow to confirm the trigger model

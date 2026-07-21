@@ -1,3 +1,8 @@
+# Historical, Non-Active Example
+
+> Retained for provenance of the former transaction-flow analyzer. Do not use
+> this input with the active reader-first Program Analysis Merger.
+
 # Input: Flow Definition (Batch Job Example)
 
 This is the input handed to the flow analyzer to produce

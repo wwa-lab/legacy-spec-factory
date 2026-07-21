@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.fixtures.program_analysis_artifacts import write_finalized_program_artifacts
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py"
@@ -17,7 +19,7 @@ def load_builder():
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot load program-set builder")
     module = importlib.util.module_from_spec(spec)
-    sys.modules["profile_core_review"] = module
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -25,139 +27,111 @@ def load_builder():
 BUILDER = load_builder()
 
 
-def write_artifacts(root: Path, program: str) -> None:
-    root.mkdir(parents=True)
-    for filename in BUILDER.REQUIRED_COMPACT_ARTIFACTS:
-        (root / BUILDER.program_artifact_filename(program, filename)).write_text(
-            "schema_version: '0.1'\n", encoding="utf-8"
+class ProgramSetCoreReviewProfileTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+        self.working = self.root / "working"
+        for program in ("CU106", "CU101A"):
+            write_finalized_program_artifacts(
+                self.working / "modules" / "tier" / program, program
+            )
+        self.config = BUILDER.load_yaml(PROFILE)
+
+    def manifest(self, profile: str | None = None) -> dict:
+        return BUILDER.build_manifest(
+            review_name="Synthetic Review",
+            programs=["CU106", "CU101A"],
+            artifact_root=self.working,
+            config=self.config,
+            working_branch="test",
+            core_review_profile=profile,
         )
 
+    def test_standard_is_default_and_minimal_is_explicit_without_losing_message_facts(self) -> None:
+        standard = self.manifest()
+        standard_manifest, standard_review = BUILDER.write_build_outputs(
+            standard, self.root / "standard"
+        )
+        minimal = self.manifest("minimal_reader_first")
+        minimal_manifest, minimal_review = BUILDER.write_build_outputs(
+            minimal, self.root / "minimal"
+        )
 
-class ProgramSetCoreReviewProfileTests(unittest.TestCase):
-    def test_minimal_and_standard_profiles_have_distinct_primary_sections(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            working = root / "working"
-            write_artifacts(working / "modules" / "tier" / "CU106", "CU106")
-            (working / "modules" / "tier" / "CU106" / "CU106-program-analysis.md").write_text(
-                """## Calculation Logic\n\n| Calculation / Assignment | Target Field / Variable | Source Operands / Carriers | Guard / Branch | Output / Business Effect | Supporting Detail Link | Evidence |\n| --- | --- | --- | --- | --- | --- | --- |\n| derive response | RESPONSE | REQUEST | valid branch | output handoff | RLOG-CU106-001 | EV-CU106-001 |\n\n## Validation Logic\n\n| Message / Status Code | Message Description | Validation / Error Type | Set By / Source Lines | Trigger Condition | Reverse Trigger Chain / Routine Logic Link | Output Carrier | Downstream Effect | Evidence Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| OK | valid | status | STATUS | request present | request -> status | return status | continue | confirmed |\n\n## Exception Handling\n\n| Exception / Error Path | Trigger | Detection Mechanism | Fields / Messages Set | Handling Action | Downstream Effect | Supporting Detail Link | Evidence |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| missing request | absent | IF | ERROR_STATUS | return | output suppressed | RLOG-CU106-002 | EV-CU106-002 |\n""",
-                encoding="utf-8",
-            )
-            write_artifacts(working / "modules" / "tier" / "CU101A", "CU101A")
-            config = BUILDER.load_yaml(PROFILE)
+        self.assertEqual(standard["core_review_profile"]["name"], "standard_reader_first")
+        self.assertTrue(standard["core_review_profile"]["include_message_inventory"])
+        self.assertEqual(minimal["core_review_profile"]["name"], "minimal_reader_first")
+        self.assertFalse(minimal["core_review_profile"]["include_message_inventory"])
+        self.assertEqual(standard["review_status"], "ready_for_synthesis")
+        self.assertEqual(standard["artifact_readiness"], "ready")
+        self.assertEqual(standard["merge_coverage"], "pending")
+        self.assertFalse(standard_review.exists())
+        self.assertFalse(minimal_review.exists())
+        self.assertEqual(
+            standard["canonical_filename"],
+            f"{standard['folder_slug']}--sme-core-review.md",
+        )
+        self.assertNotEqual(standard["canonical_filename"], "program-set-sme-core-review.md")
 
-            minimal = BUILDER.build_manifest(
-                review_name="Synthetic Review",
-                programs=["CU106", "CU101A"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-            )
-            _, standard_default_review = BUILDER.write_build_outputs(minimal, root / "standard-default")
-            standard_default_text = standard_default_review.read_text(encoding="utf-8")
-            self.assertIn("## Message Inventory", standard_default_text)
-            self.assertEqual(minimal["core_review_profile"]["name"], "standard_reader_first")
-            self.assertEqual(minimal["review_status"], "complete_exploratory")
-            self.assertEqual(minimal["canonical_filename"], "program-set-sme-core-review.md")
+        for manifest_path in (standard_manifest, minimal_manifest):
+            facts = BUILDER.load_yaml(manifest_path.parent / "program-set-core-facts.yaml")
             self.assertTrue(
-                minimal["folder_slug"].startswith(
-                    "synthetic_review--program_set_cu101a_cu106_"
-                )
+                any(fact.get("fact_type") == "message" for fact in facts["source_facts"])
             )
-            self.assertEqual(
-                minimal["review_id"], f"review-{minimal['folder_slug']}"
+            coverage = BUILDER.load_yaml(
+                manifest_path.parent / "program-set-core-coverage.yaml"
             )
-            self.assertTrue((root / "standard-default" / "program-set-core-facts.yaml").is_file())
-            facts = BUILDER.load_yaml(root / "standard-default" / "program-set-core-facts.yaml")
-            cu106 = next(item for item in facts["programs"] if item["program"] == "CU106")
-            self.assertEqual(cu106["facts"]["calculations"][0]["target_carrier"], "RESPONSE")
-            self.assertEqual(cu106["facts"]["validations"][0]["exact_code_status"], "OK")
+            self.assertTrue(all(item["status"] == "pending" for item in coverage["items"]))
 
-            minimal = BUILDER.build_manifest(
-                review_name="Synthetic Review",
-                programs=["CU106", "CU101A"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-                core_review_profile="minimal_reader_first",
-            )
-            _, minimal_review = BUILDER.write_build_outputs(minimal, root / "minimal")
-            self.assertNotIn("## Message Inventory", minimal_review.read_text(encoding="utf-8"))
+    def test_profile_identity_is_stable_and_program_set_sensitive(self) -> None:
+        first = self.manifest()
+        reordered = BUILDER.build_manifest(
+            review_name="Synthetic Review",
+            programs=["CU101A", "CU106"],
+            artifact_root=self.working,
+            config=self.config,
+            working_branch="test",
+        )
+        different = BUILDER.build_manifest(
+            review_name="Synthetic Review",
+            programs=["CU106"],
+            artifact_root=self.working,
+            config=self.config,
+            working_branch="test",
+        )
+        self.assertEqual(first["folder_slug"], reordered["folder_slug"])
+        self.assertEqual(first["review_id"], reordered["review_id"])
+        self.assertNotEqual(first["folder_slug"], different["folder_slug"])
 
-            standard = BUILDER.build_manifest(
-                review_name="Synthetic Review",
-                programs=["CU106", "CU101A"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-                core_review_profile="standard_reader_first",
-            )
-            _, standard_review = BUILDER.write_build_outputs(standard, root / "standard")
-            self.assertIn("## Message Inventory", standard_review.read_text(encoding="utf-8"))
-            self.assertTrue(standard["core_review_profile"]["include_message_inventory"])
+    def test_missing_program_blocks_source_pack_facts_and_formal_review(self) -> None:
+        manifest = BUILDER.build_manifest(
+            review_name="Blocked Synthetic Review",
+            programs=["CCB11", "CU106"],
+            artifact_root=self.working,
+            config=self.config,
+            working_branch="test",
+        )
+        manifest_path, review_path = BUILDER.write_build_outputs(
+            manifest, self.root / "blocked"
+        )
+        missing = next(
+            entry for entry in manifest["programs"] if entry["normalized_name"] == "CCB11"
+        )
 
-            different_program_set = BUILDER.build_manifest(
-                review_name="Synthetic Review",
-                programs=["CU106", "CU101B"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-            )
-            self.assertNotEqual(minimal["folder_slug"], different_program_set["folder_slug"])
-            self.assertNotEqual(minimal["review_id"], different_program_set["review_id"])
-
-    def test_missing_program_is_partial_and_facts_are_evidence_bounded(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            working = root / "working"
-            write_artifacts(working / "modules" / "tier" / "CU106", "CU106")
-            config = BUILDER.load_yaml(PROFILE)
-            manifest = BUILDER.build_manifest(
-                review_name="Partial Synthetic Review",
-                programs=["CCB11", "CU106"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-            )
-            output = root / "partial"
-            BUILDER.write_build_outputs(manifest, output)
-            facts = BUILDER.load_yaml(output / "program-set-core-facts.yaml")
-            self.assertEqual(manifest["review_status"], "partial_pending_program")
-            missing = next(item for item in facts["programs"] if item["program"] == "CCB11")
-            self.assertIn("unavailable", missing["unresolved_reason"])
-            self.assertNotIn("business_rule", BUILDER.dump_yaml(facts))
-            self.assertNotIn("modernization_decision", BUILDER.dump_yaml(facts))
-            self.assertNotIn("call_edges", BUILDER.dump_yaml(facts))
-
-    def test_existing_partial_artifact_folder_is_pending_and_partial(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            working = root / "working"
-            partial_folder = working / "modules" / "tier" / "CCB11"
-            write_artifacts(partial_folder, "CCB11")
-            (partial_folder / "CCB11-program-analysis.md").unlink()
-            config = BUILDER.load_yaml(PROFILE)
-
-            manifest = BUILDER.build_manifest(
-                review_name="Partial Artifact Review",
-                programs=["CCB11"],
-                artifact_root=working,
-                config=config,
-                working_branch="test",
-            )
-
-            entry = manifest["programs"][0]
-            self.assertEqual(entry["run_resolution"], "pending_source")
-            self.assertIsNone(entry["artifact_root"])
-            self.assertEqual(manifest["review_status"], "partial_pending_program")
-            self.assertEqual(
-                entry["compact_artifacts"][BUILDER.artifact_key("program-analysis.md")]["status"],
-                "missing",
-            )
+        self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
+        self.assertEqual(manifest["artifact_readiness"], "not_ready")
+        self.assertEqual(manifest["merge_coverage"], "blocked")
+        self.assertEqual(missing["artifact_readiness"]["status"], "not_ready")
+        self.assertFalse(review_path.exists())
+        self.assertFalse((manifest_path.parent / "program-set-reader-first-source-pack.md").exists())
+        self.assertFalse((manifest_path.parent / "program-set-core-facts.yaml").exists())
+        coverage = BUILDER.load_yaml(manifest_path.parent / "program-set-core-coverage.yaml")
+        self.assertEqual(coverage["coverage_status"], "blocked_artifact_readiness")
 
     def test_validator_rejects_legacy_rollup_and_call_map_forms(self) -> None:
         manifest = {
-            "review_status": "complete_exploratory",
+            "review_status": "ready_for_synthesis",
             "core_review_profile": {
                 "name": "minimal_reader_first",
                 "core_sections": list(BUILDER.CORE_READING_SECTIONS),
@@ -166,10 +140,21 @@ class ProgramSetCoreReviewProfileTests(unittest.TestCase):
             },
             "programs": [{"normalized_name": "CU106", "run_resolution": "pending_source"}],
         }
-        markdown = "## Program-Level SME Core Review\n\n## Transaction Call Map\n"
-        findings = BUILDER.validate_review(markdown, manifest)
+        findings = BUILDER.validate_review(
+            "## Program-Level SME Core Review\n\n## Transaction Call Map\n", manifest
+        )
         self.assertTrue(any("forbidden legacy form" in finding for finding in findings))
-        self.assertTrue(any("forbidden full-flow section: Transaction Call Map" in finding for finding in findings))
+        self.assertTrue(
+            any("forbidden full-flow section: Transaction Call Map" in finding for finding in findings)
+        )
+
+    def test_minimal_profile_routes_message_facts_to_control_section(self) -> None:
+        manifest = self.manifest("minimal_reader_first")
+        message_fact = {"section": "Message Inventory", "fact_type": "message"}
+        self.assertEqual(
+            BUILDER._review_section_for_fact(message_fact, manifest),
+            "Message Coverage Control",
+        )
 
 
 if __name__ == "__main__":

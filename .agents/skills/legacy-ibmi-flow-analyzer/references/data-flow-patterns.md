@@ -1,3 +1,10 @@
+# Historical, Non-Active Reference
+
+> Retained for provenance of the former transaction-flow analyzer. Cross-
+> program data-flow reconstruction is outside the active v0.4.0 Reader-First
+> Program Analysis Merger contract. Do not load this reference during a merger
+> run.
+
 # Cross-Program Data Flow Patterns
 
 This guide enumerates the mechanisms by which data passes between programs

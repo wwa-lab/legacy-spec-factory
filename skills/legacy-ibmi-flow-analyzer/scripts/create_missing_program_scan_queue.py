@@ -12,8 +12,9 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import shutil
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
@@ -29,6 +30,27 @@ REQUIRED_ARTIFACTS = (
 )
 QUEUE_STATUS_FILE = "program-set-scan-queue.yaml"
 BLOCKED_FILE = "blocked-programs.csv"
+GENERATED_QUEUE_FILES = (
+    "program-list.csv",
+    "flow-program-list.csv",
+    "program-list-status.csv",
+    "program-batch-plan.md",
+    "batch-scan-manifest.yaml",
+    "cline-serial-runner-prompt.md",
+    "subagent-dispatch-plan.md",
+    "kiro-parallel-runner-prompt.md",
+    "batch-session-handoff.md",
+    QUEUE_STATUS_FILE,
+    BLOCKED_FILE,
+)
+GENERATED_QUEUE_DIRS = (
+    "prompt-queue",
+    "subagent-queue",
+    "subagent-results",
+    "completed",
+    "blocked",
+    "failed",
+)
 
 
 def load_module(name: str, path: Path) -> ModuleType:
@@ -78,6 +100,64 @@ def missing_artifacts(entry: dict[str, Any]) -> list[str]:
     ]
 
 
+def readiness_status(entry: dict[str, Any]) -> str:
+    readiness = entry.get("artifact_readiness")
+    if isinstance(readiness, dict):
+        return str(readiness.get("status") or "not_ready")
+    if isinstance(readiness, str):
+        return readiness
+    if entry.get("run_resolution") in {
+        "analyzed_this_run",
+        "reused_same_run",
+        "reused_artifact_repo",
+    } and not missing_artifacts(entry):
+        return "ready"
+    return "not_ready"
+
+
+def readiness_reason(entry: dict[str, Any]) -> str:
+    readiness = entry.get("artifact_readiness")
+    if not isinstance(readiness, dict):
+        return "artifact readiness did not pass"
+    findings = [str(item) for item in readiness.get("findings", []) or []]
+    return "; ".join(findings) or "artifact readiness did not pass"
+
+
+def inventory_source_path_block_reason(source_root: Path, source_path: str) -> str:
+    raw_path = source_path.strip()
+    try:
+        platform_path = Path(raw_path)
+        windows_path = PureWindowsPath(raw_path)
+        if platform_path.is_absolute() or windows_path.drive or windows_path.root:
+            return "source path must be relative to source root; absolute paths are not allowed"
+        candidate = (source_root / Path(raw_path.replace("\\", "/"))).resolve()
+        candidate.relative_to(source_root.resolve())
+    except (OSError, RuntimeError, ValueError):
+        return "source path escapes source root after resolution"
+    if not candidate.is_file():
+        return "source path does not exist or is not a file under source root"
+    return ""
+
+
+def clear_generated_queue_artifacts(output_dir: Path) -> None:
+    for dirname in GENERATED_QUEUE_DIRS:
+        generated_dir = output_dir / dirname
+        if generated_dir.is_symlink() or generated_dir.is_file():
+            generated_dir.unlink()
+        elif generated_dir.is_dir():
+            shutil.rmtree(generated_dir)
+    for filename in GENERATED_QUEUE_FILES:
+        path = output_dir / filename
+        if path.is_file() or path.is_symlink():
+            path.unlink()
+    unknown = list(output_dir.iterdir()) if output_dir.is_dir() else []
+    if unknown:
+        raise ValueError(
+            "refusing to replace a queue directory containing unrecognized artifacts: "
+            + ", ".join(path.name for path in unknown)
+        )
+
+
 def inventory_rows_from_manifest(manifest: dict[str, Any]) -> dict[str, dict[str, str]]:
     inventory = manifest.get("source_inventory") or {}
     rows: dict[str, dict[str, str]] = {}
@@ -89,6 +169,12 @@ def inventory_rows_from_manifest(manifest: dict[str, Any]) -> dict[str, dict[str
             rows[program.upper()] = {
                 key: str(value or "") for key, value in item.items()
             }
+
+    # v0.4 freezes the fresh inventory rows into the signed-off preparation
+    # manifest. Reopening the mutable CSV here would create a TOCTOU path swap
+    # between preparation and targeted queue generation.
+    if str(manifest.get("schema_version") or "") == "0.4":
+        return rows
 
     program_list = inventory.get("program_list") or {}
     raw_path = str(program_list.get("path") or "").strip()
@@ -107,6 +193,7 @@ def inventory_rows_from_manifest(manifest: dict[str, Any]) -> dict[str, dict[str
 
 def select_missing_programs(
     manifest: dict[str, Any],
+    source_root: Path,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     inventory = manifest.get("source_inventory") or {}
     freshness = str(inventory.get("freshness") or "not_checked")
@@ -124,7 +211,8 @@ def select_missing_programs(
             continue
         seen.add(key)
         missing = missing_artifacts(entry)
-        if not missing:
+        readiness = readiness_status(entry)
+        if readiness == "ready":
             continue
 
         inventory_row = inventory_rows.get(key, {})
@@ -135,13 +223,18 @@ def select_missing_programs(
         targeted = str(inventory_row.get("targeted_scan_allowed") or "").lower() == "true"
         reason = ""
         if freshness != "fresh":
-            reason = f"source inventory is {freshness}; rerun legacy-ibmi-inventory first"
+            reason = (
+                f"source inventory is {freshness}; provide a fresh inventory or an "
+                "exact approved source mapping (no repository-wide scan is triggered)"
+            )
         elif inventory_status not in {"found", ""} and not source_path:
             reason = "program not found in fresh source inventory; confirm program name or source mapping"
         elif not source_path:
             reason = "source path is missing from source inventory; provide a source mapping"
         elif inventory_row.get("targeted_scan_allowed") is not None and not targeted:
             reason = "targeted source scan is not allowed by the current inventory freshness gate"
+        else:
+            reason = inventory_source_path_block_reason(source_root, source_path)
 
         base = {
             "member": program,
@@ -151,7 +244,11 @@ def select_missing_programs(
             "total_lines": str(inventory_row.get("total_lines") or ""),
             "size_tier": size_tier,
             "tier_reason": str(inventory_row.get("tier_reason") or "missing flow artifact refresh"),
-            "missing_artifacts": ", ".join(missing),
+            "missing_artifacts": (
+                ", ".join(missing)
+                if missing
+                else "semantic readiness: " + readiness_reason(entry)
+            ),
             "inventory_status": inventory_status,
         }
         if reason:
@@ -231,7 +328,12 @@ def create_queue(args: argparse.Namespace) -> int:
     manifest = load_yaml(manifest_path)
     review_name = args.review_name or str(manifest.get("review_name") or "program set")
     args.review_name = review_name
-    queued, blocked = select_missing_programs(manifest)
+    queued, blocked = select_missing_programs(manifest, source_root)
+    if args.force:
+        clear_generated_queue_artifacts(output_dir)
+    if not queued and not blocked:
+        print("Missing-program queue status: no_missing_programs")
+        return 0
     output_dir.mkdir(parents=True, exist_ok=True)
     program_list = output_dir / "program-list.csv"
     if queued:
@@ -264,7 +366,7 @@ def create_queue(args: argparse.Namespace) -> int:
         else "no_missing_programs"
     )
     queue_manifest = {
-        "schema_version": "0.1",
+        "schema_version": "0.4",
         "queue_type": "missing_program_scan",
         "status": status,
         "review_id": manifest.get("review_id"),
@@ -279,7 +381,7 @@ def create_queue(args: argparse.Namespace) -> int:
         "next_action": (
             "run prompt-queue, then rebuild the program-set review"
             if queued
-            else "rerun inventory or provide source mapping before creating prompts"
+            else "provide a fresh externally prepared inventory or exact source mapping before creating prompts"
             if blocked
             else "rebuild or validate the program-set review"
         ),

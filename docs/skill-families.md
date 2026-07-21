@@ -111,8 +111,8 @@ unclear, or when a high-risk rule needs source-level verification.
 | [`legacy-ibmi-inventory`](../skills/legacy-ibmi-inventory/SKILL.md) | approved evidence + source listings | `01_inventory/inventory.yaml`, object map | After intake |
 | [`legacy-ibmi-runtime-evidence-miner`](../skills/legacy-ibmi-runtime-evidence-miner/SKILL.md) | approved job logs / spool files + inventory mappings | `runtime-evidence.jsonl`, mining checklist | After intake + inventory; parallel evidence enrichment |
 | [`legacy-ibmi-program-analyzer`](../skills/legacy-ibmi-program-analyzer/SKILL.md) | one program (RPGLE/CLLE/COBOL); inventory required only for downstream-ready chain output | `program-analysis-<OBJ-ID>.md` or exploratory `program-analysis.md` | Once per program in inventory, or standalone for skill-output inspection |
-| [`legacy-ibmi-flow-analyzer`](../skills/legacy-ibmi-flow-analyzer/SKILL.md) | multiple program-analyses for one transaction | `flow-<FLOW-SLUG>.md` | After per-program analysis is done |
-| [`legacy-ibmi-module-analyzer`](../skills/legacy-ibmi-module-analyzer/SKILL.md) | related flows | `04_modules/<MODULE-SLUG>/` (overview + Program/Data views) | After flows for a capability are done |
+| [`legacy-ibmi-flow-analyzer`](../skills/legacy-ibmi-flow-analyzer/SKILL.md) | finalized reader-first analyses for an SME-selected program set | readiness/source-pack/facts/coverage bundle plus `<folder_slug>--sme-core-review.md` | After every per-program artifact passes the upstream finalization gate; targeted recovery only when blocked |
+| [`legacy-ibmi-module-analyzer`](../skills/legacy-ibmi-module-analyzer/SKILL.md) | legacy full-flow artifacts or module-first context accepted by its own contract | `04_modules/<MODULE-SLUG>/` (overview + Program/Data views) | Do not feed the v0.4.0 merger Core Review directly until a module compatibility contract is migrated and validated |
 | [`legacy-ibmi-data-model-analyzer`](../skills/legacy-ibmi-data-model-analyzer/SKILL.md) | DDS PF/LF + related programs | `03_data_models/<DATA-SLUG>/` | Parallel to program/flow analysis |
 | [`legacy-ibmi-screen-report-analyzer`](../skills/legacy-ibmi-screen-report-analyzer/SKILL.md) | DSPF/PRTF + driving programs | `screen-report-analysis-<OBJ-ID>.md` | Parallel to program/flow analysis |
 
@@ -123,7 +123,7 @@ evidence-intake (gate)
   ├─ inventory
   │    ├─ runtime-evidence-miner (optional but recommended where logs/spool exist)
   │    ├─ program-analyzer (per program)
-  │    │    └─ flow-analyzer (per transaction flow)
+  │    │    └─ flow-analyzer / Program Analysis Merger (per SME-selected program set)
   │    ├─ data-model-analyzer (per data subject)
   │    └─ screen-report-analyzer (per UI/report surface)
 
@@ -131,8 +131,16 @@ targeted findings
   └─ context package / module-analyzer evidence repair
 ```
 
-**Shared vocabulary**: `OBJ-*`, `EV-*`, `TBD-*` IDs; `observed/inferred/unknown`
-classification; sensitivity tagging; SME review gate.
+The flow analyzer name is historical. Its active v0.4.0 contract does not
+reconstruct a transaction flow. It uses each finalized program's complete
+Program Reading Summary, Calculation Logic, Validation Logic, Exception
+Handling, and Message Inventory as the primary input, then enforces
+`source_fact_id` coverage across one LLM-synthesized review. Program list order
+is navigation only.
+
+**Shared vocabulary**: `OBJ-*`, `EV-*`, `TBD-*`, `RLOG-*`, and
+`source_fact_id`; `observed/inferred/unknown` classification; sensitivity
+tagging; SME review gate.
 
 **Anti-pattern**: running a full source-first excavation when a RAG-backed
 module package is already sufficient. Use Layer 1 to answer specific evidence,
@@ -308,11 +316,11 @@ evidence:
 2.  evidence-intake (gate)         → evidence/manifest.yaml approved
 3.  inventory                      → 01_inventory/ approved by SME
 4.  program-analyzer × targeted N   → program-analysis-*.md for selected OBJ-*
-5.  flow-analyzer × targeted M      → flow-*.md for selected FLOW-*
+5.  flow-analyzer × targeted M      → validated SME/Dify Core Reviews for selected program sets; not legacy `flow-*.md`
 6.  data-model-analyzer × targeted K → 03_data_models/ for selected data subjects
 7.  screen-report-analyzer × targeted J → screen-report-analysis-*.md
 8.  runtime-evidence-miner          → 07_runtime-evidence/runtime-evidence.jsonl where logs/spool exist
-9.  return to Route A               → update context package / module / BRD
+9.  return to SME/Dify review        → any module/BRD route waits for a separately migrated compatibility contract
 ```
 
 Do not run Route B as a full exhaustive prerequisite when Route A already has

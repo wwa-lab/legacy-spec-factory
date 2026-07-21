@@ -1,5 +1,12 @@
 # Legacy System Modernization Pipeline Alignment
 
+> **v0.4.0 flow-analyzer override:** the active
+> `legacy-ibmi-flow-analyzer` no longer reconstructs end-to-end transaction
+> flows, Replay, Persistence, or Lineage. It validates finalized reader-first
+> program analyses and produces one coverage-complete SME/Dify Core Review.
+> Flow/module/BRD mappings below that depend on the retired v0.2.x artifact
+> require a separate compatibility migration before use.
+
 本文档对标老板提出的IBM i旧系统现代化流程，与Legacy Spec Factory repo的skills进行对应分析。
 
 > 边界更新：公司内部正在建设全字典中心。Legacy Spec Factory 不重复建设全域字段主数据平台，而是消费全字典中心的标准字段、视图边界和口径版本，并负责把 legacy 代码、运行时证据、SME 判断反推成可审计的 spec、traceability 和 handoff。对接契约见
@@ -29,8 +36,8 @@ Program Flow 逐字段梳理计算取信逻辑错误
 |-----------|------|-------------|--------|----------|
 | **Step 1: 数据字典搭建** | 全字典中心承接标准字段、字段口径、视图边界；repo 负责消费字典并绑定 legacy 证据 | 公司全字典中心（外部平台）<br>`legacy-ibmi-evidence-intake` (evidence gate)<br>`legacy-ibmi-inventory` (程序/文件列表)<br>`legacy-ibmi-data-model-analyzer` (legacy字段/数据关系证据) | 字典中心字段包<br>`evidence/manifest.yaml`<br>`01_inventory/inventory.yaml`<br>`03_data_models/<DATA-SLUG>/` | ✅ 边界明确<br>repo侧需按实际字段包补贯穿 |
 | **Step 2: Program Flow逐字段梳理** | 对程序级计算逻辑、取信规则、变量流进行证据化分析；字段级八类逻辑矩阵后续增强 | `legacy-ibmi-program-analyzer` (单程序深度分析)<br>`legacy-ibmi-screen-report-analyzer` (屏幕/报表逻辑) | `02_programs/<CAP>/program-analysis-<OBJ-ID>.md`<br>`03_screen_reports/<OBJECT-SLUG>/` | ✅ 程序级已实现<br>八类矩阵暂缓 |
-| **Step 3: 还原全系统业务流程** | 通过视图 + 字典 + 算法还原业务流程全貌 | `legacy-ibmi-flow-analyzer` (事务流跨程序分析)<br>`legacy-ibmi-module-analyzer` (4视图综合分析) | `03_flows/<CAP>/flow-<FLOW-SLUG>.md`<br>`04_modules/<MODULE-SLUG>/` (Operation/System/Program/Data 4视图) | ✅ 已实现<br>repo-ready (9.0-9.6) |
-| **Step 4: 数据实测 + 经验整合** | 基于运行时证据、SME经验、代码验证进行清理 | `legacy-ibmi-runtime-evidence-miner` (job log/spool evidence)<br>`legacy-ibmi-flow-analyzer` (runtime evidence)<br>`legacy-ibmi-module-analyzer` (synthesize views)<br>`legacy-sme-review-facilitator` (SME确认) | `runtime-evidence.jsonl`<br>Flow + Module分析中的`evidence_tags`<br>TBD和假设列表 | ✅ 已实现<br>runtime miner field-pilot ready |
+| **Step 3: 还原全系统业务流程** | 先将已定稿的程序分析合并为可审阅的跨程序证据主题，再按各自契约组装 module context；端到端 transaction reconstruction 需单独受控工作流 | `legacy-ibmi-flow-analyzer` (Reader-First program-set core review)<br>`legacy-ibmi-module-analyzer` (4视图综合分析) | `<folder_slug>/<folder_slug>--sme-core-review.md`<br>`04_modules/<MODULE-SLUG>/` (Operation/System/Program/Data 4视图) | ⚠️ 部分实现<br>program-set merger repo-ready；full-flow 契约未由 v0.4.0 提供 |
+| **Step 4: 数据实测 + 经验整合** | 基于运行时证据、SME经验、代码验证进行清理 | `legacy-ibmi-runtime-evidence-miner` (job log/spool evidence)<br>`legacy-ibmi-program-analyzer` (evidence-backed program analysis)<br>`legacy-ibmi-module-analyzer` (synthesize views)<br>`legacy-sme-review-facilitator` (SME确认) | `runtime-evidence.jsonl`<br>Program-set Core Review + Module 分析中的 evidence refs<br>TBD 和假设列表 | ✅ 已实现<br>runtime miner field-pilot ready |
 | **Step 5: 2-3轮螺旋迭代** | 已知推未知，未知反噯已知，循环验证 | `legacy-modernization-orchestrator` (routing)<br>`legacy-sme-review-facilitator` (决策记录)<br>`legacy-step-validator` (质量检查) | 迭代的版本控制<br>决策日志<br>验证报告 | ✅ 已实现<br>routing + governance |
 | **Step 6: 三方SME评审定稿** | 业务SME + 运营SME + IT SME联合评审 | `legacy-sme-review-facilitator` (评审包准备)<br>`legacy-brd-writer` (BRD文档)<br>`legacy-spec-writer` (Spec定稿) | `07_sme_reviews/<CAP>/<REVIEW>/`<br>`05_brds/<CAPABILITY>/brd.md`<br>`05_specs/<CAPABILITY>/spec.yaml` | ✅ 已实现<br>field-pilot ready (9.55-9.63) |
 | **Step 7: 标准统一固化，落地使用** | 标准化、冻结spec、交付给下游系统 | `legacy-traceability-packager` (追踪)<br>`legacy-brd-to-sdd-handoff` (交付)<br>`legacy-golden-master-test-planner` (等价性测试) | `06_traceability_packages/`<br>`06_sdd_handoffs/<CAP>/`<br>`06_quality/<CAP>/golden-master-tests.yaml` | ✅ 已实现<br>field-pilot ready (9.51-9.59) |
@@ -74,20 +81,26 @@ Program Flow 逐字段梳理计算取信逻辑错误
 
 ---
 
-### 还原全系统业务程序流程 (Step 3)
+### 跨程序 Core Review 与全系统流程缺口 (Step 3)
 
 **老板需求**: 通过视图 + 字典 + 算法把单个程序的理解聚合成端到端的业务流程
 
 **我们的实现**:
-- `legacy-ibmi-flow-analyzer` → 跨程序事务流分析 (one flow per transaction)
-- `legacy-ibmi-module-analyzer` → 聚焦模块综合分析:
+- `legacy-ibmi-flow-analyzer` → 对 SME 指定的 finalized program set 做
+  Reader-First 主题综合，产出 coverage-complete SME/Dify Core Review；
+  不推断 transaction 顺序、calls、Replay 或 Lineage
+- `legacy-ibmi-module-analyzer` → 按自身输入契约做模块综合:
   1. **Module Overview** - 模块范围、source-backed context、能力/规则种子、BRD crosswalk
   2. **Program Flow** - 程序级调用链和CRUD
   3. **Data Flow** - 数据模型和关系
 
 **输出**:
-- `03_flows/<CAP>/flow-<FLOW-SLUG>.md` (事务级)
-- `04_modules/<MODULE-SLUG>/` (模块级4视图)
+- `<folder_slug>/<folder_slug>--sme-core-review.md` (SME/Dify program-set review)
+- `04_modules/<MODULE-SLUG>/` (模块级4视图，仅在输入通过该 skill 契约时)
+
+**缺口**: v0.4.0 不提供端到端 transaction-flow reconstruction；如项目
+确实需要 call order、Replay、Persistence 或 Lineage，必须另行定义证据门槛、
+输出契约和下游兼容验证。
 
 ---
 
@@ -96,7 +109,7 @@ Program Flow 逐字段梳理计算取信逻辑错误
 **老板需求**: 用运行时证据验证代码分析，整合SME经验，清理历史技术债
 
 **我们的实现**:
-- `legacy-ibmi-flow-analyzer` 收集:
+- Upstream program analysis 和 program-set Core Review 保留:
   - `confirmed_from_code` - 代码确认
   - `observed_in_runtime` - 运行时日志/spool
   - `confirmed_by_sme` - SME确认
@@ -250,8 +263,9 @@ Program Flow 逐字段梳理计算取信逻辑错误
    $ /legacy-ibmi-data-model-analyzer
    $ /legacy-ibmi-screen-report-analyzer
 
-5. 聚合成事务级流程
-   $ /legacy-ibmi-flow-analyzer (per transaction)
+5. 聚合选定 program set 的 Reader-First Core Review
+   $ /legacy-ibmi-flow-analyzer (per selected program set)
+   → 仅供 SME/Dify review，不作为 full transaction-flow artifact
 
 6. 综合4视图
    $ /legacy-ibmi-module-analyzer

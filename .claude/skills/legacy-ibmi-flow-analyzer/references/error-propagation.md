@@ -1,3 +1,9 @@
+# Historical, Non-Active Reference
+
+> Retained for provenance of the former transaction-flow analyzer. Flow-level
+> propagation reconstruction is outside the active v0.4.0 Reader-First Program
+> Analysis Merger contract. Do not load this reference during a merger run.
+
 # Error Propagation & Commit Boundary Analysis
 
 A flow's *happy path* is usually obvious. The *unhappy paths* — what

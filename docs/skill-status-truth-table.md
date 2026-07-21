@@ -11,7 +11,7 @@ the latest reviewed scorecard version; `docs/runtime-matrix.md` may list a
 newer synced runtime version only when that row explicitly says the updated
 scorecard is pending.
 
-Last regenerated: 2026-07-01
+Last regenerated: 2026-07-21
 
 ## How to Read This Table
 
@@ -44,7 +44,7 @@ Last regenerated: 2026-07-01
 | `legacy-ibmi-program-list-batch` | v0.1.0 | 9.34 | repo-ready | synced | synced | synced | 2026-06-25 | [link](reviews/legacy-ibmi-program-list-batch-v0.1.0-scorecard.md) |
 | `legacy-ibmi-data-model-analyzer` | v0.1.0 | 9.32 | repo-ready | passed | synced | passed | 2026-05-16 | [link](reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) |
 | `legacy-ibmi-screen-report-analyzer` | v0.1.0 | 9.38 | repo-ready | passed | passed | passed | 2026-05-16 | [link](reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) |
-| `legacy-ibmi-flow-analyzer` | v0.2.2 | 9.62 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md) |
+| `legacy-ibmi-flow-analyzer` | v0.4.0 | 9.51 | repo-ready | synced | synced | synced | 2026-07-21 | [link](reviews/legacy-ibmi-flow-analyzer-v0.4.0-scorecard.md) |
 | `legacy-ibmi-module-analyzer` | v0.2.3 | 9.62 | repo-ready (provisional) | synced | synced | synced | 2026-06-04 | [link](reviews/legacy-ibmi-module-analyzer-v0.2.3-scorecard.md) |
 | `legacy-brd-writer` | v0.1.8 | 9.52 | repo-ready (provisional) | synced | synced | synced | 2026-06-03 | [link](reviews/legacy-brd-writer-v0.1.8-scorecard.md) |
 | `legacy-spec-writer` | v0.1.6 | 9.49 | repo-ready | synced | synced | synced | 2026-06-02 | [link](reviews/legacy-spec-writer-v0.1.6-scorecard.md) |
@@ -65,7 +65,7 @@ Last regenerated: 2026-07-01
 | `field-pilot ready` (all three runtimes `passed`) | 9 |
 | `repo-ready` / `repo-ready (provisional)` (runtime cap or partial coverage) | 15 |
 
-**24 skills total** in canonical source; **33 superseded scorecards** kept
+**24 skills total** in canonical source; **37 superseded scorecards** kept
 under `docs/reviews/` for historical reference.
 
 ## Verification

@@ -1,3 +1,8 @@
+# Historical, Non-Active Review Notes
+
+> These notes assess the former full-flow contract. Use the active
+> `reader-first-merger-blocked` example for the current readiness gate.
+
 # Expected Review Notes: Incomplete Flow (Negative Case)
 
 ## What This Example Demonstrates

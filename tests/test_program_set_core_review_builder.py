@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import csv
 import importlib.util
+import json
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from tests.fixtures.program_analysis_artifacts import write_finalized_program_artifacts
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -48,20 +52,15 @@ def write_compact_artifacts(
 ) -> None:
     missing = missing or set()
     program = program or artifact_root.name
-    artifact_root.mkdir(parents=True)
-    all_artifacts = (
-        BUILDER.REQUIRED_COMPACT_ARTIFACTS
-        + BUILDER.CONDITIONAL_COMPACT_ARTIFACTS
-        + BUILDER.OPTIONAL_COMPACT_ARTIFACTS
-    )
-    for filename in all_artifacts:
-        if filename in missing:
-            continue
-        artifact_filename = BUILDER.program_artifact_filename(program, filename)
-        (artifact_root / artifact_filename).write_text(
-            f"schema_version: '0.1'\nartifact: {filename}\n",
-            encoding="utf-8",
-        )
+    write_finalized_program_artifacts(artifact_root, program)
+    for filename in missing:
+        path = artifact_root / BUILDER.program_artifact_filename(program, filename)
+        if path.exists():
+            path.unlink()
+    for filename in BUILDER.OPTIONAL_COMPACT_ARTIFACTS:
+        if filename not in missing:
+            path = artifact_root / BUILDER.program_artifact_filename(program, filename)
+            path.write_text("schema_version: '0.1'\n", encoding="utf-8")
 
 
 def run_git(root: Path, args: list[str]) -> None:
@@ -163,7 +162,13 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
         working_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
     )
     write_compact_artifacts(
+        working_root / "modules" / "CAP-ID-0001-large_extreme_program" / "CU118"
+    )
+    write_compact_artifacts(
         working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+    )
+    write_compact_artifacts(
+        working_root / "modules" / "CAP-ID-0002-complex_normal_program" / "CU257F"
     )
     programs_file.write_text("@CU118\nCU118\nCC050\nCU257F\n", encoding="utf-8")
 
@@ -174,6 +179,7 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
         artifact_root=working_root,
         config=config,
         working_branch="develop-leo",
+        programs_file=programs_file,
     )
     manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
     write_reader_first_review(review_path, manifest)
@@ -182,7 +188,191 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
 
 def write_reader_first_review(review_path: Path, manifest: dict[str, object]) -> None:
     programs = manifest["programs"]  # type: ignore[index]
-    review_text = f"""# Program Set SME Core Review: {manifest["review_name"]}
+    manifest["review_status"] = "complete_exploratory"
+    manifest["merge_coverage"] = "complete"
+    (review_path.parent / "program-set-core-input-manifest.yaml").write_text(
+        BUILDER.dump_yaml(manifest), encoding="utf-8"
+    )
+    coverage_path = review_path.parent / "program-set-core-coverage.yaml"
+    facts_path = review_path.parent / "program-set-core-facts.yaml"
+    coverage = BUILDER.load_yaml(coverage_path)
+    facts = BUILDER.load_yaml(facts_path)
+    items = [
+        {
+            **item,
+            "status": "included",
+            "review_anchor": f"review-test-{index:03d}",
+            "merged_source_fact_ids": [],
+            "exclusion_reason": None,
+        }
+        for index, item in enumerate(coverage.get("coverage_items", []), start=1)
+    ]
+    coverage["coverage_items"] = items
+    coverage["items"] = [dict(item) for item in items]
+    coverage["coverage_status"] = "complete"
+    coverage["review_status"] = "complete_exploratory"
+    coverage["coverage_counts"] = {
+        **coverage.get("coverage_counts", {}),
+        "total_source_facts": len(items),
+        "accounted_source_facts": len(items),
+        "pending_source_facts": 0,
+    }
+    coverage["expected_source_fact_count"] = len(items)
+    coverage["coverage_item_count"] = len(items)
+    coverage["status_counts"] = {
+        "included": len(items),
+        "merged": 0,
+        "excluded_non_core": 0,
+        "pending": 0,
+    }
+    coverage_path.write_text(BUILDER.dump_yaml(coverage), encoding="utf-8")
+    fact_map = {
+        str(fact["source_fact_id"]): fact for fact in facts.get("source_facts", [])
+    }
+    all_fact_refs = "; ".join(fact_map)
+    program_names = [str(entry["normalized_name"]) for entry in programs]
+    front_programs = "\n".join(
+        f"  - {json.dumps(program)}" for program in program_names
+    )
+
+    section_headers = {
+        "Program Set Reading Summary": (
+            "Program",
+            "Scope / Reader-First Contribution",
+            "Artifact Readiness",
+            "Coverage",
+            "Review Row ID",
+            "Source Fact Refs",
+        ),
+        "Calculation Logic": (
+            "Calculation / Assignment",
+            "Program",
+            "Routine",
+            "Target Field / Carrier",
+            "Source Operands / Carriers",
+            "Guard / Branch",
+            "Effect",
+            "Supporting Detail",
+            "Evidence Status",
+            "Review Row ID",
+            "Source Fact Refs",
+        ),
+        "Validation Logic": (
+            "Message / Status / Outcome",
+            "Description",
+            "Program",
+            "Routine",
+            "Condition / Evidence",
+            "Carrier / Destination",
+            "Effect",
+            "Supporting Detail",
+            "Evidence Status",
+            "Review Row ID",
+            "Source Fact Refs",
+        ),
+        "Exception Handling": (
+            "Exception / Error Path",
+            "Program",
+            "Routine",
+            "Detection Mechanism",
+            "Fields / Messages Set",
+            "Handling Action",
+            "Effect",
+            "Supporting Detail",
+            "Evidence Status",
+            "Review Row ID",
+            "Source Fact Refs",
+        ),
+        "Message Inventory": (
+            "Message / Status / Literal",
+            "Description",
+            "Type",
+            "Program / Routine Sources",
+            "Occurrences",
+            "Condition / Handler",
+            "Carrier / Destination",
+            "Effect",
+            "Detail Refs",
+            "Evidence Status",
+            "Review Row ID",
+            "Source Fact Refs",
+        ),
+    }
+
+    def clean_cell(value: object) -> str:
+        return re.sub(r"\s+", " ", str(value or "")).replace("|", "/").strip()
+
+    def fact_mapping_table(review_section: str) -> str:
+        source_section = {
+            "Program Set Reading Summary": "Program Reading Summary",
+        }.get(review_section, review_section)
+        headers = section_headers[review_section]
+        rows: list[str] = []
+        for item in items:
+            if item.get("section") != source_section:
+                continue
+            fact = fact_map[str(item["source_fact_id"])]
+            semantic_values = [
+                clean_cell(fact.get("logic")),
+                clean_cell(fact.get("exact_value")),
+                *(
+                    clean_cell(value)
+                    for _field, value in BUILDER._required_fact_semantics(fact)
+                ),
+                "Source-backed reader-first evidence retained for focused SME review",
+            ]
+            detail = "; ".join(
+                dict.fromkeys(value for value in semantic_values if value)
+            )
+            program = clean_cell(fact.get("program")) or "source program"
+            routine = clean_cell(fact.get("routine")) or "program-wide context"
+            exact = clean_cell(fact.get("exact_value"))
+            values = {
+                "Program": program,
+                "Scope / Reader-First Contribution": detail,
+                "Artifact Readiness": "ready",
+                "Coverage": "included",
+                "Calculation / Assignment": clean_cell(fact.get("calculation")) or detail,
+                "Routine": routine,
+                "Target Field / Carrier": clean_cell(fact.get("target_carrier")) or exact or "source-backed carrier",
+                "Source Operands / Carriers": clean_cell(fact.get("source_carriers")) or "source-backed operands",
+                "Guard / Branch": clean_cell(fact.get("guard")) or "source-backed branch context",
+                "Message / Status / Outcome": exact or clean_cell(fact.get("description")) or detail,
+                "Condition / Evidence": clean_cell(fact.get("trigger_chain")) or clean_cell(fact.get("guard")) or "source-backed condition",
+                "Carrier / Destination": clean_cell(fact.get("carrier_destination")) or clean_cell(fact.get("target_carrier")) or "source-backed destination",
+                "Exception / Error Path": clean_cell(fact.get("exception_path")) or detail,
+                "Detection Mechanism": clean_cell(fact.get("detection_mechanism")) or "source-backed detection",
+                "Fields / Messages Set": clean_cell(fact.get("fields_messages_set")) or exact or "source-backed outcome carrier",
+                "Handling Action": clean_cell(fact.get("exception_action")) or "source-backed handling action",
+                "Message / Status / Literal": exact or detail,
+                "Description": clean_cell(fact.get("description")) or detail,
+                "Type": clean_cell(fact.get("message_type")) or clean_cell(fact.get("fact_type")) or "source evidence",
+                "Program / Routine Sources": f"{program} {routine}",
+                "Occurrences": clean_cell(fact.get("occurrences")) or "source-backed occurrence",
+                "Condition / Handler": clean_cell(fact.get("trigger_handler")) or "source-backed handler",
+                "Effect": clean_cell(fact.get("effect")) or detail,
+                "Detail Refs": detail,
+                "Supporting Detail": detail,
+                "Evidence Status": clean_cell(fact.get("evidence_status")) or "source_backed",
+                "Review Row ID": f'<a id="{item["review_anchor"]}"></a> {item["review_anchor"]}',
+                "Source Fact Refs": clean_cell(item["source_fact_id"]),
+            }
+            rows.append("| " + " | ".join(values[header] for header in headers) + " |")
+        header = "| " + " | ".join(headers) + " |"
+        separator = "| " + " | ".join("---" for _ in headers) + " |"
+        return "\n".join((header, separator, *rows))
+
+    review_text = f"""---
+document_id: {manifest.get("document_id") or manifest["review_id"]}
+flow_slug: {manifest["flow_slug"]}
+program_set_slug: {manifest["program_set_slug"]}
+programs:
+{front_programs}
+review_status: complete_exploratory
+artifact_version: '{manifest["artifact_version"]}'
+---
+
+# Program Set SME Core Review: {manifest["folder_slug"]}
 
 ## Program Set Reading Summary
 
@@ -194,48 +384,42 @@ calculation of posting response fields, validation of account/status outcomes,
 exception/message handling, and persistence/finalization follow-up for programs
 that still need source scan.
 
+{fact_mapping_table("Program Set Reading Summary")}
+
 ## Cross-Program Processing Overview
 
-| Processing Layer | Programs / Main Routines | What To Understand First |
-| --- | --- | --- |
-| Entry / dispatch | @CU118 MAIN; CU118 pending source scan | @CU118 is the current entry artifact; CU118 stays visible as pending source so the SME can confirm whether it is a distinct program. |
-| Calculation | @CU118 RLOG-AUTH-001; CC050 RLOG-AUTH-010 | Posting response fields are derived before validation messages are assigned. |
-| Validation | @CU118 RLOG-AUTH-002; CC050 RLOG-AUTH-011 | Account status and request completeness decide whether processing continues or returns a decline/status response. |
-| Exception / message | @CU118 RLOG-AUTH-003; CC050 RLOG-AUTH-012 | Message values are set where validation or file access fails, with the exact status literal preserved in Message Inventory. |
-| Persistence / finalization | CC050 RLOG-AUTH-013; CU257F pending source scan | Completed records are finalized only after validation passes; pending programs remain in the ledger for targeted scan. |
+| Processing Layer | Programs / Main Routines | What To Understand First | Review Row ID | Source Fact Refs |
+| --- | --- | --- | --- | --- |
+| Entry / dispatch | @CU118 MAIN; CU118 MAIN | Read each program's source-backed entry contribution without inferring runtime order. | <a id="review-overview-entry"></a> review-overview-entry | {all_fact_refs} |
+| Calculation | @CU118 MAIN; CC050 MAIN | Posting response fields retain their source-backed carriers and guarded outcomes. | <a id="review-overview-calculation"></a> review-overview-calculation | {all_fact_refs} |
+| Validation | @CU118 MAIN; CC050 MAIN | Account status and request completeness retain their exact response outcomes. | <a id="review-overview-validation"></a> review-overview-validation | {all_fact_refs} |
+| Exception / message | @CU118 MAIN; CC050 MAIN | Message values remain exact where validation or file access fails. | <a id="review-overview-exception"></a> review-overview-exception | {all_fact_refs} |
+| Persistence / finalization | CC050 MAIN; CU257F MAIN | Review source-backed update effects without asserting an execution sequence. | <a id="review-overview-finalization"></a> review-overview-finalization | {all_fact_refs} |
 
 ## Calculation Logic
 
-| Calculation / Assignment | Program | Routine | Target Field / Carrier | Source Operands / Carriers | Guard / Branch | Effect | Supporting Detail | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Build the authorization posting response amount and status payload from the request amount plus account controls. | @CU118 | RLOG-AUTH-001 | response amount and status fields | request amount, account status, product control values | normal posting branch after entry dispatch | passes the response payload to downstream validation/finalization logic | RLOG-AUTH-001; routine-logic-details.yaml | confirmed |
-| Carry the validated posting indicator into finalization only when the request remains eligible. | CC050 | RLOG-AUTH-010 | posting indicator carrier | validation status, request key, posting control flag | validation passed branch | allows final record update and suppresses decline response | RLOG-AUTH-010; routine-logic-details.yaml | confirmed |
+{fact_mapping_table("Calculation Logic")}
 
 ## Validation Logic
 
-| Message / Status / Outcome | Description | Program | Routine | Condition / Evidence | Carrier / Destination | Effect | Supporting Detail | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| STATUS-ACTIVE-CHECK | The program checks account activity before allowing posting to continue. | @CU118 | RLOG-AUTH-002 | entry dispatch -> account status validation -> continue or decline | response status field | inactive accounts receive a decline/status response instead of finalization | RLOG-AUTH-002; MSG-AUTH-001 | confirmed |
-| STATUS-POSTING-READY | The finalization program accepts only requests that still carry a clean validation status. | CC050 | RLOG-AUTH-011 | calculation result -> validation guard -> finalization | posting indicator carrier | prevents final update when upstream validation failed | RLOG-AUTH-011; MSG-AUTH-002 | confirmed |
+{fact_mapping_table("Validation Logic")}
 
 ## Exception Handling
 
-| Exception / Error Path | Program | Routine | Detection Mechanism | Fields / Messages Set | Handling Action | Effect | Supporting Detail | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Missing or unreadable account record blocks posting and sets a reviewable status. | @CU118 | RLOG-AUTH-003 | file access status check after account lookup | STATUS-ACCOUNT-MISSING and response text | return with decline/status response | stops downstream finalization for this request | RLOG-AUTH-003; MSG-AUTH-003 | confirmed |
-| Final update failure leaves the request visible for operational follow-up rather than silently marking success. | CC050 | RLOG-AUTH-012 | update result check | STATUS-UPDATE-FAILED and operator message | log and return failure status | final response shows that persistence did not complete | RLOG-AUTH-012; MSG-AUTH-004 | confirmed |
+{fact_mapping_table("Exception Handling")}
 
 ## Message Inventory
 
-| Message / Status / Literal | Description | Type | Program / Routine Sources | Occurrences | Condition / Handler | Effect | Detail Refs | Evidence Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| STATUS-ACTIVE-CHECK | Account activity validation status used before posting can continue. | status | @CU118 RLOG-AUTH-002 | 1 | account status validation | controls continue versus decline outcome | MSG-AUTH-001; RLOG-AUTH-002 | confirmed |
-| STATUS-ACCOUNT-MISSING | Account lookup failed and the request cannot be finalized. | status | @CU118 RLOG-AUTH-003 | 1 | file access status check | stops finalization and returns a reviewable failure | MSG-AUTH-003; RLOG-AUTH-003 | confirmed |
-| STATUS-UPDATE-FAILED | Final record update did not complete successfully. | status | CC050 RLOG-AUTH-012 | 1 | final update result check | returns failure status for operational follow-up | MSG-AUTH-004; RLOG-AUTH-012 | confirmed |
+{fact_mapping_table("Message Inventory")}
 
 ## Core Completeness Ledger
 
 {BUILDER.render_completeness_table(programs)}
+
+## Coverage Reconciliation
+
+All normalized source facts are included at the stable anchors declared in
+this review and reconciled in the sibling coverage control.
 
 ## Sources
 
@@ -270,9 +454,11 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             )
             self.assertEqual(programs["@CU118"]["tier"], "large_extreme_program")
 
-            self.assertEqual(programs["CU118"]["run_resolution"], "pending_source")
-            self.assertIsNone(programs["CU118"]["artifact_root"])
-            self.assertEqual(programs["CU118"]["follow_up"], "scan this program in current run")
+            self.assertEqual(programs["CU118"]["run_resolution"], "analyzed_this_run")
+            self.assertEqual(
+                programs["CU118"]["artifact_root"],
+                "modules/CAP-ID-0001-large_extreme_program/CU118",
+            )
 
             self.assertEqual(programs["CC050"]["run_resolution"], "analyzed_this_run")
             self.assertEqual(programs["CC050"]["tier"], "normal_program")
@@ -280,7 +466,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 programs["CC050"]["compact_artifacts"]["routine_logic_details_yaml"]["status"],
                 "present",
             )
-            self.assertEqual(programs["CU257F"]["run_resolution"], "pending_source")
+            self.assertEqual(programs["CU257F"]["run_resolution"], "analyzed_this_run")
 
             review_text = review_path.read_text(encoding="utf-8")
             expected_order = [
@@ -291,13 +477,14 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 "## Exception Handling",
                 "## Message Inventory",
                 "## Core Completeness Ledger",
+                "## Coverage Reconciliation",
                 "## Sources",
                 "## Run Profile",
                 "## Source Inventory Cache",
             ]
             positions = [review_text.index(section) for section in expected_order]
             self.assertEqual(positions, sorted(positions))
-            self.assertIn("| Processing Layer | Programs / Main Routines | What To Understand First |", review_text)
+            self.assertIn("| Processing Layer | Programs / Main Routines | What To Understand First | Review Row ID | Source Fact Refs |", review_text)
             self.assertIn("Routine Logic Evidence", review_text)
             self.assertIn("| Cross-Run Reuse | false |", review_text)
             self.assertIn("| @CU118 |", review_text)
@@ -329,6 +516,8 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             write_compact_artifacts(
                 document_repo / "modules" / "CAP-ID-0003-normal_program" / "CC050"
             )
+            programs_file = temp_root / "approved-programs.txt"
+            programs_file.write_text("CC050\n", encoding="utf-8")
 
             config = BUILDER.load_yaml(PROFILE_TEMPLATE)
             manifest = BUILDER.build_manifest(
@@ -338,6 +527,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 config=config,
                 working_branch="main",
                 artifact_repo_mode=BUILDER.ARTIFACT_REPO_APPROVED_DOCUMENT,
+                programs_file=programs_file,
             )
             manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
             write_reader_first_review(review_path, manifest)
@@ -389,7 +579,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             findings,
         )
 
-    def test_builder_skeleton_is_reader_first_but_not_final_valid_review(self) -> None:
+    def test_builder_prepares_reader_first_bundle_but_never_writes_final_review(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             working_root = temp_root / "delivery-work"
@@ -408,21 +598,64 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             )
             manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
 
-            review_text = review_path.read_text(encoding="utf-8")
-            self.assertLess(
-                review_text.index("## Program Set Reading Summary"),
-                review_text.index("## Run Profile"),
-            )
+            self.assertFalse(review_path.exists())
+            self.assertTrue((manifest_path.parent / "program-set-reader-first-source-pack.md").is_file())
+            self.assertTrue((manifest_path.parent / "program-set-core-facts.yaml").is_file())
+            self.assertTrue((manifest_path.parent / "program-set-core-coverage.yaml").is_file())
 
             findings = BUILDER.validate(manifest_path, review_path)
 
             self.assertTrue(
-                any("Program Set Reading Summary" in finding for finding in findings),
+                any("missing review artifact" in finding for finding in findings),
                 findings,
             )
+
+    def test_ready_to_blocked_rebuild_removes_stale_ready_only_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            working_root = temp_root / "delivery-work"
+            output_dir = temp_root / "review-output"
+            write_compact_artifacts(
+                working_root / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            )
+            manifest = BUILDER.build_manifest(
+                review_name="Ready Then Blocked",
+                programs=["CC050"],
+                artifact_root=working_root,
+                config=BUILDER.load_yaml(PROFILE_TEMPLATE),
+                working_branch="fixture",
+            )
+            manifest_path, _review_path = BUILDER.write_build_outputs(
+                manifest, output_dir
+            )
+            source_pack = manifest_path.parent / BUILDER.SOURCE_PACK_FILENAME
+            facts = manifest_path.parent / BUILDER.CORE_FACTS_FILENAME
+            self.assertTrue(source_pack.is_file())
+            self.assertTrue(facts.is_file())
+
+            blocked_entry = {
+                **manifest["programs"][0],
+                "run_resolution": BUILDER.RUN_PENDING,
+                "artifact_root": None,
+                "artifact_source": "source_scan_required",
+                "artifact_readiness": {
+                    "status": "not_ready",
+                    "findings": ["fixture forces a blocked rebuild"],
+                },
+            }
+            blocked = {
+                **manifest,
+                "review_status": "blocked_artifact_readiness",
+                "artifact_readiness": "not_ready",
+                "merge_coverage": "blocked",
+                "programs": [blocked_entry],
+            }
+            BUILDER.write_build_outputs(blocked, output_dir)
+
+            self.assertFalse(source_pack.exists())
+            self.assertFalse(facts.exists())
             self.assertTrue(
-                any("Calculation Logic" in finding and "reader-useful detail" in finding for finding in findings),
-                findings,
+                (manifest_path.parent / BUILDER.CORE_COVERAGE_FILENAME).is_file()
             )
 
     def test_validator_rejects_missing_program_set_reading_summary(self) -> None:
@@ -457,8 +690,8 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 1,
             )
             bad_review = bad_review.replace(
-                "| Processing Layer | Programs / Main Routines | What To Understand First |\n"
-                "| --- | --- | --- |\n",
+                "| Processing Layer | Programs / Main Routines | What To Understand First | Review Row ID | Source Fact Refs |\n"
+                "| --- | --- | --- | --- | --- |\n",
                 "| Layer | Refs |\n| --- | --- |\n",
                 1,
             )
@@ -479,22 +712,32 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             manifest_path, review_path, _manifest = build_review_fixture(Path(temp_dir))
             review_text = review_path.read_text(encoding="utf-8")
-            bad_review = review_text.replace(
-                "| Build the authorization posting response amount and status payload from the request amount plus account controls. | @CU118 | RLOG-AUTH-001 | response amount and status fields | request amount, account status, product control values | normal posting branch after entry dispatch | passes the response payload to downstream validation/finalization logic | RLOG-AUTH-001; routine-logic-details.yaml | confirmed |",
-                "| RLOG-AUTH-001 | @CU118 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | RLOG-AUTH-001 | confirmed |",
-                1,
+            calculation_block = BUILDER.h2_section_block(
+                review_text, "Calculation Logic"
             )
-            bad_review = bad_review.replace(
-                "| Carry the validated posting indicator into finalization only when the request remains eligible. | CC050 | RLOG-AUTH-010 | posting indicator carrier | validation status, request key, posting control flag | validation passed branch | allows final record update and suppresses decline response | RLOG-AUTH-010; routine-logic-details.yaml | confirmed |",
-                "",
-                1,
+            calculation_lines = calculation_block.splitlines()
+            for index, line in enumerate(calculation_lines):
+                if not line.startswith("|") or BUILDER.is_table_separator(line):
+                    continue
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                if cells and cells[0] == "Calculation / Assignment":
+                    continue
+                for cell_index in (0, 2, 3, 4, 5, 6, 7):
+                    cells[cell_index] = "RLOG-AUTH-REF"
+                calculation_lines[index] = "| " + " | ".join(cells) + " |"
+            bad_review = review_text.replace(
+                calculation_block, "\n".join(calculation_lines), 1
             )
             review_path.write_text(bad_review, encoding="utf-8")
 
             findings = BUILDER.validate(manifest_path, review_path)
 
             self.assertTrue(
-                any("Calculation Logic lacks reader-useful detail" in finding for finding in findings),
+                any(
+                    "Calculation Logic" in finding
+                    and ("reader-useful detail" in finding or "link-only" in finding)
+                    for finding in findings
+                ),
                 findings,
             )
 
@@ -507,8 +750,8 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             ]
             bad_review = review_text.replace(run_profile, "", 1)
             bad_review = bad_review.replace(
-                "# Program Set SME Core Review: Card Auth Posting Core Review\n\n",
-                "# Program Set SME Core Review: Card Auth Posting Core Review\n\n" + run_profile + "\n",
+                "## Program Set Reading Summary",
+                run_profile + "\n\n## Program Set Reading Summary",
                 1,
             )
             review_path.write_text(bad_review, encoding="utf-8")
@@ -539,18 +782,14 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 working_branch="develop-leo",
             )
             manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
-            write_reader_first_review(review_path, manifest)
-
-            findings = BUILDER.validate(manifest_path, review_path)
 
             entry = manifest["programs"][0]
-            self.assertEqual(manifest["review_status"], "partial_pending_program")
+            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
             self.assertEqual(entry["run_resolution"], "pending_source")
             self.assertIsNone(entry["artifact_root"])
-            self.assertFalse(
-                any("CC050 analyzed_this_run missing required compact artifacts" in finding for finding in findings),
-                findings,
-            )
+            self.assertEqual(entry["artifact_readiness"]["status"], "not_ready")
+            self.assertFalse(review_path.exists())
+            self.assertFalse((manifest_path.parent / "program-set-core-facts.yaml").exists())
 
     def test_validator_rejects_missing_program_rows_and_full_flow_sections(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -803,11 +1042,14 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
 
             source_inventory = manifest["source_inventory"]  # type: ignore[index]
             self.assertEqual(source_inventory["freshness"], "stale")
-            self.assertEqual(source_inventory["action"], "rerun_repo_inventory_scan")
+            self.assertEqual(
+                source_inventory["action"],
+                "provide_fresh_inventory_or_exact_source_mapping",
+            )
             self.assertEqual(source_inventory["programs"][0]["inventory_status"], "found")
             self.assertFalse(source_inventory["programs"][0]["targeted_scan_allowed"])
 
-    def test_root_wrapper_builds_reader_first_skeleton_and_validator_rejects_unfilled_review(self) -> None:
+    def test_root_wrapper_prepares_nested_bundle_and_reserves_review_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             delivery_root = temp_root / "delivery-main"
@@ -818,7 +1060,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             )
             programs_file.write_text("@CU118\nCU257F\n", encoding="utf-8")
 
-            subprocess.run(
+            build_result = subprocess.run(
                 [
                     sys.executable,
                     str(BUILD_WRAPPER),
@@ -840,28 +1082,29 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 capture_output=True,
             )
 
-            review_text = (output_dir / "program-set-sme-core-review.md").read_text(
-                encoding="utf-8"
-            )
-            self.assertLess(
-                review_text.index("## Program Set Reading Summary"),
-                review_text.index("## Core Completeness Ledger"),
-            )
+            match = re.search(r"^OUTPUT_DIR=(.+)$", build_result.stdout, re.M)
+            self.assertIsNotNone(match, build_result.stdout)
+            bundle = Path(match.group(1))
+            manifest_path = bundle / "program-set-core-input-manifest.yaml"
+            manifest = BUILDER.load_yaml(manifest_path)
+            review_path = bundle / manifest["canonical_filename"]
+            self.assertFalse(review_path.exists())
+            self.assertFalse((output_dir / "program-set-core-input-manifest.yaml").exists())
 
             result = subprocess.run(
                 [
                     sys.executable,
                     str(VALIDATE_WRAPPER),
                     "--manifest",
-                    str(output_dir / "program-set-core-input-manifest.yaml"),
+                    str(manifest_path),
                     "--review",
-                    str(output_dir / "program-set-sme-core-review.md"),
+                    str(review_path),
                 ],
                 text=True,
                 capture_output=True,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("reader-useful detail", result.stderr)
+            self.assertIn("missing review artifact", result.stderr)
 
     def test_build_wrapper_rejects_missing_working_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

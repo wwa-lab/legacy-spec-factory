@@ -79,7 +79,7 @@ The current skill family supports the BRD discovery chain through specialized ro
 | Context intake | `legacy-module-context-intake` | Organize scattered docs/RAG/SME fragments into coverage, gaps, SME questions, and BRD source eligibility |
 | Inventory | `legacy-ibmi-inventory` | Identify programs, files, reports, screens, jobs, and object relationships |
 | Program analysis | `legacy-ibmi-program-analyzer` | Extract call maps, data touch maps, routine logic, file I/O, validation logic, error handling, and coverage |
-| Flow analysis | `legacy-ibmi-flow-analyzer` | Connect multiple programs into transaction flows, replay paths, persistence, lineage, and exception chains |
+| Program-set core review | `legacy-ibmi-flow-analyzer` | Validate finalized reader-first program analyses and synthesize one coverage-complete SME/Dify review without reconstructing calls, replay, persistence, or lineage |
 | Data / UI / runtime support | `legacy-ibmi-data-model-analyzer`, `legacy-ibmi-screen-report-analyzer`, `legacy-ibmi-runtime-evidence-miner` | Add DB2/DDS, DSPF/PRTF, job log, spool, and runtime observations |
 | Module coverage | `legacy-ibmi-module-analyzer` | Assemble the focused module package, capability/rule seeds, and a BRD Source Eligibility Crosswalk |
 | BRD drafting | `legacy-brd-writer` | Produce capability-level BRD package with observed behaviors, inferred rules, TBDs, traceability, and validation scenario seeds |

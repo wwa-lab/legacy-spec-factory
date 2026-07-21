@@ -372,14 +372,20 @@ complete operation detail in `<PROGRAM>-file-io-inventory.md` /
 analysis rows to stable `FIO-*`, `MUT-*`, and `SQL-*` detail IDs instead of
 expanding every operation or host variable inline.
 
-Downstream flow/module analyzers must prefer
+Downstream flow/module analyzers must prefer the finalized reader-first main
+document for semantic meaning. Specifically, the downstream
+`legacy-ibmi-flow-analyzer` Reader-First Program Analysis Merger must use the
+complete `Program Reading Summary`, `Calculation Logic`,
+`Validation Logic`, `Exception Handling`, and `Message Inventory` sections in
+each finalized `<PROGRAM>-program-analysis.md` as its semantic primary input.
+It preserves those sections in a lossless source pack before the executing
+skill LLM performs thematic cross-program synthesis. Machine-readable
 `<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
-`<PROGRAM>-routine-logic-details.yaml`, and
-`<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-file-io-inventory.yaml`,
-`<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml` when
-aggregating multiple programs. They should not concatenate multiple full
-`<PROGRAM>-program-analysis.md` files; human-readable Markdown is for targeted
-clarification only.
+`<PROGRAM>-routine-logic-details.yaml`, `<PROGRAM>-message-inventory.yaml`, and
+triggered file-I/O/mutation/SQL sidecars remain required for readiness,
+normalization, and coverage reconciliation; they do not replace the final
+reader-first main document. They should not concatenate complete program files;
+the merger must synthesize rather than concatenate them.
 
 ## Routine Card
 

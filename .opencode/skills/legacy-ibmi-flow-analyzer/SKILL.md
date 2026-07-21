@@ -1,6 +1,6 @@
 ---
 name: legacy-ibmi-flow-analyzer
-description: Merge existing IBM i program-analysis artifacts into one compact SME review. Use when an SME provides a program list or program flow and wants the core Calculation Logic, Validation Logic, Exception Handling, and Message Inventory combined without reconstructing a transaction flow.
+description: Prepare and validate a controlled, reader-first merge of finalized IBM i program-analysis artifacts, then let the executing skill LLM synthesize one evidence-complete SME core review without inventing a call chain.
 ---
 
 <!--
@@ -14,310 +14,430 @@ This skill is part of the Legacy Spec Factory project.
 Retain this notice in substantial copies or derived versions.
 -->
 
-# IBM i Program Analysis Merger
+# IBM i Reader-First Program Analysis Merger
 
 ## Skill Card
 
-| Field | Notes |
+| Field | Contract |
 | --- | --- |
-| Problem solved | Combines several existing program-analysis results into one readable SME review. |
-| Input | SME program list/order plus program-analysis artifacts from a working output root or approved document repository. |
-| Output | `program-set-sme-core-review.md`, its manifest, bounded core facts, and optional missing-program scan queue. |
-| Default behavior | Read and merge evidence that already exists. Do not reconstruct an end-to-end transaction flow. |
-| Upstream skill | `legacy-ibmi-program-analyzer` and, when source discovery is needed, `legacy-ibmi-program-list-batch`. |
-| Downstream consumer | SME review and later module/spec preparation after human approval. |
-| Main risk | Inventing cross-program calls, business rules, or data lineage from program names or list order. |
+| Problem solved | Merge several finalized, reader-first program analyses into one SME/Dify-ready core review without losing program facts. |
+| Required user input | Review name, program list, program artifact root, and output parent. Source root is required only for targeted missing-program recovery. |
+| Primary evidence | The complete content of five `##` sections in every `<PROGRAM>-program-analysis.md`: Program Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. |
+| Preparation output | Readiness ledger, lossless source pack, normalized source facts, and pending coverage control. |
+| Formal output | Exactly one `<folder_slug>--sme-core-review.md`, written by the LLM executing this skill only after every program is ready and coverage has zero pending facts. |
+| Default policy | `current_run`; `approved_document_repo` is explicit opt-in. |
+| Default profile | `standard_reader_first`; `minimal_reader_first` is explicit opt-in. |
+| Upstream gate | `legacy-ibmi-program-analyzer` final contract validator plus merger readiness checks. |
+| Downstream boundary | SME/Dify review. Module/BRD/spec routing requires a separately migrated compatibility contract and is not implied by this output. |
+| Main safety risk | Omitting a material per-program fact or presenting SME list order as a confirmed call chain. |
 
-## Purpose
+## Purpose And Boundary
 
-This skill is intentionally small. It takes the results of independent
-program scans and makes them easier for an SME to review together.
-The merge is program-evidence first, with no cross-run reuse by default.
+This skill is a controlled **Program Analysis Merger**, not a transaction-flow
+reconstructor. It uses deterministic tooling to make the input complete and
+auditable, then uses the LLM already executing the skill to perform the only
+semantic step: a thematic cross-program synthesis for SME reading.
 
-The core operation is:
+In short: merge existing IBM i program-analysis artifacts through a
+program-evidence first workflow with no cross-run reuse by default.
 
 ```text
-program list
-  -> locate each program-analysis artifact
-  -> extract core evidence
-  -> merge by review section
-  -> validate coverage and evidence links
+SME program list + explicit paths
+  -> resolve one finalized analysis per distinct program
+  -> run upstream finalization/readiness gate
+  -> prepare lossless reader-first source pack
+  -> normalize stable source facts and pending coverage
+  -> executing skill LLM synthesizes one review
+  -> reconcile manifest + source pack + facts + coverage + review
+  -> validate before SME/Dify handoff
 ```
 
-The program list is navigation and scope evidence. Its order is not proof of a
-call chain. The skill does not discover runtime order, infer calls, or turn the
-set into a transaction graph.
+The deterministic scripts must never:
 
-## Scope
+- write a review skeleton or formal SME review;
+- impersonate semantic synthesis;
+- invoke an external LLM service; or
+- mark coverage complete before the executing skill LLM maps the facts.
 
-The default review contains these reader-first sections:
+The executing skill LLM must not bypass the preparation artifacts or readiness
+gate. It writes the formal review only after the manifest reaches
+`ready_for_synthesis`, every program readiness row says `ready`, and the LLM's
+anchor/coverage plan contains zero pending facts.
 
-1. Program Set Reading Summary
-2. Cross-Program Processing Overview
-3. Calculation Logic
-4. Validation Logic
-5. Exception Handling
-6. Message Inventory
+## Explicit Non-Goals
 
-`standard_reader_first` is the default profile. `minimal_reader_first` may be
-selected explicitly when Message Inventory should not be part of the primary
-reading path.
+Do not use this skill to discover or assert a full transaction flow. The formal
+review must not contain active sections named:
 
-The review is self-contained for SME reading. Each logic row should identify
-the Program, Routine, observed logic, carrier/guard/outcome, and Evidence. A
-supporting path is useful for traceability, but a link by itself is not an
-explanation.
+- Trigger Inventory
+- Nodes
+- Edges
+- Transaction Call Map
+- Replay
+- Persistence or a transaction-level Persistence Matrix
+- Lineage
+- UI Surfaces
+- Capability Seeds
+- SME Checklist
 
-## Explicit non-goals
+Do not infer calls, execution order, data lineage, business rules,
+modernization decisions, or service boundaries from program names, similar
+fields, or SME list order. The supplied order is navigation evidence only.
 
-This skill does not:
+The former trigger/data-flow/error-propagation references, full-flow templates,
+and transaction-flow examples are retained as historical, non-active material;
+they are not inputs or outputs of this merger.
 
-- classify or analyze transaction entry mechanisms;
-- reconstruct a complete transaction flow or call graph;
-- generate Nodes, Edges, Transaction Call Maps, Replay, Lineage, or a
-  transaction-level Persistence Matrix;
-- infer business rules, modernization decisions, or service boundaries;
-- concatenate full program-analysis Markdown files into one large document;
-- rescan the entire source repository because one program is missing.
+## Required Inputs
 
-Older full-flow templates and references may remain in the repository for
-historical compatibility, but they are not part of this skill's active
-workflow or output contract.
-
-## Inputs
-
-Required:
-
-- an ordered or unordered SME program list, with a review name;
-- a program artifact root containing the requested program folders; and
-- the program-analysis artifact set for each program that is already scanned.
-
-Preferred per-program artifacts are program-prefixed:
+Collect these values before preparation:
 
 ```text
-<PROGRAM>-program-analysis.md
-<PROGRAM>-program-analysis-summary.yaml
-<PROGRAM>-source-index.yaml
-<PROGRAM>-routine-index.md
-<PROGRAM>-message-inventory.yaml
-<PROGRAM>-routine-logic-details.md
-<PROGRAM>-routine-logic-details.yaml
+Review name: <business-readable name>
+Programs file: <one program per line or supported CSV>
+Program artifact root: <current-run delivery workspace or approved local clone>
+Output parent: <parent that will contain the generated bundle folder>
+Profile: standard_reader_first | minimal_reader_first
+Artifact repo mode: current_run | approved_document_repo
+Source root: <optional; needed only for targeted missing-program recovery>
 ```
 
-Optional sidecars are consumed when they exist or when the upstream analyzer
-produced them:
+Program identity is exact after configured normalization. Preserve meaningful
+prefixes such as `@`. Resolve each distinct normalized program once; duplicate
+list entries may reuse the same artifact only within the same request/run.
+Artifact folder/name resolution comes from
+`program_artifact_resolution_profile`; output workspace placement comes from
+`delivery_workspace_profile` in `templates/delivery-profile.yaml`.
 
-```text
-<PROGRAM>-file-io-inventory.yaml
-<PROGRAM>-field-mutation-matrix.yaml
-<PROGRAM>-sql-inventory.yaml
+### Artifact Repository Modes
+
+- `current_run` is the default. Resolve only under the supplied current working
+  artifact root. An arbitrary prior run, remote branch, or another analyst's
+  output is not evidence for this run.
+- `approved_document_repo` is legal only when explicitly requested. Resolve
+  only from the supplied local clone of the approved document/delivery
+  repository and record `reused_artifact_repo` in the manifest.
+
+Record the resulting value in each program's `run_resolution`, using
+`analyzed_this_run`, `reused_same_run`, `reused_artifact_repo`,
+`pending_source`, or `blocked_missing_source` as applicable.
+
+There is no implicit cross-run fallback.
+
+Preserve the original SME-supplied programs file at its absolute path until
+final validation finishes. Preparation records that path and its SHA-256 in
+`run_profile.program_list_source`; the sibling `program-list.txt` is a bundle
+copy, not an independent trust root. Final validation re-reads the original
+file and reconciles its digest, ordered input identities, normalized distinct
+program identities, and sibling copy with the manifest. A moved, deleted, or
+changed original list blocks final handoff.
+
+## Reader-First Primary Input
+
+For each program, the merger reads the complete content—not a shortened
+summary—of these five sections from `<PROGRAM>-program-analysis.md`:
+
+1. `## Program Reading Summary`
+2. `## Calculation Logic`
+3. `## Validation Logic`
+4. `## Exception Handling`
+5. `## Message Inventory`
+
+The source pack preserves each section verbatim within an identified program
+boundary so an SME fact cannot disappear through early compression. The main
+Markdown is the semantic primary input. Machine-readable sidecars such as
+`program-analysis-summary.yaml`, `source-index.yaml`,
+`routine-logic-details.yaml`, and `message-inventory.yaml` support validation,
+normalization, and reconciliation;
+they do not replace the five reader-first sections.
+
+See [`references/source-pack-and-coverage-contract.md`](references/source-pack-and-coverage-contract.md)
+for the extraction and source-fact rules.
+
+## Upstream Artifact Readiness Gate
+
+An artifact directory is not ready merely because files exist. Before source
+pack creation, invoke or reuse the final validator from
+`legacy-ibmi-program-analyzer` for every distinct program analysis. A program's
+`programs[].artifact_readiness.status` is `ready` only when all of the following
+hold:
+
+- the upstream final contract validator passes;
+- the five reader-first sections are present, complete, and non-placeholder;
+- the program's terminal analysis status is approved or
+  `approved_with_non_blocking_tbd`;
+- no `pending_deep_read`, incomplete retained batch, non-terminal batch status,
+  missing required RLOG, or unresolved blocking coverage remains;
+- exact message/status/literal rows are synchronized, and required message
+  descriptions are not unresolved; and
+- the required main and sidecar artifacts for the program's tier agree.
+
+Record each check in `program-set-artifact-readiness.yaml` and in the manifest.
+The manifest program-set state is:
+
+- `review_status: ready_for_synthesis`, `artifact_readiness: ready`, and
+  `merge_coverage: pending` only when every distinct program readiness row is
+  `ready`;
+- `review_status: blocked_artifact_readiness`,
+  `artifact_readiness: not_ready`, and `merge_coverage: blocked` when any
+  requested program is missing, invalid, ambiguous, incomplete, or
+  non-terminal.
+
+The legacy `partial_pending_program` formal-review state is retired: blocked
+readiness now means no formal review.
+
+Do not downgrade a semantic failure to “file present.” Do not synthesize a
+partial formal review.
+
+## Deterministic Preparation Contract
+
+Run the preparation command from the canonical skill or a synced runtime
+adapter. `--output-dir` is an **output parent**, not the bundle itself:
+
+```bash
+python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
+  --review-name "<review name>" \
+  --programs-file <programs.txt> \
+  --working-root <program-artifact-root> \
+  --profile skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml \
+  --output-dir <program-set-review-parent>
 ```
 
-Optional run inputs:
-
-- `delivery-profile.yaml` for artifact folder/name patterns and output roots;
-- a source root plus a fresh `outputs/repo-scan` inventory when missing
-  programs may need a targeted scan;
-- an approved local document repository clone, selected explicitly with
-  `artifact_repo_mode: approved_document_repo`;
-- reference packs or control files for targeted message/status clarification.
-
-The portable configuration uses `program_artifact_resolution_profile` and
-`delivery_workspace_profile`; see `templates/delivery-profile.yaml`.
-
-No trigger model, entry point, scheduler export, screen definition, or runtime
-trace is required for this merge.
-
-## Artifact resolution and status
-
-Resolve each distinct normalized program exactly once for the current request.
-Use program-prefixed filenames first, with the configured bare-name fallback
-for older artifacts. A program is resolved only when all required compact
-artifacts are present. A folder with only some artifacts is still pending and
-must not be treated as usable analysis evidence. Record one `run_resolution`
-per program:
-
-- `analyzed_this_run` — complete artifacts are present in the current output
-  root;
-- `reused_same_run` — the same program appeared earlier in this request and
-  reuses that current-run artifact;
-- `reused_artifact_repo` — the artifact came from an explicitly approved local
-  document repository;
-- `pending_source` — the requested program needs a source scan;
-- `blocked_missing_source` — the requested program cannot be located or its
-  source mapping is not available.
-
-Do not silently use remote-main, arbitrary prior-run folders, or another
-analyst's unapproved output as current evidence.
-There is no cross-run reuse unless an approved document repository is selected
-explicitly.
-
-## Output contract
-
-The primary output folder is:
+Append `--flow-slug <raw-flow-identity>` only when the caller needs an explicit
+flow identity distinct from the review name. The default raw flow identity is
+the exact `--review-name` value; when `--flow-slug` is present, its exact value
+is the raw identity instead. Resolve the stable flow slug as:
 
 ```text
-<program-set-review-parent>/<FLOW-SLUG>--<PROGRAM-SET-SLUG>/
+readable = slugify(raw_identity)[:64].rstrip("_")
+FLOW-SLUG = readable + "_" + sha256_utf8(raw_identity)[:8]
+```
+
+`slugify` lowercases the raw identity, replaces each non-alphanumeric run with
+`_`, and trims surrounding `_`; an empty readable part uses
+`program_set_review`. The hash is calculated from the unmodified raw identity,
+so two labels that normalize to the same readable text do not collide.
+
+On Windows use `py -3` and the synced `.agents\skills\...` path. If that
+launcher is unavailable, retry once with `python`.
+
+`scripts/prepare_program_set_core_review.py` remains the one-step deterministic
+intake adapter when the caller also wants automatic targeted-queue setup. It is
+subject to the same readiness and no-formal-review boundary.
+
+The resolver appends the stable, hash-suffixed
+`<FLOW-SLUG>--<PROGRAM-SET-SLUG>` exactly once. If the caller already supplies
+that resolved bundle path, it must not append it a second time.
+
+For a ready set, deterministic preparation writes:
+
+```text
+<output-parent>/<folder_slug>/
+  program-list.txt
   program-set-core-input-manifest.yaml
+  program-set-artifact-readiness.yaml
+  program-set-reader-first-source-pack.md
   program-set-core-facts.yaml
-  program-set-sme-core-review.md
+  program-set-core-coverage.yaml       # all semantic mappings initially pending
 ```
 
-The canonical review filename remains stable. The parent folder is the
-uniqueness boundary. If no program-set slug is supplied, the builder derives a
-readable slug from the sorted normalized program names plus a short stable
-hash. A rerun of the same program set updates the same path.
-
-The manifest records program coverage, artifact status, review status, profile,
-folder identity, and run policy. The review status is:
-
-- `complete_exploratory` when every requested program has the required evidence;
-- `partial_pending_program` when one or more programs or required artifacts are
-  still missing.
-
-`program-set-core-facts.yaml` is an evidence-bounded intermediate. It may copy
-only explicit rows from upstream Calculation Logic, Validation Logic,
-Exception Handling, and Message Inventory artifacts. It must not create
-business rules, modernization decisions, call edges, or unsupported lineage.
-
-## Missing program scan queue
-
-If a requested program has missing required artifacts, do not hide it and do
-not restart the full scan. Use the targeted queue adapter:
+It deliberately does **not** write the formal review. The only legal formal
+review path is:
 
 ```text
-<review-folder>/missing-program-list-batch/
-  program-list.csv
-  program-list-status.csv
-  batch-scan-manifest.yaml
-  program-batch-plan.md
-  prompt-queue/
-  cline-serial-runner-prompt.md
-  program-set-scan-queue.yaml
+<output-parent>/<folder_slug>/<folder_slug>--sme-core-review.md
 ```
 
-Create it with:
+There is no default `program-set-sme-core-review.md` alias. The folder slug and
+review filename are stable for the same normalized program set and distinct
+for a different flow or program set.
 
-Windows:
+When readiness is blocked, preparation writes the control/readiness artifacts
+needed to explain the block, creates a targeted queue only when recovery is
+possible, and writes no formal review. Do not treat a partial source pack as a
+synthesis input.
+
+## Missing And Invalid Program Recovery
+
+Missing or semantically invalid programs form a targeted worklist. Never restart
+an all-program or whole-repository analysis because one member is not ready.
+
+Run `scripts/create_missing_program_scan_queue.py` against a blocked manifest.
+The adapter writes recovery control under:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\create_missing_program_scan_queue.py --manifest <program-set-core-input-manifest.yaml> --source-root <source-repo> --delivery-root <delivery-working-root> --out-dir <review-folder>\missing-program-list-batch
+<bundle>/missing-program-list-batch/
 ```
 
-macOS/Linux:
+After a blocked build, create that queue explicitly:
 
 ```bash
-python3 scripts/create_missing_program_scan_queue.py \
-  --manifest <program-set-core-input-manifest.yaml> \
-  --source-root <source-repo> \
-  --delivery-root <delivery-working-root> \
-  --out-dir <review-folder>/missing-program-list-batch
+python3 skills/legacy-ibmi-flow-analyzer/scripts/create_missing_program_scan_queue.py \
+  --manifest <bundle>/program-set-core-input-manifest.yaml \
+  --source-root <source-repo-with-fresh-inventory> \
+  --delivery-root <program-artifact-working-root> \
+  --out-dir <bundle>/missing-program-list-batch
 ```
 
-The adapter reuses `legacy-ibmi-program-list-batch`. It queues only programs
-that a fresh source inventory can locate. Programs missing from the inventory,
-or programs covered by a stale/unknown inventory, are written to
-`blocked-programs.csv` and receive no invented source path.
+On Windows, use `py -3` with the synced `.agents\skills\...` script path.
+Alternatively, use `prepare_program_set_core_review.py` as the one-step intake;
+it runs the builder, reads the resolved `OUTPUT_DIR`, and invokes this queue
+adapter only when the manifest is blocked.
 
-After the queue finishes, rerun the normal builder and validator. The review
-must remain `partial_pending_program` until the artifacts actually exist.
+Only a program with a fresh, exact source mapping enters
+`program-list.csv`/`prompt-queue/`. Programs not found by fresh inventory, or
+blocked by missing/stale inventory, are written only to
+`missing-program-list-batch/blocked-programs.csv`; never invent a path. When
+every program is ready, do not create `missing-program-list-batch/` at all.
+After targeted scans/fixes finish, rerun normal preparation from the program
+list. Until all readiness rows pass:
 
-## One-step intake
+- manifest status remains `blocked_artifact_readiness`;
+- coverage cannot become complete; and
+- `<folder_slug>--sme-core-review.md` must not exist.
 
-SMEs do not need to create `program-set-core-input-manifest.yaml` manually.
-Use the intake command with the program list, source root, existing artifact
-root, profile, and review output directory. It runs the builder first and then
-creates the missing-program queue when required:
+## LLM Synthesis Procedure
 
-Windows:
+Once preparation reports `ready_for_synthesis`, the LLM executing this skill:
+
+1. Reads the manifest and every readiness row.
+2. Reads the entire source pack, including all five sections for every program.
+3. Reads normalized facts and pending coverage controls.
+4. Groups facts by SME-readable themes across programs while retaining each
+   program, routine, carrier, guard, effect/outcome, exact message/status/
+   literal/generic-handler token, evidence, and `source_fact_id`.
+5. Builds the review rows and stable anchor plan in working memory, including
+   anchored program-summary and thematic-overview contributions.
+6. Replaces each pending coverage item with exactly one disposition and its
+   planned review mapping.
+7. Confirms that coverage has zero pending items and that every included or
+   merged item has one unique planned anchor. If persistence is necessary before
+   this gate, write only an explicitly non-formal
+   `<folder_slug>--partial-draft.md`; it must not use final front matter/H1.
+8. Writes the single formal review from
+   [`templates/sme-core-review.md`](templates/sme-core-review.md) only after the
+   zero-pending gate passes, then writes the completed coverage mapping and
+   records manifest `review_status: complete_exploratory`,
+   `artifact_readiness: ready`, and `merge_coverage: complete`; coverage and
+   formal review also record `review_status: complete_exploratory`.
+9. Runs the five-way coverage validator and repairs omissions before handoff.
+
+The review must synthesize; it must not concatenate program files. Merging
+several source facts into one row is legal only when the row stays lossless and
+the coverage item lists every merged `source_fact_id`.
+
+## Coverage Dispositions
+
+Every normalized source fact has one and only one status:
+
+- `included` — represented directly by one anchored review row;
+- `merged` — represented losslessly in an anchored row with all merged source
+  fact IDs recorded;
+- `excluded_non_core` — outside the core review by contract, with a specific
+  reason; or
+- `pending` — not yet reconciled.
+
+`pending` prohibits the formal review as well as final validation. Material
+calculations, validations, exceptions, exact messages/status/literals,
+generic-handler tokens, and material routine outcomes may not be excluded
+merely to shorten the review. Every `included` or `merged` item must name an
+anchor that exists in the review and the review row must list the mapped source
+fact IDs.
+
+The final validator reconciles five artifacts:
 
 ```text
-py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\prepare_program_set_core_review.py --review-name "<review-name>" --programs-file <program-list.csv> --artifact-root <artifact-root> --source-root <source-repo> --profile .agents\skills\legacy-ibmi-flow-analyzer\templates\delivery-profile.yaml --output-dir <review-output> --force
+manifest <-> source pack <-> normalized facts <-> coverage <-> formal review
 ```
 
-macOS/Linux:
+It rejects missing programs, missing source sections, dropped or duplicated
+facts, count mismatches, changed exact literals or generic-handler tokens,
+unsupported exclusions, pending mappings, missing anchors, stale review
+metadata, placeholder/scaffold content, link-only core rows, definitive claims
+without evidence, forbidden full-flow sections, and language that converts
+navigation order into a confirmed call chain.
+
+The reconciliation is bidirectional and semantic. It re-extracts facts from
+the lossless source pack, compares their full IDs/content with normalized
+facts, uses token-aware exact matching, requires typed routine/carrier/guard/
+effect/evidence values on the same mapped row, verifies one anchor definition
+(except a fully declared merged group), and requires identical final coverage
+mirrors with `coverage_status: complete`. Overview rows must carry unique
+anchors and known source fact refs; untracked call or sequence claims fail.
+
+An evidence-bounded unresolved row or `TBD-*` carried from an allowed
+`approved_with_non_blocking_tbd` artifact is not a scaffold placeholder. It
+must retain its concrete source, known condition/carrier/outcome, and precise
+unresolved point. Blank examples, TODO text, and generic “details unavailable”
+rows are placeholders and fail.
+
+## Review Profiles
+
+`standard_reader_first` is the default and keeps Message Inventory in the
+primary reading path after Exception Handling.
+
+Its formal review section order is:
+
+1. `## Program Set Reading Summary`
+2. `## Cross-Program Processing Overview`
+3. `## Calculation Logic`
+4. `## Validation Logic`
+5. `## Exception Handling`
+6. `## Message Inventory`
+7. `## Core Completeness Ledger`
+8. `## Coverage Reconciliation`
+9. `## Sources`
+10. `## Run Profile`
+11. `## Source Inventory Cache`
+
+`minimal_reader_first` is legal only when the user selects it explicitly. It
+may move Message Inventory to an audit section named `Message Coverage
+Control`, but it must still preserve every exact message/status/literal, source
+fact ID, generic-handler token, carrier/destination, evidence reference, and
+review anchor. Minimal means a shorter reading path, not reduced evidence
+coverage.
+
+For `minimal_reader_first`, use the same order through Exception Handling,
+then Core Completeness Ledger, Coverage Reconciliation, Message Coverage
+Control, Sources, Run Profile, and Source Inventory Cache.
+
+Both profiles retain audit/control sections after the core:
+
+- Core Completeness Ledger
+- Coverage Reconciliation
+- Sources
+- Run Profile
+- Source Inventory Cache
+
+## Validation And Handoff
+
+Validate the sibling bundle before SME/Dify handoff:
 
 ```bash
-python3 scripts/prepare_program_set_core_review.py \
-  --review-name "<review-name>" \
-  --programs-file <program-list.csv> \
-  --artifact-root <artifact-root> \
-  --source-root <source-repo> \
-  --profile templates/delivery-profile.yaml \
-  --output-dir <review-output> \
-  --force
+python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py validate \
+  --manifest <bundle>/program-set-core-input-manifest.yaml \
+  --review <bundle>/<folder_slug>--sme-core-review.md
 ```
 
-`--delivery-root` may be supplied when targeted program scans must write to a
-different delivery checkout; otherwise it defaults to `--artifact-root`.
+The validator discovers the sibling source pack, facts, and coverage files; an
+operator may also pass explicit paths when supported. A successful handoff
+requires all-program readiness, final review metadata, zero pending coverage,
+all source-fact anchors present, and no forbidden section.
 
-## Merge rules
+For an active ready example, see
+[`examples/reader-first-merger-ready/README.md`](examples/reader-first-merger-ready/README.md).
+For blocked recovery behavior, see
+[`examples/reader-first-merger-blocked/README.md`](examples/reader-first-merger-blocked/README.md).
 
-- Read compact artifacts first; open `program-analysis.md` only for targeted
-  human-readable clarification.
-- Preserve the SME program order as navigation evidence, not as a confirmed
-  call sequence.
-- Keep every requested program visible in Sources and the Core Completeness
-  Ledger, including missing programs.
-- Keep evidence labels and source paths attached to every merged row.
-- Keep facts at program level. Include a cross-program relationship only when
-  the upstream artifacts explicitly support it; otherwise mark it unresolved.
-- Treat upstream reference packs and control files as supporting context, not
-  as replacements for source evidence or SME approval.
-- Do not add a rule merely because two programs use similarly named fields,
-  files, messages, or routines.
+## Runtime Portability
 
-## Workflow
-
-1. Read the SME program list and delivery profile.
-2. Normalize program names while preserving meaningful prefixes such as `@`.
-3. Resolve each program to the current artifact root or explicitly approved
-   document repository.
-4. Run the one-step intake command, which creates the manifest, bounded facts,
-   review skeleton, and targeted queue when artifacts are missing.
-5. Stop the merge at `partial_pending_program` until every required artifact is
-   present.
-6. Fill the six reader-first sections from evidence-bounded upstream rows.
-7. Run the validator before SME handoff.
-8. After a missing-program queue completes, rerun steps 3-7; do not manually
-   patch old pending rows into complete status.
-
-## Validation
-
-The validator must confirm:
-
-- the default or explicitly selected profile's sections are present and ordered;
-- every manifest program appears in Sources and the Core Completeness Ledger;
-- missing programs are explicitly pending or blocked;
-- required calculation, validation, exception, and message rows are not
-  placeholders or link-only rows;
-- evidence fields and carrier/outcome detail are present;
-- the review contains none of the full-flow sections listed in the non-goals.
-
-Windows:
-
-```text
-py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate --manifest <program-set-core-input-manifest.yaml> --review <program-set-sme-core-review.md>
-```
-
-macOS/Linux:
-
-```bash
-python3 scripts/validate-program-set-core-review.py \
-  --manifest <program-set-core-input-manifest.yaml> \
-  --review <program-set-sme-core-review.md>
-```
-
-## Runtime portability
-
-Canonical source: `skills/legacy-ibmi-flow-analyzer/`.
-
-Runtime adapters are synced with `scripts/sync-skills.sh`:
+Canonical source is `skills/legacy-ibmi-flow-analyzer/`. Runtime directories
+are synced adapters:
 
 - `.codex/skills/legacy-ibmi-flow-analyzer/`
 - `.claude/skills/legacy-ibmi-flow-analyzer/`
 - `.opencode/skills/legacy-ibmi-flow-analyzer/`
 - `.agents/skills/legacy-ibmi-flow-analyzer/`
 
-Use `python3` on macOS/Linux. On Windows use `py -3`, then retry the same
-command once with `python` only when the launcher is unavailable.
+Do not edit an adapter `SKILL.md` directly. After canonical changes, use
+`scripts/sync-skills.sh` and its drift check according to repository policy.

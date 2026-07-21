@@ -1,0 +1,46 @@
+{
+  "vectors": [
+    {
+      "program": " cu106 ",
+      "section": "Calculation   Logic",
+      "fact_type": " Calculation ",
+      "source_text": "Calculation / Assignment = REQUEST_AMOUNT   *  2\nTarget=APPROVED_AMOUNT",
+      "expected_source_fact_id": "SF-CU106-CALCULATION-91867A9C27"
+    },
+    {
+      "program": "CU106",
+      "section": "Message Inventory",
+      "fact_type": "thematic_table",
+      "source_text": "Theme=Operator response; Routines=MAIN; Reader Cue=Read exact token.",
+      "expected_source_fact_id": "SF-CU106-THEMATIC_TABLE-F7758618AC"
+    },
+    {
+      "program": "CU106",
+      "section": "Calculation Logic",
+      "fact_type": "routine",
+      "source_text": "RLOG / Routine=RLOG-CU106-001 / MAIN; Category=response calculation; Reader-useful Detail=Preserve guarded output.",
+      "expected_source_fact_id": "SF-CU106-ROUTINE-6E3E03A1A4"
+    },
+    {
+      "program": "@CU118",
+      "section": "Validation Logic",
+      "fact_type": "validation",
+      "source_text": "Condition=ACCOUNT_ID missing; Outcome=E1",
+      "expected_source_fact_id": "SF-@CU118-VALIDATION-8D1CF5ED41"
+    },
+    {
+      "program": "#JOB1",
+      "section": "Exception Handling",
+      "fact_type": "exception",
+      "source_text": "Detection=*PSSR; Action=return *INLR",
+      "expected_source_fact_id": "SF-#JOB1-EXCEPTION-B37EC0CA4F"
+    },
+    {
+      "program": "$PAY1",
+      "section": "Message Inventory",
+      "fact_type": "message",
+      "source_text": "Literal=AUTH-DECLINED; Carrier=OUT_PARM",
+      "expected_source_fact_id": "SF-$PAY1-MESSAGE-C7403F4275"
+    }
+  ]
+}

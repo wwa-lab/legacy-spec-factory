@@ -314,8 +314,15 @@ Forced rescans still print the central lookup result. The generated
 `central_artifact_reuse` metadata with the prior central artifact path and the
 rescan reason.
 
-Use the deterministic program-set builder after the remote-main snapshot is
-prepared:
+After every requested program has a finalized reader-first analysis, hand the
+set to the v0.4.0 Program Analysis Merger. The merger default is `current_run`:
+use the supplied delivery working checkout and do not treat a remote-main
+snapshot as completion evidence. `approved_document_repo` is a separate,
+explicit mode for a supplied local approved clone.
+
+Each program must first pass the upstream final validator with complete Program
+Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and
+Message Inventory sections. Then run deterministic preparation:
 
 Windows:
 
@@ -323,51 +330,57 @@ Windows:
 py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
   --review-name "<review name>"
   --programs-file <programs.txt>
-  --delivery-root <tmp-delivery-dir-or-fresh-cache>
   --working-root <delivery-working-branch-checkout>
   --source-root <source-repo>
   --profile <delivery-profile.yaml>
   --working-branch develop-<person>
-  --output-dir <delivery-worktree>\modules\CAP-ID-0004-program_set_reviews\{review_slug}
+  --flow-slug <flow-slug>
+  --output-dir <delivery-worktree>\modules\CAP-ID-0004-program_set_reviews
 ```
 
 macOS/Linux:
 
 ```bash
-python3 scripts/build-program-set-core-review.py \
+python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "<review name>" \
   --programs-file <programs.txt> \
-  --delivery-root <tmp-delivery-dir-or-fresh-cache> \
   --working-root <delivery-working-branch-checkout> \
   --source-root <source-repo> \
   --profile <delivery-profile.yaml> \
   --working-branch develop-<person> \
-  --output-dir <delivery-worktree>/modules/CAP-ID-0004-program_set_reviews/{review_slug}
+  --flow-slug <flow-slug> \
+  --output-dir <delivery-worktree>/modules/CAP-ID-0004-program_set_reviews
 ```
 
-This writes `program-set-core-input-manifest.yaml` and
-`program-set-sme-core-review.md`. Fill only Calculation Logic, Validation
-Logic, Exception Handling, and Message Inventory from manifest-listed compact
-artifacts. Omit `--working-root` only for the first preflight before missing
-programs are scanned; include it for the final build so newly scanned working
-branch artifacts can join remote-main reused artifacts. Then validate before
-SME handoff:
+`--output-dir` is a parent; the resolver appends the stable
+`<flow-slug>--<program-set-slug>` exactly once. Deterministic preparation writes
+the readiness ledger, lossless five-section source pack, normalized facts, and
+pending coverage. It writes no review and invokes no external LLM. The LLM
+executing `legacy-ibmi-flow-analyzer` performs the thematic synthesis, completes
+`source_fact_id` coverage, and writes only
+`<folder_slug>--sme-core-review.md`. Then validate before SME handoff:
 
 Windows:
 
 ```text
 py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate
-  --manifest <output-dir>\program-set-core-input-manifest.yaml
-  --review <output-dir>\program-set-sme-core-review.md
+  --manifest <bundle>\program-set-core-input-manifest.yaml
+  --review <bundle>\<folder_slug>--sme-core-review.md
 ```
 
 macOS/Linux:
 
 ```bash
-python3 scripts/validate-program-set-core-review.py \
-  --manifest <output-dir>/program-set-core-input-manifest.yaml \
-  --review <output-dir>/program-set-sme-core-review.md
+python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py validate \
+  --manifest <bundle>/program-set-core-input-manifest.yaml \
+  --review <bundle>/<folder_slug>--sme-core-review.md
 ```
+
+If any program is missing or fails semantic readiness, queue only the affected
+programs from fresh inventory paths and write no formal review. The validator
+reconciles manifest, source pack, facts, coverage, and review; it rejects
+pending facts, missing anchors, and any claim that program-list order proves a
+call chain.
 
 ### 4.2 Use Skill To Scan Code In Source Repo
 
@@ -383,6 +396,12 @@ current clean Git source HEAD, reuse `program-list.csv` to locate the missing
 program's source path and `size_tier`. If either file is missing, the revision
 is stale, or source code has uncommitted changes, rerun repo scan from the
 legacy source repo or source export root.
+
+This repo-inventory maintenance step is not automatic merger recovery. During
+a program-set merger, missing or stale inventory blocks the targeted queue;
+the merger must not launch these whole-repository commands. Run them only as a
+separate, explicitly authorized inventory task, then start a new targeted
+recovery attempt with the resulting fresh inventory.
 
 macOS / Linux:
 

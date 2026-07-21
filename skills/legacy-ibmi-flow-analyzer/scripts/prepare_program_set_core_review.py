@@ -10,6 +10,8 @@ source code itself.
 from __future__ import annotations
 
 import argparse
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,7 +23,7 @@ QUEUE = SCRIPT_DIR / "create_missing_program_scan_queue.py"
 DEFAULT_PROFILE = SCRIPT_DIR.parent / "templates" / "delivery-profile.yaml"
 
 
-def run_step(command: list[str]) -> None:
+def run_step(command: list[str]) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(command, text=True, capture_output=True)
     if result.stdout:
         print(result.stdout, end="")
@@ -31,6 +33,19 @@ def run_step(command: list[str]) -> None:
         raise SystemExit(result.returncode)
     if result.stderr:
         print(result.stderr, file=sys.stderr, end="")
+    return result
+
+
+def load_yaml(path: Path) -> dict[str, object]:
+    try:
+        import yaml  # type: ignore
+    except ImportError as exc:  # pragma: no cover - depends on local runtime
+        raise RuntimeError("PyYAML is required for program-set intake") from exc
+    with path.open("r", encoding="utf-8") as handle:
+        payload = yaml.safe_load(handle)
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"manifest is not a YAML mapping: {path}")
+    return payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         required=True,
-        help="Program-set review output directory",
+        help="Output parent; the stable flow/program-set folder is appended once",
     )
     parser.add_argument(
         "--delivery-root",
@@ -122,25 +137,36 @@ def main(argv: list[str] | None = None) -> int:
     ):
         if value:
             build_command.extend([option, value])
-    run_step(build_command)
+    build_result = run_step(build_command)
+    match = re.search(r"^OUTPUT_DIR=(.+)$", build_result.stdout, re.M)
+    if not match:
+        raise SystemExit("builder did not report the resolved OUTPUT_DIR")
+    bundle_dir = Path(match.group(1).strip())
+    manifest_path = bundle_dir / "program-set-core-input-manifest.yaml"
+    manifest = load_yaml(manifest_path)
 
-    queue_dir = output_dir / "missing-program-list-batch"
-    queue_command = [
-        sys.executable,
-        str(QUEUE),
-        "--manifest",
-        str(output_dir / "program-set-core-input-manifest.yaml"),
-        "--source-root",
-        str(source_root),
-        "--delivery-root",
-        str(delivery_root),
-        "--out-dir",
-        str(queue_dir),
-    ]
-    if args.force:
-        queue_command.append("--force")
-    run_step(queue_command)
-    print(f"Program-set intake prepared: {output_dir}")
+    if manifest.get("review_status") == "blocked_artifact_readiness":
+        queue_dir = bundle_dir / "missing-program-list-batch"
+        queue_command = [
+            sys.executable,
+            str(QUEUE),
+            "--manifest",
+            str(manifest_path),
+            "--source-root",
+            str(source_root),
+            "--delivery-root",
+            str(delivery_root),
+            "--out-dir",
+            str(queue_dir),
+        ]
+        if args.force:
+            queue_command.append("--force")
+        run_step(queue_command)
+    else:
+        queue_dir = bundle_dir / "missing-program-list-batch"
+        if queue_dir.exists():
+            shutil.rmtree(queue_dir)
+    print(f"Program-set intake prepared: {bundle_dir}")
     return 0
 
 
