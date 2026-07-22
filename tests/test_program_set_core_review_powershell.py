@@ -419,7 +419,8 @@ class ProgramSetCoreReviewPowerShellTests(unittest.TestCase):
             MODULE_DIR / "ProgramSetCoreReview.Validator.psm1"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("-ProgramsFile ([IO.Path]::GetFullPath($options.ProgramsFile))", wrapper)
+        self.assertIn("$programsFilePath = if ($options.ProgramsFile)", wrapper)
+        self.assertIn("program = 'Program'", wrapper)
         manifest_function = builder.split(
             "function New-FlowCoreReviewManifest", 1
         )[1].split("function ", 1)[0]

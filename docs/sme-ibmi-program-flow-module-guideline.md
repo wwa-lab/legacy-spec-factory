@@ -60,8 +60,8 @@ For interrupted runs or cross-session handoff, use
 - 每个 program 必须先通过 upstream final validator，并在最终
   `program-analysis.md` 中完整提供 Program Reading Summary、Calculation
   Logic、Validation Logic、Exception Handling、Message Inventory 五个 H2。
-- Merger 默认只用 `current_run` artifact；只有显式选择
-  `approved_document_repo` 才能读取指定的 approved local clone。`@` 等前缀
+- Merger 默认只用 `approved_document_repo` artifact；只有显式选择
+  `current_run` 才能读取 active delivery workspace。`@` 等前缀
   是 program identity 的一部分。
 - Deterministic builder 只生成 manifest、readiness、无损 source pack、
   normalized `source_fact_id` facts 和 pending coverage，不能写 review 骨架。
@@ -105,7 +105,7 @@ level when the actual question is about one program or one transaction.
    finalized `program-analysis.md` in a lossless source pack, then synthesizes;
    it does not concatenate complete files into the formal review.
 4. Resolve every SME-provided program to a final-validator-passing artifact.
-   Use `current_run` by default and approved-document reuse only when explicit.
+   Use `approved_document_repo` by default and `current_run` only when explicit.
 5. Treat `program-analysis-summary.yaml`, `source-index.yaml`,
    `routine-logic-details.yaml`, and `message-inventory.yaml` as readiness and
    reconciliation support, not as replacements for the main five sections.
@@ -711,11 +711,11 @@ gate. The complete five reader-first sections in each final
 Use legacy-ibmi-flow-analyzer v0.4.0.
 
 Review name: <REVIEW-NAME>
-Programs file: <PROGRAMS-FILE>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: <CURRENT-RUN-ROOT>
 Output parent: <PROGRAM-SET-REVIEW-PARENT>
 Profile: standard_reader_first
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 
 Run readiness for every distinct program. When all are ready, let deterministic
 tooling prepare the lossless five-section source pack, normalized source_fact_id

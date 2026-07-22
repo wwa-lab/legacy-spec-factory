@@ -28,7 +28,10 @@ executing the skill performs thematic synthesis. There is no generic
 
 ```text
 Review name: <business-readable name>
-Programs file: <path>
+Programs in SME navigation order:
+  1. <PROGRAM_A>
+  2. <PROGRAM_B>
+  3. <PROGRAM_C>
 Program artifact root: <approved local clone by default or current-run root when explicitly selected>
 Output parent: <program-set review parent>
 Artifact repo mode: approved_document_repo
@@ -38,7 +41,8 @@ Source root: <optional; targeted recovery only>
 
 Preserve exact program identity and meaningful prefixes such as `@`. The list
 order is navigation evidence; it is not a source-confirmed execution order or
-call chain.
+call chain. The preparation bundle's `program-list.txt` is generated from this
+inline order; the SME does not need to provide a separate list file.
 
 ## Evidence Modes
 
@@ -82,7 +86,7 @@ Windows:
 ```text
 py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
   --review-name "credit check"
-  --programs-file C:\work\programs.txt
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C
   --working-root C:\work\legacy-modernization-delivery
   --profile C:\work\delivery-profile.yaml
   --working-branch develop-leo
@@ -95,7 +99,7 @@ macOS/Linux:
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "credit check" \
-  --programs-file /work/programs.txt \
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C \
   --working-root /work/legacy-modernization-delivery \
   --profile /work/delivery-profile.yaml \
   --working-branch develop-leo \

@@ -136,6 +136,51 @@ class ProgramSetCoreReviewIntakeTests(unittest.TestCase):
             self.assertTrue((bundles[0] / "program-set-core-input-manifest.yaml").is_file())
             self.assertFalse((project_root / "program-set-core-input-manifest.yaml").exists())
 
+    def test_one_step_intake_accepts_inline_sme_navigation_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            write_finalized_program_artifacts(
+                artifact_root / "modules" / "tier" / "CU106", "CU106"
+            )
+            source_root = root / "source"
+            source_root.mkdir()
+            output_dir = root / "review"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(INTAKE),
+                    "--review-name",
+                    "Inline Navigation Review",
+                    "--program",
+                    "CU106",
+                    "--artifact-root",
+                    str(artifact_root),
+                    "--source-root",
+                    str(source_root),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            bundle = next(path for path in output_dir.iterdir() if path.is_dir())
+            self.assertEqual(
+                (bundle / "program-list.txt").read_text(encoding="utf-8"),
+                "CU106\n",
+            )
+            manifest = (bundle / "program-set-core-input-manifest.yaml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("kind: generated_from_navigation_order", manifest)
+            source_block = manifest.split("program_list_source:", 1)[1].split(
+                "program_resolution_profile:", 1
+            )[0]
+            self.assertNotIn("path:", source_block)
+
     def test_one_step_intake_prepares_one_bundle_without_fake_review_or_empty_queue(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

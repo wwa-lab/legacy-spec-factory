@@ -91,8 +91,19 @@ def clear_ready_recovery_queue(queue_dir: Path) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--review-name", help="SME review name; defaults to the program-list filename")
-    parser.add_argument("--programs-file", required=True, help="SME program list (.txt or CSV)")
+    parser.add_argument("--review-name", help="SME review name; defaults to the program-list filename or a generic review name")
+    program_input = parser.add_mutually_exclusive_group(required=True)
+    program_input.add_argument(
+        "--programs-file",
+        help="External program list (.txt or CSV); retained for backward compatibility",
+    )
+    program_input.add_argument(
+        "--program",
+        dest="programs",
+        action="append",
+        metavar="PROGRAM",
+        help="Program in SME navigation order; repeat once per program",
+    )
     parser.add_argument(
         "--artifact-root",
         "--working-root",
@@ -160,19 +171,24 @@ def main(argv: list[str] | None = None) -> int:
     project_root = Path(args.project_root).resolve() if args.project_root else None
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     profile = Path(args.profile).resolve()
-    programs_file = Path(args.programs_file).resolve()
-    review_name = args.review_name or programs_file.stem.replace("_", " ") or "program set review"
+    programs_file = Path(args.programs_file).resolve() if args.programs_file else None
+    programs = [str(program).strip() for program in (args.programs or []) if str(program).strip()]
+    review_name = (
+        args.review_name
+        or (programs_file.stem.replace("_", " ") if programs_file else "program set review")
+        or "program set review"
+    )
     inventory_dir = Path(args.inventory_dir).resolve() if args.inventory_dir else None
     delivery_root = Path(args.delivery_root).resolve() if args.delivery_root else artifact_root
 
-    for label, path in (
-        ("artifact root", artifact_root),
-        ("source root", source_root),
-        ("profile", profile),
-        ("programs file", programs_file),
-    ):
+    required_paths = [("artifact root", artifact_root), ("source root", source_root), ("profile", profile)]
+    if programs_file is not None:
+        required_paths.append(("programs file", programs_file))
+    for label, path in required_paths:
         if not path.exists():
             raise SystemExit(f"{label} not found: {path}")
+    if programs_file is None and not programs:
+        raise SystemExit("program input has no program names")
     if project_root is not None and not project_root.is_dir():
         raise SystemExit(f"project root not found or not a directory: {project_root}")
     if not artifact_root.is_dir() or not source_root.is_dir():
@@ -186,8 +202,6 @@ def main(argv: list[str] | None = None) -> int:
         "build",
         "--review-name",
         review_name,
-        "--programs-file",
-        str(programs_file),
         "--working-root",
         str(artifact_root),
         "--source-root",
@@ -197,6 +211,11 @@ def main(argv: list[str] | None = None) -> int:
         "--artifact-repo-mode",
         args.artifact_repo_mode,
     ]
+    if programs_file is not None:
+        build_command.extend(["--programs-file", str(programs_file)])
+    else:
+        for program in programs:
+            build_command.extend(["--program", program])
     if project_root is not None:
         build_command.extend(["--project-root", str(project_root)])
     else:

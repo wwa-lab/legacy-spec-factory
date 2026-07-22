@@ -31,8 +31,8 @@ sections.
 
 - Preserve the manifest's exact program identities and navigation order. Order
   does not prove a call chain.
-- Preserve the selected artifact repository mode. `current_run` is the default;
-  resume from `approved_document_repo` only when it was explicitly selected.
+- Preserve the selected artifact repository mode. `approved_document_repo` is
+  the default; resume from `current_run` only when it was explicitly selected.
 - Rerun the upstream program final validator and readiness checks for any
   missing, changed, ambiguous, placeholder, pending-deep-read, non-terminal, or
   otherwise invalid artifact. File existence alone is not readiness.

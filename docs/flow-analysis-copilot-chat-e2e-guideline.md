@@ -16,7 +16,7 @@ transaction flow.
 
 ```text
 Review name: <business-readable name>
-Programs file: <one program per line or supported CSV>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: <current-run workspace or approved local document repo>
 Output parent: <parent directory for review bundles>
 Flow slug: <stable flow/navigation label>
@@ -25,8 +25,8 @@ Artifact repo mode: current_run | approved_document_repo
 Source root: <optional; targeted recovery only>
 ```
 
-Use `current_run` by default. `approved_document_repo` is valid only when the
-user explicitly chooses it and provides the local approved repository path.
+Use `approved_document_repo` by default. `current_run` is valid only when the
+user explicitly chooses it for an active delivery workspace.
 Never import evidence from chat history, an arbitrary prior run, remote main,
 or another analyst's workspace.
 
@@ -46,12 +46,12 @@ order only; do not infer a call chain.
 
 Inputs:
 - Review name: <REVIEW_NAME>
-- Programs file: <PROGRAMS_FILE>
+- Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 - Program artifact root: <PROGRAM_ARTIFACT_ROOT>
 - Output parent: <OUTPUT_PARENT>
 - Flow slug: <FLOW_SLUG>
 - Profile: standard_reader_first
-- Artifact repo mode: current_run
+- Artifact repo mode: approved_document_repo
 - Source root, if targeted recovery is required: <SOURCE_ROOT>
 
 For every distinct program, run or reuse the legacy-ibmi-program-analyzer final
@@ -72,7 +72,8 @@ only its targeted queue from fresh inventory paths, put unresolved paths in
 blocked-programs.csv, and write no formal review. Do not queue or scan the whole
 repository.
 
-Return the resolved bundle, readiness result per program, targeted queue files,
+Generate `program-list.txt` from the inline navigation order; do not ask for a
+separate Programs file path. Return the resolved bundle, readiness result per program, targeted queue files,
 blocked-programs.csv rows, and the exact next program-repair chat.
 ```
 
@@ -216,7 +217,7 @@ remaining blockers. Do not prepare SME/Dify handoff on failure.
 | Upstream gate | Every distinct program passes final validation and merger readiness. |
 | Deterministic boundary | Preparation creates source pack, facts, and pending coverage but no review and makes no external LLM call. |
 | Unique placement | The parent receives one `<folder_slug>` child exactly once and one `<folder_slug>--sme-core-review.md`. |
-| Repository mode | `current_run` is default; approved-document reuse is explicit. |
+| Repository mode | `approved_document_repo` is default; current-run use is explicit. |
 | Blocked behavior | Only affected programs are queued; no review exists while blocked. |
 | Coverage | Every stable `source_fact_id` has one legal disposition and required anchor. |
 | Profiles | Standard is default; explicit minimal retains message audit coverage. |

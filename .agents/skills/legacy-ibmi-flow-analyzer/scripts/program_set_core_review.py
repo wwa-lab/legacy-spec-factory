@@ -108,6 +108,7 @@ SOURCE_PACK_FILENAME = "program-set-reader-first-source-pack.md"
 CORE_COVERAGE_FILENAME = "program-set-core-coverage.yaml"
 ARTIFACT_READINESS_FILENAME = "program-set-artifact-readiness.yaml"
 PROGRAM_LIST_FILENAME = "program-list.txt"
+PROGRAM_LIST_SOURCE_GENERATED = "generated_from_navigation_order"
 MANIFEST_FILENAME = "program-set-core-input-manifest.yaml"
 GENERATOR_VERSION = "0.4.0"
 TEMPLATE_VERSION = "0.4.0"
@@ -1980,14 +1981,25 @@ def write_build_outputs(manifest: dict[str, Any], output_dir: Path) -> tuple[Pat
             f"the preparation bundle: {layout.review_path}"
         )
     layout.folder_dir.mkdir(parents=True, exist_ok=True)
-    layout.program_list_path.write_text(
+    program_list_text = (
         "\n".join(
             str(entry.get("input_name") or entry.get("normalized_name") or "")
             for entry in manifest.get("programs", []) or []
         ).rstrip()
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
+    layout.program_list_path.write_text(program_list_text, encoding="utf-8")
+    output_manifest = dict(manifest)
+    output_run_profile = dict(manifest.get("run_profile") or {})
+    if "program_list_source" not in output_run_profile:
+        output_run_profile["program_list_source"] = {
+            "kind": PROGRAM_LIST_SOURCE_GENERATED,
+            "sha256": hashlib.sha256(
+                program_list_text.encode("utf-8")
+            ).hexdigest(),
+        }
+    output_manifest["run_profile"] = output_run_profile
+    manifest = output_manifest
     layout.manifest_path.write_text(dump_yaml(manifest), encoding="utf-8")
     distinct_readiness_programs: list[dict[str, Any]] = []
     seen_readiness_programs: set[str] = set()
@@ -2468,8 +2480,17 @@ def validate_program_list_snapshot(
         )
         return findings
     if isinstance(source, dict) and source:
+        source_kind = str(source.get("kind") or "").strip()
         source_path_text = str(source.get("path") or "").strip()
         expected_digest = str(source.get("sha256") or "").strip().lower()
+        if source_kind == PROGRAM_LIST_SOURCE_GENERATED:
+            if not expected_digest:
+                findings.append(
+                    "generated program-list source metadata requires sha256"
+                )
+            elif hashlib.sha256(local_path.read_bytes()).hexdigest() != expected_digest:
+                findings.append("generated program-list.txt sha256 has changed")
+            return findings
         if not source_path_text or not expected_digest:
             findings.append(
                 "run_profile.program_list_source requires absolute path and sha256"
@@ -4774,12 +4795,15 @@ def build_command(args: argparse.Namespace) -> int:
     config = load_yaml(args.profile)
     if not isinstance(config, dict):
         raise SystemExit("delivery profile must be a YAML mapping")
-    try:
-        programs = read_programs_file(args.programs_file)
-    except (OSError, UnicodeError, csv.Error) as exc:
-        raise SystemExit(f"cannot read programs file {args.programs_file}: {exc}") from None
+    if args.programs_file is not None:
+        try:
+            programs = read_programs_file(args.programs_file)
+        except (OSError, UnicodeError, csv.Error) as exc:
+            raise SystemExit(f"cannot read programs file {args.programs_file}: {exc}") from None
+    else:
+        programs = [str(program).strip() for program in (args.programs or []) if str(program).strip()]
     if not programs:
-        raise SystemExit("programs file has no program names")
+        raise SystemExit("program input has no program names")
     if args.force_rescan_file is not None:
         raise SystemExit(
             "--force-rescan-file is no longer supported for program-flow core review. "
@@ -4854,7 +4878,19 @@ def build_parser() -> argparse.ArgumentParser:
         "build", help="Validate inputs and prepare the reader-first synthesis bundle"
     )
     build.add_argument("--review-name", required=True)
-    build.add_argument("--programs-file", type=Path, required=True)
+    program_input = build.add_mutually_exclusive_group(required=True)
+    program_input.add_argument(
+        "--programs-file",
+        type=Path,
+        help="External program list (.txt or CSV); retained for backward compatibility",
+    )
+    program_input.add_argument(
+        "--program",
+        dest="programs",
+        action="append",
+        metavar="PROGRAM",
+        help="Program in SME navigation order; repeat once per program",
+    )
     build.add_argument("--working-root", type=Path, help="Delivery working checkout, approved document repo clone, or artifact root")
     build.add_argument("--output-root", type=Path, help="Alias for artifact root")
     build.add_argument(

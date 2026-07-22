@@ -63,7 +63,7 @@ review generation, and complete fact coverage.
 ```text
 Working branch: develop-leo
 Review name: credit check
-Programs file: /path/to/programs.txt
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: /path/to/approved-document-repo-clone
 Output parent: /path/to/delivery/modules/CAP-ID-0004-program_set_reviews
 Artifact repo mode: approved_document_repo
@@ -81,7 +81,7 @@ On Windows:
 ```text
 py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
   --review-name "credit check"
-  --programs-file C:\work\programs.txt
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C
   --working-root C:\work\delivery
   --profile C:\work\delivery-profile.yaml
   --working-branch develop-leo
@@ -94,7 +94,7 @@ On macOS/Linux:
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "credit check" \
-  --programs-file /work/programs.txt \
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C \
   --working-root /work/delivery \
   --profile /work/delivery-profile.yaml \
   --working-branch develop-leo \

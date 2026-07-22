@@ -45,7 +45,6 @@ $script:ProgramListFilename = 'program-list.txt'
 $script:GeneratorVersion = '0.4.0'
 $script:TemplateVersion = '0.4.0'
 $script:Utf8NoBom = New-Object -TypeName System.Text.UTF8Encoding -ArgumentList $false
-
 function Get-FlowMapValue {
     param($Map, [Parameter(Mandatory = $true)][string]$Key, $Default = $null)
     if ($null -eq $Map) { return $Default }
@@ -771,6 +770,11 @@ function Write-FlowCoreReviewOutputs {
         }) -join "`n") + "`n",
         $script:Utf8NoBom
     )
+    $runProfile = Get-FlowMapValue $Manifest 'run_profile' ([ordered]@{}); $programListSource = Get-FlowMapValue $runProfile 'program_list_source' $null
+    if ($null -eq $programListSource) {
+        $sha = [Security.Cryptography.SHA256]::Create(); try { $programListDigest = ([BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($programListPath)))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+        $runProfile.program_list_source = [ordered]@{ kind = 'generated_from_navigation_order'; sha256 = $programListDigest }; $Manifest.run_profile = $runProfile
+    }
     [IO.File]::WriteAllText($manifestPath, (ConvertTo-FlowYamlText $Manifest), $script:Utf8NoBom)
     [IO.File]::WriteAllText($readinessPath, (ConvertTo-FlowYamlText $readiness), $script:Utf8NoBom)
     $written = New-Object System.Collections.Generic.List[string]

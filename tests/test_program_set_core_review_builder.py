@@ -1267,6 +1267,57 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("missing review artifact", result.stderr)
 
+    def test_build_wrapper_generates_program_list_from_inline_navigation_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            delivery_root = temp_root / "delivery-main"
+            output_dir = temp_root / "review-output"
+            write_compact_artifacts(
+                delivery_root / "modules" / "CAP-ID-0001-large_extreme_program" / "@CU118"
+            )
+
+            build_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILD_WRAPPER),
+                    "--review-name",
+                    "Inline Navigation Review",
+                    "--program",
+                    "@CU118",
+                    "--program",
+                    "CU118",
+                    "--working-root",
+                    str(delivery_root),
+                    "--profile",
+                    str(PROFILE_TEMPLATE),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+
+            match = re.search(r"^OUTPUT_DIR=(.+)$", build_result.stdout, re.M)
+            self.assertIsNotNone(match, build_result.stdout)
+            bundle = Path(match.group(1))
+            program_list = bundle / "program-list.txt"
+            manifest_path = bundle / "program-set-core-input-manifest.yaml"
+            manifest = BUILDER.load_yaml(manifest_path)
+            self.assertEqual(program_list.read_text(encoding="utf-8"), "@CU118\nCU118\n")
+            self.assertEqual(
+                manifest["run_profile"]["program_list_source"]["kind"],  # type: ignore[index]
+                "generated_from_navigation_order",
+            )
+            self.assertEqual(
+                manifest["run_profile"]["program_list_source"]["sha256"],  # type: ignore[index]
+                hashlib.sha256(program_list.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(
+                BUILDER.validate_program_list_snapshot(manifest_path, manifest),
+                [],
+            )
+
     def test_build_wrapper_rejects_missing_working_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)

@@ -59,6 +59,8 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("current_run` is explicit opt-in", normalized_skill)
         self.assertIn("Artifact repo mode: approved_document_repo", prompt_text)
         self.assertIn("Artifact repo mode: current_run", prompt_text)
+        self.assertIn("generated automatically from the ordered list above", prompt_text)
+        self.assertNotIn("Programs file: <PROGRAM-LIST-PATH>", prompt_text)
         for text in (skill_text, contract_text):
             self.assertIn("run_resolution", text)
             self.assertIn("analyzed_this_run", text)

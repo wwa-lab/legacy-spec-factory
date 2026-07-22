@@ -281,11 +281,11 @@ Use legacy-ibmi-flow-analyzer v0.4.0.
 Prepare and complete one Reader-First Program Analysis Merger run.
 
 Review name: <business-readable review name>
-Programs file: <one program per line or supported CSV>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: <current-run delivery workspace or approved local clone>
 Output parent: <parent directory for the generated bundle>
 Profile: standard_reader_first
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Source root: <optional; only for targeted recovery of missing programs>
 
 Input and readiness rules:
@@ -300,8 +300,8 @@ Input and readiness rules:
   5. Message Inventory
 - Sidecars support readiness and reconciliation; they do not replace those
   five complete sections.
-- Use current_run by default. Use approved_document_repo only when I explicitly
-  select it and provide the approved local clone. Never fall back to arbitrary
+- Use approved_document_repo by default. Use current_run only when I explicitly
+  select an active delivery workspace. Never fall back to arbitrary
   historical or remote output.
 - If any requested program is missing, ambiguous, incomplete, non-terminal, or
   invalid, write no formal review. Create a targeted missing-program queue only
@@ -345,11 +345,11 @@ Safety rules:
 请准备并完成一次 Reader-First Program Analysis Merger。
 
 Review name: <业务可读的 review 名称>
-Programs file: <每行一个 program 或受支持的 CSV>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: <本轮 delivery workspace 或 approved local clone>
 Output parent: <生成 bundle 的父目录>
 Profile: standard_reader_first
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Source root: <可选；仅用于缺失 program 的 targeted recovery>
 
 输入与 readiness 规则:

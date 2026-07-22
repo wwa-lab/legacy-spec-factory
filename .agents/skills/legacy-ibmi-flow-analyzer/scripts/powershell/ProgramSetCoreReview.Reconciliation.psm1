@@ -146,7 +146,16 @@ function Test-FlowProgramListSnapshot {
     $manifestNormalized = @($entries | ForEach-Object { [string](Get-ReconciliationMapValue $_ 'normalized_name' '') })
     if ($normalizedLocal.Count -and -not (Test-FlowOrdinalSequence $normalizedLocal $manifestNormalized)) { $findings.Add('preserved program-list.txt normalized identities/order do not match manifest programs') }
     $runProfile = Get-ReconciliationMapValue $Manifest 'run_profile' ([ordered]@{}); $source = Get-ReconciliationMapValue $runProfile 'program_list_source' $null
+    $sourceKind = ([string](Get-ReconciliationMapValue $source 'kind' '')).Trim()
     $sourcePath = [string](Get-ReconciliationMapValue $source 'path' ''); $expectedDigest = ([string](Get-ReconciliationMapValue $source 'sha256' '')).Trim().ToLowerInvariant()
+    if ($sourceKind -eq 'generated_from_navigation_order') {
+        if (-not $expectedDigest) { $findings.Add('generated program-list source metadata requires sha256'); return @($findings.ToArray()) }
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { $actualDigest = ([BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($localPath)))).Replace('-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+        if ($actualDigest -cne $expectedDigest) { $findings.Add('generated program-list.txt sha256 has changed') }
+        return @($findings.ToArray())
+    }
     if (-not $sourcePath -or -not $expectedDigest) { $findings.Add('run_profile.program_list_source requires absolute path and sha256'); return @($findings.ToArray()) }
     if (-not [IO.Path]::IsPathRooted($sourcePath)) { $findings.Add('original program-list source path must be absolute'); return @($findings.ToArray()) }
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { $findings.Add("original program-list source is unavailable: $sourcePath"); return @($findings.ToArray()) }

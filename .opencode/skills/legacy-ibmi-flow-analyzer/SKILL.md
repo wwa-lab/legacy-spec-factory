@@ -96,7 +96,7 @@ Collect these values before preparation:
 
 ```text
 Review name: <business-readable name>
-Programs file: <one program per line or supported CSV>
+Programs in SME navigation order: <ordered program names supplied inline>
 Program artifact root: <approved local document-repo clone by default, or current-run root when explicitly selected>
 Project root: <delivery project root; writes under its outputs/ folder>
 Output parent: <optional explicit override; parent that will contain the generated bundle folder>
@@ -129,13 +129,13 @@ Record the resulting value in each program's `run_resolution`, using
 There is no implicit fallback between the approved repository and current-run
 artifact modes.
 
-Preserve the original SME-supplied programs file at its absolute path until
-final validation finishes. Preparation records that path and its SHA-256 in
-`run_profile.program_list_source`; the sibling `program-list.txt` is a bundle
-copy, not an independent trust root. Final validation re-reads the original
-file and reconciles its digest, ordered input identities, normalized distinct
-program identities, and sibling copy with the manifest. A moved, deleted, or
-changed original list blocks final handoff.
+The SME navigation order is the only required program-list input. Preparation
+generates the bundle-local `program-list.txt` in that exact order and records
+its SHA-256 in `run_profile.program_list_source` with
+`kind: generated_from_navigation_order`. Final validation reconciles that
+generated snapshot with the manifest's ordered inputs and normalized distinct
+program identities. The legacy `--programs-file` option remains supported for
+backward-compatible callers and records the external source path and digest.
 
 ## Reader-First Primary Input
 
@@ -216,7 +216,9 @@ creates that directory when necessary:
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "<review name>" \
-  --programs-file <programs.txt> \
+  --program <PROGRAM_A> \
+  --program <PROGRAM_B> \
+  --program <PROGRAM_C> \
   --working-root <program-artifact-root> \
   --profile skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml \
   --project-root <delivery-project-root>

@@ -80,7 +80,7 @@ Example on macOS/Linux:
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "credit check" \
-  --programs-file /work/programs.txt \
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C \
   --working-root /work/delivery \
   --profile /work/delivery-profile.yaml \
   --working-branch develop-leo \

@@ -17,7 +17,6 @@ not authorize transaction-flow reconstruction.
 合并成一份可供 SME / Dify 阅读的 reader-first SME Core Review。
 
 Review name: <REVIEW-NAME>
-Programs file: <PROGRAM-LIST-PATH>
 Program artifact root: <LOCAL-APPROVED-DOCUMENT-REPO-CLONE>
 Project root (default output location): <DELIVERY-PROJECT-ROOT>
 Output parent (仅需覆盖默认 `<项目根目录>/outputs/` 时填写): <CUSTOM-OUTPUT-PARENT-OR-N/A>
@@ -32,6 +31,9 @@ Programs in SME navigation order:
 2. PROGRAM_B
 3. PROGRAM_C
 
+Program list source: generated automatically from the ordered list above; do not
+ask the SME for a separate Programs file path.
+
 Optional SME context:
 - Review scope / expected outcome:
 - Known files, reports, messages, or exception cases:
@@ -39,7 +41,10 @@ Optional SME context:
 
 执行要求：
 
-1. 先运行 deterministic preparation。默认传入 `--project-root`，将产物写到
+1. 先根据 `Programs in SME navigation order` 原顺序生成 bundle 内的
+   `program-list.txt`，再运行 deterministic preparation。调用 CLI 时对每个
+   program 传入一个重复的 `--program` 参数；不要要求或等待 `--programs-file`。
+   默认传入 `--project-root`，将产物写到
    `<项目根目录>/outputs/<FLOW-SLUG>--<PROGRAM-SET-SLUG>/`；`outputs/` 不存在时
    创建，存在时复用同 identity 的 preparation bundle。若该 bundle 已有正式 review，
    不得覆盖，必须先显式 archive。仅在明确给出 custom output parent 时使用

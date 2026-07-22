@@ -38,7 +38,7 @@ Prepare explicit local paths and values:
 
 ```text
 Review name: <business-readable name>
-Programs file: <one program per line or supported CSV>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 Program artifact root: <current-run workspace or approved local document repo>
 Output parent: <parent directory for review bundles>
 Flow slug: <stable flow/navigation label>
@@ -47,9 +47,9 @@ Artifact repo mode: current_run | approved_document_repo
 Source root: <optional; required only for targeted recovery>
 ```
 
-`current_run` is the default. Use `approved_document_repo` only when the user
-explicitly requests it and supplies the local approved repository path. Never
-silently fall back to a prior run, remote branch, or another analyst's output.
+`approved_document_repo` is the default. Use `current_run` only when the user
+explicitly requests an active delivery workspace. Never silently fall back to a
+prior run, remote branch, or another analyst's output.
 
 `--output-dir` is a parent directory. The resolver appends
 `<flow-slug>--<program-set-slug>` exactly once, even when the caller has already
@@ -67,16 +67,17 @@ are complete. Do not stop at a plan, skeleton, manifest, or source pack.
 
 Inputs:
 - Review name: <REVIEW_NAME>
-- Programs file: <PROGRAMS_FILE>
+- Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
 - Program artifact root: <PROGRAM_ARTIFACT_ROOT>
 - Output parent: <OUTPUT_PARENT>
 - Flow slug: <FLOW_SLUG>
 - Profile: standard_reader_first
-- Artifact repo mode: current_run
+- Artifact repo mode: approved_document_repo
 - Source root, only if targeted recovery is needed: <SOURCE_ROOT>
 
 Rules:
-1. Preserve exact program identity and requested navigation order. Do not infer
+1. Generate the bundle-local `program-list.txt` from the inline navigation order;
+   do not ask for a separate Programs file path. Preserve exact program identity and requested navigation order. Do not infer
    a call chain from that order.
 2. For every distinct program, run or reuse the upstream final program-analysis
    validator. Early intake uses `core_reader_first_lenient`: require the main

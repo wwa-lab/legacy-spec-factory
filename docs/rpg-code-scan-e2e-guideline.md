@@ -315,10 +315,10 @@ Forced rescans still print the central lookup result. The generated
 rescan reason.
 
 After every requested program has a finalized reader-first analysis, hand the
-set to the v0.4.0 Program Analysis Merger. The merger default is `current_run`:
-use the supplied delivery working checkout and do not treat a remote-main
-snapshot as completion evidence. `approved_document_repo` is a separate,
-explicit mode for a supplied local approved clone.
+set to the v0.4.0 Program Analysis Merger. The merger default is
+`approved_document_repo`: use the supplied local clone of the SME-reviewed
+delivery repository. `current_run` is a separate, explicit mode for an active
+delivery working checkout.
 
 Each program must first pass the upstream final validator with complete Program
 Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and
@@ -329,7 +329,7 @@ Windows:
 ```text
 py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build
   --review-name "<review name>"
-  --programs-file <programs.txt>
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C
   --working-root <delivery-working-branch-checkout>
   --source-root <source-repo>
   --profile <delivery-profile.yaml>
@@ -343,7 +343,7 @@ macOS/Linux:
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
   --review-name "<review name>" \
-  --programs-file <programs.txt> \
+  --program PROGRAM_A --program PROGRAM_B --program PROGRAM_C \
   --working-root <delivery-working-branch-checkout> \
   --source-root <source-repo> \
   --profile <delivery-profile.yaml> \

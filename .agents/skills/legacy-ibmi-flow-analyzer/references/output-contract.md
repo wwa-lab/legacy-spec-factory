@@ -118,17 +118,15 @@ synthesis input.
 
 ### `program-list.txt`
 
-Preserves the SME-supplied program navigation order and exact normalized
-identity. That order is not evidence of runtime execution or a call chain.
+Preserves the inline SME program navigation order and exact input identity.
+Preparation generates this file automatically from repeated `--program`
+arguments. That order is not evidence of runtime execution or a call chain.
 
-The original SME programs file must remain available at the absolute path
-recorded in `run_profile.program_list_source.path` through final validation;
-the same record carries its SHA-256. `program-list.txt` is only the bundle
-copy. The final gate re-reads the original file and requires its current digest
-and ordered inputs to agree with the recorded manifest input, the normalized
-distinct program identities, and the sibling copy. Missing, moved, modified,
-or reordered source input fails validation instead of trusting coordinated
-edits to derived bundle artifacts.
+For inline input, `run_profile.program_list_source` records
+`kind: generated_from_navigation_order` and the generated file's SHA-256.
+The final gate verifies that digest and requires the ordered inputs to agree
+with the manifest's normalized distinct program identities. Legacy external
+program-list files remain supported and are still re-read and digest-checked.
 
 ### `program-set-core-input-manifest.yaml`
 

@@ -296,6 +296,40 @@ class ProgramSetReleaseHardeningTests(unittest.TestCase):
                 findings,
             )
 
+    def test_final_gate_reconciles_generated_program_list_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bundle = Path(temp_dir) / "bundle"
+            bundle.mkdir()
+            manifest_path = bundle / "program-set-core-input-manifest.yaml"
+            local_list = bundle / "program-list.txt"
+            local_list.write_text("CU106\nCU101A\n", encoding="utf-8")
+            manifest = {
+                "schema_version": "0.4",
+                "review_status": "complete_exploratory",
+                "program_resolution_profile": {
+                    "program_name_normalization": {"case": "upper"}
+                },
+                "run_profile": {
+                    "program_list_source": {
+                        "kind": "generated_from_navigation_order",
+                        "sha256": hashlib.sha256(local_list.read_bytes()).hexdigest(),
+                    }
+                },
+                "programs": [
+                    {"input_name": "CU106", "normalized_name": "CU106"},
+                    {"input_name": "CU101A", "normalized_name": "CU101A"},
+                ],
+            }
+            self.assertEqual(
+                MERGER.validate_program_list_snapshot(manifest_path, manifest), []
+            )
+            local_list.write_text("CU101A\nCU106\n", encoding="utf-8")
+            findings = MERGER.validate_program_list_snapshot(manifest_path, manifest)
+            self.assertTrue(
+                any("generated program-list.txt sha256" in finding for finding in findings),
+                findings,
+            )
+
     def test_forbidden_full_flow_names_are_rejected_at_nested_headings(self) -> None:
         for level in (3, 4, 5, 6):
             with self.subTest(level=level):
