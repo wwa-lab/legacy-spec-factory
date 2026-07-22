@@ -99,6 +99,7 @@ class ProgramSetCoreReviewPowerShellTests(unittest.TestCase):
             "inventory-dir",
             "program-first",
             "profile",
+            "project-root",
             "output-dir",
             "working-branch",
             "delivery-root",
@@ -110,6 +111,69 @@ class ProgramSetCoreReviewPowerShellTests(unittest.TestCase):
         self.assertIn("ToUpperInvariant", builder_module)
         self.assertNotIn("TrimStart('@')", builder_module)
         self.assertIn("StringComparer]::Ordinal", builder_module)
+
+    @unittest.skipUnless(POWERSHELL, "PowerShell runtime unavailable")
+    def test_native_builder_places_project_root_outputs_in_reusable_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            working = root / "artifacts"
+            write_finalized_program_artifacts(
+                working / "modules" / "tier" / "CU106", "CU106"
+            )
+            project_root = root / "legacy-modernization-delivery"
+            project_root.mkdir()
+            programs = root / "programs.txt"
+            programs.write_text("CU106\n", encoding="utf-8")
+
+            first_run = subprocess.run(
+                [
+                    POWERSHELL,
+                    "-NoProfile",
+                    "-File",
+                    str(BUILD_SCRIPT),
+                    "--review-name",
+                    "Credit Check Review",
+                    "--programs-file",
+                    str(programs),
+                    "--working-root",
+                    str(working),
+                    "--profile",
+                    str(PROFILE),
+                    "--project-root",
+                    str(project_root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(first_run.returncode, 0, first_run.stderr)
+            output_parent = project_root / "outputs"
+            manifest = bundle_artifact(output_parent, "program-set-core-input-manifest.yaml")
+            bundle = manifest.parent
+            self.assertFalse((project_root / bundle.name).exists())
+
+            rerun = subprocess.run(
+                [
+                    POWERSHELL,
+                    "-NoProfile",
+                    "-File",
+                    str(BUILD_SCRIPT),
+                    "--review-name",
+                    "Credit Check Review",
+                    "--programs-file",
+                    str(programs),
+                    "--working-root",
+                    str(working),
+                    "--profile",
+                    str(PROFILE),
+                    "--project-root",
+                    str(project_root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(rerun.returncode, 0, rerun.stderr)
+            self.assertFalse((bundle / bundle.name).exists())
 
     def test_native_preparer_is_reader_first_and_never_writes_a_review(self) -> None:
         build = BUILD_SCRIPT.read_text(encoding="utf-8")

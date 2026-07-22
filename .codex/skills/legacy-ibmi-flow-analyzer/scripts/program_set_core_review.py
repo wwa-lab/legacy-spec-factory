@@ -742,6 +742,7 @@ def assess_artifact_readiness(
     candidate_artifact_root: str | None,
     matches: list[str],
     compact_artifacts: dict[str, ArtifactStatus],
+    expected_size_tier: str | None = None,
 ) -> dict[str, Any]:
     """Apply existence, ambiguity, upstream semantic, and terminal-state gates."""
 
@@ -768,7 +769,11 @@ def assess_artifact_readiness(
     if analysis_dir and analysis_dir.is_dir() and not missing_required and len(matches) <= 1:
         upstream_ran = True
         upstream_findings = [
-            str(item) for item in upstream_program_validator().validate(analysis_dir)
+            str(item)
+            for item in upstream_program_validator().validate(
+                analysis_dir,
+                expected_size_tier=expected_size_tier,
+            )
         ]
         findings.extend(upstream_findings)
         findings.extend(program_artifact_identity_findings(analysis_dir, program))
@@ -910,12 +915,14 @@ def build_program_entries(
             found_artifact_root,
             normalized,
         )
+        detected_tier = infer_tier(found_artifact_root, workspace)
         readiness = assess_artifact_readiness(
             root=artifact_root,
             program=normalized,
             candidate_artifact_root=found_artifact_root,
             matches=matches,
             compact_artifacts=compact_artifacts,
+            expected_size_tier=detected_tier,
         )
         if readiness["status"] == "ready":
             run_resolution = present_resolution
@@ -941,7 +948,7 @@ def build_program_entries(
             run_resolution=run_resolution,
             artifact_root=resolved_artifact_root,
             artifact_source=source,
-            tier=infer_tier(found_artifact_root, workspace),
+            tier=detected_tier,
             compact_artifacts=compact_artifacts,
             follow_up=follow_up,
             candidate_artifact_root=found_artifact_root,
@@ -3184,6 +3191,10 @@ def revalidate_manifest_program_inputs(
     if not isinstance(programs, list) or not programs:
         return ["final input readiness requires manifest programs[]"], None, artifact_root
 
+    workspace_profile = manifest.get("workspace_profile")
+    if not isinstance(workspace_profile, dict):
+        workspace_profile = {}
+
     trusted_entries: list[dict[str, Any]] = []
     resolved_by_program: dict[str, str] = {}
     for entry in programs:
@@ -3271,6 +3282,7 @@ def revalidate_manifest_program_inputs(
         compact_artifacts = collect_artifact_statuses(
             artifact_root, resolved_artifact_root, program
         )
+        detected_tier = infer_tier(resolved_artifact_root, workspace_profile)
         expected_compact = {
             key: {"path": status.path, "status": status.status}
             for key, status in compact_artifacts.items()
@@ -3303,6 +3315,7 @@ def revalidate_manifest_program_inputs(
                 candidate_artifact_root=resolved_artifact_root,
                 matches=matches,
                 compact_artifacts=compact_artifacts,
+                expected_size_tier=detected_tier,
             )
         )
         if readiness.get("status") != "ready":
@@ -3327,6 +3340,7 @@ def revalidate_manifest_program_inputs(
                 "artifact_root": resolved_artifact_root,
                 "candidate_artifact_root": resolved_artifact_root,
                 "artifact_source": expected_source,
+                "tier": detected_tier,
                 "compact_artifacts": expected_compact,
                 "artifact_readiness": readiness,
             }
@@ -4572,6 +4586,12 @@ def build_command(args: argparse.Namespace) -> int:
         raise SystemExit(f"artifact root not found or not a directory: {artifact_root}")
     if args.source_root is not None and not args.source_root.is_dir():
         raise SystemExit(f"source root not found or not a directory: {args.source_root}")
+    if args.project_root is not None:
+        if not args.project_root.is_dir():
+            raise SystemExit(f"project root not found or not a directory: {args.project_root}")
+        output_dir = args.project_root / "outputs"
+    else:
+        output_dir = args.output_dir
     try:
         manifest = build_manifest(
             review_name=args.review_name,
@@ -4591,8 +4611,8 @@ def build_command(args: argparse.Namespace) -> int:
         )
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
-    manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
-    layout = resolve_output_layout(args.output_dir, manifest)
+    manifest_path, review_path = write_build_outputs(manifest, output_dir)
+    layout = resolve_output_layout(output_dir, manifest)
     print(f"Prepared {manifest_path}")
     print(f"Reserved final LLM review path {review_path}")
     print(f"OUTPUT_DIR={layout.folder_dir}")
@@ -4657,7 +4677,17 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     build.add_argument("--profile", type=Path, required=True)
-    build.add_argument("--output-dir", type=Path, required=True)
+    output_location = build.add_mutually_exclusive_group(required=True)
+    output_location.add_argument(
+        "--project-root",
+        type=Path,
+        help="Delivery project root; writes the stable review bundle under <project-root>/outputs/",
+    )
+    output_location.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Explicit output parent; the stable flow/program-set folder is appended once",
+    )
     build.add_argument("--working-branch")
     build.add_argument(
         "--core-review-profile",

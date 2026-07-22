@@ -230,20 +230,20 @@ function Get-FlowArtifactAbsolutePath {
     $resolved = if ([IO.Path]::IsPathRooted($path)) { [IO.Path]::GetFullPath($path) } else { [IO.Path]::GetFullPath((Join-Path $Root $path)) }
     return Assert-ReadinessTrustedPath $Root $resolved
 }
-
 function Get-FlowArtifactReadiness {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
         [AllowNull()][string]$ArtifactRoot,
         [Parameter(Mandatory = $true)][string]$Program,
         $CompactArtifacts,
-        [string[]]$AmbiguousMatches = @()
+        [string[]]$AmbiguousMatches = @(),
+        [AllowNull()][string]$ExpectedSizeTier
     )
     return Get-FlowProgramArtifactReadiness -Root $Root -ArtifactRoot $ArtifactRoot -Program $Program `
         -CompactArtifacts $CompactArtifacts -AmbiguousMatches $AmbiguousMatches `
+        -ExpectedSizeTier $ExpectedSizeTier `
         -RequiredArtifacts $script:RequiredArtifacts
 }
-
 function Get-FlowProgramTier {
     param([AllowNull()][string]$ArtifactRoot, $WorkspaceProfile)
     if (-not $ArtifactRoot) { return $null }
@@ -301,7 +301,8 @@ function New-FlowProgramEntries {
         }
         $hasArtifact = $null -ne $found.Root
         $compactArtifacts = Get-FlowArtifactStatuses $ArtifactRoot $found.Root $normalized
-        $readiness = Get-FlowArtifactReadiness -Root $ArtifactRoot -ArtifactRoot $found.Root -Program $normalized -CompactArtifacts $compactArtifacts -AmbiguousMatches @($found.Matches)
+        $tier = Get-FlowProgramTier $found.Root $workspace
+        $readiness = Get-FlowArtifactReadiness -Root $ArtifactRoot -ArtifactRoot $found.Root -Program $normalized -CompactArtifacts $compactArtifacts -AmbiguousMatches @($found.Matches) -ExpectedSizeTier $tier
         $usableArtifact = $readiness.status -eq 'ready'
         $entry = [ordered]@{
             input_name = $inputName
@@ -311,7 +312,7 @@ function New-FlowProgramEntries {
             artifact_root = $(if ($usableArtifact) { $found.Root } else { $null })
             candidate_artifact_root = $found.Root
             artifact_source = $(if ($usableArtifact) { $(if ($approved) { 'approved_document_repo' } else { 'delivery_working_branch' }) } else { 'source_scan_required' })
-            tier = Get-FlowProgramTier $found.Root $workspace
+            tier = $tier
             compact_artifacts = $compactArtifacts
             artifact_readiness = $readiness
             follow_up = $(if ($usableArtifact) { 'none - upstream contract validation and terminal approval passed' } elseif ($hasArtifact) { 'refresh only this program analysis until all artifact-readiness findings are resolved' } elseif ($approved) { 'add or refresh this program in the approved document repo' } else { 'scan only this program in the current run' })

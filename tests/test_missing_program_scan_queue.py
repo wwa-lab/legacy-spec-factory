@@ -39,6 +39,21 @@ def load_builder():
 BUILDER = load_builder()
 
 
+def load_queue_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("queue_test_recovery", QUEUE_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load queue script")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["queue_test_recovery"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+QUEUE_MODULE = load_queue_module()
+
+
 def compact_status(status: str = "missing") -> dict[str, dict[str, str]]:
     return {
         BUILDER.artifact_key(filename): {"status": status}
@@ -47,6 +62,52 @@ def compact_status(status: str = "missing") -> dict[str, dict[str, str]]:
 
 
 class MissingProgramScanQueueTests(unittest.TestCase):
+    def test_classifies_final_gate_findings_into_precise_recovery_actions(self) -> None:
+        cases = (
+            (
+                ["CCB11: widespread pending_deep_read / unresolved routine semantics"],
+                [],
+                ["resume_deep_read"],
+            ),
+            (
+                ["CU106: required analysis sections/sidecar declarations missing; routine detail structure invalid"],
+                [],
+                ["rebuild_required_artifacts", "repair_reader_first_structure"],
+            ),
+            (
+                ["CU101A: unresolved message descriptions (unknown): UCC1852"],
+                [],
+                ["resolve_message_evidence"],
+            ),
+            (
+                [
+                    "CCB11: large deep-read execution plan batch is missing: "
+                    "routine-logic-details/CCB11-deep-read-batch-002.md"
+                ],
+                [],
+                ["rebuild_large_execution_plan", "resume_deep_read"],
+            ),
+            (
+                ["unexpected validator result without a mapped remediation"],
+                [],
+                ["refresh_program_analysis"],
+            ),
+            (
+                [],
+                ["CC050-message-inventory.yaml"],
+                ["rebuild_required_artifacts"],
+            ),
+        )
+        for findings, missing, expected in cases:
+            with self.subTest(findings=findings, missing=missing):
+                self.assertEqual(
+                    QUEUE_MODULE.recovery_action_codes(
+                        {"artifact_readiness": {"findings": findings}},
+                        missing,
+                    ),
+                    expected,
+                )
+
     def write_manifest(self, root: Path, freshness: str = "fresh") -> Path:
         source_file = root / "source" / "src" / "CU106.RPGLE"
         source_file.parent.mkdir(parents=True)
@@ -226,6 +287,200 @@ class MissingProgramScanQueueTests(unittest.TestCase):
             queue_csv = (output_dir / "program-list.csv").read_text(encoding="utf-8")
             self.assertIn("CU106", queue_csv)
             self.assertNotIn("COMPLETE", queue_csv)
+
+    def test_semantic_gate_failure_emits_actionable_recovery_plan_and_prompt_context(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            manifest_path = self.write_manifest(root)
+            manifest = BUILDER.load_yaml(manifest_path)
+            cu106 = manifest["programs"][0]
+            cu106["compact_artifacts"] = compact_status("present")
+            cu106["candidate_artifact_root"] = "modules/custom-normal/CU106"
+            cu106["artifact_readiness"] = {
+                "status": "not_ready",
+                "findings": [
+                    "CU106-routine-logic-details.yaml retains pending_deep_read semantic seed values for: RLOG-CU106-001",
+                    "CU106: required analysis sections/sidecar declarations missing; routine detail structure invalid",
+                    "unresolved message descriptions (unknown): UCC1852",
+                ],
+            }
+            manifest["programs"] = [cu106]
+            manifest["source_inventory"]["programs"] = [
+                manifest["source_inventory"]["programs"][0]
+            ]
+            manifest_path.write_text(BUILDER.dump_yaml(manifest), encoding="utf-8")
+            output_dir = root / "missing-program-list-batch"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(QUEUE_SCRIPT),
+                    "--manifest",
+                    str(manifest_path),
+                    "--source-root",
+                    str(root / "source"),
+                    "--delivery-root",
+                    str(root / "delivery"),
+                    "--out-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Recovery plan:", result.stdout)
+            recovery_plan = (output_dir / "recovery-plan.md").read_text(encoding="utf-8")
+            self.assertIn("CU106", recovery_plan)
+            self.assertIn("Resume semantic deep-read", recovery_plan)
+            self.assertIn("Repair reader-first artifact structure", recovery_plan)
+            self.assertIn("Resolve message descriptions", recovery_plan)
+            self.assertIn("UCC1852", recovery_plan)
+            recovery_status = BUILDER.load_yaml(output_dir / "recovery-status.yaml")
+            self.assertEqual(recovery_status["recovery_type"], "program_set_final_gate")
+            recovery_record = recovery_status["programs"][0]
+            self.assertEqual(recovery_record["program"], "CU106")
+            self.assertEqual(
+                recovery_record["recovery_actions"],
+                ["rebuild_required_artifacts", "repair_reader_first_structure", "resume_deep_read", "resolve_message_evidence"],
+            )
+            self.assertEqual(
+                recovery_record["validator_findings"],
+                [
+                    "CU106-routine-logic-details.yaml retains pending_deep_read semantic seed values for: RLOG-CU106-001",
+                    "CU106: required analysis sections/sidecar declarations missing; routine detail structure invalid",
+                    "unresolved message descriptions (unknown): UCC1852",
+                ],
+            )
+            self.assertIn("prompt-queue", recovery_record["program_prompt"])
+            prompt = (output_dir / "prompt-queue" / "0001-CU106.md").read_text(encoding="utf-8")
+            self.assertIn("## Flow-merge recovery context", prompt)
+            self.assertIn("RLOG-CU106-001", prompt)
+            self.assertIn("UCC1852", prompt)
+            evidence_request = (
+                output_dir / "message-evidence-requests" / "CU106-message-evidence-request.md"
+            ).read_text(encoding="utf-8")
+            self.assertIn("UCC1852", evidence_request)
+            self.assertIn("message-inventory.yaml", evidence_request)
+
+    def test_source_blocker_emits_recovery_action_without_a_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            manifest_path = self.write_manifest(root, freshness="stale")
+            output_dir = root / "missing-program-list-batch"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(QUEUE_SCRIPT),
+                    "--manifest",
+                    str(manifest_path),
+                    "--source-root",
+                    str(root / "source"),
+                    "--delivery-root",
+                    str(root / "delivery"),
+                    "--out-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((output_dir / "prompt-queue").exists())
+            recovery_plan = (output_dir / "recovery-plan.md").read_text(encoding="utf-8")
+            self.assertIn("Provide an approved source mapping", recovery_plan)
+            recovery_status = (output_dir / "recovery-status.yaml").read_text(encoding="utf-8")
+            self.assertIn("source_mapping_required", recovery_status)
+
+    def test_force_regeneration_removes_stale_recovery_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            manifest_path = self.write_manifest(root)
+            manifest = BUILDER.load_yaml(manifest_path)
+            manifest["programs"] = [manifest["programs"][0]]
+            manifest_path.write_text(BUILDER.dump_yaml(manifest), encoding="utf-8")
+            output_dir = root / "missing-program-list-batch"
+            command = [
+                sys.executable,
+                str(QUEUE_SCRIPT),
+                "--manifest",
+                str(manifest_path),
+                "--source-root",
+                str(root / "source"),
+                "--delivery-root",
+                str(root / "delivery"),
+                "--out-dir",
+                str(output_dir),
+                "--force",
+            ]
+
+            first = subprocess.run(command, text=True, capture_output=True)
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertTrue((output_dir / "recovery-plan.md").is_file())
+            self.assertTrue((output_dir / "recovery-status.yaml").is_file())
+            (output_dir / "message-evidence-requests").mkdir(exist_ok=True)
+            stale_request = output_dir / "message-evidence-requests" / "STALE.md"
+            stale_request.write_text("stale", encoding="utf-8")
+
+            manifest["programs"] = [
+                {
+                    "normalized_name": "COMPLETE",
+                    "run_resolution": "analyzed_this_run",
+                    "tier": "normal_program",
+                    "compact_artifacts": compact_status("present"),
+                    "artifact_readiness": {"status": "ready", "findings": []},
+                }
+            ]
+            manifest["source_inventory"]["programs"] = []
+            manifest_path.write_text(BUILDER.dump_yaml(manifest), encoding="utf-8")
+
+            second = subprocess.run(command, text=True, capture_output=True)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertFalse((output_dir / "recovery-plan.md").exists())
+            self.assertFalse((output_dir / "recovery-status.yaml").exists())
+            self.assertFalse(stale_request.exists())
+
+    def test_force_refuses_unknown_content_before_deleting_recovery_package(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            manifest_path = self.write_manifest(root)
+            manifest = BUILDER.load_yaml(manifest_path)
+            manifest["programs"] = [manifest["programs"][0]]
+            manifest["source_inventory"]["programs"] = [
+                manifest["source_inventory"]["programs"][0]
+            ]
+            manifest_path.write_text(BUILDER.dump_yaml(manifest), encoding="utf-8")
+            output_dir = root / "missing-program-list-batch"
+            command = [
+                sys.executable,
+                str(QUEUE_SCRIPT),
+                "--manifest",
+                str(manifest_path),
+                "--source-root",
+                str(root / "source"),
+                "--delivery-root",
+                str(root / "delivery"),
+                "--out-dir",
+                str(output_dir),
+                "--force",
+            ]
+
+            first = subprocess.run(command, text=True, capture_output=True)
+            self.assertEqual(first.returncode, 0, first.stderr)
+            recovery_plan = output_dir / "recovery-plan.md"
+            prompt = output_dir / "prompt-queue" / "0001-CU106.md"
+            self.assertTrue(recovery_plan.is_file())
+            self.assertTrue(prompt.is_file())
+            (output_dir / "operator-note.md").write_text(
+                "do not delete\n", encoding="utf-8"
+            )
+
+            second = subprocess.run(command, text=True, capture_output=True)
+            self.assertNotEqual(second.returncode, 0)
+            self.assertIn("unrecognized artifacts", second.stderr)
+            self.assertTrue(recovery_plan.is_file())
+            self.assertTrue(prompt.is_file())
 
     def test_v04_queue_uses_frozen_inventory_snapshot_not_mutated_csv(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

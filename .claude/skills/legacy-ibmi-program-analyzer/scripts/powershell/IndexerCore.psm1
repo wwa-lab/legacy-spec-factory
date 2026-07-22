@@ -23,6 +23,8 @@ function Parse-CliArguments {
         DeliveryProfile = $null
         ForceRescan = $false
         RescanReason = $null
+        PreserveExisting = $false
+        CanonicalArtifactNames = $false
     }
     $valueOptions = @{
         '--program' = 'Program'
@@ -36,6 +38,16 @@ function Parse-CliArguments {
         $token = [string]$Values[$index]
         if ($token -eq '--force-rescan') {
             $result.ForceRescan = $true
+            $index++
+            continue
+        }
+        if ($token -eq '--preserve-existing') {
+            $result.PreserveExisting = $true
+            $index++
+            continue
+        }
+        if ($token -eq '--canonical-artifact-names') {
+            $result.CanonicalArtifactNames = $true
             $index++
             continue
         }
@@ -414,30 +426,47 @@ function Write-TextFile {
 }
 
 function Get-SidecarDeclarations {
-    param([System.Collections.IDictionary]$Index)
+    param(
+        [System.Collections.IDictionary]$Index,
+        [bool]$CanonicalArtifactNames = $false
+    )
+    $prefix = ''
+    if ($CanonicalArtifactNames) {
+        $prefix = [regex]::Replace(([string]$Index.program).Trim().ToUpperInvariant(), '[\s<>:"/\\|?*]+', '_').Trim('._-')
+        if (-not $prefix) { $prefix = 'PROGRAM' }
+        $prefix += '-'
+    }
+    $name = {
+        param([string]$BaseName)
+        return $prefix + $BaseName
+    }
     $trigger = $Index.optional_sidecar_triggers
     $sidecars = [ordered]@{
-        program_analysis = [ordered]@{ path = 'program-analysis.md'; status = 'present' }
-        source_index = [ordered]@{ path = 'source-index.yaml'; status = 'present' }
-        routine_index = [ordered]@{ path = 'routine-index.md'; status = 'present' }
-        routine_logic_details = [ordered]@{ path = 'routine-logic-details.md'; status = 'present' }
-        routine_logic_details_yaml = [ordered]@{ path = 'routine-logic-details.yaml'; status = 'present' }
-        message_inventory_yaml = [ordered]@{ path = 'message-inventory.yaml'; status = 'present' }
-        message_inventory = [ordered]@{ path = 'message-inventory.md'; status = $(if ($trigger.message_inventory_markdown.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        coverage_ledger = [ordered]@{ path = 'all-routine-coverage-ledger.md'; status = $(if ($trigger.coverage_ledger.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        deep_read_plan = [ordered]@{ path = 'deep-read-plan.md'; status = $(if ($trigger.deep_read_plan.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        file_io_inventory = [ordered]@{ path = 'file-io-inventory.md'; status = $(if ($trigger.file_io_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        file_io_inventory_yaml = [ordered]@{ path = 'file-io-inventory.yaml'; status = $(if ($trigger.file_io_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        field_mutation_matrix = [ordered]@{ path = 'field-mutation-matrix.md'; status = $(if ($trigger.field_mutation_matrix.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        field_mutation_matrix_yaml = [ordered]@{ path = 'field-mutation-matrix.yaml'; status = $(if ($trigger.field_mutation_matrix.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        sql_inventory = [ordered]@{ path = 'sql-inventory.md'; status = $(if ($trigger.sql_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
-        sql_inventory_yaml = [ordered]@{ path = 'sql-inventory.yaml'; status = $(if ($trigger.sql_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        program_analysis = [ordered]@{ path = (& $name 'program-analysis.md'); status = 'present' }
+        source_index = [ordered]@{ path = (& $name 'source-index.yaml'); status = 'present' }
+        routine_index = [ordered]@{ path = (& $name 'routine-index.md'); status = 'present' }
+        routine_logic_details = [ordered]@{ path = (& $name 'routine-logic-details.md'); status = 'present' }
+        routine_logic_details_yaml = [ordered]@{ path = (& $name 'routine-logic-details.yaml'); status = 'present' }
+        message_inventory_yaml = [ordered]@{ path = (& $name 'message-inventory.yaml'); status = 'present' }
+        message_inventory = [ordered]@{ path = (& $name 'message-inventory.md'); status = $(if ($trigger.message_inventory_markdown.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        coverage_ledger = [ordered]@{ path = (& $name 'all-routine-coverage-ledger.md'); status = $(if ($trigger.coverage_ledger.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        deep_read_plan = [ordered]@{ path = (& $name 'deep-read-plan.md'); status = $(if ($trigger.deep_read_plan.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        file_io_inventory = [ordered]@{ path = (& $name 'file-io-inventory.md'); status = $(if ($trigger.file_io_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        file_io_inventory_yaml = [ordered]@{ path = (& $name 'file-io-inventory.yaml'); status = $(if ($trigger.file_io_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        field_mutation_matrix = [ordered]@{ path = (& $name 'field-mutation-matrix.md'); status = $(if ($trigger.field_mutation_matrix.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        field_mutation_matrix_yaml = [ordered]@{ path = (& $name 'field-mutation-matrix.yaml'); status = $(if ($trigger.field_mutation_matrix.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        sql_inventory = [ordered]@{ path = (& $name 'sql-inventory.md'); status = $(if ($trigger.sql_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
+        sql_inventory_yaml = [ordered]@{ path = (& $name 'sql-inventory.yaml'); status = $(if ($trigger.sql_inventory.write) { 'optional_triggered' } else { 'not_written_by_default' }) }
     }
     if ($Index.program_size_tier -eq 'large_extreme_program') {
+        $sidecars['deep_read_execution_plan'] = [ordered]@{
+            path = (& $name 'deep-read-execution-plan.yaml')
+            status = 'present'
+        }
         $batchCount = [Math]::Max(1, [Math]::Ceiling($Index.deep_read_windows.Count / 5.0))
         for ($i = 1; $i -le $batchCount; $i++) {
             $sidecars[('routine_logic_deep_read_batch_{0:D3}' -f $i)] = [ordered]@{
-                path = 'routine-logic-details/deep-read-batch-{0:D3}.md' -f $i
+                path = 'routine-logic-details/' + (& $name ('deep-read-batch-{0:D3}.md' -f $i))
                 status = 'present'
             }
         }

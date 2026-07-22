@@ -20,6 +20,67 @@ if (-not (Test-Path -LiteralPath $upstreamValidationModule -PathType Leaf)) {
 }
 Import-Module $upstreamValidationModule -Force
 
+$script:CoreReaderFirstSections = @(
+    'Program Reading Summary', 'Calculation Logic', 'Validation Logic',
+    'Exception Handling', 'Message Inventory'
+)
+
+function Get-FlowCoreSectionBlock {
+    param([Parameter(Mandatory = $true)][string]$Markdown, [Parameter(Mandatory = $true)][string]$Section)
+    $matches = @([regex]::Matches($Markdown, '(?m)^##\s+(.+?)\s*$'))
+    for ($index = 0; $index -lt $matches.Count; $index++) {
+        if ($matches[$index].Groups[1].Value.Trim() -ne $Section) { continue }
+        $start = $matches[$index].Index + $matches[$index].Length
+        $end = if ($index + 1 -lt $matches.Count) { $matches[$index + 1].Index } else { $Markdown.Length }
+        return $Markdown.Substring($start, $end - $start)
+    }
+    return ''
+}
+
+function Get-FlowCoreReaderFindings {
+    param([AllowNull()][string]$ProgramAnalysis)
+    if (-not $ProgramAnalysis -or -not (Test-Path -LiteralPath $ProgramAnalysis -PathType Leaf)) {
+        return @('missing core program-analysis.md reader-first artifact')
+    }
+    $markdown = [IO.File]::ReadAllText($ProgramAnalysis)
+    $findings = New-Object System.Collections.Generic.List[string]
+    foreach ($sectionName in $script:CoreReaderFirstSections) {
+        $block = Get-FlowCoreSectionBlock $markdown $sectionName
+        if (-not $block) { [void]$findings.Add("core reader-first section is missing: $sectionName"); continue }
+        $visible = [regex]::Replace($block, '<!--.*?-->', ' ', 'Singleline')
+        $visible = [regex]::Replace($visible, '(?m)^\s*#+\s+', ' ')
+        $visible = [regex]::Replace($visible, '(?m)^\s*\|\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$', ' ')
+        $words = @([regex]::Matches($visible, '[A-Za-z0-9][A-Za-z0-9_#$@/-]*|[\u4e00-\u9fff]{2,}')).Count
+        $placeholder = [regex]::IsMatch($visible, '(?i)\b(?:pending(?:\s+semantic)?(?:\s+deep[- ]read)?|placeholder(?:\s+(?:content|text))?|to\s+be\s+completed|fill\s+in|reader[- ]first\s+explanation)\b')
+        if (-not $visible.Trim() -or ($placeholder -and $words -lt 8)) {
+            [void]$findings.Add("core reader-first section is placeholder or not meaningful: $sectionName")
+        }
+        elseif ($words -lt 4) {
+            [void]$findings.Add("core reader-first section is too thin to be meaningful: $sectionName")
+        }
+    }
+    return @($findings.ToArray())
+}
+
+function Get-FlowReadinessFindingClass {
+    param([AllowEmptyString()][string]$Finding)
+    $lowered = ([string]$Finding).ToLowerInvariant()
+    foreach ($marker in @(
+        'artifact trust validation failed', 'path escapes', 'symlink', 'junction', 'reparse point',
+        'ambiguous program analysis artifact', 'artifact folder resolution is ambiguous',
+        'program analysis artifact directory is missing', 'analysis directory does not exist',
+        'missing core program-analysis.md', 'program identity mismatch in program analysis h1',
+        'program identity is missing from the program analysis h1',
+        'missing program-analysis.md or a single program-analysis-<obj-id>.md'
+    )) { if ($lowered.Contains($marker)) { return 'blocking' } }
+    if ($lowered.Contains('core reader-first section')) { return 'blocking' }
+    if ($lowered.Contains('program-analysis.md missing required sections:')) {
+        $missing = $lowered.Split('program-analysis.md missing required sections:', 2)[1]
+        foreach ($section in $script:CoreReaderFirstSections) { if ($missing.Contains($section.ToLowerInvariant())) { return 'blocking' } }
+    }
+    return 'pending'
+}
+
 function Get-ReadinessMapValue {
     param($Map, [Parameter(Mandatory = $true)][string]$Key, $Default = $null)
     if ($null -eq $Map) { return $Default }
@@ -187,19 +248,25 @@ function Get-FlowProgramArtifactReadiness {
         [Parameter(Mandatory = $true)][string]$Program,
         $CompactArtifacts,
         [string[]]$AmbiguousMatches = @(),
+        [AllowNull()][string]$ExpectedSizeTier,
         [Parameter(Mandatory = $true)][string[]]$RequiredArtifacts
     )
     $findings = New-Object System.Collections.Generic.List[string]
-    if (-not $ArtifactRoot) { $findings.Add('program analysis artifact directory is missing') }
+    $blockingFindings = New-Object System.Collections.Generic.List[string]
+    $pendingFindings = New-Object System.Collections.Generic.List[string]
+    if (-not $ArtifactRoot) { [void]$blockingFindings.Add('program analysis artifact directory is missing') }
     if (@($AmbiguousMatches).Count -gt 1) {
-        $findings.Add('artifact folder resolution is ambiguous: ' + (@($AmbiguousMatches) -join ', '))
+        [void]$blockingFindings.Add('artifact folder resolution is ambiguous: ' + (@($AmbiguousMatches) -join ', '))
     }
     $missing = New-Object System.Collections.Generic.List[string]
     foreach ($filename in $RequiredArtifacts) {
         $artifact = Get-ReadinessMapValue $CompactArtifacts (Get-ReadinessArtifactKey $filename) ([ordered]@{})
         if ((Get-ReadinessMapValue $artifact 'status' 'missing') -ne 'present') { $missing.Add($filename) }
     }
-    if ($missing.Count) { $findings.Add('missing required artifacts: ' + (@($missing.ToArray()) -join ', ')) }
+    foreach ($filename in @($missing.ToArray())) {
+        if ($filename -eq 'program-analysis.md') { [void]$blockingFindings.Add("missing core artifacts: $filename") }
+        else { [void]$pendingFindings.Add("pending non-core artifact: $filename") }
+    }
 
     $pathsTrusted = $true; $trustedArtifactRoot = $null
     if ($ArtifactRoot) {
@@ -211,45 +278,58 @@ function Get-FlowProgramArtifactReadiness {
         catch { $pathsTrusted = $false; $findings.Add("artifact trust validation failed: $($_.Exception.Message)") }
     }
     $programAnalysis = if ($pathsTrusted) { Get-ReadinessArtifactPath $Root $CompactArtifacts 'program-analysis.md' } else { $null }
+    foreach ($finding in @(Get-FlowCoreReaderFindings $programAnalysis)) {
+        if ((Get-FlowReadinessFindingClass $finding) -eq 'blocking') { [void]$blockingFindings.Add($finding) }
+        else { [void]$pendingFindings.Add($finding) }
+    }
     $analysisStatus = $null
     $upstreamRan = $false
     $upstreamFindings = New-Object System.Collections.Generic.List[string]
-    if ($ArtifactRoot -and $programAnalysis -and $missing.Count -eq 0 -and @($AmbiguousMatches).Count -le 1) {
+    if ($ArtifactRoot -and $programAnalysis -and @($AmbiguousMatches).Count -le 1) {
         $upstreamRan = $true
         $analysisDirectory = $trustedArtifactRoot
         try {
-            foreach ($finding in @(Invoke-ContractValidation $analysisDirectory $programAnalysis)) {
+            foreach ($finding in @(Invoke-ContractValidation $analysisDirectory $programAnalysis $ExpectedSizeTier)) {
                 $upstreamFindings.Add([string]$finding)
-                $findings.Add("upstream validator: $finding")
+                $class = Get-FlowReadinessFindingClass ([string]$finding)
+                if ($class -eq 'blocking') { [void]$blockingFindings.Add("upstream validator: $finding") }
+                else { [void]$pendingFindings.Add("upstream validator: $finding") }
             }
         }
         catch {
             $upstreamFindings.Add($_.Exception.Message)
-            $findings.Add("upstream validator execution failed: $($_.Exception.Message)")
+            [void]$pendingFindings.Add("upstream validator execution failed: $($_.Exception.Message)")
         }
-        foreach ($finding in @(Get-ReadinessProgramIdentityFindings $Root $Program $CompactArtifacts)) { $findings.Add($finding) }
+        foreach ($finding in @(Get-ReadinessProgramIdentityFindings $Root $Program $CompactArtifacts)) {
+            if ((Get-FlowReadinessFindingClass $finding) -eq 'blocking') { [void]$blockingFindings.Add($finding) }
+            else { [void]$pendingFindings.Add($finding) }
+        }
         $statusEvidence = Get-ReadinessTerminalStatusEvidence $Root $CompactArtifacts
         $analysisStatus = Get-ReadinessMapValue $statusEvidence 'analysis_status' $null
-        foreach ($finding in @(Get-ReadinessMapValue $statusEvidence 'findings' @())) { $findings.Add([string]$finding) }
+        foreach ($finding in @(Get-ReadinessMapValue $statusEvidence 'findings' @())) { [void]$pendingFindings.Add([string]$finding) }
         if ($analysisStatus -notin @('approved', 'approved_with_non_blocking_tbd')) {
             $foundStatus = if ($analysisStatus) { $analysisStatus } else { 'missing' }
-            $findings.Add("program analysis terminal status must be approved or approved_with_non_blocking_tbd; found $foundStatus")
+            [void]$pendingFindings.Add("program analysis terminal status must be approved or approved_with_non_blocking_tbd; found $foundStatus")
         }
         $markdown = [IO.File]::ReadAllText($programAnalysis)
         if ([regex]::IsMatch($markdown, '(?im)\b(?:pending_deep_read|batch_status\s*[:|]\s*(?:pending|in_progress)|validator_status\s*[:|]\s*(?:pending|failed))\b')) {
-            $findings.Add('program analysis contains a non-terminal deep-read or validator status')
+            [void]$pendingFindings.Add('program analysis contains a non-terminal deep-read or validator status')
         }
     }
 
-    $ready = $ArtifactRoot -and $programAnalysis -and $findings.Count -eq 0
+    foreach ($finding in @($blockingFindings.ToArray() + $pendingFindings.ToArray())) { if (-not $findings.Contains($finding)) { [void]$findings.Add($finding) } }
+    $ready = $ArtifactRoot -and $programAnalysis -and $blockingFindings.Count -eq 0
     return [ordered]@{
         status = $(if ($ready) { 'ready' } else { 'not_ready' })
         validator = 'legacy-ibmi-program-analyzer/Invoke-ContractValidation'
-        validator_status = $(if (-not $upstreamRan) { 'not_run' } elseif ($upstreamFindings.Count) { 'failed' } else { 'passed' })
+        validator_status = $(if (-not $upstreamRan) { 'not_run' } elseif (@($upstreamFindings | Where-Object { (Get-FlowReadinessFindingClass $_) -eq 'blocking' }).Count) { 'failed' } elseif ($pendingFindings.Count) { 'passed_with_pending' } else { 'passed' })
         analysis_status = $analysisStatus
         candidate_artifact_root = $ArtifactRoot
         validated_program_analysis = $(if ($programAnalysis) { Get-ReadinessRelativePath $Root $programAnalysis } else { $null })
         findings = @($findings.ToArray())
+        blocking_findings = @($blockingFindings.ToArray())
+        pending_findings = @($pendingFindings.ToArray())
+        readiness_policy = 'core_reader_first_lenient'
     }
 }
 

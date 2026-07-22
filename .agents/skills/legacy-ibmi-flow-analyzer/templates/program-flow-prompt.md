@@ -19,7 +19,8 @@ not authorize transaction-flow reconstruction.
 Review name: <REVIEW-NAME>
 Programs file: <PROGRAM-LIST-PATH>
 Program artifact root: <CURRENT-RUN-ARTIFACT-ROOT>
-Output parent: <PROGRAM-SET-REVIEW-PARENT>
+Project root (default output location): <DELIVERY-PROJECT-ROOT>
+Output parent (仅需覆盖默认 `<项目根目录>/outputs/` 时填写): <CUSTOM-OUTPUT-PARENT-OR-N/A>
 Source root (仅缺失程序定向恢复时需要): <SOURCE-ROOT-OR-N/A>
 Artifact repo mode: current_run
 Profile: standard_reader_first
@@ -38,8 +39,11 @@ Optional SME context:
 
 执行要求：
 
-1. 先运行 deterministic preparation。`--output-dir` 是 parent；只追加一次
-   `<FLOW-SLUG>--<PROGRAM-SET-SLUG>`，不要产生重复嵌套目录。
+1. 先运行 deterministic preparation。默认传入 `--project-root`，将产物写到
+   `<项目根目录>/outputs/<FLOW-SLUG>--<PROGRAM-SET-SLUG>/`；`outputs/` 不存在时
+   创建，存在时复用同 identity 的 preparation bundle。若该 bundle 已有正式 review，
+   不得覆盖，必须先显式 archive。仅在明确给出 custom output parent 时使用
+   `--output-dir`。只追加一次 `<FLOW-SLUG>--<PROGRAM-SET-SLUG>`，不要产生重复嵌套目录。
 2. 对每个 distinct program 调用/复用 legacy-ibmi-program-analyzer 的 final
    validator。仅文件存在不代表 ready；pending_deep_read、非终态 batch、
    placeholder、缺少 RLOG、未解决的 message description 或 validator failure

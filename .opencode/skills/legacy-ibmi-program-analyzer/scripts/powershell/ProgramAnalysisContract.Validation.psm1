@@ -16,6 +16,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'ProgramAnalysisContract.Common.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ProgramAnalysisContract.ExecutionPlan.psm1') -Force
 
 # Final completion surfaces include routine-logic-details.md/yaml, every
 # *-deep-read-batch-*.md checkpoint, and explicit pending_deep_read or
@@ -166,8 +167,8 @@ function Validate-RlogSequence {
 function Validate-RlogCoverage {
     param([string]$AnalysisDir)
 
-    $yamlPath = Join-Path $AnalysisDir 'routine-logic-details.yaml'
-    $markdownPath = Join-Path $AnalysisDir 'routine-logic-details.md'
+    $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
+    $markdownPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.md'
     if (-not (Test-Path -LiteralPath $yamlPath -PathType Leaf) -or
         -not (Test-Path -LiteralPath $markdownPath -PathType Leaf)) { return @() }
 
@@ -198,7 +199,7 @@ function Get-MainRlogDetailHeadings {
 function Validate-ProgramRlogCoverage {
     param([string]$ProgramMarkdown, [string]$AnalysisDir)
 
-    $yamlPath = Join-Path $AnalysisDir 'routine-logic-details.yaml'
+    $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
     if (-not (Test-Path -LiteralPath $yamlPath -PathType Leaf)) { return @() }
     $yamlIds = @(Get-RlogIdsFromYaml $yamlPath)
     if ($yamlIds.Count -eq 0) { return @() }
@@ -237,7 +238,7 @@ function Validate-ProgramRlogCoverage {
 function Validate-CoreLogicRoutineIndexes {
     param([string]$ProgramMarkdown, [string]$AnalysisDir)
 
-    $yamlPath = Join-Path $AnalysisDir 'routine-logic-details.yaml'
+    $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
     if (-not (Test-Path -LiteralPath $yamlPath -PathType Leaf)) { return @() }
     $yamlIds = @(Get-RlogIdsFromYaml $yamlPath)
     if ($yamlIds.Count -eq 0) { return @() }
@@ -304,7 +305,7 @@ function Validate-ProgramReadingSummaryQuality {
 function Validate-CoreLogicReaderFirstQuality {
     param([string]$ProgramMarkdown, [string]$AnalysisDir)
 
-    $yamlPath = Join-Path $AnalysisDir 'routine-logic-details.yaml'
+    $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
     if (-not (Test-Path -LiteralPath $yamlPath -PathType Leaf)) { return @() }
     $yamlIds = @(Get-RlogIdsFromYaml $yamlPath)
     if ($yamlIds.Count -eq 0) { return @() }
@@ -405,7 +406,7 @@ function Get-MainRlogDetailBlocks {
 function Validate-MainRlogDetailQuality {
     param([string]$ProgramMarkdown, [string]$AnalysisDir)
 
-    $yamlPath = Join-Path $AnalysisDir 'routine-logic-details.yaml'
+    $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
     if (-not (Test-Path -LiteralPath $yamlPath -PathType Leaf)) { return @() }
     $yamlIds = @(Get-RlogIdsFromYaml $yamlPath)
     if ($yamlIds.Count -eq 0) { return @() }
@@ -445,75 +446,6 @@ function Validate-NoStaleGapWording {
         }
     }
     return @($findings.ToArray())
-}
-
-function Get-BatchDetailFiles {
-    param([string]$AnalysisDir)
-
-    $filesByPath = @{}
-    $summaryPath = Find-RoutineArtifactPath $AnalysisDir 'program-analysis-summary.yaml'
-    if ($summaryPath) {
-        $entries = Get-SidecarEntries $summaryPath
-        foreach ($key in $entries.Keys) {
-            $entry = $entries[$key]
-            if ($key.StartsWith('routine_logic_deep_read_batch_') -and [string]$entry.path -ne '') {
-                $declaredPath = Join-Path $AnalysisDir ([string]$entry.path)
-                if (Test-Path -LiteralPath $declaredPath -PathType Leaf) {
-                    $file = Get-Item -LiteralPath $declaredPath
-                    $filesByPath[$file.FullName] = $file
-                }
-            }
-        }
-    }
-    $batchDir = Join-Path $AnalysisDir 'routine-logic-details'
-    if (Test-Path -LiteralPath $batchDir -PathType Container) {
-        foreach ($filter in @('part-*.md', '*-part-*.md', 'deep-read-batch-*.md', '*-deep-read-batch-*.md', 'deep-batch-*.md', '*-deep-batch-*.md')) {
-            foreach ($file in @(Get-ChildItem -LiteralPath $batchDir -Filter $filter -File -ErrorAction SilentlyContinue)) {
-                $filesByPath[$file.FullName] = $file
-            }
-        }
-    }
-    return @($filesByPath.Values | Sort-Object @{
-        Expression = { if ($_.BaseName -match '(\d+)$') { [int]$Matches[1] } else { [int]::MaxValue } }
-    }, Name)
-}
-
-function Test-RequiresLargeProgramBatches {
-    param([string]$SummaryPath)
-
-    if ([string]::IsNullOrEmpty($SummaryPath)) { return $false }
-    if (-not (Test-Path -LiteralPath $SummaryPath -PathType Leaf)) { return $false }
-    $lines = Get-YamlLines $SummaryPath
-    if ((Get-YamlRootScalar $lines 'program_size_tier') -eq 'large_extreme_program') { return $true }
-    $countsLines = Get-YamlNestedScalar $lines 'counts' 'source_lines'
-    $sourceLines = Get-YamlNestedScalar $lines 'source' 'line_count'
-    $parsed = 0
-    if ([int]::TryParse($countsLines, [ref]$parsed) -and $parsed -gt 10000) { return $true }
-    $parsed = 0
-    if ([int]::TryParse($sourceLines, [ref]$parsed) -and $parsed -gt 10000) { return $true }
-    return $false
-}
-
-function Validate-LargeProgramBatches {
-    param([string]$AnalysisDir)
-
-    $summaryPath = Find-RoutineArtifactPath $AnalysisDir 'program-analysis-summary.yaml'
-    if (-not (Test-RequiresLargeProgramBatches $summaryPath)) { return @() }
-    $batches = @(Get-BatchDetailFiles $AnalysisDir)
-    if ($batches.Count -eq 0) {
-        return @(
-            'large_extreme_program requires routine-logic-details/deep-read-batch-*.md ' +
-            'batch checkpoint files'
-        )
-    }
-    $firstBatches = @($batches | Where-Object { $_.Name -match '(?:deep-read-batch|deep-batch)-0*1\.md$' })
-    if ($firstBatches.Count -eq 0) {
-        return @(
-            'large_extreme_program requires a first batch checkpoint: ' +
-            'routine-logic-details/deep-read-batch-001.md'
-        )
-    }
-    return @()
 }
 
 function Test-LooksLikeSourceSnippet {
@@ -619,7 +551,7 @@ function Validate-RoutineDetailReviewSurfaces {
 function Validate-SidecarSet {
     param([string]$AnalysisDir)
 
-    $summaryPath = Join-Path $AnalysisDir 'program-analysis-summary.yaml'
+    $summaryPath = Find-RoutineArtifactPath $AnalysisDir 'program-analysis-summary.yaml'
     if (-not (Test-Path -LiteralPath $summaryPath -PathType Leaf)) {
         return @('Missing required file: program-analysis-summary.yaml')
     }
@@ -686,7 +618,7 @@ function Get-MessageCode {
 function Validate-MessageDescriptions {
     param([string]$AnalysisDir)
 
-    $path = Join-Path $AnalysisDir 'message-inventory.yaml'
+    $path = Find-RoutineArtifactPath $AnalysisDir 'message-inventory.yaml'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return @() }
     $entries = @(Get-MessageEntries $path)
     $unresolved = New-Object System.Collections.ArrayList
@@ -710,7 +642,7 @@ function Validate-MessageDescriptions {
 function Validate-MessageInventorySync {
     param([string]$ProgramMarkdown, [string]$AnalysisDir)
 
-    $path = Join-Path $AnalysisDir 'message-inventory.yaml'
+    $path = Find-RoutineArtifactPath $AnalysisDir 'message-inventory.yaml'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return @() }
     $codes = New-Object System.Collections.ArrayList
     foreach ($entry in @(Get-MessageEntries $path)) {
@@ -727,26 +659,44 @@ function Validate-MessageInventorySync {
         ($missing -join ', ')
     )
 }
-
 function Find-ProgramAnalysisPath {
     param([string]$AnalysisDir, [string]$ExplicitPath)
-
     if ($ExplicitPath) { return $ExplicitPath }
     $defaultPath = Join-Path $AnalysisDir 'program-analysis.md'
-    if (Test-Path -LiteralPath $defaultPath -PathType Leaf) { return $defaultPath }
-    $matches = @(Get-ChildItem -LiteralPath $AnalysisDir -Filter 'program-analysis-*.md' -File -ErrorAction SilentlyContinue | Sort-Object Name)
-    if ($matches.Count -eq 1) { return $matches[0].FullName }
+    $hasDefault = Test-Path -LiteralPath $defaultPath -PathType Leaf
+    $canonicalMatches = @(Get-PrefixedArtifactMatches $AnalysisDir 'program-analysis.md')
+    $legacyMatches = @(Get-ChildItem -LiteralPath $AnalysisDir -Filter 'program-analysis-*.md' -File -ErrorAction SilentlyContinue | Sort-Object Name)
+    if (($hasDefault -and $canonicalMatches.Count -gt 0) -or $canonicalMatches.Count -gt 1 -or ($legacyMatches.Count -gt 0 -and ($hasDefault -or $canonicalMatches.Count -gt 0)) -or $legacyMatches.Count -gt 1) { return $null }
+    if ($canonicalMatches.Count -eq 1) { return $canonicalMatches[0].FullName }
+    if ($hasDefault) { return $defaultPath }
+    if ($legacyMatches.Count -eq 1) { return $legacyMatches[0].FullName }
     return $null
 }
 
-function Invoke-ContractValidation {
-    param([string]$AnalysisDir, [string]$ProgramAnalysis)
+function Validate-LargeExecutionPlanCoverage {
+    param(
+        [string]$AnalysisDir,
+        [AllowNull()][string]$ExpectedSizeTier,
+        [AllowNull()][string]$ExpectedSourceIndexSha256,
+        [AllowNull()][string]$ExpectedExecutionPlanSha256
+    )
 
+    return Get-LargeExecutionPlanValidationResult $AnalysisDir $ExpectedSizeTier $ExpectedSourceIndexSha256 $ExpectedExecutionPlanSha256
+}
+
+function Invoke-ContractValidation {
+    param(
+        [string]$AnalysisDir,
+        [string]$ProgramAnalysis,
+        [AllowNull()][string]$ExpectedSizeTier,
+        [AllowNull()][string]$ExpectedSourceIndexSha256,
+        [AllowNull()][string]$ExpectedExecutionPlanSha256
+    )
     $findings = New-Object System.Collections.ArrayList
     if (-not (Test-Path -LiteralPath $AnalysisDir -PathType Container)) {
         return @("Analysis directory does not exist: $AnalysisDir")
     }
-
+    foreach ($finding in @(Get-ProgramArtifactResolutionFindings $AnalysisDir $ProgramAnalysis)) { [void]$findings.Add($finding) }
     $programPath = Find-ProgramAnalysisPath $AnalysisDir $ProgramAnalysis
     if (-not $programPath -or -not (Test-Path -LiteralPath $programPath -PathType Leaf)) {
         [void]$findings.Add('Missing program-analysis.md or a single program-analysis-<OBJ-ID>.md')
@@ -763,11 +713,12 @@ function Invoke-ContractValidation {
     foreach ($finding in @(Validate-SidecarSet $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-RlogCoverage $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Get-RoutineSemanticCompletionFindings $AnalysisDir)) { [void]$findings.Add($finding) }
-    foreach ($finding in @(Get-BatchYamlSemanticCompletionFindings $AnalysisDir @(Get-BatchDetailFiles $AnalysisDir))) { [void]$findings.Add($finding) }
-    foreach ($finding in @(Validate-LargeProgramBatches $AnalysisDir)) { [void]$findings.Add($finding) }
+    $executionPlan = Validate-LargeExecutionPlanCoverage $AnalysisDir $ExpectedSizeTier $ExpectedSourceIndexSha256 $ExpectedExecutionPlanSha256
+    foreach ($finding in @($executionPlan.Findings)) { [void]$findings.Add($finding) }
+    foreach ($finding in @(Get-BatchYamlSemanticCompletionFindings -AnalysisDir $AnalysisDir -BatchFiles @(Get-BatchDetailFiles $AnalysisDir) -ExpectedRlogIds @($executionPlan.PlannedRlogIds))) { [void]$findings.Add($finding) }
+    foreach ($finding in @(Validate-LargeProgramBatches $AnalysisDir $ExpectedSizeTier)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-RoutineDetailReviewSurfaces $AnalysisDir)) { [void]$findings.Add($finding) }
     foreach ($finding in @(Validate-MessageDescriptions $AnalysisDir)) { [void]$findings.Add($finding) }
     return @($findings.ToArray())
 }
-
 Export-ModuleMember -Function 'Invoke-ContractValidation'

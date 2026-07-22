@@ -154,6 +154,29 @@ REQUIRED_COMPACT_ARTIFACTS = (
     "routine-logic-details.yaml",
 )
 
+# Readiness is intentionally narrower than the upstream *final delivery*
+# contract.  Early source scans commonly have incomplete sidecars, routine
+# deep-read checkpoints, or message descriptions.  Those are useful evidence
+# and must remain visible as pending work, but they do not make the five
+# reader-first sections unusable.  Only the primary Markdown and its five
+# reader-first sections are hard readiness requirements here.
+CORE_READINESS_ARTIFACTS = ("program-analysis.md",)
+CORE_READINESS_SECTIONS = (
+    "Program Reading Summary",
+    "Calculation Logic",
+    "Validation Logic",
+    "Exception Handling",
+    "Message Inventory",
+)
+CORE_READINESS_PLACEHOLDER_RE = re.compile(
+    r"\b(?:pending(?:\s+semantic)?(?:\s+deep[- ]read)?|placeholder(?:\s+content|\s+text)?|"
+    r"to\s+be\s+completed|fill\s+in|reader[- ]first\s+explanation)\b",
+    re.I,
+)
+CORE_READINESS_WORD_RE = re.compile(
+    r"[A-Za-z0-9][A-Za-z0-9_#$@/-]*|[\u4e00-\u9fff]{2,}"
+)
+
 CONDITIONAL_COMPACT_ARTIFACTS: tuple[str, ...] = ()
 
 OPTIONAL_COMPACT_ARTIFACTS = (
@@ -431,11 +454,8 @@ def review_status_for_programs(programs: list[dict[str, Any]]) -> str:
     if any(
         entry.get("run_resolution") in {RUN_PENDING, RUN_BLOCKED}
         or (entry.get("artifact_readiness") or {}).get("status") != "ready"
-        or any(
-            ((entry.get("compact_artifacts") or {}).get(artifact_key(filename), {}) or {}).get("status")
-            != "present"
-            for filename in REQUIRED_COMPACT_ARTIFACTS
-        )
+        or ((entry.get("compact_artifacts") or {}).get(artifact_key("program-analysis.md"), {}) or {}).get("status")
+        != "present"
         for entry in programs
     ):
         return REVIEW_STATUS_PARTIAL
@@ -735,6 +755,106 @@ def terminal_analysis_status(analysis_dir: Path, program: str) -> str | None:
     return status
 
 
+def _core_section_block(markdown: str, section: str) -> str:
+    """Return one reader-first H2 block without requiring the full upstream layout."""
+
+    matches = list(re.finditer(r"^##\s+(.+?)\s*$", markdown, re.M))
+    for index, match in enumerate(matches):
+        if match.group(1).strip() != section:
+            continue
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        return markdown[start:end]
+    return ""
+
+
+def core_reader_first_findings(analysis_path: Path | None) -> list[str]:
+    """Validate only the information needed to make an early scan readable.
+
+    This is deliberately independent from the upstream final-delivery gate.
+    A section may contain unresolved rows, TBDs, or pending routine detail and
+    still pass as long as it has a non-placeholder reader-facing explanation.
+    """
+
+    if analysis_path is None or not analysis_path.is_file():
+        return ["missing core program-analysis.md reader-first artifact"]
+    markdown = analysis_path.read_text(encoding="utf-8")
+    findings: list[str] = []
+    for section in CORE_READINESS_SECTIONS:
+        block = _core_section_block(markdown, section)
+        if not block:
+            findings.append(f"core reader-first section is missing: {section}")
+            continue
+        surface = _structured_markdown_surface_v04(block)
+        # Keep tables as evidence, but remove formatting noise before deciding
+        # whether a section is genuinely empty or only a placeholder shell.
+        visible_lines = []
+        for raw in surface.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("|") and (
+                set(line.replace("|", "").replace("-", "").replace(":", "").strip())
+                == set()
+            ):
+                continue
+            if line.startswith("#"):
+                continue
+            visible_lines.append(line)
+        visible = " ".join(visible_lines)
+        words = CORE_READINESS_WORD_RE.findall(visible)
+        if not visible or CORE_READINESS_PLACEHOLDER_RE.search(visible) and len(words) < 8:
+            findings.append(
+                f"core reader-first section is placeholder or not meaningful: {section}"
+            )
+            continue
+        if len(words) < 4:
+            findings.append(
+                f"core reader-first section is too thin to be meaningful: {section}"
+            )
+    return findings
+
+
+def classify_readiness_finding(finding: str) -> str:
+    """Return ``blocking`` for core/safety failures, else ``pending``.
+
+    The upstream program analyzer remains strict for final program delivery.
+    The merger uses this small severity boundary so early scans can enter the
+    reader-first bundle while retaining every non-core defect for follow-up.
+    """
+
+    text = str(finding or "")
+    lowered = text.lower()
+    if any(
+        marker in lowered
+        for marker in (
+            "artifact trust validation failed",
+            "path escapes",
+            "symlink",
+            "junction",
+            "reparse point",
+            "ambiguous program analysis artifact",
+            "artifact folder resolution is ambiguous",
+            "program analysis artifact directory is missing",
+            "analysis directory does not exist",
+            "missing core program-analysis.md",
+            "program identity mismatch in program analysis h1",
+            "program identity is missing from the program analysis h1",
+        )
+    ):
+        return "blocking"
+    if "core reader-first section" in lowered:
+        return "blocking"
+    if "missing program-analysis.md or a single program-analysis-<obj-id>.md" in lowered:
+        return "blocking"
+    if "program-analysis.md missing required sections:" in lowered:
+        missing = lowered.split("program-analysis.md missing required sections:", 1)[1]
+        if any(section.lower() in missing for section in CORE_READINESS_SECTIONS):
+            return "blocking"
+    # Everything else is retained as a pending repair item: sidecar drift,
+    # status/terminal gaps, pending deep reads, message descriptions, RLOG
+    # coverage, and non-core layout/quality findings.
+    return "pending"
+
+
 def assess_artifact_readiness(
     *,
     root: Path,
@@ -742,14 +862,23 @@ def assess_artifact_readiness(
     candidate_artifact_root: str | None,
     matches: list[str],
     compact_artifacts: dict[str, ArtifactStatus],
+    expected_size_tier: str | None = None,
 ) -> dict[str, Any]:
-    """Apply existence, ambiguity, upstream semantic, and terminal-state gates."""
+    """Apply the early-scan core gate and retain non-core defects as pending.
+
+    The upstream validator is still executed when possible, but its strict
+    final-delivery findings are split into blocking core/safety findings and
+    non-blocking pending findings.  This keeps an incomplete scan useful to the
+    LLM/SME without allowing an empty or misidentified core artifact through.
+    """
 
     findings: list[str] = []
+    blocking_findings: list[str] = []
+    pending_findings: list[str] = []
     if not candidate_artifact_root:
-        findings.append("program analysis artifact directory is missing")
+        blocking_findings.append("program analysis artifact directory is missing")
     if len(matches) > 1:
-        findings.append(
+        blocking_findings.append(
             "ambiguous program analysis artifact directories: " + ", ".join(matches)
         )
     missing_required = [
@@ -758,43 +887,85 @@ def assess_artifact_readiness(
         if compact_artifacts.get(artifact_key(filename), ArtifactStatus("", "missing")).status
         != "present"
     ]
-    if missing_required:
-        findings.append("missing required artifacts: " + ", ".join(missing_required))
+    missing_core = [
+        filename for filename in missing_required if filename in CORE_READINESS_ARTIFACTS
+    ]
+    missing_non_core = [
+        filename for filename in missing_required if filename not in CORE_READINESS_ARTIFACTS
+    ]
+    if missing_core:
+        blocking_findings.append(
+            "missing core artifacts: "
+            + ", ".join(program_artifact_filename(program, filename) for filename in missing_core)
+        )
+    if missing_non_core:
+        pending_findings.append(
+            "pending non-core artifacts: "
+            + ", ".join(program_artifact_filename(program, filename) for filename in missing_non_core)
+        )
 
     analysis_dir = root / candidate_artifact_root if candidate_artifact_root else None
     upstream_findings: list[str] = []
     upstream_ran = False
     analysis_status: str | None = None
-    if analysis_dir and analysis_dir.is_dir() and not missing_required and len(matches) <= 1:
+    analysis_path = (
+        find_program_analysis_file(analysis_dir, program)
+        if analysis_dir and analysis_dir.is_dir() and len(matches) <= 1
+        else None
+    )
+    for core_finding in core_reader_first_findings(analysis_path):
+        if classify_readiness_finding(core_finding) == "blocking":
+            blocking_findings.append(core_finding)
+        else:
+            pending_findings.append(core_finding)
+
+    if analysis_dir and analysis_dir.is_dir() and analysis_path is not None and len(matches) <= 1:
         upstream_ran = True
         upstream_findings = [
-            str(item) for item in upstream_program_validator().validate(analysis_dir)
+            str(item)
+            for item in upstream_program_validator().validate(
+                analysis_dir,
+                expected_size_tier=expected_size_tier,
+            )
         ]
-        findings.extend(upstream_findings)
-        findings.extend(program_artifact_identity_findings(analysis_dir, program))
+        for item in upstream_findings:
+            (blocking_findings if classify_readiness_finding(item) == "blocking" else pending_findings).append(item)
+        for item in program_artifact_identity_findings(analysis_dir, program):
+            (blocking_findings if classify_readiness_finding(item) == "blocking" else pending_findings).append(item)
         analysis_status, status_findings = terminal_analysis_status_evidence(
             analysis_dir, program
         )
-        findings.extend(status_findings)
+        pending_findings.extend(status_findings)
         if analysis_status not in {"approved", "approved_with_non_blocking_tbd"}:
-            findings.append(
+            pending_findings.append(
                 "program analysis terminal status must be approved or "
                 f"approved_with_non_blocking_tbd; found {analysis_status or 'missing'}"
             )
 
+    findings.extend(blocking_findings)
+    findings.extend(pending_findings)
+    pending_findings = list(dict.fromkeys(pending_findings))
+    blocking_findings = list(dict.fromkeys(blocking_findings))
+    findings = list(dict.fromkeys(findings))
+
     return {
-        "status": "ready" if not findings else "not_ready",
+        "status": "ready" if not blocking_findings else "not_ready",
         "validator": "legacy-ibmi-program-analyzer/validate_program_analysis_contract.py",
         "validator_status": (
             "not_run"
             if not upstream_ran
             else "failed"
-            if upstream_findings
+            if any(item in blocking_findings for item in upstream_findings)
+            else "passed_with_pending"
+            if pending_findings
             else "passed"
         ),
         "analysis_status": analysis_status,
         "candidate_artifact_root": candidate_artifact_root,
         "findings": findings,
+        "blocking_findings": blocking_findings,
+        "pending_findings": pending_findings,
+        "readiness_policy": "core_reader_first_lenient",
     }
 
 
@@ -910,17 +1081,25 @@ def build_program_entries(
             found_artifact_root,
             normalized,
         )
+        detected_tier = infer_tier(found_artifact_root, workspace)
         readiness = assess_artifact_readiness(
             root=artifact_root,
             program=normalized,
             candidate_artifact_root=found_artifact_root,
             matches=matches,
             compact_artifacts=compact_artifacts,
+            expected_size_tier=detected_tier,
         )
         if readiness["status"] == "ready":
             run_resolution = present_resolution
             source = present_source
-            follow_up = present_follow_up
+            pending = readiness.get("pending_findings") or []
+            follow_up = (
+                present_follow_up
+                if not pending
+                else "core reader-first gate passed; carry non-core readiness items as pending: "
+                + "; ".join(str(item) for item in pending)
+            )
             resolved_artifact_root = found_artifact_root
         elif found_artifact_root:
             run_resolution = RUN_PENDING
@@ -941,7 +1120,7 @@ def build_program_entries(
             run_resolution=run_resolution,
             artifact_root=resolved_artifact_root,
             artifact_source=source,
-            tier=infer_tier(found_artifact_root, workspace),
+            tier=detected_tier,
             compact_artifacts=compact_artifacts,
             follow_up=follow_up,
             candidate_artifact_root=found_artifact_root,
@@ -1317,6 +1496,7 @@ def build_manifest(
             "program_tier_roots": workspace.get("program_tier_roots", {}),
             "write_to_main": workspace.get("write_to_main", False),
         },
+        "readiness_policy": "core_reader_first_lenient",
         "source_inventory": source_inventory,
         "programs": entry_dicts,
         "warnings": warnings,
@@ -3184,6 +3364,10 @@ def revalidate_manifest_program_inputs(
     if not isinstance(programs, list) or not programs:
         return ["final input readiness requires manifest programs[]"], None, artifact_root
 
+    workspace_profile = manifest.get("workspace_profile")
+    if not isinstance(workspace_profile, dict):
+        workspace_profile = {}
+
     trusted_entries: list[dict[str, Any]] = []
     resolved_by_program: dict[str, str] = {}
     for entry in programs:
@@ -3271,6 +3455,7 @@ def revalidate_manifest_program_inputs(
         compact_artifacts = collect_artifact_statuses(
             artifact_root, resolved_artifact_root, program
         )
+        detected_tier = infer_tier(resolved_artifact_root, workspace_profile)
         expected_compact = {
             key: {"path": status.path, "status": status.status}
             for key, status in compact_artifacts.items()
@@ -3303,6 +3488,7 @@ def revalidate_manifest_program_inputs(
                 candidate_artifact_root=resolved_artifact_root,
                 matches=matches,
                 compact_artifacts=compact_artifacts,
+                expected_size_tier=detected_tier,
             )
         )
         if readiness.get("status") != "ready":
@@ -3327,6 +3513,7 @@ def revalidate_manifest_program_inputs(
                 "artifact_root": resolved_artifact_root,
                 "candidate_artifact_root": resolved_artifact_root,
                 "artifact_source": expected_source,
+                "tier": detected_tier,
                 "compact_artifacts": expected_compact,
                 "artifact_readiness": readiness,
             }
@@ -4572,6 +4759,12 @@ def build_command(args: argparse.Namespace) -> int:
         raise SystemExit(f"artifact root not found or not a directory: {artifact_root}")
     if args.source_root is not None and not args.source_root.is_dir():
         raise SystemExit(f"source root not found or not a directory: {args.source_root}")
+    if args.project_root is not None:
+        if not args.project_root.is_dir():
+            raise SystemExit(f"project root not found or not a directory: {args.project_root}")
+        output_dir = args.project_root / "outputs"
+    else:
+        output_dir = args.output_dir
     try:
         manifest = build_manifest(
             review_name=args.review_name,
@@ -4591,8 +4784,8 @@ def build_command(args: argparse.Namespace) -> int:
         )
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
-    manifest_path, review_path = write_build_outputs(manifest, args.output_dir)
-    layout = resolve_output_layout(args.output_dir, manifest)
+    manifest_path, review_path = write_build_outputs(manifest, output_dir)
+    layout = resolve_output_layout(output_dir, manifest)
     print(f"Prepared {manifest_path}")
     print(f"Reserved final LLM review path {review_path}")
     print(f"OUTPUT_DIR={layout.folder_dir}")
@@ -4657,7 +4850,17 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     build.add_argument("--profile", type=Path, required=True)
-    build.add_argument("--output-dir", type=Path, required=True)
+    output_location = build.add_mutually_exclusive_group(required=True)
+    output_location.add_argument(
+        "--project-root",
+        type=Path,
+        help="Delivery project root; writes the stable review bundle under <project-root>/outputs/",
+    )
+    output_location.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Explicit output parent; the stable flow/program-set folder is appended once",
+    )
     build.add_argument("--working-branch")
     build.add_argument(
         "--core-review-profile",

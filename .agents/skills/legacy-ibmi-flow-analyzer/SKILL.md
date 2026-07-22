@@ -21,7 +21,7 @@ Retain this notice in substantial copies or derived versions.
 | Field | Contract |
 | --- | --- |
 | Problem solved | Merge several finalized, reader-first program analyses into one SME/Dify-ready core review without losing program facts. |
-| Required user input | Review name, program list, program artifact root, and output parent. Source root is required only for targeted missing-program recovery. |
+| Required user input | Review name, program list, program artifact root, and delivery project root (the default output is `<project-root>/outputs/`). Source root is required only for targeted missing-program recovery. |
 | Primary evidence | The complete content of five `##` sections in every `<PROGRAM>-program-analysis.md`: Program Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. |
 | Preparation output | Readiness ledger, lossless source pack, normalized source facts, and pending coverage control. |
 | Formal output | Exactly one `<folder_slug>--sme-core-review.md`, written by the LLM executing this skill only after every program is ready and coverage has zero pending facts. |
@@ -96,7 +96,8 @@ Collect these values before preparation:
 Review name: <business-readable name>
 Programs file: <one program per line or supported CSV>
 Program artifact root: <current-run delivery workspace or approved local clone>
-Output parent: <parent that will contain the generated bundle folder>
+Project root: <delivery project root; writes under its outputs/ folder>
+Output parent: <optional explicit override; parent that will contain the generated bundle folder>
 Profile: standard_reader_first | minimal_reader_first
 Artifact repo mode: current_run | approved_document_repo
 Source root: <optional; needed only for targeted missing-program recovery>
@@ -170,7 +171,14 @@ hold:
   missing required RLOG, or unresolved blocking coverage remains;
 - exact message/status/literal rows are synchronized, and required message
   descriptions are not unresolved; and
-- the required main and sidecar artifacts for the program's tier agree.
+- the required main and sidecar artifacts for the program's tier agree. A
+  canonical `large_extreme_program` artifact root is treated as immutable
+  readiness context: the upstream validator is called with that expected tier,
+  so a rewritten normal summary cannot bypass retained deep-read batches.
+  When the program was completed through `legacy-ibmi-program-list-batch`,
+  consume only its terminal batch state after the precreated source-index and
+  execution-plan locks have been checked; a raw large artifact folder without
+  that terminal batch validation remains exploratory, not final-ready.
 
 Record each check in `program-set-artifact-readiness.yaml` and in the manifest.
 The manifest program-set state is:
@@ -192,7 +200,8 @@ partial formal review.
 ## Deterministic Preparation Contract
 
 Run the preparation command from the canonical skill or a synced runtime
-adapter. `--output-dir` is an **output parent**, not the bundle itself:
+adapter. The normal project-root form writes under `<project-root>/outputs/` and
+creates that directory when necessary:
 
 ```bash
 python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py build \
@@ -200,7 +209,7 @@ python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py buil
   --programs-file <programs.txt> \
   --working-root <program-artifact-root> \
   --profile skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml \
-  --output-dir <program-set-review-parent>
+  --project-root <delivery-project-root>
 ```
 
 Append `--flow-slug <raw-flow-identity>` only when the caller needs an explicit
@@ -229,10 +238,18 @@ The resolver appends the stable, hash-suffixed
 `<FLOW-SLUG>--<PROGRAM-SET-SLUG>` exactly once. If the caller already supplies
 that resolved bundle path, it must not append it a second time.
 
+Use `--output-dir <program-set-review-parent>` only for an explicit custom
+parent. It remains a backward-compatible advanced override and is not changed
+to `<parent>/outputs/` automatically.
+
+When the same flow/program-set identity is prepared again, the resolver reuses
+its existing bundle directory. A completed formal review is never overwritten:
+archive it explicitly before rebuilding that bundle.
+
 For a ready set, deterministic preparation writes:
 
 ```text
-<output-parent>/<folder_slug>/
+<project-root>/outputs/<folder_slug>/
   program-list.txt
   program-set-core-input-manifest.yaml
   program-set-artifact-readiness.yaml
@@ -245,7 +262,7 @@ It deliberately does **not** write the formal review. The only legal formal
 review path is:
 
 ```text
-<output-parent>/<folder_slug>/<folder_slug>--sme-core-review.md
+<project-root>/outputs/<folder_slug>/<folder_slug>--sme-core-review.md
 ```
 
 There is no default `program-set-sme-core-review.md` alias. The folder slug and
@@ -284,13 +301,51 @@ Alternatively, use `prepare_program_set_core_review.py` as the one-step intake;
 it runs the builder, reads the resolved `OUTPUT_DIR`, and invokes this queue
 adapter only when the manifest is blocked.
 
+The recovery directory is an actionable handoff, not merely an error list:
+
+```text
+missing-program-list-batch/
+  recovery-plan.md
+  recovery-status.yaml
+  program-list.csv                    # only repairable programs
+  prompt-queue/                       # Cline serial repair prompts
+  blocked-programs.csv                # programs without an approved source mapping
+  message-evidence-requests/          # only when message descriptions need evidence
+```
+
+`recovery-plan.md` preserves the upstream validator findings and classifies
+each program into one or more precise actions: rebuild required artifacts,
+repair reader-first structure, resume semantic deep-read, resolve message
+evidence, obtain the terminal approval, or refresh only that program. A
+message-evidence action requests a catalog, reference/control file, source
+literal/comment, runtime evidence, or SME-approved description; it must not
+invent a meaning for an observed code.
+
+The one-step intake defaults to `--recovery-runner cline_serial`. To prepare
+isolated Kiro workers instead, pass:
+
+```text
+--recovery-runner kiro_parallel --recovery-max-parallel-agents <n>
+```
+
+That mode forces immediate validation and deterministic scaffold precreation,
+then adds `subagent-queue/`, `subagent-results/`,
+`subagent-dispatch-plan.md`, and `kiro-parallel-runner-prompt.md` to the same
+recovery package. Both runner modes receive the same retained validator
+findings and recovery actions.
+
 Only a program with a fresh, exact source mapping enters
 `program-list.csv`/`prompt-queue/`. Programs not found by fresh inventory, or
 blocked by missing/stale inventory, are written only to
-`missing-program-list-batch/blocked-programs.csv`; never invent a path. When
-every program is ready, do not create `missing-program-list-batch/` at all.
+`missing-program-list-batch/blocked-programs.csv` with the
+`source_mapping_required` action; never invent a path or create a prompt.
+When every program is ready, do not create `missing-program-list-batch/` at all.
 After targeted scans/fixes finish, rerun normal preparation from the program
-list. Until all readiness rows pass:
+list. If that rerun makes the program set ready, it removes only the
+known generated recovery files. It refuses to delete unrecognized analyst or
+SME evidence inside `missing-program-list-batch/`; archive that evidence first
+instead of relying on a recursive cleanup.
+Until all readiness rows pass:
 
 - manifest status remains `blocked_artifact_readiness`;
 - coverage cannot become complete; and

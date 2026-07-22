@@ -9,6 +9,7 @@ write business summaries or infer business rules.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -2000,6 +2001,51 @@ def routine_batch_groups(index: dict[str, Any]) -> list[list[dict[str, Any]]]:
     return [windows[index_: index_ + BATCH_SIZE] for index_ in range(0, len(windows), BATCH_SIZE)]
 
 
+def deep_read_execution_plan(index: dict[str, Any]) -> dict[str, Any]:
+    """Freeze the indexed large-program work allocation for terminal checks.
+
+    Deep-read batch Markdown is intentionally editable during semantic work;
+    the selected window-to-RLOG allocation is not.  This plan records the
+    deterministic initial allocation and a digest of the source-index bytes so
+    a later edit cannot quietly discard batches or downgrade their coverage.
+    """
+
+    source_index_text = to_yaml(index) + "\n"
+    details_by_routine = {
+        str(detail.get("routine") or ""): str(detail.get("detail_id") or "")
+        for detail in index["routine_logic_inventory"]["details"]
+        if isinstance(detail, dict)
+    }
+    planned: list[dict[str, Any]] = []
+    for batch_number, windows in enumerate(routine_batch_groups(index), start=1):
+        batch_path = routine_batch_path(index, batch_number)
+        for window in windows:
+            routine = str(window.get("routine") or "")
+            planned.append(
+                {
+                    "window_id": str(window.get("window_id") or ""),
+                    "routine": routine,
+                    "source_lines": str(window.get("source_lines") or ""),
+                    "rlog_id": details_by_routine.get(routine, ""),
+                    "batch_number": batch_number,
+                    "batch_path": batch_path,
+                }
+            )
+    return {
+        "schema_version": "0.1",
+        "generated_by": "index_rpg_source.py",
+        "program": index["program"],
+        "program_size_tier": index["program_size_tier"],
+        "source_index_path": artifact_path(index, "source-index.yaml"),
+        "source_index_sha256": hashlib.sha256(source_index_text.encode("utf-8")).hexdigest(),
+        "planned_deep_read": planned,
+    }
+
+
+def render_deep_read_execution_plan_yaml(index: dict[str, Any]) -> str:
+    return to_yaml(deep_read_execution_plan(index)) + "\n"
+
+
 def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
     triggers = index["optional_sidecar_triggers"]
     routine_details_status = "present"
@@ -2094,7 +2140,12 @@ def sidecar_declarations(index: dict[str, Any]) -> dict[str, dict[str, str]]:
             sidecars[f"routine_logic_deep_read_batch_{batch_number:03d}"] = {
                 "path": routine_batch_path(index, batch_number),
                 "status": "present",
-            }
+    }
+    if requires_routine_batch_files(index):
+        sidecars["deep_read_execution_plan"] = {
+            "path": artifact_path(index, "deep-read-execution-plan.yaml"),
+            "status": "present",
+        }
     return sidecars
 
 
@@ -2670,7 +2721,12 @@ def render_program_analysis_summary_yaml(index: dict[str, Any]) -> str:
     return to_yaml(payload) + "\n"
 
 
-def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
+def write_artifacts(
+    index: dict[str, Any],
+    out_dir: Path,
+    *,
+    preserve_existing: bool = False,
+) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     files = [
         (out_dir / artifact_path(index, "program-analysis.md"), render_program_analysis(index)),
@@ -2679,6 +2735,13 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
         (out_dir / artifact_path(index, "routine-index.md"), render_routine_index(index)),
         (out_dir / artifact_path(index, "message-inventory.yaml"), render_message_inventory_yaml(index)),
     ]
+    if requires_routine_batch_files(index):
+        files.append(
+            (
+                out_dir / artifact_path(index, "deep-read-execution-plan.yaml"),
+                render_deep_read_execution_plan_yaml(index),
+            )
+        )
     if requires_routine_detail_sidecars(index):
         files.extend(
             [
@@ -2725,6 +2788,8 @@ def write_artifacts(index: dict[str, Any], out_dir: Path) -> list[Path]:
     written: list[Path] = []
     for path, content in files:
         path.parent.mkdir(parents=True, exist_ok=True)
+        if preserve_existing and path.exists():
+            continue
         path.write_text(content, encoding="utf-8")
         written.append(path)
     return written
@@ -2831,6 +2896,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--rescan-reason",
         help="Required with --force-rescan; records why the existing central artifact is being refreshed",
     )
+    parser.add_argument(
+        "--preserve-existing",
+        action="store_true",
+        help="Create only missing artifacts in --out-dir; preserve existing artifacts without changing them",
+    )
     return parser.parse_args(argv)
 
 
@@ -2886,7 +2956,7 @@ def main(argv: list[str] | None = None) -> int:
             "rescan_reason": args.rescan_reason or "not_applicable",
             "reuse_decision": reuse_decision,
         }
-    written = write_artifacts(index, args.out_dir)
+    written = write_artifacts(index, args.out_dir, preserve_existing=args.preserve_existing)
     for path in written:
         print(path)
     return 0

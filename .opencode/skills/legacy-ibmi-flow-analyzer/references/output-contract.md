@@ -17,7 +17,10 @@ formal review, claim semantic completion, or call an external LLM service.
 
 ## Output Identity And Placement
 
-`--output-dir` always means the parent of a program-set bundle. The bundle
+`--project-root` is the normal invocation surface and resolves its output
+parent to `<project-root>/outputs/`, creating that directory when needed.
+`--output-dir` remains an explicit advanced override and always means the
+parent of a program-set bundle. The bundle
 identity is:
 
 ```text
@@ -84,10 +87,27 @@ When readiness is blocked, the default bundle is:
   missing-program-list-batch/          # created by the adapter for a blocked manifest
 ```
 
-Within `missing-program-list-batch/`, only programs with a fresh exact mapping
-enter `program-list.csv` and `prompt-queue/`. Missing, stale, or unmapped
-programs enter only `blocked-programs.csv`. If all programs are ready, the
-adapter is not run and this directory must not exist.
+Within `missing-program-list-batch/`, the adapter also writes
+`recovery-plan.md` (reader-facing) and `recovery-status.yaml` (machine-facing).
+They preserve each program's upstream validator findings and classify targeted
+next actions. `message-evidence-requests/` is present only for observed
+message/status/code values whose descriptions still require source, catalog,
+runtime, or SME evidence.
+
+Only programs with a fresh exact mapping enter `program-list.csv` and
+`prompt-queue/`; their generated prompt includes the retained recovery actions
+and validator findings. Missing, stale, or unmapped programs enter only
+`blocked-programs.csv` with `source_mapping_required`, and receive no guessed
+path or generated scan prompt. If all programs are ready, the adapter is not
+run and this directory must not exist.
+
+The one-step intake defaults to a Cline serial recovery queue. Its explicit
+`--recovery-runner kiro_parallel` mode instead forces immediate validation and
+scaffold precreation, then adds isolated worker prompts and the Kiro dispatch
+plan to this same directory. The recovery runner must repair an existing
+`candidate_artifact_root` in place; it must not create a second tier-derived
+program directory, because duplicate artifact roots remain a blocking
+ambiguity.
 
 Do not write `program-set-reader-first-source-pack.md`,
 `program-set-core-facts.yaml`, the uniquely named formal review, or a generic
@@ -332,10 +352,14 @@ must synthesize them into reader-first themes.
 When a requested program is missing or semantically not ready, run the recovery
 adapter against the blocked manifest. Reuse an externally prepared fresh repo
 inventory or exact approved mapping; never scan the entire repository as a
-substitute for targeted recovery. Only affected programs with fresh exact paths
-enter `program-list.csv`/`prompt-queue/`. Programs absent from fresh inventory,
-or blocked by stale/unknown inventory, go only to `blocked-programs.csv` and
-receive no guessed path.
+substitute for targeted recovery. The adapter writes a `recovery-plan.md` and
+`recovery-status.yaml` alongside the queue. They classify each retained
+validator finding as a required-artifact rebuild, reader-first structure repair,
+semantic deep-read, message-evidence request, terminal approval, or targeted
+refresh. Only affected programs with fresh exact paths enter
+`program-list.csv`/`prompt-queue/`. Programs absent from fresh inventory, or
+blocked by stale/unknown inventory, go only to `blocked-programs.csv` with a
+source-mapping action and receive no guessed path.
 
 The queue is placed at:
 

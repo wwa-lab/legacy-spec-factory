@@ -118,6 +118,64 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
                     "pending" if expected_status == "ready" else "blocked",
                 )
 
+    def test_large_program_shell_checkpoint_is_not_flow_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            fixture = write_finalized_program_artifacts(
+                artifact_root / "modules" / "large" / "SS380",
+                "SS380",
+                routines=("MAIN",),
+                size_tier="large_extreme_program",
+            )
+            add_nonterminal_deep_read_batch(fixture)
+
+            manifest = MERGER.build_manifest(
+                review_name="Large shell cannot merge",
+                programs=["SS380"],
+                artifact_root=artifact_root,
+                config=MERGER.load_yaml(PROFILE),
+                working_branch="fixture",
+                flow_slug="large-shell-cannot-merge",
+            )
+
+            readiness = manifest["programs"][0]["artifact_readiness"]
+            self.assertEqual(readiness["status"], "not_ready")
+            self.assertEqual(readiness["validator_status"], "failed")
+            self.assertIn("deep-read-batch", json.dumps(readiness).lower())
+            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
+
+    def test_large_tier_path_cannot_be_downgraded_by_summary_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            # The canonical tier root is chosen by deterministic intake. The
+            # syntactically complete normal fixture simulates an LLM rewriting
+            # the summary tier instead of completing retained deep reads.
+            write_finalized_program_artifacts(
+                artifact_root
+                / "modules"
+                / "CAP-ID-0001-large_extreme_program"
+                / "SS380",
+                "SS380",
+                size_tier="normal_program",
+            )
+
+            manifest = MERGER.build_manifest(
+                review_name="Large tier cannot downgrade",
+                programs=["SS380"],
+                artifact_root=artifact_root,
+                config=MERGER.load_yaml(PROFILE),
+                working_branch="fixture",
+                flow_slug="large-tier-cannot-downgrade",
+            )
+
+            readiness = manifest["programs"][0]["artifact_readiness"]
+            self.assertEqual(readiness["status"], "not_ready")
+            self.assertEqual(readiness["validator_status"], "failed")
+            self.assertIn("large-program tier contract mismatch", json.dumps(readiness).lower())
+            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
+
     def test_upstream_validator_status_distinguishes_not_run_passed_and_failed(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

@@ -18,7 +18,8 @@ The command line mirrors the Python implementation:
 
   index-rpg-source.ps1 SOURCE [--program NAME] [--out-dir DIR]
     [--delivery-root DIR] [--delivery-profile FILE]
-    [--force-rescan] [--rescan-reason TEXT]
+    [--force-rescan] [--rescan-reason TEXT] [--preserve-existing]
+    [--canonical-artifact-names]
 #>
 
 #requires -version 5.1
@@ -91,7 +92,9 @@ if ($lookupResult -ne 'not_checked') {
 }
 
 try {
-    $written = Write-Artifacts $sourceIndex $options.OutDir
+    $written = Write-Artifacts $sourceIndex $options.OutDir `
+        -PreserveExisting $options.PreserveExisting `
+        -CanonicalArtifactNames $options.CanonicalArtifactNames
     foreach ($path in $written) { Write-Output $path }
 } catch {
     [Console]::Error.WriteLine('index_rpg_source_failed: ' + $_.Exception.Message)

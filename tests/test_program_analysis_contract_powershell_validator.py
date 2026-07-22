@@ -29,6 +29,7 @@ MODULE_DIR = SCRIPT_PATH.parent / "powershell"
 MODULE_PATHS = (
     MODULE_DIR / "ProgramAnalysisContract.Common.psm1",
     MODULE_DIR / "ProgramAnalysisContract.Validation.psm1",
+    MODULE_DIR / "ProgramAnalysisContract.ExecutionPlan.psm1",
 )
 POWERSHELL = shutil.which("powershell") or shutil.which("pwsh")
 
@@ -395,6 +396,59 @@ class ProgramAnalysisPowerShellValidatorStaticTests(unittest.TestCase):
         self.assertIn("indexed_only", text)
         self.assertIn("Get-BatchAssignedWindowIds", text)
         self.assertIn("Get-BatchAssignedRlogIds", text)
+
+    def test_prefixed_artifact_resolution_rejects_decoys_and_mixed_sets(self) -> None:
+        common_text = MODULE_PATHS[0].read_text(encoding="utf-8")
+        validation_text = MODULE_PATHS[1].read_text(encoding="utf-8")
+
+        self.assertIn("Get-ProgramArtifactResolutionFindings", common_text)
+        self.assertIn("both generic", common_text)
+        self.assertIn("multiple canonical prefixed artifacts", common_text)
+        self.assertIn("legacy suffix artifact(s)", common_text)
+        self.assertIn("canonical program artifact prefix mismatch", common_text)
+        self.assertIn("mixes prefixed and generic completion artifacts", common_text)
+        for artifact in (
+            "program-analysis.md",
+            "program-analysis-summary.yaml",
+            "routine-logic-details.md",
+            "routine-logic-details.yaml",
+            "message-inventory.yaml",
+        ):
+            self.assertIn(artifact, common_text)
+        self.assertRegex(
+            validation_text,
+            r"(?s)Get-ProgramArtifactResolutionFindings\s+\$AnalysisDir\s+\$ProgramAnalysis",
+        )
+        self.assertIn("Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'", validation_text)
+        self.assertIn("Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.md'", validation_text)
+        self.assertIn("Find-RoutineArtifactPath $AnalysisDir 'message-inventory.yaml'", validation_text)
+
+    def test_immutable_large_execution_plan_covers_all_planned_batches(self) -> None:
+        common_text = MODULE_PATHS[0].read_text(encoding="utf-8")
+        validation_text = MODULE_PATHS[1].read_text(encoding="utf-8")
+        execution_plan_text = MODULE_PATHS[2].read_text(encoding="utf-8")
+
+        self.assertIn("ProgramAnalysisContract.ExecutionPlan.psm1", validation_text)
+        self.assertIn("Validate-LargeExecutionPlanCoverage", validation_text)
+        self.assertIn("PlannedRlogIds", validation_text)
+        self.assertIn("ExpectedRlogIds", validation_text)
+        self.assertIn("Get-YamlListMappings", common_text)
+        for required in (
+            "deep_read_execution_plan",
+            "deep-read-execution-plan.yaml",
+            "source_index_sha256",
+            "planned_deep_read",
+            "Get-BatchWindowRlogPairs",
+            "Get-BatchWindowRlogDuplicateFindings",
+            "source-index routine_logic_inventory.details",
+            "batch is missing",
+            "retained batch file(s) not in plan",
+            "ExpectedSourceIndexSha256",
+            "ExpectedExecutionPlanSha256",
+            "immutable batch execution lock",
+        ):
+            self.assertIn(required, execution_plan_text)
+        self.assertIn("--expected-source-index-sha256", (REPO_ROOT / "skills/legacy-ibmi-program-analyzer/scripts/validate-program-analysis-contract.ps1").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

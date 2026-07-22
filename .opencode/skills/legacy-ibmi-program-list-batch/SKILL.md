@@ -78,14 +78,23 @@ directly.
   writes its artifacts, it must run the full `legacy-ibmi-program-analyzer`
   validator before starting the next prompt. `scanned_unvalidated` is not a
   successful Cline serial completion state.
+- Every generated per-program prompt, regardless of whether Cline processes it
+  serially or Kiro processes it in an isolated worker, begins with an Artifact
+  Bootstrap Gate. All seven core artifacts must exist before semantic deep-read;
+  missing artifacts must be created only by `index_rpg_source.py`, never as
+  manual empty sidecars. A remaining artifact gap is `failed_runtime` (or
+  `blocked_missing_source`), never `completed`.
 - To preserve throughput, the Cline serial runner should keep chat output to a
   one-line ledger per program and use durable files as memory instead of
   replaying source excerpts or generated artifacts in chat.
 - If Kiro or another runtime truly supports isolated sub-agents, safe
   parallelism means one worker per generated `subagent-queue/*.md` file.
-- Kiro/parallel sub-agent mode uses `validation_mode=immediate` only. Each
-  worker must preserve the full reader-first analyzer layout, keep all three
-  `Routine Index For ...` headings, and run the full per-program analyzer
+- Kiro/parallel sub-agent mode requires both `validation_mode=immediate` and
+  `scaffold_mode=precreate`. Each worker starts with deterministic source
+  index, summary, routine-index, message-inventory, and RLOG artifacts already
+  present. Precreation preserves existing program-specific artifacts and writes
+  only missing scaffolds; it must preserve the full reader-first analyzer layout, keep all
+  three `Routine Index For ...` headings, and run the full per-program analyzer
   validator before reporting `completed/pass`. The parent merge must rerun that
   validator for every successful worker output before updating shared state.
 - Do not carry source excerpts, prior program summaries, or chat history into
@@ -138,7 +147,11 @@ directly.
   - `precreate`: the initializer quickly runs the deterministic source indexer
     for each resolvable program, creates the per-program scaffold artifacts,
     writes `scaffold_status=present`, and leaves the row queued for semantic
-    detail fill.
+    detail fill. For `large_extreme_program`, it also freezes the source-index
+    and deep-read execution-plan SHA-256 values in the CSV/manifest before any
+    semantic worker can edit the artifacts.
+  - Kiro/parallel sub-agent mode always uses `precreate`; it rejects `none` so
+    a worker cannot silently skip deterministic artifact generation.
 - Deterministic source indexes are pre-analysis scaffolds only. A row is not
   complete until semantic source deep-read has replaced pending/thin content in
   `<PROGRAM>-program-analysis.md`, `<PROGRAM>-routine-logic-details.md`, every
@@ -151,6 +164,12 @@ directly.
   `summary[]`/`details[]` state
   before advancing, then merge the completed set into the consolidated routine
   detail and main analysis files.
+- For a large program, workers must read
+  `<PROGRAM>-deep-read-execution-plan.yaml` before batch work. Complete every
+  `planned_deep_read` window-to-RLOG/batch mapping exactly once; a deleted later
+  batch, a remapped RLOG, a generic routine shell, or a rewritten plan/source
+  index is a validator failure. Use `--scaffold-mode precreate` for any batch
+  intended to reach terminal large-program completion.
 - Do not mark a row `completed` or `completed_with_warnings` when the main
   analysis, consolidated routine detail, retained checkpoint, or routine YAML
   still contains scaffold state such as
@@ -212,7 +231,7 @@ outputs/program-list-batch/
    - In `--subagent-mode prepare`, also create `subagent-queue/*.md`,
      `subagent-results/`, `subagent-dispatch-plan.md`, and
      `kiro-parallel-runner-prompt.md` for Kiro or runtimes that can launch
-     isolated parallel workers.
+     isolated parallel workers. This mode requires `--scaffold-mode precreate`.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
    - Stop after initialization. Do not start semantic program scans in this
@@ -331,6 +350,12 @@ Recommended validation-first two-phase mode:
 3. Each prompt starts from the scaffold and fills semantic analysis details.
    The prompt runs the full program-analysis validator immediately after each
    program and only then advances to the next program.
+   For `large_extreme_program`, the generated prompt adds a visible terminal
+   completion contract: index/scaffold files and batch 001 are checkpoints,
+   not completion evidence. Every retained deep-read batch must be completed,
+   its YAML semantic state updated, all detail consolidated into the two
+   reader-first review files, and the validator passed before the row can be
+   marked complete.
 4. In Kiro/agent parallel mode only, after parallel workers finish, merge
    result JSON files:
 
@@ -351,7 +376,7 @@ do all work themselves.
 
 Use `--subagent-mode prepare` when the operator wants to try Kiro/agent
 parallel handoff. This mode requires `--validation-mode immediate` and
-prepares `kiro-parallel-runner-prompt.md`,
+`--scaffold-mode precreate`, then prepares `kiro-parallel-runner-prompt.md`,
 `subagent-queue/*.md` prompts, result JSON targets, and a dispatch plan; it
 does not make Cline/Copilot Chat itself concurrent. Cline should still use
 `cline-serial-runner-prompt.md`.
@@ -375,6 +400,12 @@ states:
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch --require-terminal
 ```
+
+When `--require-terminal` sees a claimed `completed` or
+`completed_with_warnings` row, it also reruns the canonical
+`validate_program_analysis_contract.py` against that artifact directory. This
+prevents a large-program batch shell from being accepted merely because it no
+longer contains an obvious `pending` string.
 
 ## References
 
@@ -426,12 +457,39 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
   resume/progress checks omit it.
 - Kiro merge must re-run the full per-program validator for every worker result
   claiming success; a worker-reported `completed/pass` is not accepted without
-  this parent validation gate.
+  this parent validation gate. Terminal Kiro batch validation also requires
+  that parent merge when at least one worker was prepared. A batch with no
+  dispatchable worker because every program was terminally preflight-blocked
+  may close without a merge. A legacy Kiro queue without
+  `scaffold_mode=precreate` must be reinitialized; it cannot be merged or
+  terminally accepted.
 
 Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.18 (2026-07-22): Immutable large-program batch locks
+  - Records source-index and deep-read execution-plan SHA-256 values during
+    `--scaffold-mode precreate` in both the status CSV and manifest.
+  - Requires terminal validation to compare those locks and rerun the upstream
+    contract, preventing co-tampered plans, deleted batches, or thin shells from
+    being accepted by Cline or Kiro workers.
+
+- v0.1.17 (2026-07-22): Large-program anti-shell terminal gate
+  - Adds a tier-specific generated-prompt contract that treats index files and
+    the first deep-read checkpoint as scaffolds rather than completion proof.
+  - Makes terminal batch validation rerun the canonical upstream program
+    contract for each claimed completed row, so generic or thin large-program
+    batch shells cannot pass by merely removing literal pending markers.
+
+- v0.1.16 (2026-07-22): Shared per-program artifact bootstrap gate
+  - Added a mandatory generated-prompt gate for Cline serial and Kiro worker
+    execution: verify all seven core artifacts before semantic deep-read, run
+    the deterministic indexer for missing scaffolds, and never create empty
+    sidecars manually.
+  - Makes a remaining artifact gap a durable `failed_runtime` or
+    `blocked_missing_source` outcome instead of a possible false completion.
 
 - v0.1.15 (2026-07-20): Retained deep-read batch completion gate
   - Requires Step 2 to process every retained checkpoint in natural numeric

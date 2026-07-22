@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import importlib.util
 import json
 import re
@@ -52,7 +53,113 @@ def write_compact_artifacts(
 ) -> None:
     missing = missing or set()
     program = program or artifact_root.name
-    write_finalized_program_artifacts(artifact_root, program)
+    large = "large_extreme_program" in artifact_root.as_posix()
+    fixture = write_finalized_program_artifacts(
+        artifact_root,
+        program,
+        size_tier="large_extreme_program" if large else "normal_program",
+    )
+    if large:
+        source_index_payload = json.loads(
+            fixture.source_index_yaml.read_text(encoding="utf-8")
+        )
+        source_index_payload["deep_read_windows"] = [
+            {
+                "window_id": f"DRW-{fixture.prefix}-001",
+                "routine": "MAIN",
+                "source_lines": "1-100",
+                "why_selected": "fixture large-program checkpoint",
+                "coverage_outcome": "selected_for_deep_read",
+                "evidence": "source-index",
+            }
+        ]
+        source_index_text = json.dumps(source_index_payload, indent=2) + "\n"
+        fixture.source_index_yaml.write_text(source_index_text, encoding="utf-8")
+        plan_path = artifact_root / f"{fixture.prefix}-deep-read-execution-plan.yaml"
+        plan_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "0.1",
+                    "generated_by": "index_rpg_source.py",
+                    "program": program,
+                    "program_size_tier": "large_extreme_program",
+                    "source_index_path": fixture.source_index_yaml.name,
+                    "source_index_sha256": hashlib.sha256(
+                        source_index_text.encode("utf-8")
+                    ).hexdigest(),
+                    "planned_deep_read": [
+                        {
+                            "window_id": f"DRW-{fixture.prefix}-001",
+                            "routine": "MAIN",
+                            "source_lines": "1-100",
+                            "rlog_id": f"RLOG-{fixture.prefix}-001",
+                            "batch_number": 1,
+                            "batch_path": "routine-logic-details/"
+                            f"{fixture.prefix}-deep-read-batch-001.md",
+                        }
+                    ],
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        summary_payload = json.loads(fixture.summary_yaml.read_text(encoding="utf-8"))
+        summary_payload["sidecars"]["deep_read_execution_plan"] = {
+            "path": plan_path.name,
+            "status": "present",
+        }
+        fixture.summary_yaml.write_text(
+            json.dumps(summary_payload, indent=2) + "\n", encoding="utf-8"
+        )
+        routine_payload = json.loads(fixture.routine_details_yaml.read_text(encoding="utf-8"))
+        inventory = routine_payload["routine_logic_inventory"]
+        for entry in inventory["summary"]:
+            entry.update(
+                {
+                    "semantic_status": "deep_read_complete",
+                    "coverage": "deep_read",
+                }
+            )
+        for entry in inventory["details"]:
+            entry.update(
+                {
+                    "semantic_status": "deep_read_complete",
+                    "coverage": "deep_read",
+                    "step_by_step_logic": "Reads the entry state and follows the source-backed dispatch branch.",
+                    "field_calculations": "Assigns the documented status carrier from the evaluated source condition.",
+                    "conditioned_calculation_blocks": "Runs the assignment only when the source validation guard succeeds.",
+                    "outcome_reverse_traces": "The returned outcome traces to the confirmed source-backed branch.",
+                    "field_lineage": "Entry parameter flows through working status to the returned outcome.",
+                    "branch_outcomes": "Success continues and failure returns the documented error status.",
+                    "routine_exception_closure": "No local exception is observed; failure returns through the status carrier.",
+                }
+            )
+        fixture.routine_details_yaml.write_text(
+            json.dumps(routine_payload, indent=2) + "\n", encoding="utf-8"
+        )
+        batch_path = (
+            artifact_root
+            / "routine-logic-details"
+            / f"{fixture.prefix}-deep-read-batch-001.md"
+        )
+        batch_path.parent.mkdir(parents=True, exist_ok=True)
+        batch_path.write_text(
+            "\n\n".join(
+                [
+                    f"# Routine Logic Details: {program} - Deep Read Batch 001",
+                    "## Calculation Logic\n\nSource-backed calculation evidence is consolidated for this batch.",
+                    "## Validation Logic\n\nSource-backed validation outcomes are consolidated for this batch.",
+                    "## Exception Handling\n\nSource-backed exception closure is consolidated for this batch.",
+                    "## Scope\n\nOne source-backed window is covered by this checkpoint.",
+                    f"## Batch Coverage Summary\n\n| Window ID | Routine | Source Lines | RLOG Detail |\n| --- | --- | --- | --- |\n| DRW-{fixture.prefix}-001 | MAIN | 1-100 | RLOG-{fixture.prefix}-001 |",
+                    "## Message Inventory\n\nNo additional message or status token is observed in this checkpoint.",
+                    f"## Routine Details\n\n### RLOG-{fixture.prefix}-001 - MAIN\n\n- Source lines: 1-100.\n- Source-backed routine detail explains the entry trigger, branch decisions, field assignments, validation outcome, side effects, and exception closure.",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     for filename in missing:
         path = artifact_root / BUILDER.program_artifact_filename(program, filename)
         if path.exists():

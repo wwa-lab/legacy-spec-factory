@@ -61,7 +61,7 @@ Add these columns to `program-list-status.csv`:
 | `in_progress` | Claimed by an operator/session. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
-| `scanned_unvalidated` | Batch scan artifacts exist, but final program-analysis validation is deferred. |
+| `scanned_unvalidated` | Batch scan artifacts exist, but final program-analysis validation is deferred; this is a resumable checkpoint, never a terminal close. |
 | `blocked_missing_source` | Source path cannot be resolved. |
 | `failed_validator` | Validator failed. |
 | `failed_runtime` | Runtime/tooling failed before valid output. |
@@ -169,6 +169,21 @@ programs. Deep-read plans, coverage ledgers, and retained
 program is promoted to `complex_normal_program`, `large_extreme_program`, or an
 explicit deep-read continuation.
 
+For `large_extreme_program`, the deterministic artifact set and the first
+batch checkpoint are explicitly pre-analysis checkpoints. They never prove
+completion by themselves: every retained checkpoint must be source-backed,
+the duplicated routine YAML state must move to `deep_read` /
+`deep_read_complete`, and the full batch set must be consolidated into the two
+reader-first review surfaces before the row can claim `completed`.
+The set also includes `<PROGRAM>-deep-read-execution-plan.yaml`: its complete
+planned window/RLOG/batch allocation is authoritative, even when a later batch
+file is absent. A terminal large-program row requires a `precreate`-captured
+source-index SHA-256 and execution-plan SHA-256 in `batch-scan-manifest.yaml`.
+The terminal validator uses those values as immutable locks and rejects a
+self-consistent rewrite of source index + plan. If either lock is missing or
+mismatched, set `failed_validator` and recreate the deterministic scaffold
+from approved source rather than hand-editing a replacement plan.
+
 ## Completion Quality Guard
 
 Deterministic source indexes create pre-analysis scaffolds. They are useful for
@@ -232,8 +247,9 @@ handoff must run the program-analysis validator first and promote the row to
   mark the row complete from old files alone.
 - Do not mark a row `completed` unless the validator passed.
 - Do not mark a row `completed_with_warnings` unless required artifacts exist.
-- Do not treat `scanned_unvalidated` as downstream-ready; it requires final
-  validator execution before reuse.
+- Do not treat `scanned_unvalidated` as terminal or downstream-ready; it
+  requires final validator execution and promotion to `completed` / `pass`
+  before reuse or batch close.
 - Put missing source in `blocked_missing_source`, not `failed_runtime`.
 - Put validator failures in `failed_validator`, not `completed_with_warnings`.
 - Record `last_error` and `next_action` for every blocked or failed row.
@@ -245,11 +261,11 @@ handoff must run the program-analysis validator first and promote the row to
 
 This contract completes the independent program-scan batch only. A batch is
 ready to close when every requested row is classified as `completed`,
-`completed_with_warnings`, `scanned_unvalidated`, `skipped_not_program`,
+`completed_with_warnings`, `skipped_not_program`,
 `blocked_missing_source`, `failed_validator`, or `failed_runtime`. Validated
 rows must satisfy the required per-program artifact and validator rules.
-`scanned_unvalidated` rows are acceptable for closing a fast scan batch but
-remain blocked from downstream use until final validation passes.
+`scanned_unvalidated` remains an open deferred-validation checkpoint until
+final validation passes.
 
 Use the batch validator in two distinct modes:
 
@@ -259,8 +275,16 @@ Use the batch validator in two distinct modes:
   `queued` or `in_progress`.
 - Final batch close:
   `validate_program_batch_status.py --batch-dir <batch-dir> --require-terminal`.
-  This rejects non-terminal `queued` and `in_progress`
-  rows. Use it before reporting the batch finished.
+  This rejects `queued`, `in_progress`, and `scanned_unvalidated` rows. Every
+  claimed `completed` / `completed_with_warnings` row must have a concrete,
+  resolvable `output_dir`; the validator reruns the canonical program-analysis
+  contract with the CSV `size_tier` as immutable input. Therefore a row
+  classified as `large_extreme_program` cannot bypass retained deep-read
+  batches by rewriting its summary as normal, and a generic large-program shell
+  cannot pass simply because literal `pending` text was removed. Large terminal
+  rows additionally require the precreated execution locks; use
+  `--scaffold-mode precreate` before worker dispatch. Use it before reporting
+  the batch finished.
 
 Do not require `program-set-core-input-manifest.yaml`,
 `program-set-sme-core-review.md`, or the program-set validator for this batch

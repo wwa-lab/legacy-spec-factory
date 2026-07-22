@@ -9,6 +9,7 @@ semantic terminal condition at a time.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -543,21 +544,33 @@ def write_finalized_program_artifacts(
         encoding="utf-8",
     )
 
-    _write_json_yaml(
-        fixture.source_index_yaml,
+    large_program = size_tier == "large_extreme_program"
+    deep_read_windows = tuple(
         {
-            "schema_version": "0.1",
-            "program": program,
-            "analysis_status": "approved",
-            "source": {"line_count": 200},
-        },
-    )
+            "window_id": f"DRW-{prefix}-{index:03d}",
+            "routine": routine,
+            "source_lines": f"{index * 100 - 99}-{index * 100}",
+            "why_selected": "fixture large-program deep-read allocation",
+            "coverage_outcome": "selected_for_deep_read",
+            "evidence": "source-index",
+        }
+        for index, routine in enumerate(routines, start=1)
+    ) if large_program else ()
+    source_index_payload = {
+        "schema_version": "0.1",
+        "program": program,
+        "analysis_status": "approved",
+        "source": {"line_count": 12001 if large_program else 200},
+        "deep_read_windows": deep_read_windows,
+    }
+    source_index_text = json.dumps(source_index_payload, indent=2) + "\n"
+    fixture.source_index_yaml.write_text(source_index_text, encoding="utf-8")
     routine_summary = tuple(
         {
             "routine": routine,
             "detail_ref": f"RLOG-{prefix}-{index:03d}",
-            "semantic_status": "source_backed_complete",
-            "coverage": "indexed_only",
+            "semantic_status": "deep_read_complete" if large_program else "source_backed_complete",
+            "coverage": "deep_read" if large_program else "indexed_only",
         }
         for index, routine in enumerate(routines, start=1)
     )
@@ -565,9 +578,22 @@ def write_finalized_program_artifacts(
         {
             "detail_id": f"RLOG-{prefix}-{index:03d}",
             "routine": routine,
-            "semantic_status": "source_backed_complete",
-            "coverage": "indexed_only",
+            "semantic_status": "deep_read_complete" if large_program else "source_backed_complete",
+            "coverage": "deep_read" if large_program else "indexed_only",
             "execution_trigger": "Called from the source-backed request processing path.",
+            **(
+                {
+                    "step_by_step_logic": "Reads the source-backed state and evaluates the documented branch.",
+                    "field_calculations": "Applies the source-backed carrier assignment for the routine outcome.",
+                    "conditioned_calculation_blocks": "Runs the assignment only when the documented guard succeeds.",
+                    "outcome_reverse_traces": "Traces the observed outcome to the source-backed branch.",
+                    "field_lineage": "Preserves the input carrier through working state to the returned outcome.",
+                    "branch_outcomes": "Continues on success and returns the documented failure outcome otherwise.",
+                    "routine_exception_closure": "Closes the observed failure through the documented status carrier.",
+                }
+                if large_program
+                else {}
+            ),
             "unresolved_routine_logic": "none",
         }
         for index, routine in enumerate(routines, start=1)
@@ -615,7 +641,7 @@ def write_finalized_program_artifacts(
             "schema_version": "0.1",
             "generated_by": "program_analysis_artifacts.py",
             "program": program,
-            "source": {"line_count": 200},
+            "source": {"line_count": 12001 if large_program else 200},
             "program_size_tier": size_tier,
             "sidecars": {
                 "program_analysis": {
@@ -645,6 +671,79 @@ def write_finalized_program_artifacts(
             },
         },
     )
+    if large_program:
+        batch_dir = analysis_dir / "routine-logic-details"
+        plan_entries: list[dict[str, object]] = []
+        for batch_index, offset in enumerate(range(0, len(routines), 5), start=1):
+            batch_routines = routines[offset : offset + 5]
+            batch_path = batch_dir / f"{prefix}-deep-read-batch-{batch_index:03d}.md"
+            coverage_rows = "\n".join(
+                f"| DRW-{prefix}-{routine_index:03d} | {routine} | "
+                f"{routine_index * 100 - 99}-{routine_index * 100} | "
+                f"RLOG-{prefix}-{routine_index:03d} |"
+                for routine_index, routine in enumerate(
+                    batch_routines, start=offset + 1
+                )
+            )
+            routine_blocks = "\n\n".join(
+                f"### RLOG-{prefix}-{routine_index:03d} - {routine}\n\n"
+                f"- Source lines: {routine_index * 100 - 99}-{routine_index * 100}.\n"
+                "- Source-backed routine detail explains the entry trigger, branch decisions, "
+                "field assignments, validation outcome, side effects, and exception closure."
+                for routine_index, routine in enumerate(
+                    batch_routines, start=offset + 1
+                )
+            )
+            batch_path.parent.mkdir(parents=True, exist_ok=True)
+            batch_path.write_text(
+                "\n\n".join(
+                    (
+                        f"# Routine Logic Details: {program} - Deep Read Batch {batch_index:03d}",
+                        "## Calculation Logic\n\nSource-backed calculation evidence is complete for this batch.",
+                        "## Validation Logic\n\nSource-backed validation evidence is complete for this batch.",
+                        "## Exception Handling\n\nSource-backed exception closure is complete for this batch.",
+                        "## Scope\n\nThe deterministic deep-read allocation is completed for this batch.",
+                        "## Batch Coverage Summary\n\n| Window ID | Routine | Source Lines | RLOG Detail |\n"
+                        "| --- | --- | --- | --- |\n" + coverage_rows,
+                        "## Message Inventory\n\nExact message/status evidence is consolidated in the final program analysis.",
+                        "## Routine Details\n\n" + routine_blocks,
+                    )
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            for routine_index, routine in enumerate(batch_routines, start=offset + 1):
+                plan_entries.append(
+                    {
+                        "window_id": f"DRW-{prefix}-{routine_index:03d}",
+                        "routine": routine,
+                        "source_lines": f"{routine_index * 100 - 99}-{routine_index * 100}",
+                        "rlog_id": f"RLOG-{prefix}-{routine_index:03d}",
+                        "batch_number": batch_index,
+                        "batch_path": f"routine-logic-details/{batch_path.name}",
+                    }
+                )
+        plan_path = analysis_dir / f"{prefix}-deep-read-execution-plan.yaml"
+        _write_json_yaml(
+            plan_path,
+            {
+                "schema_version": "0.1",
+                "generated_by": "index_rpg_source.py",
+                "program": program,
+                "program_size_tier": "large_extreme_program",
+                "source_index_path": fixture.source_index_yaml.name,
+                "source_index_sha256": hashlib.sha256(
+                    source_index_text.encode("utf-8")
+                ).hexdigest(),
+                "planned_deep_read": plan_entries,
+            },
+        )
+        summary_payload = json.loads(fixture.summary_yaml.read_text(encoding="utf-8"))
+        summary_payload["sidecars"]["deep_read_execution_plan"] = {
+            "path": plan_path.name,
+            "status": "present",
+        }
+        _write_json_yaml(fixture.summary_yaml, summary_payload)
     return fixture
 
 

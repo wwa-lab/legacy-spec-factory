@@ -220,6 +220,7 @@ Large/extreme artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
+| `<PROGRAM>-deep-read-execution-plan.yaml` | Immutable-at-batch-start allocation of every selected window, source range, RLOG, and retained batch plus the source-index SHA-256. It is required for large/extreme final validation and must not be hand-edited to remove work. |
 | `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` | Required first retained checkpoint for large/extreme batched deep-read. Additional batches continue as `<PROGRAM>-deep-read-batch-002.md`, `<PROGRAM>-deep-read-batch-003.md`, and so on, with at most five routines/windows per batch. |
 
 These files are allowed intermediate artifacts. They do not replace
@@ -231,14 +232,19 @@ conclusions.
 When one or more retained deep-read checkpoints exist, complete the whole set;
 the presence of batch 001 is not permission to stop after batch 001.
 
-1. Discover checkpoint paths from both the summary/YAML declarations and the
-   actual `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files.
+1. Read `<PROGRAM>-deep-read-execution-plan.yaml` first. Its
+   `planned_deep_read` list is the full allocation; do not infer completion
+   from only the batch files still present on disk. Discover checkpoint paths
+   from the plan, summary/YAML declarations, and actual
+   `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files.
 2. Sort by the numeric batch suffix in natural order (`001`, `002`, ...,
    `010`), not by an arbitrary filesystem iteration order.
 3. Open only the source windows assigned to the current checkpoint, with at
    most five routines/windows in that checkpoint.
 4. Replace all deterministic pending seed content with source-backed semantic
-   detail, then persist the checkpoint before opening the next one.
+   detail, cite each planned RLOG's allocated source-line range in its routine
+   body, and reject generic filler; then persist the checkpoint before opening
+   the next one.
 5. In the same checkpoint step, atomically update the matching
    `routine_logic_inventory.summary[]` and `routine_logic_inventory.details[]` entries in
    `<PROGRAM>-routine-logic-details.yaml`. A routine completed in the batch
@@ -251,6 +257,13 @@ the presence of batch 001 is not permission to stop after batch 001.
 7. Only after every checkpoint is persisted, merge the full set into
    `<PROGRAM>-routine-logic-details.md` and the reader-first
    `<PROGRAM>-program-analysis.md`.
+
+For program-list batches, `--scaffold-mode precreate` records source-index and
+execution-plan SHA-256 values in `batch-scan-manifest.yaml`. The terminal gate
+compares the final files to those locks, so rewriting the plan and source index
+together cannot silently remove a later batch. If a lock/digest fails, mark the
+row `failed_validator`, recreate the deterministic scaffold from approved
+source, and restart the planned deep-read allocation.
 
 `semantic_status: pending_deep_read` is never valid in final routine YAML. A
 pure technical utility that was not assigned to any retained deep-read batch

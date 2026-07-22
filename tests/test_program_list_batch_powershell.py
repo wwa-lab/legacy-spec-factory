@@ -130,11 +130,26 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
         self.assertIn("scaffoldmode", initializer_text.lower())
         self.assertIn("scaffold_status", initializer_text)
         self.assertIn("index-rpg-source.ps1", initializer_text)
+        self.assertIn("Get-TierExecutionContract", initializer_text)
+        self.assertIn("Get-IndexCommandBlock", initializer_text)
+        self.assertIn("index_command_block = Get-IndexCommandBlock", initializer_text)
+        self.assertIn("--preserve-existing", initializer_text)
+        self.assertIn("--canonical-artifact-names", initializer_text)
+        self.assertIn("Large-program terminal completion contract", initializer_text)
+        self.assertIn("batch-001 file is a scaffold/checkpoint", initializer_text)
+        self.assertIn("source_index_sha256", initializer_text)
+        self.assertIn("deep_read_execution_plan_sha256", initializer_text)
+        self.assertIn("--scaffold-mode precreate", initializer_text)
 
         status_validator_text = STATUS_VALIDATOR.read_text(encoding="utf-8")
         self.assertIn("Routine Index For Calculation Logic", status_validator_text)
         self.assertIn("Routine Index For Validation Logic", status_validator_text)
         self.assertIn("Routine Index For Exception Handling", status_validator_text)
+        self.assertIn("Invoke-UpstreamProgramAnalysisContract", status_validator_text)
+        self.assertIn("validate-program-analysis-contract.ps1", status_validator_text)
+        self.assertIn("--expected-size-tier", status_validator_text)
+        self.assertIn('"scanned_unvalidated"', status_validator_text)
+        self.assertIn("upstream program-analysis contract failed", status_validator_text)
 
     def test_status_validator_static_contract_covers_terminal_and_nested_batches(
         self,
@@ -149,8 +164,34 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
         )
         self.assertIn("*-deep-read-batch-*.md", text)
         self.assertIn("pending_deep_read", text)
+        self.assertRegex(text, r'\$NonTerminalStatuses\s*=\s*@\([^)]*"scanned_unvalidated"')
+        self.assertIn("claimed terminal completion requires a concrete output_dir", text)
         self.assertIn("(?:\\r?\\n|$)", text)
         self.assertNotIn("(?=\\s*(?:#|$))", text)
+        self.assertRegex(
+            text,
+            r"(?is)\$Options\.RequireTerminal.*?\$status\s+-in\s+@\(\"completed\",\s*\"completed_with_warnings\"\).*?Invoke-UpstreamProgramAnalysisContract",
+        )
+
+    def test_status_validator_static_contract_requires_kiro_parent_merge(self) -> None:
+        text = STATUS_VALIDATOR.read_text(encoding="utf-8")
+
+        self.assertIn("Get-ManifestTopLevelValue", text)
+        self.assertIn("Get-ManifestSubagentExpectation", text)
+        self.assertIn("subagent_expected_count", text)
+        self.assertIn("subagent_mode", text)
+        self.assertIn("scaffold_mode", text)
+        self.assertIn("Get-ManifestProgramExecutionLock", text)
+        self.assertIn("precreated immutable execution locks", text)
+        self.assertIn("source-index SHA-256 differs", text)
+        self.assertIn("deep-read execution-plan SHA-256 differs", text)
+        self.assertIn("Kiro/parallel batch requires scaffold_mode=precreate", text)
+        self.assertIn("Kiro/parallel batch requires parent merge before terminal validation", text)
+        self.assertIn("subagent_results_merged", text)
+        self.assertRegex(
+            text,
+            r"(?is)\$Options\.RequireTerminal.*?subagent_mode.*?prepare.*?Get-ManifestSubagentExpectation",
+        )
 
     @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
     def test_router_uses_native_fallback_when_both_python_launchers_fail(self) -> None:

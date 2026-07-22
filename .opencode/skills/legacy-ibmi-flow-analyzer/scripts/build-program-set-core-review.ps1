@@ -17,7 +17,7 @@ executing skill's LLM owns that synthesis step.
 CLI contract:
   --review-name --programs-file --working-root --output-root
   --artifact-repo-mode --delivery-root --force-rescan-file --source-root
-  --inventory-dir --program-first --profile --output-dir --working-branch
+  --inventory-dir --program-first --profile --project-root|--output-dir --working-branch
 #>
 #requires -version 5.1
 
@@ -34,14 +34,14 @@ function Read-BuildArguments {
         ReviewName = $null; ProgramsFile = $null; WorkingRoot = $null; OutputRoot = $null
         ArtifactRepoMode = 'current_run'; DeliveryRoot = $null; ForceRescanFile = $null
         SourceRoot = $null; InventoryDir = $null; ProgramFirst = $false; Profile = $null
-        OutputDir = $null; WorkingBranch = $null; CoreReviewProfile = $null; ReviewId = $null
+        ProjectRoot = $null; OutputDir = $null; WorkingBranch = $null; CoreReviewProfile = $null; ReviewId = $null
         FlowSlug = $null; ProgramSetSlug = $null
     }
     $names = @{
         reviewname = 'ReviewName'; programsfile = 'ProgramsFile'; workingroot = 'WorkingRoot'
         outputroot = 'OutputRoot'; artifactrepomode = 'ArtifactRepoMode'; deliveryroot = 'DeliveryRoot'
         forcerescanfile = 'ForceRescanFile'; sourceroot = 'SourceRoot'; inventorydir = 'InventoryDir'
-        programfirst = 'ProgramFirst'; profile = 'Profile'; outputdir = 'OutputDir'; workingbranch = 'WorkingBranch'
+        programfirst = 'ProgramFirst'; profile = 'Profile'; projectroot = 'ProjectRoot'; outputdir = 'OutputDir'; workingbranch = 'WorkingBranch'
         corereviewprofile = 'CoreReviewProfile'; reviewid = 'ReviewId'; flowslug = 'FlowSlug'; programsetslug = 'ProgramSetSlug'
     }
     for ($index = 0; $index -lt $Arguments.Count; $index++) {
@@ -54,9 +54,11 @@ function Read-BuildArguments {
         if ($index + 1 -ge $Arguments.Count) { throw "Argument $raw requires a value" }
         $index++; $options[$name] = [string]$Arguments[$index]
     }
-    foreach ($required in @('ReviewName', 'ProgramsFile', 'Profile', 'OutputDir')) {
+    foreach ($required in @('ReviewName', 'ProgramsFile', 'Profile')) {
         if ([string]::IsNullOrWhiteSpace([string]$options[$required])) { throw "Missing required argument: --$($required.ToLowerInvariant())" }
     }
+    if ($options.ProjectRoot -and $options.OutputDir) { throw 'provide exactly one of --project-root or --output-dir' }
+    if (-not $options.ProjectRoot -and -not $options.OutputDir) { throw 'Missing required argument: --project-root or --output-dir' }
     if ($options.ArtifactRepoMode -notin @('current_run', 'approved_document_repo')) {
         throw '--artifact-repo-mode must be current_run or approved_document_repo'
     }
@@ -84,12 +86,14 @@ try {
     if (-not (Test-Path -LiteralPath $options.ProgramsFile -PathType Leaf)) { throw "programs file not found: $($options.ProgramsFile)" }
     if (-not (Test-Path -LiteralPath $options.Profile -PathType Leaf)) { throw "delivery profile not found: $($options.Profile)" }
     if ($options.SourceRoot -and -not (Test-Path -LiteralPath $options.SourceRoot -PathType Container)) { throw "source root not found or not a directory: $($options.SourceRoot)" }
+    if ($options.ProjectRoot -and -not (Test-Path -LiteralPath $options.ProjectRoot -PathType Container)) { throw "project root not found or not a directory: $($options.ProjectRoot)" }
     $programs = @(Read-FlowProgramsFile $options.ProgramsFile)
     if ($programs.Count -eq 0) { throw 'programs file has no program names' }
     $config = Read-FlowYamlFile $options.Profile
     if ($config -isnot [System.Collections.IDictionary]) { throw 'delivery profile must be a YAML mapping' }
     $manifest = New-FlowCoreReviewManifest -ReviewName $options.ReviewName -Programs $programs -ArtifactRoot ([IO.Path]::GetFullPath($artifactRoot)) -Config $config -WorkingBranch $options.WorkingBranch -SourceRoot $options.SourceRoot -InventoryDir $options.InventoryDir -ProgramFirst ([bool]$options.ProgramFirst) -ArtifactRepoMode $options.ArtifactRepoMode -CoreReviewProfile $options.CoreReviewProfile -ReviewId $options.ReviewId -FlowSlug $options.FlowSlug -ProgramSetSlug $options.ProgramSetSlug -ProgramsFile ([IO.Path]::GetFullPath($options.ProgramsFile))
-    $paths = @(Write-FlowCoreReviewOutputs -Manifest $manifest -OutputDirectory ([IO.Path]::GetFullPath($options.OutputDir)))
+    $outputDirectory = if ($options.ProjectRoot) { Join-Path ([IO.Path]::GetFullPath($options.ProjectRoot)) 'outputs' } else { [IO.Path]::GetFullPath($options.OutputDir) }
+    $paths = @(Write-FlowCoreReviewOutputs -Manifest $manifest -OutputDirectory $outputDirectory)
     if ($paths.Count) { Write-Output "OUTPUT_DIR=$([IO.Path]::GetDirectoryName([string]$paths[0]))" }
     foreach ($path in $paths) { Write-Output "Wrote $path" }
     exit 0

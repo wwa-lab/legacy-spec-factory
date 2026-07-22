@@ -3,7 +3,8 @@ skill: legacy-ibmi-flow-analyzer
 scorecard_version: v0.4.0
 static_score: 9.51
 decision: repo-ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-ibmi-flow-analyzer-v0.4.1-scorecard.md
 last_verified: 2026-07-21
 runtimes_tested:
   codex: { status: synced, model: not-run, date: 2026-07-21 }

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
+
+from tests.fixtures.program_analysis_artifacts import write_finalized_program_artifacts
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -658,6 +662,70 @@ def write_common_artifacts(path: Path) -> None:
     (path / "routine-index.md").write_text("# Routine Index\n", encoding="utf-8")
     (path / "message-inventory.yaml").write_text("program: CU650\n", encoding="utf-8")
     (path / "routine-logic-details.yaml").write_text(routine_yaml(), encoding="utf-8")
+
+
+def write_large_execution_plan(
+    path: Path,
+    *,
+    windows: tuple[tuple[str, str, str, str, int], ...],
+) -> None:
+    """Write the deterministic deep-read plan used by large-program tests.
+
+    Tuple members are ``window_id, routine, source_lines, rlog_id, batch_number``.
+    The production contract will bind the plan to the source-index bytes so
+    deleting later batches cannot make an incomplete large analysis appear done.
+    """
+
+    source_index = "program: CU650\ndeep_read_windows:\n" + "".join(
+        (
+            f"  - window_id: {window_id}\n"
+            f"    routine: {routine}\n"
+            f"    source_lines: {source_lines}\n"
+            "    why_selected: state-changing source path\n"
+            "    coverage_outcome: selected_for_deep_read\n"
+            "    evidence: source-index\n"
+        )
+        for window_id, routine, source_lines, _rlog_id, _batch_number in windows
+    )
+    source_index_path = path / "source-index.yaml"
+    source_index_path.write_text(source_index, encoding="utf-8")
+    source_digest = hashlib.sha256(source_index.encode("utf-8")).hexdigest()
+    plan_name = "CU650-deep-read-execution-plan.yaml"
+    plan_lines = [
+        'schema_version: "0.1"',
+        "generated_by: index_rpg_source.py",
+        "program: CU650",
+        "program_size_tier: large_extreme_program",
+        "source_index_path: source-index.yaml",
+        f"source_index_sha256: {source_digest}",
+        "planned_deep_read:",
+    ]
+    for window_id, routine, source_lines, rlog_id, batch_number in windows:
+        plan_lines.extend(
+            [
+                f"  - window_id: {window_id}",
+                f"    routine: {routine}",
+                f"    source_lines: {source_lines}",
+                f"    rlog_id: {rlog_id}",
+                f"    batch_number: {batch_number}",
+                "    batch_path: routine-logic-details/"
+                f"CU650-deep-read-batch-{batch_number:03d}.md",
+            ]
+        )
+    (path / plan_name).write_text("\n".join(plan_lines) + "\n", encoding="utf-8")
+    summary_path = path / "program-analysis-summary.yaml"
+    summary = summary_yaml(
+        program_size_tier="large_extreme_program",
+        line_count=12001,
+    ).replace(
+        "  file_io_inventory:\n",
+        "  deep_read_execution_plan:\n"
+        f"    path: {plan_name}\n"
+        "    status: present\n"
+        "  file_io_inventory:\n",
+        1,
+    )
+    summary_path.write_text(summary, encoding="utf-8")
 
 
 class ProgramAnalysisContractValidatorTests(unittest.TestCase):
@@ -1592,6 +1660,168 @@ Per-routine detail.
 
         self.assertTrue(any("large_extreme_program requires" in finding for finding in findings))
         self.assertTrue(any("deep-read-batch" in finding for finding in findings))
+
+    def test_fails_large_program_when_later_planned_batch_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            write_large_execution_plan(
+                analysis_dir,
+                windows=(
+                    ("DRW-CU650-001", "MAIN", "1-100", "RLOG-CU650-001", 1),
+                    ("DRW-CU650-002", "SR002", "101-140", "RLOG-CU650-002", 1),
+                    ("DRW-CU650-003", "SR003", "141-180", "RLOG-CU650-003", 1),
+                    ("DRW-CU650-004", "SR004", "181-220", "RLOG-CU650-004", 1),
+                    ("DRW-CU650-005", "SR005", "221-260", "RLOG-CU650-005", 1),
+                    ("DRW-CU650-006", "SR006", "261-300", "RLOG-CU650-006", 2),
+                ),
+            )
+            (analysis_dir / "routine-logic-details.yaml").write_text(
+                routine_yaml_with_completed_first_batch(), encoding="utf-8"
+            )
+            (analysis_dir / "program-analysis.md").write_text(
+                full_program_analysis(), encoding="utf-8"
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                final_routine_markdown(), encoding="utf-8"
+            )
+            batch_dir = analysis_dir / "routine-logic-details"
+            batch_dir.mkdir()
+            (batch_dir / "CU650-deep-read-batch-001.md").write_text(
+                deep_read_batch(), encoding="utf-8"
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(
+            any(
+                "large deep-read execution plan" in finding.lower()
+                and "batch-002" in finding
+                for finding in findings
+            ),
+            findings,
+        )
+
+    def test_fails_large_program_when_plan_source_index_digest_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            write_common_artifacts(analysis_dir)
+            write_large_execution_plan(
+                analysis_dir,
+                windows=(
+                    ("DRW-CU650-001", "MAIN", "1-100", "RLOG-CU650-001", 1),
+                ),
+            )
+            (analysis_dir / "source-index.yaml").write_text(
+                "program: CU650\ndeep_read_windows: []\n",
+                encoding="utf-8",
+            )
+            (analysis_dir / "routine-logic-details.yaml").write_text(
+                routine_yaml_with_completed_first_batch(), encoding="utf-8"
+            )
+            (analysis_dir / "program-analysis.md").write_text(
+                full_program_analysis(), encoding="utf-8"
+            )
+            (analysis_dir / "routine-logic-details.md").write_text(
+                final_routine_markdown(), encoding="utf-8"
+            )
+            batch_dir = analysis_dir / "routine-logic-details"
+            batch_dir.mkdir()
+            (batch_dir / "CU650-deep-read-batch-001.md").write_text(
+                deep_read_batch(), encoding="utf-8"
+            )
+
+            findings = VALIDATOR.validate(analysis_dir)
+
+        self.assertTrue(
+            any("source-index digest" in finding.lower() for finding in findings),
+            findings,
+        )
+
+    def test_immutable_execution_lock_rejects_self_consistent_plan_rewrite(self) -> None:
+        """A worker cannot shrink a large allocation by rewriting both local files."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            fixture = write_finalized_program_artifacts(
+                analysis_dir,
+                "CU650",
+                routines=("MAIN", "SR002", "SR003", "SR004", "SR005", "SR006"),
+                size_tier="large_extreme_program",
+            )
+            original_source_lock = hashlib.sha256(
+                fixture.source_index_yaml.read_bytes()
+            ).hexdigest()
+            plan_path = analysis_dir / "CU650-deep-read-execution-plan.yaml"
+            original_plan_lock = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+
+            source_index = json.loads(fixture.source_index_yaml.read_text(encoding="utf-8"))
+            source_index["deep_read_windows"] = source_index["deep_read_windows"][:-1]
+            source_text = json.dumps(source_index, indent=2) + "\n"
+            fixture.source_index_yaml.write_text(source_text, encoding="utf-8")
+
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["source_index_sha256"] = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+            plan["planned_deep_read"] = plan["planned_deep_read"][:-1]
+            plan_path.write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+            (analysis_dir / "routine-logic-details" / "CU650-deep-read-batch-002.md").unlink()
+
+            findings = VALIDATOR.validate(
+                analysis_dir,
+                expected_size_tier="large_extreme_program",
+                expected_source_index_sha256=original_source_lock,
+                expected_execution_plan_sha256=original_plan_lock,
+            )
+
+        self.assertTrue(
+            any("immutable batch execution lock" in finding for finding in findings),
+            findings,
+        )
+
+    def test_plan_cannot_remap_rlogs_away_from_source_index_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            analysis_dir = Path(temp_dir)
+            fixture = write_finalized_program_artifacts(
+                analysis_dir,
+                "CU650",
+                routines=("MAIN", "SR002"),
+                size_tier="large_extreme_program",
+            )
+            source_index = json.loads(fixture.source_index_yaml.read_text(encoding="utf-8"))
+            source_index["routine_logic_inventory"] = {
+                "details": [
+                    {"routine": "MAIN", "detail_id": "RLOG-CU650-001"},
+                    {"routine": "SR002", "detail_id": "RLOG-CU650-002"},
+                ]
+            }
+            source_text = json.dumps(source_index, indent=2) + "\n"
+            fixture.source_index_yaml.write_text(source_text, encoding="utf-8")
+
+            plan_path = analysis_dir / "CU650-deep-read-execution-plan.yaml"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["source_index_sha256"] = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+            plan["planned_deep_read"][0]["rlog_id"] = "RLOG-CU650-002"
+            plan["planned_deep_read"][1]["rlog_id"] = "RLOG-CU650-001"
+            plan_path.write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+
+            batch_path = analysis_dir / "routine-logic-details" / "CU650-deep-read-batch-001.md"
+            batch_text = batch_path.read_text(encoding="utf-8")
+            batch_text = batch_text.replace("RLOG-CU650-001", "RLOG-CU650-TEMP")
+            batch_text = batch_text.replace("RLOG-CU650-002", "RLOG-CU650-001")
+            batch_path.write_text(
+                batch_text.replace("RLOG-CU650-TEMP", "RLOG-CU650-002"),
+                encoding="utf-8",
+            )
+
+            findings = VALIDATOR.validate(
+                analysis_dir,
+                expected_size_tier="large_extreme_program",
+            )
+
+        self.assertTrue(
+            any("routine_logic_inventory requires" in finding for finding in findings),
+            findings,
+        )
 
     def test_fails_unresolved_message_descriptions(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

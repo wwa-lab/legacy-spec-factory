@@ -68,31 +68,37 @@ class ProgramSetReaderFirstLayoutTests(unittest.TestCase):
         *,
         review_name: str,
         programs: tuple[str, ...],
-        output_parent: Path,
+        output_parent: Path | None = None,
+        project_root: Path | None = None,
         flow_slug: str,
     ) -> subprocess.CompletedProcess[str]:
+        if (output_parent is None) == (project_root is None):
+            raise ValueError("provide exactly one of output_parent or project_root")
         programs_file = self.root / (
             "programs-" + "-".join(program.lower() for program in programs) + ".txt"
         )
         programs_file.write_text("\n".join(programs) + "\n", encoding="utf-8")
+        command = [
+            sys.executable,
+            str(SCRIPT),
+            "build",
+            "--review-name",
+            review_name,
+            "--programs-file",
+            str(programs_file),
+            "--working-root",
+            str(self.artifact_root),
+            "--profile",
+            str(PROFILE),
+            "--flow-slug",
+            flow_slug,
+        ]
+        if project_root is not None:
+            command.extend(["--project-root", str(project_root)])
+        else:
+            command.extend(["--output-dir", str(output_parent)])
         return subprocess.run(
-            [
-                sys.executable,
-                str(SCRIPT),
-                "build",
-                "--review-name",
-                review_name,
-                "--programs-file",
-                str(programs_file),
-                "--working-root",
-                str(self.artifact_root),
-                "--profile",
-                str(PROFILE),
-                "--output-dir",
-                str(output_parent),
-                "--flow-slug",
-                flow_slug,
-            ],
+            command,
             text=True,
             capture_output=True,
             check=False,
@@ -168,6 +174,42 @@ class ProgramSetReaderFirstLayoutTests(unittest.TestCase):
             (folder_dir / folder_slug).exists(),
             "an already resolved bundle path must not be appended a second time",
         )
+
+    def test_cli_places_project_root_outputs_in_a_reusable_bundle(self) -> None:
+        project_root = self.root / "legacy-modernization-delivery"
+        project_root.mkdir()
+        programs = ("CU106", "CU101A")
+        flow_slug = "credit-check"
+        folder_slug = (
+            f"{BUILDER.flow_identity_slug(flow_slug)}--"
+            f"{BUILDER.program_set_identity_slug(list(programs))}"
+        )
+
+        first_run = self.run_build(
+            review_name="Credit Check Review",
+            programs=programs,
+            project_root=project_root,
+            flow_slug=flow_slug,
+        )
+
+        self.assertEqual(first_run.returncode, 0, first_run.stderr)
+        output_parent = project_root / "outputs"
+        folder_dir = output_parent / folder_slug
+        self.assertTrue(folder_dir.is_dir())
+        self.assertTrue((folder_dir / "program-set-core-input-manifest.yaml").is_file())
+        self.assertFalse((project_root / folder_slug).exists())
+        self.assertFalse((project_root / "program-set-core-input-manifest.yaml").exists())
+
+        rerun = self.run_build(
+            review_name="Credit Check Review",
+            programs=programs,
+            project_root=project_root,
+            flow_slug=flow_slug,
+        )
+
+        self.assertEqual(rerun.returncode, 0, rerun.stderr)
+        self.assertTrue(folder_dir.is_dir())
+        self.assertFalse((folder_dir / folder_slug).exists())
 
     def test_layout_identity_is_stable_and_unique_by_flow_and_program_set(self) -> None:
         resolve_output_layout = require_public_seam("resolve_output_layout")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import subprocess
 import sys
@@ -85,6 +86,7 @@ class RpgSourceIndexerTests(unittest.TestCase):
             self.assertIn("<PROGRAM>-program-analysis.md", text)
             self.assertIn("<PROGRAM>-routine-logic-details.md", text)
             self.assertIn("<PROGRAM>-routine-logic-details.yaml", text)
+            self.assertIn("<PROGRAM>-deep-read-execution-plan.yaml", text)
             self.assertIn("routine-logic-details/<PROGRAM>-deep-read-batch-001.md", text)
             self.assertIn("temporary consistency checks", text)
             self.assertIn("YAML", text)
@@ -715,6 +717,7 @@ C                   EVAL      RESULT = 'Y'
                 artifact_name("CU106", "deep-read-plan.md"),
                 artifact_name("CU106", "routine-logic-details.md"),
                 artifact_name("CU106", "routine-logic-details.yaml"),
+                artifact_name("CU106", "deep-read-execution-plan.yaml"),
                 artifact_name("CU106", "message-inventory.md"),
                 artifact_name("CU106", "message-inventory.yaml"),
                 artifact_name("CU106", "file-io-inventory.md"),
@@ -730,6 +733,24 @@ C                   EVAL      RESULT = 'Y'
             source_index = (output_dir / artifact_name("CU106", "source-index.yaml")).read_text(encoding="utf-8")
             self.assertIn("analysis_mode: large_program", source_index)
             self.assertIn("program: CU106", source_index)
+
+            execution_plan = (
+                output_dir / artifact_name("CU106", "deep-read-execution-plan.yaml")
+            ).read_text(encoding="utf-8")
+            self.assertIn("program_size_tier: large_extreme_program", execution_plan)
+            self.assertIn(
+                "source_index_sha256: "
+                + hashlib.sha256(source_index.encode("utf-8")).hexdigest(),
+                execution_plan,
+            )
+            self.assertIn("planned_deep_read:", execution_plan)
+            self.assertIn("window_id: DRW-CU106-001", execution_plan)
+            self.assertIn("rlog_id: RLOG-CU106-001", execution_plan)
+            self.assertIn(
+                "batch_path: routine-logic-details/"
+                + artifact_name("CU106", "deep-read-batch-001.md"),
+                execution_plan,
+            )
 
             deep_read_plan = (output_dir / artifact_name("CU106", "deep-read-plan.md")).read_text(encoding="utf-8")
             self.assertIn("| SR100 |", deep_read_plan)
@@ -767,6 +788,8 @@ C                   EVAL      RESULT = 'Y'
             self.assertIn("message_summary:", program_summary)
             self.assertIn("routine_logic_deep_read_batch_001:", program_summary)
             self.assertIn(f"routine-logic-details/{artifact_name('CU106', 'deep-read-batch-001.md')}", program_summary)
+            self.assertIn("deep_read_execution_plan:", program_summary)
+            self.assertIn(artifact_name("CU106", "deep-read-execution-plan.yaml"), program_summary)
 
             batch = (output_dir / "routine-logic-details" / artifact_name("CU106", "deep-read-batch-001.md")).read_text(encoding="utf-8")
             self.assertIn("# Routine Logic Details: CU106 - Deep Read Batch 001", batch)

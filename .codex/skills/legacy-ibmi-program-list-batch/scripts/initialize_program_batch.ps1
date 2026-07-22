@@ -24,6 +24,9 @@ $StatusColumns = @(
     "batch_status",
     "validator_status",
     "scaffold_status",
+    "source_index_sha256",
+    "deep_read_execution_plan_path",
+    "deep_read_execution_plan_sha256",
     "output_dir",
     "prompt_path",
     "owner",
@@ -165,6 +168,67 @@ function ConvertTo-SafeFilename {
     return $cleaned
 }
 
+function Get-CanonicalArtifactName {
+    param(
+        [AllowEmptyString()][string]$Member,
+        [Parameter(Mandatory = $true)][string]$BaseName
+    )
+
+    # Match index-rpg-source.ps1's canonical artifact prefix exactly so the
+    # immutable lock is captured from the same files that the worker receives.
+    $prefix = [regex]::Replace($Member.Trim().ToUpperInvariant(), '[\s<>:"/\\|?*]+', '_').Trim('._-')
+    if ([string]::IsNullOrEmpty($prefix)) {
+        $prefix = 'PROGRAM'
+    }
+    return "$prefix-$BaseName"
+}
+
+function Get-FileSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [IO.File]::ReadAllBytes($Path)
+        return ([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $hasher.Dispose()
+    }
+}
+
+function Get-ScaffoldExecutionLock {
+    param(
+        [AllowEmptyString()][string]$Member,
+        [AllowEmptyString()][string]$SizeTier,
+        [AllowEmptyString()][string]$OutputDirectory
+    )
+
+    # The source index and allocation plan are editable semantic-work inputs.
+    # Freeze their bytes outside the program folder before workers begin so a
+    # self-consistent rewrite cannot shrink the terminal large-program scope.
+    $lock = [ordered]@{
+        source_index_sha256 = ''
+        deep_read_execution_plan_path = ''
+        deep_read_execution_plan_sha256 = ''
+    }
+    if ($SizeTier.Trim() -ne 'large_extreme_program' -or
+        [string]::IsNullOrWhiteSpace($OutputDirectory) -or
+        $OutputDirectory.Contains('<delivery-root>')) {
+        return [pscustomobject]$lock
+    }
+
+    $sourceIndexPath = Join-Path $OutputDirectory (Get-CanonicalArtifactName -Member $Member -BaseName 'source-index.yaml')
+    $planPath = Join-Path $OutputDirectory (Get-CanonicalArtifactName -Member $Member -BaseName 'deep-read-execution-plan.yaml')
+    if (Test-Path -LiteralPath $sourceIndexPath -PathType Leaf) {
+        $lock.source_index_sha256 = Get-FileSha256 -Path $sourceIndexPath
+    }
+    if (Test-Path -LiteralPath $planPath -PathType Leaf) {
+        $lock.deep_read_execution_plan_path = Split-Path -Leaf $planPath
+        $lock.deep_read_execution_plan_sha256 = Get-FileSha256 -Path $planPath
+    }
+    return [pscustomobject]$lock
+}
+
 function Test-WindowsDisplayPath {
     param([AllowEmptyString()][string]$Value)
     return $Value.Contains("\") -or $Value -match "^[A-Za-z]:"
@@ -281,9 +345,10 @@ function Get-ValidationPolicy {
 function Get-ValidationCommandBlock {
     param(
         [Parameter(Mandatory = $true)][string]$Mode,
-        [Parameter(Mandatory = $true)][string]$OutputDirectory
+        [Parameter(Mandatory = $true)][string]$OutputDirectory,
+        [AllowEmptyString()][string]$SizeTier
     )
-    $command = "py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir `"$OutputDirectory`""
+    $command = "py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir `"$OutputDirectory`" --expected-size-tier `"$SizeTier`""
     if ($Mode -eq "deferred") {
         return @(
             "Deferred in this batch prompt. Do not run this command now.",
@@ -292,6 +357,15 @@ function Get-ValidationCommandBlock {
         ) -join "`n"
     }
     return $command
+}
+
+function Get-IndexCommandBlock {
+    param(
+        [Parameter(Mandatory = $true)][string]$Member,
+        [Parameter(Mandatory = $true)][string]$SourcePath,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+    return "py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\index_rpg_source.py `"$SourcePath`" --program `"$Member`" --out-dir `"$OutputDirectory`" --preserve-existing"
 }
 
 function Get-ValidationLauncherNote {
@@ -322,6 +396,34 @@ function Get-ScaffoldPromptNote {
         return "- Scaffold precreation failed for this row. Resolve the recorded batch blocker before attempting semantic fill."
     }
     return "- If scaffold artifacts do not already exist, build deterministic indexes first."
+}
+
+function Get-TierExecutionContract {
+    param(
+        [AllowEmptyString()][string]$SizeTier,
+        [AllowEmptyString()][string]$Member
+    )
+    if ($SizeTier.Trim() -ne "large_extreme_program") {
+        return ""
+    }
+    return @(
+        "## Large-program terminal completion contract",
+        "",
+        "``$Member`` is a ``large_extreme_program``: execute its retained deep-read checkpoints as the analysis work, not as optional appendices.",
+        "A deterministic index, precreated file, or populated batch-001 file is a scaffold/checkpoint, never completion evidence.",
+        "Before semantic writing, read ``$Member-deep-read-execution-plan.yaml``. It is the deterministic allocation of every deep-read window, RLOG, and batch; do not delete, rewrite, reorder, or remap it or the source index to make remaining work disappear.",
+        "Do not write ``batch_status=completed``, ``completed_with_warnings``, or a passing validator status until all four conditions below are true.",
+        "",
+        "1. Every ``planned_deep_read`` entry in the execution plan has its exact planned window-to-RLOG binding in its planned batch. Every retained deep-read checkpoint is source-backed and free of indexer/pending seed content.",
+        "2. Both ``routine_logic_inventory.summary[]`` and ``routine_logic_inventory.details[]`` record the completed batch routines as ``coverage: deep_read`` and ``semantic_status: deep_read_complete``, with the required source-backed semantic fields filled.",
+        "   Each planned RLOG body must cite its allocated source-line range and describe the observed trigger, branch/operation, carriers, outcome, and exception closure; generic summary text is not completion evidence.",
+        "3. The completed batch content is consolidated into both ``$Member-routine-logic-details.md`` and ``$Member-program-analysis.md``; the final reader-first files must stand on their own rather than link to batch shells.",
+        "4. The full program-analysis validator shown below exits successfully after the consolidation.",
+        "For a program-list batch intended to reach terminal completion, these artifacts must have been created with ``--scaffold-mode precreate``, which freezes the source-index and execution-plan SHA-256 values in the batch manifest. A prompt run without that immutable lock remains exploratory and cannot be accepted as a terminal large-program row.",
+        "",
+        "If context, runtime, or source access prevents any checkpoint from being completed, keep the row non-complete (``in_progress``, ``failed_runtime``, or ``failed_validator`` as applicable) and record the exact next action. Do not replace unprocessed checkpoints with a generic summary.",
+        "If the execution plan is missing or its source-index digest no longer matches, do not hand-edit a replacement plan. Mark ``failed_validator`` and recreate this program's deterministic scaffold from the approved source before restarting its planned deep-read work."
+    ) -join "`n"
 }
 
 function Get-IndexerScriptPath {
@@ -380,7 +482,7 @@ function New-ProgramScaffold {
     }
 
     $powerShellExe = Get-CurrentPowerShellExecutable
-    $output = & $powerShellExe "-NoProfile" "-NonInteractive" "-ExecutionPolicy" "Bypass" "-File" $indexer $sourceFile "--program" $Member "--out-dir" $OutputDirectory 2>&1
+    $output = & $powerShellExe "-NoProfile" "-NonInteractive" "-ExecutionPolicy" "Bypass" "-File" $indexer $sourceFile "--program" $Member "--out-dir" $OutputDirectory "--preserve-existing" "--canonical-artifact-names" 2>&1
     if ($LASTEXITCODE -ne 0) {
         $message = ($output | ForEach-Object { [string]$_ }) -join "`n"
         if ([string]::IsNullOrWhiteSpace($message)) {
@@ -564,9 +666,11 @@ function Render-Prompt {
         intent = $Intent
         output_dir = $outputDirectory
         validation_policy = Get-ValidationPolicy -Mode $ValidationMode -Member $member
-        validation_command_block = Get-ValidationCommandBlock -Mode $ValidationMode -OutputDirectory $outputDirectory
+        validation_command_block = Get-ValidationCommandBlock -Mode $ValidationMode -OutputDirectory $outputDirectory -SizeTier (Get-FieldValue -Row $Row -Name "size_tier")
+        index_command_block = Get-IndexCommandBlock -Member $member -SourcePath (Get-SourceDisplay -SourceRoot $SourceRoot -SourcePath (Get-FieldValue -Row $Row -Name "path")) -OutputDirectory $outputDirectory
         validation_launcher_note = Get-ValidationLauncherNote -Mode $ValidationMode
         scaffold_prompt_note = Get-ScaffoldPromptNote -ScaffoldStatus (Get-FieldValue -Row $Row -Name "scaffold_status")
+        tier_execution_contract = Get-TierExecutionContract -SizeTier (Get-FieldValue -Row $Row -Name "size_tier") -Member $member
         reference_paths = Format-BulletList -Label "Reference paths" -Values $ReferencePaths
         control_files = Format-BulletList -Label "Control files" -Values $ControlFiles
     }
@@ -758,6 +862,7 @@ function Invoke-Initializer {
         $isProgram = $objectType.ToLowerInvariant() -eq "program"
         $outputDirectory = ""
         $promptPath = ""
+        $executionLock = Get-ScaffoldExecutionLock -Member $member -SizeTier $sizeTier -OutputDirectory $outputDirectory
         if ($isProgram) {
             if (-not [string]::IsNullOrEmpty($member)) {
                 $outputDirectory = Join-DisplayPath -Root $Options.DeliveryRoot -Parts @((Get-TierRoot -SizeTier $sizeTier), $member)
@@ -775,7 +880,12 @@ function Invoke-Initializer {
                     -OutputDirectory $outputDirectory
                 $scaffoldStatus = $scaffoldResult.Status
                 if ($scaffoldStatus -eq "present") {
-                    $nextAction = "fill details from scaffold"
+                    if ($sizeTier -eq "large_extreme_program") {
+                        $nextAction = "complete every retained deep-read batch, consolidate the reader-first analysis, then validate"
+                    }
+                    else {
+                        $nextAction = "fill details from scaffold"
+                    }
                 }
                 elseif ($scaffoldStatus -eq "blocked_missing_source") {
                     $batchStatus = "blocked_missing_source"
@@ -788,6 +898,7 @@ function Invoke-Initializer {
                     $lastError = $scaffoldResult.Error
                 }
             }
+            $executionLock = Get-ScaffoldExecutionLock -Member $member -SizeTier $sizeTier -OutputDirectory $outputDirectory
         }
         else {
             $batchStatus = "skipped_not_program"
@@ -803,6 +914,9 @@ function Invoke-Initializer {
         $statusValues.batch_status = $batchStatus
         $statusValues.validator_status = "not_run"
         $statusValues.scaffold_status = $scaffoldStatus
+        $statusValues.source_index_sha256 = [string]$executionLock.source_index_sha256
+        $statusValues.deep_read_execution_plan_path = [string]$executionLock.deep_read_execution_plan_path
+        $statusValues.deep_read_execution_plan_sha256 = [string]$executionLock.deep_read_execution_plan_sha256
         $statusValues.output_dir = $outputDirectory
         $statusValues.prompt_path = $promptPath
         $statusValues.owner = ""
@@ -863,6 +977,9 @@ function Invoke-Initializer {
             batch_status = Get-FieldValue -Row $row -Name "batch_status"
             validator_status = Get-FieldValue -Row $row -Name "validator_status"
             scaffold_status = Get-FieldValue -Row $row -Name "scaffold_status"
+            source_index_sha256 = Get-FieldValue -Row $row -Name "source_index_sha256"
+            deep_read_execution_plan_path = Get-FieldValue -Row $row -Name "deep_read_execution_plan_path"
+            deep_read_execution_plan_sha256 = Get-FieldValue -Row $row -Name "deep_read_execution_plan_sha256"
             output_dir = Get-FieldValue -Row $row -Name "output_dir"
             prompt_path = Get-FieldValue -Row $row -Name "prompt_path"
             next_action = Get-FieldValue -Row $row -Name "next_action"

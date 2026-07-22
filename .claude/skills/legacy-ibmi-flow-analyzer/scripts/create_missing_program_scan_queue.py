@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Create a program-list batch queue for missing flow-review programs.
+"""Create a classified recovery queue for missing or invalid flow-review programs.
 
 This is an intake adapter only. It does not scan source or build the SME
 review. It reads the flow manifest, selects programs whose required compact
-artifacts are missing, and delegates queue/state generation to the canonical
-legacy-ibmi-program-list-batch initializer.
+artifacts or semantic readiness are not ready, and delegates queue/state
+generation to the canonical legacy-ibmi-program-list-batch initializer.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import re
 import shutil
 import sys
 from pathlib import Path, PureWindowsPath
@@ -30,6 +31,9 @@ REQUIRED_ARTIFACTS = (
 )
 QUEUE_STATUS_FILE = "program-set-scan-queue.yaml"
 BLOCKED_FILE = "blocked-programs.csv"
+RECOVERY_PLAN_FILE = "recovery-plan.md"
+RECOVERY_STATUS_FILE = "recovery-status.yaml"
+MESSAGE_EVIDENCE_REQUEST_DIR = "message-evidence-requests"
 GENERATED_QUEUE_FILES = (
     "program-list.csv",
     "flow-program-list.csv",
@@ -42,6 +46,8 @@ GENERATED_QUEUE_FILES = (
     "batch-session-handoff.md",
     QUEUE_STATUS_FILE,
     BLOCKED_FILE,
+    RECOVERY_PLAN_FILE,
+    RECOVERY_STATUS_FILE,
 )
 GENERATED_QUEUE_DIRS = (
     "prompt-queue",
@@ -50,7 +56,43 @@ GENERATED_QUEUE_DIRS = (
     "completed",
     "blocked",
     "failed",
+    MESSAGE_EVIDENCE_REQUEST_DIR,
 )
+
+RECOVERY_ACTIONS: dict[str, tuple[str, str]] = {
+    "rebuild_required_artifacts": (
+        "Rebuild required artifacts",
+        "Run the generated program prompt. Its Artifact Bootstrap Gate must recreate missing core artifacts through the deterministic indexer; do not add empty files by hand.",
+    ),
+    "repair_reader_first_structure": (
+        "Repair reader-first artifact structure",
+        "Repair the named sections, headings, sidecar declarations, or routine-detail structure from source, then run the full program validator.",
+    ),
+    "resume_deep_read": (
+        "Resume semantic deep-read",
+        "Complete every pending RLOG and retained deep-read checkpoint in natural order, update the routine YAML semantic state, then rerun the validator.",
+    ),
+    "rebuild_large_execution_plan": (
+        "Rebuild the immutable large-program execution plan",
+        "Do not hand-edit the plan, source index, or batch mapping. Recreate this program's deterministic scaffold from the approved source, then complete every planned window/RLOG/batch before rerunning validation.",
+    ),
+    "resolve_message_evidence": (
+        "Resolve message descriptions",
+        "Use a message catalog, control/reference file, source literal/comment, runtime evidence, or SME-approved description. Do not leave an observed code as unknown in a final artifact.",
+    ),
+    "obtain_analysis_approval": (
+        "Obtain or record program-analysis approval",
+        "After the mechanical validator passes, record the required approved or approved_with_non_blocking_tbd terminal analysis state.",
+    ),
+    "refresh_program_analysis": (
+        "Refresh targeted program analysis",
+        "Run the generated prompt for this program, address every listed validator finding, and rerun the final validator before rebuilding the flow review.",
+    ),
+    "source_mapping_required": (
+        "Provide an approved source mapping",
+        "Provide a fresh inventory and an exact relative source path under the approved source root before generating a program prompt.",
+    ),
+}
 
 
 def load_module(name: str, path: Path) -> ModuleType:
@@ -83,8 +125,15 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return value
 
 
-def write_yaml(path: Path, value: dict[str, Any], batch: ModuleType) -> None:
-    path.write_text(batch.to_yaml(value) + "\n", encoding="utf-8")
+def write_yaml(path: Path, value: dict[str, Any]) -> None:
+    try:
+        import yaml  # type: ignore
+    except ImportError as exc:  # pragma: no cover - guarded by manifest loading
+        raise RuntimeError("PyYAML is required to write recovery queue state") from exc
+    path.write_text(
+        yaml.safe_dump(value, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
 
 
 def artifact_key(filename: str) -> str:
@@ -123,6 +172,127 @@ def readiness_reason(entry: dict[str, Any]) -> str:
     return "; ".join(findings) or "artifact readiness did not pass"
 
 
+def readiness_findings(entry: dict[str, Any]) -> list[str]:
+    readiness = entry.get("artifact_readiness")
+    if not isinstance(readiness, dict):
+        return []
+    return [str(item) for item in readiness.get("findings", []) or [] if str(item).strip()]
+
+
+def recovery_action_codes(entry: dict[str, Any], missing: list[str]) -> list[str]:
+    """Classify upstream readiness findings without weakening the final gate."""
+
+    findings = readiness_findings(entry)
+    combined = "\n".join(findings).lower()
+    actions: list[str] = []
+
+    def add(code: str) -> None:
+        if code not in actions:
+            actions.append(code)
+
+    if missing or any(
+        marker in combined
+        for marker in (
+            "missing required artifacts",
+            "required compact artifacts",
+            "sidecar declaration",
+        )
+    ):
+        add("rebuild_required_artifacts")
+    if any(
+        marker in combined
+        for marker in (
+            "missing required section",
+            "required analysis section",
+            "missing required heading",
+            "reader-first",
+            "routine detail structure",
+            "routine-logic-details.md missing",
+            "rlog detail heading",
+            "rlog ids",
+            "routine index",
+        )
+    ):
+        add("repair_reader_first_structure")
+    if any(
+        marker in combined
+        for marker in (
+            "deep-read execution plan",
+            "planned_deep_read",
+            "source-index digest",
+            "immutable batch execution lock",
+            "immutable execution lock",
+            "execution plan batch",
+        )
+    ):
+        add("rebuild_large_execution_plan")
+    if any(
+        marker in combined
+        for marker in (
+            "pending_deep_read",
+            "pending deep-read",
+            "pending deep read",
+            "pending semantic deep-read",
+            "semantic seed",
+            "not-yet-deep-read",
+            "not deep-read",
+            "deep-read-batch",
+            "deep_read_complete",
+            "reader-useful source-backed semantic detail",
+            "generic deep-read filler",
+            "planned source lines",
+        )
+    ):
+        add("resume_deep_read")
+    if any(
+        marker in combined
+        for marker in (
+            "message descriptions unresolved",
+            "unresolved message description",
+            "message/status/code values",
+            "message inventory missing observed yaml message/code values",
+        )
+    ):
+        add("resolve_message_evidence")
+    if "terminal status must be approved" in combined:
+        add("obtain_analysis_approval")
+    if not actions:
+        add("refresh_program_analysis")
+    return actions
+
+
+def recovery_context(program: str, actions: list[str], findings: list[str]) -> str:
+    lines = [
+        "## Flow-merge recovery context",
+        "",
+        "This program was selected because the flow-review final readiness gate did not pass.",
+        "Complete the actions below before marking the program completed. Do not downgrade or suppress the findings.",
+        "",
+        "### Required recovery actions",
+    ]
+    for index, code in enumerate(actions, start=1):
+        title, instruction = RECOVERY_ACTIONS[code]
+        lines.append(f"{index}. **{title}** — {instruction}")
+    lines.extend(["", "### Upstream validator findings"])
+    if findings:
+        lines.extend(f"- {finding}" for finding in findings)
+    else:
+        lines.append("- No detailed upstream finding was retained; refresh this program analysis and rerun the validator.")
+    lines.extend(
+        [
+            "",
+            "For a message-evidence action, also read the matching file under",
+            "`message-evidence-requests/` before final validation.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def safe_program_filename(program: str) -> str:
+    cleaned = re.sub(r'[\s<>:"/\\|?*]+', "_", program.strip())
+    return cleaned.strip("._-") or "PROGRAM"
+
+
 def inventory_source_path_block_reason(source_root: Path, source_path: str) -> str:
     raw_path = source_path.strip()
     try:
@@ -140,6 +310,17 @@ def inventory_source_path_block_reason(source_root: Path, source_path: str) -> s
 
 
 def clear_generated_queue_artifacts(output_dir: Path) -> None:
+    if not output_dir.exists():
+        return
+    if not output_dir.is_dir():
+        raise ValueError(f"queue output path is not a directory: {output_dir}")
+    recognized = set(GENERATED_QUEUE_FILES) | set(GENERATED_QUEUE_DIRS)
+    unknown = [path for path in output_dir.iterdir() if path.name not in recognized]
+    if unknown:
+        raise ValueError(
+            "refusing to replace a queue directory containing unrecognized artifacts: "
+            + ", ".join(sorted(path.name for path in unknown))
+        )
     for dirname in GENERATED_QUEUE_DIRS:
         generated_dir = output_dir / dirname
         if generated_dir.is_symlink() or generated_dir.is_file():
@@ -150,12 +331,6 @@ def clear_generated_queue_artifacts(output_dir: Path) -> None:
         path = output_dir / filename
         if path.is_file() or path.is_symlink():
             path.unlink()
-    unknown = list(output_dir.iterdir()) if output_dir.is_dir() else []
-    if unknown:
-        raise ValueError(
-            "refusing to replace a queue directory containing unrecognized artifacts: "
-            + ", ".join(path.name for path in unknown)
-        )
 
 
 def inventory_rows_from_manifest(manifest: dict[str, Any]) -> dict[str, dict[str, str]]:
@@ -214,6 +389,8 @@ def select_missing_programs(
         readiness = readiness_status(entry)
         if readiness == "ready":
             continue
+        findings = readiness_findings(entry)
+        actions = recovery_action_codes(entry, missing)
 
         inventory_row = inventory_rows.get(key, {})
         source_path = str(inventory_row.get("source_path") or inventory_row.get("path") or "").strip()
@@ -249,10 +426,20 @@ def select_missing_programs(
                 if missing
                 else "semantic readiness: " + readiness_reason(entry)
             ),
+            "recovery_actions": ", ".join(actions),
+            "validator_findings": " | ".join(findings),
+            "recovery_context": recovery_context(program, actions, findings),
+            "candidate_artifact_root": str(
+                entry.get("candidate_artifact_root") or entry.get("artifact_root") or ""
+            ),
+            "_recovery_actions": actions,
+            "_validator_findings": findings,
             "inventory_status": inventory_status,
         }
         if reason:
             base["reason"] = reason
+            base["recovery_actions"] = "source_mapping_required"
+            base["_recovery_actions"] = ["source_mapping_required"]
             blocked.append(base)
         else:
             queued.append(base)
@@ -260,7 +447,20 @@ def select_missing_programs(
 
 
 def write_program_list(path: Path, rows: list[dict[str, str]]) -> None:
-    fields = ["member", "object_type", "source_kind", "path", "total_lines", "size_tier", "tier_reason"]
+    fields = [
+        "member",
+        "object_type",
+        "source_kind",
+        "path",
+        "total_lines",
+        "size_tier",
+        "tier_reason",
+        "missing_artifacts",
+        "recovery_actions",
+        "validator_findings",
+        "recovery_context",
+        "candidate_artifact_root",
+    ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
@@ -274,6 +474,8 @@ def write_blocked(path: Path, rows: list[dict[str, str]]) -> None:
         "path",
         "size_tier",
         "missing_artifacts",
+        "recovery_actions",
+        "validator_findings",
         "inventory_status",
         "reason",
     ]
@@ -281,6 +483,183 @@ def write_blocked(path: Path, rows: list[dict[str, str]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def prompt_path_for_row(output_dir: Path, index: int, row: dict[str, str]) -> Path:
+    return output_dir / "prompt-queue" / f"{index:04d}-{safe_program_filename(row['member'])}.md"
+
+
+def message_evidence_request_path(output_dir: Path, program: str) -> Path:
+    return (
+        output_dir
+        / MESSAGE_EVIDENCE_REQUEST_DIR
+        / f"{safe_program_filename(program)}-message-evidence-request.md"
+    )
+
+
+def message_sidecar_display_path(row: dict[str, str], delivery_root: str) -> str:
+    candidate = str(row.get("candidate_artifact_root") or "").strip()
+    program = str(row.get("member") or "").strip()
+    filename = f"{program}-message-inventory.yaml" if program else "<PROGRAM>-message-inventory.yaml"
+    if candidate:
+        return str(Path(delivery_root) / candidate / filename)
+    return f"<program-output-directory>/{filename}"
+
+
+def write_message_evidence_request(
+    output_dir: Path,
+    row: dict[str, str],
+    delivery_root: str,
+) -> Path | None:
+    actions = list(row.get("_recovery_actions") or [])
+    if "resolve_message_evidence" not in actions:
+        return None
+    path = message_evidence_request_path(output_dir, str(row["member"]))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    findings = list(row.get("_validator_findings") or [])
+    findings_block = "\n".join(f"- {finding}" for finding in findings) or "- No detailed validator finding retained."
+    path.write_text(
+        "\n".join(
+            [
+                f"# {row['member']} Message Evidence Request",
+                "",
+                "The flow-review final gate found unresolved message/status/code descriptions.",
+                "This is an evidence-enrichment task, not a reason to invent meanings or rerun unrelated programs.",
+                "",
+                "## Required input",
+                "",
+                "Provide one of: message file/catalog, approved reference/control file, source literal/comment, runtime evidence, or an SME-approved description.",
+                "",
+                "## Update target",
+                "",
+                f"Update `{message_sidecar_display_path(row, delivery_root)}` and synchronize the reader-first Message Inventory in the program analysis.",
+                "",
+                "## Validator findings",
+                "",
+                findings_block,
+                "",
+                "After evidence is added, rerun the program-analysis validator. Do not replace an unresolved description with `unknown` or an empty value.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def action_lines(actions: list[str]) -> list[str]:
+    return [f"- **{RECOVERY_ACTIONS[code][0]}**: {RECOVERY_ACTIONS[code][1]}" for code in actions]
+
+
+def write_recovery_package(
+    *,
+    output_dir: Path,
+    manifest_path: Path,
+    delivery_root: str,
+    queued: list[dict[str, str]],
+    blocked: list[dict[str, str]],
+) -> tuple[Path, Path, list[Path]]:
+    evidence_requests: dict[str, Path] = {}
+    for row in queued:
+        request = write_message_evidence_request(output_dir, row, delivery_root)
+        if request is not None:
+            evidence_requests[str(row["member"])] = request
+
+    records: list[dict[str, Any]] = []
+    plan_lines = [
+        "# Program-Set Final Gate Recovery Plan",
+        "",
+        "The formal SME/Dify review remains blocked until every listed recovery action is complete and the upstream final validator passes.",
+        "Do not lower the final gate or mark a program completed solely because files exist.",
+        "",
+    ]
+
+    for index, row in enumerate(queued, start=1):
+        program = str(row["member"])
+        actions = list(row.get("_recovery_actions") or ["refresh_program_analysis"])
+        prompt_path = prompt_path_for_row(output_dir, index, row)
+        request = evidence_requests.get(program)
+        plan_lines.extend(
+            [
+                f"## {program}",
+                "",
+                "**Disposition:** queued for targeted repair",
+                f"**Program prompt:** `{prompt_path}`",
+            ]
+        )
+        if request is not None:
+            plan_lines.append(f"**Message evidence request:** `{request}`")
+        plan_lines.extend(["", "### Required actions", *action_lines(actions), "", "### Validator findings"])
+        findings = list(row.get("_validator_findings") or [])
+        plan_lines.extend(f"- {finding}" for finding in findings)
+        if not findings:
+            plan_lines.append("- No detailed validator finding was retained; refresh the targeted program analysis.")
+        plan_lines.append("")
+        records.append(
+            {
+                "program": program,
+                "disposition": "queued",
+                "recovery_actions": actions,
+                "validator_findings": findings,
+                "program_prompt": str(prompt_path),
+                "message_evidence_request": str(request) if request else "",
+            }
+        )
+
+    for row in blocked:
+        program = str(row["member"])
+        actions = ["source_mapping_required"]
+        reason = str(row.get("reason") or "source mapping is unavailable")
+        plan_lines.extend(
+            [
+                f"## {program}",
+                "",
+                "**Disposition:** blocked; no scan prompt was generated",
+                "",
+                "### Required actions",
+                *action_lines(actions),
+                "",
+                "### Blocking reason",
+                f"- {reason}",
+                "",
+            ]
+        )
+        records.append(
+            {
+                "program": program,
+                "disposition": "blocked_missing_source",
+                "recovery_actions": actions,
+                "validator_findings": list(row.get("_validator_findings") or []),
+                "program_prompt": "",
+                "message_evidence_request": "",
+                "blocking_reason": reason,
+            }
+        )
+
+    plan_lines.extend(
+        [
+            "## Completion",
+            "",
+            "After the queued prompts and any evidence requests are complete, rerun the program-set intake/build command. The final review is emitted only when every program passes readiness.",
+            "",
+        ]
+    )
+    plan_path = output_dir / RECOVERY_PLAN_FILE
+    plan_path.write_text("\n".join(plan_lines), encoding="utf-8")
+    status_path = output_dir / RECOVERY_STATUS_FILE
+    write_yaml(
+        status_path,
+        {
+            "schema_version": "0.1",
+            "recovery_type": "program_set_final_gate",
+            "core_manifest": str(manifest_path),
+            "status": "recovery_actions_required",
+            "recovery_plan": str(plan_path),
+            "programs": records,
+            "next_action": "execute queued targeted repair prompts and resolve required evidence before rebuilding the program-set review",
+        },
+    )
+    return plan_path, status_path, list(evidence_requests.values())
 
 
 def build_batch_args(
@@ -355,6 +734,14 @@ def create_queue(args: argparse.Namespace) -> int:
     if blocked:
         write_blocked(output_dir / BLOCKED_FILE, blocked)
 
+    recovery_plan, recovery_status, evidence_requests = write_recovery_package(
+        output_dir=output_dir,
+        manifest_path=manifest_path,
+        delivery_root=args.delivery_root,
+        queued=queued,
+        blocked=blocked,
+    )
+
     inventory = manifest.get("source_inventory") or {}
     status = (
         "queue_created_with_blocked_programs"
@@ -378,6 +765,9 @@ def create_queue(args: argparse.Namespace) -> int:
         "source_inventory_freshness": inventory.get("freshness"),
         "queued_programs": [row["member"] for row in queued],
         "blocked_programs": [row["member"] for row in blocked],
+        "recovery_plan": str(recovery_plan),
+        "recovery_status": str(recovery_status),
+        "message_evidence_requests": [str(path) for path in evidence_requests],
         "next_action": (
             "run prompt-queue, then rebuild the program-set review"
             if queued
@@ -386,12 +776,16 @@ def create_queue(args: argparse.Namespace) -> int:
             else "rebuild or validate the program-set review"
         ),
     }
-    write_yaml(output_dir / QUEUE_STATUS_FILE, queue_manifest, batch)
+    write_yaml(output_dir / QUEUE_STATUS_FILE, queue_manifest)
     print(f"Missing-program queue status: {status}")
     if queued:
         print(f"Prompt files: {len(queued)} under {output_dir / 'prompt-queue'}")
     if blocked:
         print(f"Blocked program list: {output_dir / BLOCKED_FILE}")
+    print(f"Recovery plan: {recovery_plan}")
+    print(f"Recovery status: {recovery_status}")
+    if evidence_requests:
+        print(f"Message evidence requests: {len(evidence_requests)} under {output_dir / MESSAGE_EVIDENCE_REQUEST_DIR}")
     return 0
 
 

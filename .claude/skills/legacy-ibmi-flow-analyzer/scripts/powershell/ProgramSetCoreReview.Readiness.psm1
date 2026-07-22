@@ -187,6 +187,7 @@ function Get-FlowProgramArtifactReadiness {
         [Parameter(Mandatory = $true)][string]$Program,
         $CompactArtifacts,
         [string[]]$AmbiguousMatches = @(),
+        [AllowNull()][string]$ExpectedSizeTier,
         [Parameter(Mandatory = $true)][string[]]$RequiredArtifacts
     )
     $findings = New-Object System.Collections.Generic.List[string]
@@ -218,7 +219,7 @@ function Get-FlowProgramArtifactReadiness {
         $upstreamRan = $true
         $analysisDirectory = $trustedArtifactRoot
         try {
-            foreach ($finding in @(Invoke-ContractValidation $analysisDirectory $programAnalysis)) {
+            foreach ($finding in @(Invoke-ContractValidation $analysisDirectory $programAnalysis $ExpectedSizeTier)) {
                 $upstreamFindings.Add([string]$finding)
                 $findings.Add("upstream validator: $finding")
             }

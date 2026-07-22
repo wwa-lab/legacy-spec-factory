@@ -9,9 +9,10 @@ outputs that omit required sections, declared sidecars, or RLOG coverage.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 
@@ -136,6 +137,16 @@ SEMANTIC_SEED_PATTERNS = (
     re.compile(r"\b(?:execution trigger|step-by-step logic)\s*:\s*pending deep read\b", re.I),
     re.compile(r"\bRLOG\s+pending\b", re.I),
 )
+# These terms are not a source-backed explanation of a routine.  They are
+# frequently emitted when an agent has kept the deterministic shell but has
+# not actually read the assigned source window.  Keep this narrow: the gate is
+# intended to reject generic filler, not ordinary prose that happens to be
+# concise.
+GENERIC_DEEP_READ_DETAIL_PATTERNS = (
+    re.compile(r"\bgeneric (?:summary|detail|note|description)\b", re.I),
+    re.compile(r"\bsource entry\b", re.I),
+    re.compile(r"\bwithout (?:the )?source-backed (?:batch )?detail\b", re.I),
+)
 PENDING_SEMANTIC_STATUSES = {"pending", "pending_deep_read", "indexed_only"}
 DEEP_READ_COMPLETE_STATUS = "deep_read_complete"
 BATCH_STRUCTURED_SEMANTIC_FIELDS = (
@@ -147,6 +158,9 @@ BATCH_STRUCTURED_SEMANTIC_FIELDS = (
     "branch_outcomes",
     "routine_exception_closure",
 )
+BATCH_SIZE = 5
+LARGE_EXECUTION_PLAN_SIDECAR = "deep_read_execution_plan"
+LARGE_EXECUTION_PLAN_FILENAME = "deep-read-execution-plan.yaml"
 MEANINGFUL_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_#$@/-]*|[\u4e00-\u9fff]{2,}")
 ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
 
@@ -171,6 +185,30 @@ def artifact_program_prefix(program_name: str) -> str:
     prefix = ARTIFACT_SAFE_RE.sub("_", program_name.strip().upper())
     prefix = prefix.strip("._-")
     return prefix or "PROGRAM"
+
+
+def safe_analysis_relative_path(analysis_dir: Path, value: str) -> Path | None:
+    """Resolve a declared artifact only when it stays inside ``analysis_dir``."""
+
+    raw = str(value or "").strip()
+    windows_path = PureWindowsPath(raw)
+    normalized = raw.replace("\\", "/")
+    candidate_parts = [part for part in normalized.split("/") if part]
+    if (
+        not raw
+        or Path(normalized).is_absolute()
+        or windows_path.drive
+        or windows_path.root
+        or not candidate_parts
+        or any(part in {".", ".."} for part in candidate_parts)
+    ):
+        return None
+    candidate = analysis_dir.joinpath(*candidate_parts)
+    try:
+        candidate.resolve(strict=False).relative_to(analysis_dir.resolve())
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return candidate
 
 
 def find_artifact_path(analysis_dir: Path, base_name: str) -> Path | None:
@@ -230,7 +268,9 @@ def declared_sidecar_path(
     if entry:
         rel_path = entry.get("path", "")
         if rel_path:
-            candidate = analysis_dir / rel_path
+            candidate = safe_analysis_relative_path(analysis_dir, rel_path)
+            if candidate is None:
+                return None
             if candidate.is_file():
                 return candidate
     return find_artifact_path(analysis_dir, fallback_base_name)
@@ -462,6 +502,8 @@ def validate_rlog_block_quality(
     markdown: str,
     expected_ids: list[str] | None,
     artifact_label: str,
+    *,
+    expected_source_lines: dict[str, str] | None = None,
 ) -> list[str]:
     findings: list[str] = []
     blocks = extract_rlog_detail_blocks(markdown)
@@ -478,6 +520,25 @@ def validate_rlog_block_quality(
             findings.append(
                 f"{artifact_label} {rlog_id} needs reader-useful source-backed semantic detail"
             )
+        else:
+            generic_matches = [
+                pattern.pattern.replace("\\b", "")
+                for pattern in GENERIC_DEEP_READ_DETAIL_PATTERNS
+                if pattern.search(body)
+            ]
+            if generic_matches:
+                findings.append(
+                    f"{artifact_label} {rlog_id} contains generic deep-read filler; "
+                    "replace it with the observed trigger, branch/operation, carriers, "
+                    "outcome, and exception closure. Matched: "
+                    + ", ".join(generic_matches)
+                )
+            planned_source_lines = (expected_source_lines or {}).get(rlog_id)
+            if planned_source_lines and planned_source_lines not in body:
+                findings.append(
+                    f"{artifact_label} {rlog_id} must cite its planned source lines "
+                    f"{planned_source_lines} in the routine detail"
+                )
     return findings
 
 
@@ -960,13 +1021,13 @@ def validate_no_stale_gap_wording(program_markdown: str) -> list[str]:
 
 
 def batch_detail_files(analysis_dir: Path) -> list[Path]:
-    declared = [
-        analysis_dir / entry["path"]
-        for key, entry in sidecar_entries_for_dir(analysis_dir).items()
-        if key.startswith("routine_logic_deep_read_batch_")
-        and entry.get("path")
-        and (analysis_dir / entry["path"]).is_file()
-    ]
+    declared = []
+    for key, entry in sidecar_entries_for_dir(analysis_dir).items():
+        if not key.startswith("routine_logic_deep_read_batch_") or not entry.get("path"):
+            continue
+        candidate = safe_analysis_relative_path(analysis_dir, entry["path"])
+        if candidate is not None and candidate.is_file():
+            declared.append(candidate)
     batch_dir = analysis_dir / "routine-logic-details"
     patterns = ("part-*.md", "*-part-*.md", "deep-read-batch-*.md", "*-deep-read-batch-*.md", "deep-batch-*.md", "*-deep-batch-*.md")
     files: list[Path] = list(declared)
@@ -1032,7 +1093,379 @@ def batch_assigned_window_ids(batch_text: str) -> list[str]:
     )
 
 
-def validate_batch_yaml_semantic_completion(analysis_dir: Path) -> list[str]:
+def batch_window_rlog_pair_data(batch_text: str) -> tuple[dict[str, str], list[str]]:
+    """Return explicit bindings and duplicate/malformed coverage findings."""
+
+    rows = markdown_table_rows(h2_section_text(batch_text, "Batch Coverage Summary"))
+    if not rows:
+        return {}, []
+    headers = [strip_inline_code_marks(cell).strip("*_ ").lower() for cell in rows[0]]
+    window_column = next(
+        (
+            index
+            for index, header in enumerate(headers)
+            if header in {"window id", "deep-read window", "deep read window"}
+        ),
+        None,
+    )
+    rlog_column = next(
+        (
+            index
+            for index, header in enumerate(headers)
+            if header in {"rlog detail", "rlog", "detail link"}
+        ),
+        None,
+    )
+    if window_column is None or rlog_column is None:
+        return {}, []
+    pairs: dict[str, str] = {}
+    findings: list[str] = []
+    seen_rlogs: set[str] = set()
+    for row_number, row in enumerate(rows[1:], start=1):
+        if window_column >= len(row) or rlog_column >= len(row):
+            findings.append(f"malformed Batch Coverage Summary row {row_number}")
+            continue
+        window_match = DEEP_READ_WINDOW_RE.search(row[window_column])
+        rlog_match = RLOG_RE.search(row[rlog_column])
+        if not window_match or not rlog_match:
+            findings.append(f"malformed Batch Coverage Summary row {row_number}")
+            continue
+        window_id = window_match.group(0).upper()
+        rlog_id = rlog_match.group(0).upper()
+        if window_id in pairs:
+            findings.append(f"duplicate deep-read window {window_id} in Batch Coverage Summary")
+        if rlog_id in seen_rlogs:
+            findings.append(f"duplicate RLOG {rlog_id} in Batch Coverage Summary")
+        pairs[window_id] = rlog_id
+        seen_rlogs.add(rlog_id)
+    return pairs, findings
+
+
+def batch_window_rlog_pairs(batch_text: str) -> dict[str, str]:
+    """Return explicit window-to-RLOG bindings for callers that do not need diagnostics."""
+
+    return batch_window_rlog_pair_data(batch_text)[0]
+
+
+def normalized_artifact_path(value: str) -> str:
+    return value.replace("\\", "/").strip()
+
+
+def declared_large_execution_plan_path(analysis_dir: Path) -> Path | None:
+    entry = sidecar_entries_for_dir(analysis_dir).get(LARGE_EXECUTION_PLAN_SIDECAR)
+    if not entry or entry.get("status") != "present":
+        return None
+    return safe_analysis_relative_path(analysis_dir, entry.get("path", ""))
+
+
+def large_execution_plan_entries(
+    analysis_dir: Path,
+    *,
+    expected_size_tier: str | None = None,
+    expected_source_index_sha256: str | None = None,
+    expected_execution_plan_sha256: str | None = None,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Load and verify the immutable large-program deep-read allocation."""
+
+    summary = summary_payload(analysis_dir)
+    if not requires_large_program_batches(
+        summary,
+        analysis_dir=analysis_dir,
+        expected_size_tier=expected_size_tier,
+    ):
+        return [], []
+
+    findings: list[str] = []
+    plan_path = declared_large_execution_plan_path(analysis_dir)
+    if plan_path is None or not plan_path.is_file():
+        return [], [
+            "large_extreme_program requires a declared deep-read execution plan "
+            "(<PROGRAM>-deep-read-execution-plan.yaml)"
+        ]
+
+    expected_plan_name = (
+        f"{artifact_program_prefix(str(summary.get('program') or ''))}-"
+        f"{LARGE_EXECUTION_PLAN_FILENAME}"
+    )
+    if plan_path.name != expected_plan_name:
+        findings.append(
+            f"large deep-read execution plan must use its canonical name: {expected_plan_name}"
+        )
+
+    actual_plan_digest = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+    expected_plan_digest = str(expected_execution_plan_sha256 or "").strip().lower()
+    if expected_plan_digest and expected_plan_digest != actual_plan_digest:
+        findings.append(
+            f"large deep-read execution plan {plan_path.name} no longer matches the "
+            "immutable batch execution lock"
+        )
+
+    payload = load_yaml(plan_path)
+    if not isinstance(payload, dict):
+        return [], [f"large deep-read execution plan {plan_path.name} must be a YAML mapping"]
+    summary_program = str(summary.get("program") or "").strip().upper()
+    plan_program = str(payload.get("program") or "").strip().upper()
+    if not plan_program or (summary_program and plan_program != summary_program):
+        findings.append(
+            f"large deep-read execution plan {plan_path.name} program does not match "
+            "program-analysis-summary.yaml"
+        )
+    if str(payload.get("program_size_tier") or "").strip().lower() != "large_extreme_program":
+        findings.append(
+            f"large deep-read execution plan {plan_path.name} must declare "
+            "program_size_tier: large_extreme_program"
+        )
+
+    source_index_path = declared_sidecar_path(
+        analysis_dir,
+        "source_index",
+        "source-index.yaml",
+    )
+    declared_source_path = normalized_artifact_path(
+        str(payload.get("source_index_path") or "")
+    )
+    if source_index_path is None or not source_index_path.is_file():
+        findings.append(
+            f"large deep-read execution plan {plan_path.name} cannot verify its source-index"
+        )
+    else:
+        actual_source_path = normalized_artifact_path(
+            source_index_path.relative_to(analysis_dir).as_posix()
+        )
+        if declared_source_path != actual_source_path:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} source_index_path "
+                f"does not match declared source index: {declared_source_path or 'missing'}"
+            )
+        expected_digest = str(payload.get("source_index_sha256") or "").strip().lower()
+        actual_digest = hashlib.sha256(source_index_path.read_bytes()).hexdigest()
+        if expected_digest != actual_digest:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} source-index digest "
+                "does not match the declared source index"
+            )
+        expected_source_digest = str(expected_source_index_sha256 or "").strip().lower()
+        if expected_source_digest and expected_source_digest != actual_digest:
+            findings.append(
+                "large deep-read source-index no longer matches the immutable batch "
+                "execution lock"
+            )
+
+    raw_entries = payload.get("planned_deep_read")
+    if not isinstance(raw_entries, list) or not raw_entries:
+        findings.append(
+            f"large deep-read execution plan {plan_path.name} has no planned_deep_read entries"
+        )
+        return [], findings
+
+    entries: list[dict[str, Any]] = []
+    seen_windows: set[str] = set()
+    seen_rlogs: set[str] = set()
+    for index, raw_entry in enumerate(raw_entries, start=1):
+        if not isinstance(raw_entry, dict):
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} entry {index} must be a mapping"
+            )
+            continue
+        raw_batch_path = str(raw_entry.get("batch_path") or "")
+        batch_path = normalized_artifact_path(raw_batch_path)
+        if safe_analysis_relative_path(analysis_dir, raw_batch_path) is None:
+            batch_path = ""
+        entry = {
+            "window_id": str(raw_entry.get("window_id") or "").strip().upper(),
+            "routine": str(raw_entry.get("routine") or "").strip(),
+            "source_lines": str(raw_entry.get("source_lines") or "").strip(),
+            "rlog_id": str(raw_entry.get("rlog_id") or "").strip().upper(),
+            "batch_number": raw_entry.get("batch_number"),
+            "batch_path": batch_path,
+        }
+        missing = [
+            field
+            for field in ("window_id", "routine", "source_lines", "rlog_id", "batch_path")
+            if not entry[field]
+        ]
+        if not isinstance(entry["batch_number"], int) or int(entry["batch_number"]) < 1:
+            missing.append("batch_number")
+        if missing:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} entry {index} "
+                "is missing/invalid: " + ", ".join(missing)
+            )
+            continue
+        if not DEEP_READ_WINDOW_RE.fullmatch(entry["window_id"]):
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} entry {index} has invalid window_id"
+            )
+        if not RLOG_RE.fullmatch(entry["rlog_id"]):
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} entry {index} has invalid rlog_id"
+            )
+        expected_batch_suffix = f"deep-read-batch-{int(entry['batch_number']):03d}.md"
+        if (
+            not entry["batch_path"].startswith("routine-logic-details/")
+            or not entry["batch_path"].endswith(expected_batch_suffix)
+        ):
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} entry {index} "
+                "must use the canonical batch path for its batch_number"
+            )
+        if entry["window_id"] in seen_windows:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} duplicates window {entry['window_id']}"
+            )
+        if entry["rlog_id"] in seen_rlogs:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} duplicates RLOG {entry['rlog_id']}"
+            )
+        seen_windows.add(entry["window_id"])
+        seen_rlogs.add(entry["rlog_id"])
+        entries.append(entry)
+
+    if source_index_path is not None and source_index_path.is_file():
+        source_payload = load_yaml(source_index_path)
+        source_program = (
+            str(source_payload.get("program") or "").strip().upper()
+            if isinstance(source_payload, dict)
+            else ""
+        )
+        if source_program and plan_program and source_program != plan_program:
+            findings.append(
+                f"large deep-read execution plan {plan_path.name} program does not match "
+                "the source index"
+            )
+        source_windows = (
+            source_payload.get("deep_read_windows", [])
+            if isinstance(source_payload, dict)
+            else []
+        )
+        if isinstance(source_windows, list) and source_windows:
+            expected_windows = {
+                (
+                    str(item.get("window_id") or "").strip().upper(),
+                    str(item.get("routine") or "").strip(),
+                    str(item.get("source_lines") or "").strip(),
+                )
+                for item in source_windows
+                if isinstance(item, dict)
+            }
+            actual_windows = {
+                (entry["window_id"], entry["routine"], entry["source_lines"])
+                for entry in entries
+            }
+            if expected_windows != actual_windows:
+                findings.append(
+                    f"large deep-read execution plan {plan_path.name} does not match "
+                    "source-index deep_read_windows"
+                )
+        inventory = (
+            source_payload.get("routine_logic_inventory", {})
+            if isinstance(source_payload, dict)
+            else {}
+        )
+        details = inventory.get("details", []) if isinstance(inventory, dict) else []
+        source_rlogs_by_routine = {
+            str(detail.get("routine") or "").strip(): str(detail.get("detail_id") or "").strip().upper()
+            for detail in details
+            if isinstance(detail, dict)
+            and detail.get("routine")
+            and detail.get("detail_id")
+        }
+        for entry in entries:
+            expected_rlog = source_rlogs_by_routine.get(str(entry["routine"]))
+            if expected_rlog and expected_rlog != entry["rlog_id"]:
+                findings.append(
+                    f"large deep-read execution plan {plan_path.name} maps "
+                    f"{entry['routine']} to {entry['rlog_id']}, but source-index "
+                    f"routine_logic_inventory requires {expected_rlog}"
+                )
+    return entries, findings
+
+
+def validate_large_execution_plan_coverage(
+    analysis_dir: Path,
+    *,
+    expected_size_tier: str | None = None,
+    expected_source_index_sha256: str | None = None,
+    expected_execution_plan_sha256: str | None = None,
+) -> tuple[list[str], list[str]]:
+    """Require every planned window/RLOG to occur once in its planned batch."""
+
+    entries, findings = large_execution_plan_entries(
+        analysis_dir,
+        expected_size_tier=expected_size_tier,
+        expected_source_index_sha256=expected_source_index_sha256,
+        expected_execution_plan_sha256=expected_execution_plan_sha256,
+    )
+    if not entries:
+        return findings, []
+    expected_by_batch: dict[str, list[dict[str, Any]]] = {}
+    for entry in entries:
+        expected_by_batch.setdefault(str(entry["batch_path"]), []).append(entry)
+
+    actual_batches = {
+        normalized_artifact_path(batch_path.relative_to(analysis_dir).as_posix()): batch_path
+        for batch_path in batch_detail_files(analysis_dir)
+        if batch_path.is_file()
+    }
+    for batch_path, planned in expected_by_batch.items():
+        batch_file = actual_batches.get(batch_path)
+        if batch_file is None:
+            findings.append(
+                "large deep-read execution plan batch is missing: " + batch_path
+            )
+            continue
+        text = read_text(batch_file)
+        actual_pairs, coverage_row_findings = batch_window_rlog_pair_data(text)
+        for coverage_finding in coverage_row_findings:
+            findings.append(
+                f"large deep-read execution plan batch {batch_path} has {coverage_finding}"
+            )
+        expected_pairs = {
+            str(entry["window_id"]): str(entry["rlog_id"])
+            for entry in planned
+        }
+        if not actual_pairs:
+            findings.append(
+                f"large deep-read execution plan batch {batch_path} has no window-to-RLOG coverage"
+            )
+            continue
+        if actual_pairs != expected_pairs:
+            missing_windows = sorted(set(expected_pairs) - set(actual_pairs))
+            unexpected_windows = sorted(set(actual_pairs) - set(expected_pairs))
+            wrong_pairs = sorted(
+                window_id
+                for window_id in set(expected_pairs) & set(actual_pairs)
+                if expected_pairs[window_id] != actual_pairs[window_id]
+            )
+            detail = []
+            if missing_windows:
+                detail.append("missing " + ", ".join(missing_windows))
+            if unexpected_windows:
+                detail.append("unexpected " + ", ".join(unexpected_windows))
+            if wrong_pairs:
+                detail.append("wrong RLOG mapping for " + ", ".join(wrong_pairs))
+            findings.append(
+                f"large deep-read execution plan batch {batch_path} coverage does not match plan: "
+                + "; ".join(detail)
+            )
+        if len(actual_pairs) > BATCH_SIZE:
+            findings.append(
+                f"large deep-read execution plan batch {batch_path} exceeds {BATCH_SIZE} windows"
+            )
+    unexpected_batches = sorted(set(actual_batches) - set(expected_by_batch))
+    if unexpected_batches:
+        findings.append(
+            "large deep-read execution plan has retained batch file(s) not in plan: "
+            + ", ".join(unexpected_batches)
+        )
+    return findings, [str(entry["rlog_id"]) for entry in entries]
+
+
+def validate_batch_yaml_semantic_completion(
+    analysis_dir: Path,
+    *,
+    expected_rlog_ids: list[str] | None = None,
+) -> list[str]:
     batches = batch_detail_files(analysis_dir)
     if not batches:
         return []
@@ -1061,7 +1494,7 @@ def validate_batch_yaml_semantic_completion(analysis_dir: Path) -> list[str]:
         if isinstance(entry, dict) and entry.get("detail_ref")
     } if isinstance(summary_entries, list) else {}
 
-    assigned_ids: list[str] = []
+    assigned_ids: list[str] = list(expected_rlog_ids or [])
     for batch_path in batches:
         assigned_ids.extend(batch_assigned_rlog_ids(batch_path))
 
@@ -1124,7 +1557,28 @@ def summary_payload(analysis_dir: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def requires_large_program_batches(payload: dict[str, Any]) -> bool:
+def path_declares_large_program(analysis_dir: Path) -> bool:
+    """Treat a canonical large-tier artifact path as completion evidence.
+
+    The tier folder is selected before any LLM fills the analysis artifacts.
+    Keeping it in the terminal contract prevents a later summary rewrite from
+    silently downgrading a large program to normal and bypassing batched
+    deep-read checks.
+    """
+
+    return any("large_extreme_program" in part.lower() for part in analysis_dir.parts)
+
+
+def requires_large_program_batches(
+    payload: dict[str, Any],
+    *,
+    analysis_dir: Path | None = None,
+    expected_size_tier: str | None = None,
+) -> bool:
+    if str(expected_size_tier or "").strip().lower() == "large_extreme_program":
+        return True
+    if analysis_dir is not None and path_declares_large_program(analysis_dir):
+        return True
     if payload.get("program_size_tier") == "large_extreme_program":
         return True
     counts = payload.get("counts", {})
@@ -1136,12 +1590,35 @@ def requires_large_program_batches(payload: dict[str, Any]) -> bool:
     return False
 
 
-def validate_large_program_batches(analysis_dir: Path) -> list[str]:
+def validate_large_program_batches(
+    analysis_dir: Path,
+    *,
+    expected_size_tier: str | None = None,
+) -> list[str]:
     payload = summary_payload(analysis_dir)
-    if not payload or not requires_large_program_batches(payload):
+    expected_large = str(expected_size_tier or "").strip().lower() == "large_extreme_program"
+    path_large = path_declares_large_program(analysis_dir)
+    if not requires_large_program_batches(
+        payload,
+        analysis_dir=analysis_dir,
+        expected_size_tier=expected_size_tier,
+    ):
         return []
 
     findings: list[str] = []
+    declared_tier = str(payload.get("program_size_tier") or "").strip().lower()
+    if (expected_large or path_large) and declared_tier != "large_extreme_program":
+        origin = (
+            "the expected size tier"
+            if expected_large
+            else "the canonical artifact directory path"
+        )
+        findings.append(
+            "large-program tier contract mismatch: "
+            f"{origin} requires program-analysis-summary.yaml to declare "
+            "program_size_tier: large_extreme_program; found "
+            f"{declared_tier or 'missing'}"
+        )
     batches = batch_detail_files(analysis_dir)
     if not batches:
         findings.append(
@@ -1174,6 +1651,18 @@ def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
     batches = batch_detail_files(analysis_dir)
     if not batches:
         return findings
+
+    # The immutable plan is only present for large programs.  Bind each
+    # checkpoint RLOG body to the source range allocated before semantic work;
+    # a completed-looking generic paragraph is not a substitute for that
+    # evidence link.  Plan-shape failures are reported separately by the
+    # execution-plan validator below.
+    plan_entries, _plan_findings = large_execution_plan_entries(analysis_dir)
+    planned_source_lines = {
+        str(entry["rlog_id"]): str(entry["source_lines"])
+        for entry in plan_entries
+        if entry.get("rlog_id") and entry.get("source_lines")
+    }
 
     routine_markdown_path = declared_sidecar_path(
         analysis_dir,
@@ -1221,6 +1710,7 @@ def validate_routine_detail_review_surfaces(analysis_dir: Path) -> list[str]:
                 routine_section,
                 assigned_ids or None,
                 batch_label,
+                expected_source_lines=planned_source_lines,
             )
         )
         positions = heading_positions(batch_text)
@@ -1252,14 +1742,23 @@ def validate_sidecar_set(analysis_dir: Path) -> list[str]:
         status = entry.get("status")
         if status != "present":
             findings.append(f"core sidecar {key} must have status present, found {status or 'missing'}")
-        if rel_path and not (analysis_dir / rel_path).is_file():
+        candidate = safe_analysis_relative_path(analysis_dir, rel_path)
+        if rel_path and candidate is None:
+            findings.append(f"declared core sidecar path escapes analysis directory: {rel_path}")
+        elif rel_path and not candidate.is_file():
             findings.append(f"declared core sidecar file is missing: {rel_path}")
 
     for key, entry in entries.items():
         status = entry.get("status", "")
         rel_path = entry.get("path", "")
-        if status in {"present", "optional_triggered"} and rel_path and not (analysis_dir / rel_path).is_file():
-            findings.append(f"declared sidecar {key} is {status} but file is missing: {rel_path}")
+        if status in {"present", "optional_triggered"} and rel_path:
+            candidate = safe_analysis_relative_path(analysis_dir, rel_path)
+            if candidate is None:
+                findings.append(
+                    f"declared sidecar {key} path escapes analysis directory: {rel_path}"
+                )
+            elif not candidate.is_file():
+                findings.append(f"declared sidecar {key} is {status} but file is missing: {rel_path}")
 
     return findings
 
@@ -1352,7 +1851,14 @@ def validate_message_inventory_sync(program_markdown: str, analysis_dir: Path) -
     ]
 
 
-def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[str]:
+def validate(
+    analysis_dir: Path,
+    program_analysis: Path | None = None,
+    *,
+    expected_size_tier: str | None = None,
+    expected_source_index_sha256: str | None = None,
+    expected_execution_plan_sha256: str | None = None,
+) -> list[str]:
     findings: list[str] = []
     if not analysis_dir.is_dir():
         return [f"Analysis directory does not exist: {analysis_dir}"]
@@ -1372,9 +1878,26 @@ def validate(analysis_dir: Path, program_analysis: Path | None = None) -> list[s
     findings.extend(validate_sidecar_set(analysis_dir))
     findings.extend(validate_rlog_coverage(analysis_dir))
     findings.extend(validate_routine_yaml_semantic_completion(analysis_dir))
-    findings.extend(validate_batch_yaml_semantic_completion(analysis_dir))
+    execution_plan_findings, planned_rlog_ids = validate_large_execution_plan_coverage(
+        analysis_dir,
+        expected_size_tier=expected_size_tier,
+        expected_source_index_sha256=expected_source_index_sha256,
+        expected_execution_plan_sha256=expected_execution_plan_sha256,
+    )
+    findings.extend(execution_plan_findings)
+    findings.extend(
+        validate_batch_yaml_semantic_completion(
+            analysis_dir,
+            expected_rlog_ids=planned_rlog_ids,
+        )
+    )
     findings.extend(validate_consolidated_routine_semantic_completion(analysis_dir))
-    findings.extend(validate_large_program_batches(analysis_dir))
+    findings.extend(
+        validate_large_program_batches(
+            analysis_dir,
+            expected_size_tier=expected_size_tier,
+        )
+    )
     findings.extend(validate_routine_detail_review_surfaces(analysis_dir))
     findings.extend(validate_message_descriptions(analysis_dir))
     return findings
@@ -1386,10 +1909,37 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--analysis-dir", type=Path, required=True)
     parser.add_argument("--program-analysis", type=Path, default=None)
+    parser.add_argument(
+        "--expected-size-tier",
+        help=(
+            "Immutable upstream size tier from a batch/flow manifest. "
+            "large_extreme_program cannot be downgraded by rewriting the summary."
+        ),
+    )
+    parser.add_argument(
+        "--expected-source-index-sha256",
+        help=(
+            "Immutable source-index SHA-256 captured by a precreated batch scaffold. "
+            "Use with --expected-execution-plan-sha256 for large-program terminal validation."
+        ),
+    )
+    parser.add_argument(
+        "--expected-execution-plan-sha256",
+        help=(
+            "Immutable deep-read execution-plan SHA-256 captured by a precreated batch "
+            "scaffold."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
-        findings = validate(args.analysis_dir, args.program_analysis)
+        findings = validate(
+            args.analysis_dir,
+            args.program_analysis,
+            expected_size_tier=args.expected_size_tier,
+            expected_source_index_sha256=args.expected_source_index_sha256,
+            expected_execution_plan_sha256=args.expected_execution_plan_sha256,
+        )
     except RuntimeError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

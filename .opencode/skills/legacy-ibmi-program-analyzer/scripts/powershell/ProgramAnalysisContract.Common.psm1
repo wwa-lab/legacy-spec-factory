@@ -148,7 +148,12 @@ function Get-YamlListMappings {
     param([string]$Path, [string]$RootKey, [string]$ListKey)
 
     $lines = Get-YamlLines $Path
-    $root = Find-YamlSection $lines $RootKey
+    $root = if ([string]::IsNullOrWhiteSpace($RootKey)) {
+        [pscustomobject]@{ Start = -1; End = $lines.Count }
+    }
+    else {
+        Find-YamlSection $lines $RootKey
+    }
     if ($null -eq $root) { return @() }
     $list = Find-YamlSection $lines $ListKey ($root.Start + 1) $root.End
     if ($null -eq $list) { return @() }
@@ -353,14 +358,102 @@ function Get-SemanticSeedMatches {
     return @($matches.ToArray())
 }
 
+function Get-PrefixedArtifactMatches {
+    param([string]$AnalysisDir, [string]$BaseName)
+
+    return @(Get-ChildItem -LiteralPath $AnalysisDir -Filter "*-$BaseName" -File -ErrorAction SilentlyContinue |
+        Sort-Object Name)
+}
+
+function Get-ArtifactPrefixFromPath {
+    param([string]$Path, [string]$BaseName)
+
+    $name = Split-Path -Leaf $Path
+    $suffix = "-$BaseName"
+    if (-not $name.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) { return '' }
+    return $name.Substring(0, $name.Length - $suffix.Length)
+}
+
 function Find-RoutineArtifactPath {
     param([string]$AnalysisDir, [string]$BaseName)
 
     $generic = Join-Path $AnalysisDir $BaseName
-    if (Test-Path -LiteralPath $generic -PathType Leaf) { return $generic }
-    $matches = @(Get-ChildItem -LiteralPath $AnalysisDir -Filter "*-$BaseName" -File -ErrorAction SilentlyContinue)
+    $hasGeneric = Test-Path -LiteralPath $generic -PathType Leaf
+    $matches = @(Get-PrefixedArtifactMatches $AnalysisDir $BaseName)
+    if (($hasGeneric -and $matches.Count -gt 0) -or $matches.Count -gt 1) { return $null }
     if ($matches.Count -eq 1) { return $matches[0].FullName }
+    if ($hasGeneric) { return $generic }
     return $null
+}
+
+function Get-ProgramArtifactResolutionFindings {
+    param([string]$AnalysisDir, [AllowNull()][string]$ExplicitProgramAnalysis)
+
+    $baseNames = @(
+        'program-analysis.md', 'program-analysis-summary.yaml',
+        'source-index.yaml', 'routine-index.md',
+        'routine-logic-details.md', 'routine-logic-details.yaml',
+        'message-inventory.yaml', 'deep-read-execution-plan.yaml'
+    )
+    $findings = New-Object System.Collections.ArrayList
+    $prefixes = New-Object System.Collections.ArrayList
+    $genericBases = New-Object System.Collections.ArrayList
+    foreach ($baseName in $baseNames) {
+        $generic = Join-Path $AnalysisDir $baseName
+        $hasGeneric = Test-Path -LiteralPath $generic -PathType Leaf
+        $matches = @(Get-PrefixedArtifactMatches $AnalysisDir $baseName)
+        $legacyProgramMatches = if ($baseName -eq 'program-analysis.md') {
+            @(Get-ChildItem -LiteralPath $AnalysisDir -Filter 'program-analysis-*.md' -File -ErrorAction SilentlyContinue | Sort-Object Name)
+        } else { @() }
+        if ($legacyProgramMatches.Count -gt 0 -and ($hasGeneric -or $matches.Count -gt 0)) {
+            [void]$findings.Add(
+                'ambiguous program artifact resolution for program-analysis.md: legacy suffix artifact(s) coexist with generic or canonical prefixed output: ' +
+                (($legacyProgramMatches | ForEach-Object { $_.Name }) -join ', ')
+            )
+            continue
+        }
+        if ($legacyProgramMatches.Count -gt 1) {
+            [void]$findings.Add('ambiguous program artifact resolution for program-analysis.md: multiple legacy suffix artifacts exist')
+            continue
+        }
+        if ($hasGeneric -and $matches.Count -gt 0) {
+            [void]$findings.Add(
+                "ambiguous program artifact resolution for $baseName: both generic $baseName and canonical prefixed artifact(s) " +
+                (($matches | ForEach-Object { $_.Name }) -join ', ') + ' exist; remove the decoy before validation'
+            )
+            continue
+        }
+        if ($matches.Count -gt 1) {
+            [void]$findings.Add(
+                "ambiguous program artifact resolution for $baseName: multiple canonical prefixed artifacts exist: " +
+                (($matches | ForEach-Object { $_.Name }) -join ', ')
+            )
+            continue
+        }
+        if ($matches.Count -eq 1) {
+            [void]$prefixes.Add((Get-ArtifactPrefixFromPath $matches[0].FullName $baseName))
+        }
+        elseif ($hasGeneric) {
+            [void]$genericBases.Add($baseName)
+        }
+    }
+    $distinctPrefixes = @(Get-UniqueSorted @($prefixes.ToArray() | Where-Object { $_ -ne '' }))
+    if ($distinctPrefixes.Count -gt 1) {
+        [void]$findings.Add(
+            'canonical program artifact prefix mismatch: expected one shared prefix across completion artifacts; found ' +
+            ($distinctPrefixes -join ', ')
+        )
+    }
+    if ($distinctPrefixes.Count -eq 1 -and $genericBases.Count -gt 0) {
+        [void]$findings.Add(
+            'canonical program artifact set mixes prefixed and generic completion artifacts: ' +
+            ($genericBases -join ', ')
+        )
+    }
+    if ($ExplicitProgramAnalysis -and -not (Test-Path -LiteralPath $ExplicitProgramAnalysis -PathType Leaf)) {
+        [void]$findings.Add("Explicit program analysis file does not exist: $ExplicitProgramAnalysis")
+    }
+    return @($findings.ToArray())
 }
 
 function Get-RlogSemanticQualityFindings {
@@ -481,9 +574,13 @@ function Get-BatchAssignedWindowIds {
 }
 
 function Get-BatchYamlSemanticCompletionFindings {
-    param([string]$AnalysisDir, [object[]]$BatchFiles)
+    param(
+        [string]$AnalysisDir,
+        [object[]]$BatchFiles,
+        [AllowNull()][string[]]$ExpectedRlogIds = @()
+    )
 
-    if ($BatchFiles.Count -eq 0) { return @() }
+    if ($BatchFiles.Count -eq 0 -and @($ExpectedRlogIds).Count -eq 0) { return @() }
     $yamlPath = Find-RoutineArtifactPath $AnalysisDir 'routine-logic-details.yaml'
     if (-not $yamlPath) { return @() }
     $detailsById = @{}
@@ -499,6 +596,9 @@ function Get-BatchYamlSemanticCompletionFindings {
         }
     }
     $assigned = New-Object System.Collections.ArrayList
+    foreach ($rlogId in @($ExpectedRlogIds)) {
+        if ([string]$rlogId -ne '') { [void]$assigned.Add(([string]$rlogId).ToUpperInvariant()) }
+    }
     foreach ($batch in $BatchFiles) {
         foreach ($rlogId in @(Get-BatchAssignedRlogIds (Read-Utf8Text $batch.FullName))) {
             [void]$assigned.Add($rlogId)
@@ -614,6 +714,7 @@ Export-ModuleMember -Function @(
     'Get-YamlLines',
     'Get-YamlRootScalar',
     'Get-YamlNestedScalar',
+    'Get-YamlListMappings',
     'Get-SidecarEntries',
     'Get-RlogIdsFromYaml',
     'Get-MessageEntries',
@@ -623,7 +724,9 @@ Export-ModuleMember -Function @(
     'Get-BatchAssignedRlogIds',
     'Get-BatchYamlSemanticCompletionFindings',
     'Get-RoutineSemanticCompletionFindings',
+    'Get-PrefixedArtifactMatches',
     'Find-RoutineArtifactPath',
+    'Get-ProgramArtifactResolutionFindings',
     'Get-HeadingMap',
     'Get-H2SectionText',
     'Get-H3Blocks',

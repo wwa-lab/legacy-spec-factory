@@ -115,6 +115,11 @@ Produce:
   `<PROGRAM>-file-io-inventory.yaml`,
   `<PROGRAM>-field-mutation-matrix.yaml`, and
   `routine-logic-details/<PROGRAM>-deep-read-batch-001.md`.
+- `large_extreme_program` additionally emits the required deterministic
+  `<PROGRAM>-deep-read-execution-plan.yaml`. It freezes every selected
+  deep-read window, its source range, RLOG, and batch path against the emitted
+  source-index digest. It is an allocation contract, not a semantic artifact:
+  do not edit it, shrink it, or use it as evidence that any batch is complete.
 - When retained deep-read batch checkpoints exist, they are required
   completion surfaces. Process every checkpoint in natural numeric order
   (`001`, `002`, ...), keep each checkpoint to at most five routines/windows,
@@ -602,6 +607,14 @@ Run this gate before delivering `<PROGRAM>-program-analysis.md`.
   `<PROGRAM>-routine-logic-details.yaml` `summary[]`/`details[]` updates before advancing to the next;
   merge into the consolidated routine detail and main wrapper only after the
   entire retained set is complete.
+- For a large program, treat `<PROGRAM>-deep-read-execution-plan.yaml` as the
+  authoritative complete set, not merely the batch files that remain on disk.
+  Every `planned_deep_read` window-to-RLOG mapping must appear exactly once in
+  its planned batch; each RLOG body must cite the allocated source-line range
+  and give observed trigger, branch/operation, carriers, outcome, and exception
+  closure. Generic filler is blocking. If the plan or its source-index digest
+  is inconsistent, recreate the deterministic scaffold from approved source;
+  never hand-edit the plan to reduce the work.
 - `routine_logic_inventory.details[].semantic_status: pending_deep_read` is
   always an invalid final state. A routine assigned to a completed retained
   batch must move from `coverage: indexed_only` to `coverage: deep_read`, set
@@ -637,6 +650,16 @@ Run this gate before delivering `<PROGRAM>-program-analysis.md`.
   `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` are required checkpoint
   artifacts. A missing batch directory or first batch file is blocking even if
   the consolidated `<PROGRAM>-routine-logic-details.md` exists.
+- In a program-list batch, final large-program validation also requires the
+  precreated source-index and execution-plan SHA-256 locks in
+  `batch-scan-manifest.yaml`. Run `--scaffold-mode precreate` before workers
+  begin; a self-consistent rewrite of both local files is still rejected by the
+  terminal batch gate.
+- A size tier selected by a batch CSV or canonical tier directory is immutable
+  completion context. The final validator accepts
+  `--expected-size-tier large_extreme_program`; when supplied (or when the
+  canonical artifact path is large), it rejects a summary that has been
+  rewritten to a lower tier and still requires all large-program batches.
 - For `normal_program` / quick exploratory runs with no part files, this gate
   still enforces the same reader-first main-file layout and RLOG sidecars. It
   does not require large-program sidecars or batched deep-read. For
@@ -649,6 +672,8 @@ Run this gate before delivering `<PROGRAM>-program-analysis.md`.
   Windows/Cline `py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validate_program_analysis_contract.py --analysis-dir <DIR>`
   (fallback: rerun with `python` only if `py -3` is unavailable), macOS/Linux
   `python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>`.
+  Batch-generated commands also include `--expected-size-tier <tier>`; retain
+  that argument rather than removing it.
 
 2. **Select Program & Resolve Analysis Intent**
    - Determine whether the user wants `standalone_exploratory` or
@@ -1229,6 +1254,13 @@ Runtime adapters are synced via `scripts/sync-skills.sh`:
 No runtime-specific assumptions are embedded in the canonical version.
 
 ## Version History
+
+- v0.2.24 (2026-07-22): Immutable large-program execution allocation
+  - Emits a canonical `<PROGRAM>-deep-read-execution-plan.yaml` that freezes
+    every source window, RLOG, batch path, and source-index digest.
+  - Validates exact planned coverage, source routine bindings, batch limits,
+    source-line citations, and external precreate SHA-256 locks so workers
+    cannot shrink the required deep-read scope by rewriting local files.
 
 - v0.2.23 (2026-07-20): Retained batch semantic completion gate
   - Requires every retained deep-read checkpoint to be processed in natural

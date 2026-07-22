@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 
 ALLOWED_STATUSES = {
@@ -33,7 +35,9 @@ REQUIRED_ARTIFACT_BASE_NAMES = {
 }
 
 ARTIFACT_REQUIRED_STATUSES = {"completed", "completed_with_warnings", "scanned_unvalidated"}
-NON_TERMINAL_STATUSES = {"queued", "in_progress"}
+# `scanned_unvalidated` is a valid deferred checkpoint, but never a terminal
+# batch close: it deliberately skipped the semantic final validator.
+NON_TERMINAL_STATUSES = {"queued", "in_progress", "scanned_unvalidated"}
 ARTIFACT_SAFE_RE = re.compile(r'[\s<>:"/\\|?*]+')
 SCAFFOLD_TEXT_BASE_NAMES = ("program-analysis.md", "routine-logic-details.md")
 SCAFFOLD_PATTERNS = (
@@ -63,6 +67,8 @@ RETAINED_SEMANTIC_PATTERNS = SCAFFOLD_PATTERNS + (
     re.compile(r"\bRLOG\s+pending\b", re.I),
     re.compile(r"\|\s*(?:`|\*\*)?pending(?:`|\*\*)?\s*\|", re.I),
 )
+
+_UPSTREAM_VALIDATOR: Any | None = None
 
 READER_FIRST_LAYOUT_GROUPS = (
     ("Program Reading Summary", ("## Program Reading Summary",)),
@@ -103,6 +109,52 @@ def required_artifacts_for_member(member: str) -> set[str]:
 
 def required_artifact_for_member(member: str, base_name: str) -> str:
     return f"{artifact_program_prefix(member)}-{base_name}"
+
+
+def upstream_program_validator() -> Any:
+    """Load the canonical per-program terminal validator once per batch check."""
+
+    global _UPSTREAM_VALIDATOR
+    if _UPSTREAM_VALIDATOR is not None:
+        return _UPSTREAM_VALIDATOR
+    validator_path = (
+        Path(__file__).resolve().parents[2]
+        / "legacy-ibmi-program-analyzer"
+        / "scripts"
+        / "validate_program_analysis_contract.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "legacy_ibmi_program_analysis_contract_for_batch_status", validator_path
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load upstream program validator: {validator_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(spec.name, module)
+    spec.loader.exec_module(module)
+    _UPSTREAM_VALIDATOR = module
+    return module
+
+
+def upstream_contract_findings(
+    output_path: Path,
+    expected_size_tier: str | None = None,
+    expected_source_index_sha256: str | None = None,
+    expected_execution_plan_sha256: str | None = None,
+) -> list[str]:
+    """Run the semantic finalization contract for a claimed completed row."""
+
+    try:
+        return [
+            str(item)
+            for item in upstream_program_validator().validate(
+                output_path,
+                expected_size_tier=expected_size_tier,
+                expected_source_index_sha256=expected_source_index_sha256,
+                expected_execution_plan_sha256=expected_execution_plan_sha256,
+            )
+        ]
+    except Exception as exc:  # pragma: no cover - defensive runtime reporting
+        return [f"could not run upstream program-analysis contract validator: {exc}"]
 
 
 def scaffold_patterns_in(
@@ -164,6 +216,72 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         ]
 
 
+def manifest_top_level_value(path: Path, key: str) -> str:
+    if not path.is_file():
+        return ""
+    pattern = re.compile(rf"(?m)^{re.escape(key)}:\s*(.*?)\s*$")
+    match = pattern.search(path.read_text(encoding="utf-8-sig"))
+    if match is None:
+        return ""
+    return match.group(1).strip().strip('"\'')
+
+
+def manifest_subagent_expected_count(
+    path: Path,
+    rows: list[dict[str, str]],
+) -> tuple[int, str | None]:
+    actual_count = sum(1 for row in rows if row.get("subagent_prompt_path", "").strip())
+    value = manifest_top_level_value(path, "subagent_expected_count")
+    if not value:
+        return actual_count, None
+    try:
+        manifest_count = int(value)
+    except ValueError:
+        return actual_count, "Kiro/parallel batch has invalid subagent_expected_count in manifest"
+    if manifest_count < 0:
+        return actual_count, "Kiro/parallel batch has negative subagent_expected_count in manifest"
+    if manifest_count != actual_count:
+        return max(manifest_count, actual_count), (
+            "Kiro/parallel batch subagent_expected_count does not match "
+            "the status-list worker prompt count"
+        )
+    return actual_count, None
+
+
+def manifest_program_execution_locks(path: Path) -> dict[str, dict[str, str]]:
+    """Return the precreated large-program hashes frozen in the batch manifest."""
+
+    if not path.is_file():
+        return {}
+    try:
+        import yaml  # type: ignore
+    except ImportError:
+        return {}
+    try:
+        payload = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    except yaml.YAMLError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    locks: dict[str, dict[str, str]] = {}
+    for item in payload.get("programs", []) or []:
+        if not isinstance(item, dict):
+            continue
+        member = str(item.get("member") or "").strip().upper()
+        if not member:
+            continue
+        locks[member] = {
+            "source_index_sha256": str(item.get("source_index_sha256") or "").strip(),
+            "deep_read_execution_plan_path": str(
+                item.get("deep_read_execution_plan_path") or ""
+            ).strip(),
+            "deep_read_execution_plan_sha256": str(
+                item.get("deep_read_execution_plan_sha256") or ""
+            ).strip(),
+        }
+    return locks
+
+
 def resolve_output_dir(value: str, delivery_root: Path | None) -> Path | None:
     if not value or "<delivery-root>" in value:
         return None
@@ -203,6 +321,24 @@ def validate(args: argparse.Namespace) -> int:
 
     if not manifest_path.is_file():
         findings.append(f"Missing batch manifest: {manifest_path}")
+    elif args.require_terminal and manifest_top_level_value(manifest_path, "subagent_mode") == "prepare":
+        if manifest_top_level_value(manifest_path, "scaffold_mode") != "precreate":
+            findings.append(
+                "Kiro/parallel batch requires scaffold_mode=precreate; "
+                "reinitialize the batch before terminal validation."
+            )
+        expected_count, expected_count_finding = manifest_subagent_expected_count(manifest_path, rows)
+        if expected_count_finding:
+            findings.append(expected_count_finding)
+        if (
+            expected_count > 0
+            and manifest_top_level_value(manifest_path, "status") != "subagent_results_merged"
+        ):
+            findings.append(
+                "Kiro/parallel batch requires parent merge before terminal validation; "
+                "run merge_subagent_results.py first."
+            )
+    manifest_locks = manifest_program_execution_locks(manifest_path)
     if not plan_path.is_file():
         findings.append(f"Missing program batch plan: {plan_path}")
 
@@ -213,6 +349,7 @@ def validate(args: argparse.Namespace) -> int:
         status = row.get("batch_status", "")
         validator_status = row.get("validator_status", "")
         output_dir_value = row.get("output_dir", "")
+        expected_size_tier = row.get("size_tier", "").strip()
         if not member:
             findings.append(f"Row {index}: missing member")
         elif member in seen_members:
@@ -257,7 +394,20 @@ def validate(args: argparse.Namespace) -> int:
             findings.append(f"Row {index} {member}: scanned_unvalidated requires next_action for final validation")
         if status in ARTIFACT_REQUIRED_STATUSES:
             if output_path is None:
-                warnings.append(f"Row {index} {member}: cannot verify placeholder/empty output_dir {output_dir_value!r}")
+                message = (
+                    f"Row {index} {member}: cannot verify placeholder/empty output_dir "
+                    f"{output_dir_value!r}"
+                )
+                if args.require_terminal and status in {
+                    "completed",
+                    "completed_with_warnings",
+                }:
+                    findings.append(
+                        message
+                        + "; claimed terminal completion requires a concrete output_dir"
+                    )
+                else:
+                    warnings.append(message)
                 continue
             if not output_path.is_dir():
                 findings.append(f"Row {index} {member}: output_dir does not exist: {output_path}")
@@ -303,6 +453,50 @@ def validate(args: argparse.Namespace) -> int:
                     analysis_path.read_text(encoding="utf-8-sig")
                 ):
                     findings.append(f"Row {index} {member}: {finding}")
+
+            if (
+                args.require_terminal
+                and status in {"completed", "completed_with_warnings"}
+                and not missing
+            ):
+                lock = manifest_locks.get(member.upper(), {})
+                expected_source_index_sha256 = ""
+                expected_execution_plan_sha256 = ""
+                if expected_size_tier == "large_extreme_program":
+                    expected_source_index_sha256 = lock.get("source_index_sha256", "")
+                    expected_execution_plan_sha256 = lock.get(
+                        "deep_read_execution_plan_sha256", ""
+                    )
+                    if not expected_source_index_sha256 or not expected_execution_plan_sha256:
+                        findings.append(
+                            f"Row {index} {member}: large-program terminal completion requires "
+                            "a precreated immutable execution lock in batch-scan-manifest.yaml; "
+                            "reinitialize with --scaffold-mode precreate."
+                        )
+                    row_source_lock = row.get("source_index_sha256", "").strip()
+                    row_plan_lock = row.get("deep_read_execution_plan_sha256", "").strip()
+                    if (
+                        expected_source_index_sha256
+                        and row_source_lock
+                        and row_source_lock != expected_source_index_sha256
+                    ) or (
+                        expected_execution_plan_sha256
+                        and row_plan_lock
+                        and row_plan_lock != expected_execution_plan_sha256
+                    ):
+                        findings.append(
+                            f"Row {index} {member}: status CSV execution lock does not match "
+                            "the immutable batch manifest"
+                        )
+                for finding in upstream_contract_findings(
+                    output_path,
+                    expected_size_tier=expected_size_tier,
+                    expected_source_index_sha256=expected_source_index_sha256,
+                    expected_execution_plan_sha256=expected_execution_plan_sha256,
+                ):
+                    findings.append(
+                        f"Row {index} {member}: upstream program-analysis contract failed: {finding}"
+                    )
 
     for warning in warnings:
         print(f"WARNING: {warning}")

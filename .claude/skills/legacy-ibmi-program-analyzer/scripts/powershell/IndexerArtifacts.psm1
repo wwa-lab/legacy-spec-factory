@@ -8,6 +8,115 @@ Native deterministic artifact renderers and writers.
 #>
 
 Set-StrictMode -Version 2.0
+
+function Get-IndexerArtifactName {
+    param(
+        [System.Collections.IDictionary]$Index,
+        [Parameter(Mandatory = $true)][string]$BaseName,
+        [bool]$CanonicalArtifactNames = $false
+    )
+    if (-not $CanonicalArtifactNames) { return $BaseName }
+    $prefix = [regex]::Replace(([string]$Index.program).Trim().ToUpperInvariant(), '[\s<>:"/\\|?*]+', '_').Trim('._-')
+    if (-not $prefix) { $prefix = 'PROGRAM' }
+    return "$prefix-$BaseName"
+}
+
+function Get-IndexerDeepReadWindows {
+    param([System.Collections.IDictionary]$Index)
+
+    $windows = @($Index.deep_read_windows)
+    if ($windows.Count -gt 0) { return $windows }
+
+    $routines = @($Index.routines)
+    $firstRoutine = if ($routines.Count -gt 0) { $routines[0] } else { $null }
+    $routineName = if ($firstRoutine) { [string]$firstRoutine.name } else { 'MAIN' }
+    $sourceLines = if ($firstRoutine) {
+        '{0}-{1}' -f $firstRoutine.start_line, $firstRoutine.end_line
+    }
+    else {
+        '1-' + [string]$Index.source.line_count
+    }
+    return ,([ordered]@{
+        window_id = 'DRW-' + $Index.program + '-001'
+        routine = $routineName
+        source_lines = $sourceLines
+        why_selected = 'fallback first routine window'
+        coverage_outcome = 'selected_for_deep_read'
+        evidence = 'source-index'
+    })
+}
+
+function Get-IndexerSha256 {
+    param([string]$Content)
+
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [Text.Encoding]::UTF8.GetBytes($Content)
+        return ([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $hasher.Dispose()
+    }
+}
+
+function New-DeepReadExecutionPlan {
+    param(
+        [System.Collections.IDictionary]$Index,
+        [string]$SourceIndexContent,
+        [bool]$CanonicalArtifactNames = $false
+    )
+
+    $detailIds = @{}
+    foreach ($detail in @($Index.routine_logic_inventory.details)) {
+        $routine = [string]$detail.routine
+        if ($routine -and -not $detailIds.ContainsKey($routine)) {
+            $detailIds[$routine] = [string]$detail.detail_id
+        }
+    }
+    $planned = New-Object System.Collections.ArrayList
+    $windows = @(Get-IndexerDeepReadWindows $Index)
+    $batchNumber = 1
+    for ($offset = 0; $offset -lt $windows.Count; $offset += 5) {
+        $last = [Math]::Min($offset + 4, $windows.Count - 1)
+        $batchPath = 'routine-logic-details/' +
+            (Get-IndexerArtifactName $Index ('deep-read-batch-{0:D3}.md' -f $batchNumber) $CanonicalArtifactNames)
+        for ($windowIndex = $offset; $windowIndex -le $last; $windowIndex++) {
+            $window = $windows[$windowIndex]
+            $routine = [string]$window.routine
+            [void]$planned.Add([ordered]@{
+                window_id = [string]$window.window_id
+                routine = $routine
+                source_lines = [string]$window.source_lines
+                rlog_id = $(if ($detailIds.ContainsKey($routine)) { $detailIds[$routine] } else { '' })
+                batch_number = $batchNumber
+                batch_path = $batchPath
+            })
+        }
+        $batchNumber++
+    }
+    return [ordered]@{
+        schema_version = '0.1'
+        generated_by = 'index-rpg-source.ps1'
+        program = $Index.program
+        program_size_tier = $Index.program_size_tier
+        source_index_path = (Get-IndexerArtifactName $Index 'source-index.yaml' $CanonicalArtifactNames)
+        source_index_sha256 = (Get-IndexerSha256 $SourceIndexContent)
+        planned_deep_read = @($planned.ToArray())
+    }
+}
+
+function Write-IndexerArtifact {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Content,
+        [bool]$PreserveExisting,
+        $Written
+    )
+    if ($PreserveExisting -and (Test-Path -LiteralPath $Path -PathType Leaf)) { return }
+    Write-TextFile $Path $Content
+    [void]$Written.Add($Path)
+}
+
 function Render-RoutineIndex {
     param([System.Collections.IDictionary]$Index)
     $routineRows = @($Index.routines | ForEach-Object {
@@ -264,10 +373,27 @@ function Find-CentralArtifacts {
 
 
 function Write-Artifacts {
-    param([System.Collections.IDictionary]$Index, [string]$OutputDirectory)
+    param(
+        [System.Collections.IDictionary]$Index,
+        [string]$OutputDirectory,
+        [bool]$PreserveExisting = $false,
+        [bool]$CanonicalArtifactNames = $false
+    )
     [void](New-Item -ItemType Directory -Path $OutputDirectory -Force)
     $written = New-StringList
-    $sidecars = Get-SidecarDeclarations $Index
+    $sidecars = Get-SidecarDeclarations $Index $CanonicalArtifactNames
+    $sourceIndexName = Get-IndexerArtifactName $Index 'source-index.yaml' $CanonicalArtifactNames
+    $sourceIndexContent = ConvertTo-YamlText $Index
+    $existingSourceIndexPath = Join-Path $OutputDirectory $sourceIndexName
+    if ($PreserveExisting -and (Test-Path -LiteralPath $existingSourceIndexPath -PathType Leaf)) {
+        $sourceIndexContent = [IO.File]::ReadAllText($existingSourceIndexPath, [Text.Encoding]::UTF8)
+    }
+    $executionPlanContent = $null
+    if ($Index.program_size_tier -eq 'large_extreme_program') {
+        $executionPlanContent = ConvertTo-YamlText (
+            New-DeepReadExecutionPlan $Index $sourceIndexContent $CanonicalArtifactNames
+        )
+    }
     $summary = [ordered]@{
         schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; source = $Index.source
         analysis_mode = $Index.analysis_mode; mode_reason = $Index.mode_reason; program_size_tier = $Index.program_size_tier
@@ -281,42 +407,44 @@ function Write-Artifacts {
     }
     if ($Index.Contains('central_artifact_reuse')) { $summary['central_artifact_reuse'] = $Index.central_artifact_reuse }
     $core = [ordered]@{
-        'program-analysis.md' = (Render-ProgramAnalysis $Index)
-        'source-index.yaml' = (ConvertTo-YamlText $Index)
-        'program-analysis-summary.yaml' = (ConvertTo-YamlText $summary)
-        'routine-index.md' = (Render-RoutineIndex $Index) + "`n"
-        'routine-logic-details.md' = (Render-RoutineLogicDetails $Index)
-        'routine-logic-details.yaml' = (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; source = $Index.source; routine_logic_inventory = $Index.routine_logic_inventory; contract_note = 'This is a pre-analysis routine detail seed.' }))
-        'message-inventory.yaml' = (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; message_inventory = $Index.message_inventory }))
+        (Get-IndexerArtifactName $Index 'program-analysis.md' $CanonicalArtifactNames) = (Render-ProgramAnalysis $Index)
+        $sourceIndexName = $sourceIndexContent
+        (Get-IndexerArtifactName $Index 'program-analysis-summary.yaml' $CanonicalArtifactNames) = (ConvertTo-YamlText $summary)
+        (Get-IndexerArtifactName $Index 'routine-index.md' $CanonicalArtifactNames) = (Render-RoutineIndex $Index) + "`n"
+        (Get-IndexerArtifactName $Index 'routine-logic-details.md' $CanonicalArtifactNames) = (Render-RoutineLogicDetails $Index)
+        (Get-IndexerArtifactName $Index 'routine-logic-details.yaml' $CanonicalArtifactNames) = (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; source = $Index.source; routine_logic_inventory = $Index.routine_logic_inventory; contract_note = 'This is a pre-analysis routine detail seed.' }))
+        (Get-IndexerArtifactName $Index 'message-inventory.yaml' $CanonicalArtifactNames) = (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; message_inventory = $Index.message_inventory }))
     }
-    foreach ($name in $core.Keys) { $path = Join-Path $OutputDirectory $name; Write-TextFile $path $core[$name]; $written.Add($path) }
+    if ($executionPlanContent) {
+        $core[(Get-IndexerArtifactName $Index 'deep-read-execution-plan.yaml' $CanonicalArtifactNames)] = $executionPlanContent
+    }
+    foreach ($name in $core.Keys) { $path = Join-Path $OutputDirectory $name; Write-IndexerArtifact -Path $path -Content $core[$name] -PreserveExisting $PreserveExisting -Written $written }
     $trigger = $Index.optional_sidecar_triggers
-    if ($trigger.coverage_ledger.write) { $path = Join-Path $OutputDirectory 'all-routine-coverage-ledger.md'; Write-TextFile $path (Render-CoverageLedger $Index); $written.Add($path) }
-    if ($trigger.deep_read_plan.write) { $path = Join-Path $OutputDirectory 'deep-read-plan.md'; Write-TextFile $path (Render-DeepReadPlan $Index); $written.Add($path) }
-    if ($trigger.message_inventory_markdown.write) { $path = Join-Path $OutputDirectory 'message-inventory.md'; Write-TextFile $path (Render-SimpleInventoryMarkdown ('Message Inventory: ' + $Index.program) $Index.message_inventory.details @('detail_id', 'message', 'short_description', 'occurrence_count', 'routines', 'first_seen', 'evidence_status')); $written.Add($path) }
+    if ($trigger.coverage_ledger.write) { $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'all-routine-coverage-ledger.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-CoverageLedger $Index) -PreserveExisting $PreserveExisting -Written $written }
+    if ($trigger.deep_read_plan.write) { $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'deep-read-plan.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-DeepReadPlan $Index) -PreserveExisting $PreserveExisting -Written $written }
+    if ($trigger.message_inventory_markdown.write) { $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'message-inventory.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-SimpleInventoryMarkdown ('Message Inventory: ' + $Index.program) $Index.message_inventory.details @('detail_id', 'message', 'short_description', 'occurrence_count', 'routines', 'first_seen', 'evidence_status')) -PreserveExisting $PreserveExisting -Written $written }
     if ($trigger.file_io_inventory.write) {
-        $path = Join-Path $OutputDirectory 'file-io-inventory.md'; Write-TextFile $path (Render-SimpleInventoryMarkdown ('File I/O Inventory: ' + $Index.program) $Index.file_io_inventory.details @('detail_id', 'routine', 'operation', 'object', 'line', 'state_impact', 'evidence')); $written.Add($path)
-        $path = Join-Path $OutputDirectory 'file-io-inventory.yaml'; Write-TextFile $path (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; file_io_inventory = $Index.file_io_inventory })); $written.Add($path)
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'file-io-inventory.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-SimpleInventoryMarkdown ('File I/O Inventory: ' + $Index.program) $Index.file_io_inventory.details @('detail_id', 'routine', 'operation', 'object', 'line', 'state_impact', 'evidence')) -PreserveExisting $PreserveExisting -Written $written
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'file-io-inventory.yaml' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; file_io_inventory = $Index.file_io_inventory })) -PreserveExisting $PreserveExisting -Written $written
     }
     if ($trigger.field_mutation_matrix.write) {
-        $path = Join-Path $OutputDirectory 'field-mutation-matrix.md'; Write-TextFile $path (Render-SimpleInventoryMarkdown ('Field Mutation Matrix: ' + $Index.program) $Index.field_mutation_inventory.details @('detail_id', 'mutation_source', 'routine', 'operation', 'object', 'source_lines', 'evidence')); $written.Add($path)
-        $path = Join-Path $OutputDirectory 'field-mutation-matrix.yaml'; Write-TextFile $path (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; field_mutation_inventory = $Index.field_mutation_inventory })); $written.Add($path)
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'field-mutation-matrix.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-SimpleInventoryMarkdown ('Field Mutation Matrix: ' + $Index.program) $Index.field_mutation_inventory.details @('detail_id', 'mutation_source', 'routine', 'operation', 'object', 'source_lines', 'evidence')) -PreserveExisting $PreserveExisting -Written $written
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'field-mutation-matrix.yaml' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; field_mutation_inventory = $Index.field_mutation_inventory })) -PreserveExisting $PreserveExisting -Written $written
     }
     if ($trigger.sql_inventory.write) {
-        $path = Join-Path $OutputDirectory 'sql-inventory.md'; Write-TextFile $path (Render-SimpleInventoryMarkdown ('SQL Inventory: ' + $Index.program) $Index.sql_inventory.details @('detail_id', 'routine', 'statement_type', 'table_or_view', 'source_lines', 'host_variables', 'evidence')); $written.Add($path)
-        $path = Join-Path $OutputDirectory 'sql-inventory.yaml'; Write-TextFile $path (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; sql_inventory = $Index.sql_inventory })); $written.Add($path)
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'sql-inventory.md' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (Render-SimpleInventoryMarkdown ('SQL Inventory: ' + $Index.program) $Index.sql_inventory.details @('detail_id', 'routine', 'statement_type', 'table_or_view', 'source_lines', 'host_variables', 'evidence')) -PreserveExisting $PreserveExisting -Written $written
+        $path = Join-Path $OutputDirectory (Get-IndexerArtifactName $Index 'sql-inventory.yaml' $CanonicalArtifactNames); Write-IndexerArtifact -Path $path -Content (ConvertTo-YamlText ([ordered]@{ schema_version = '0.1'; generated_by = 'index-rpg-source.ps1'; program = $Index.program; sql_inventory = $Index.sql_inventory })) -PreserveExisting $PreserveExisting -Written $written
     }
     if ($Index.program_size_tier -eq 'large_extreme_program') {
-        $windows = @($Index.deep_read_windows)
-        if ($windows.Count -eq 0) { $windows = @([ordered]@{ window_id = 'DRW-' + $Index.program + '-001'; routine = 'MAIN'; source_lines = '1-' + $Index.source.line_count; why_selected = 'fallback first routine window' }) }
+        $windows = @(Get-IndexerDeepReadWindows $Index)
         $batchNumber = 1
         for ($offset = 0; $offset -lt $windows.Count; $offset += 5) {
             $last = [Math]::Min($offset + 4, $windows.Count - 1)
             $batch = @($windows[$offset..$last])
-            $relative = 'routine-logic-details/deep-read-batch-{0:D3}.md' -f $batchNumber
+            $relative = 'routine-logic-details/' + (Get-IndexerArtifactName $Index ('deep-read-batch-{0:D3}.md' -f $batchNumber) $CanonicalArtifactNames)
             $path = Join-Path $OutputDirectory $relative
-            Write-TextFile $path (Render-BatchCheckpoint $Index $batchNumber $batch)
-            $written.Add($path); $batchNumber++
+            Write-IndexerArtifact -Path $path -Content (Render-BatchCheckpoint $Index $batchNumber $batch) -PreserveExisting $PreserveExisting -Written $written
+            $batchNumber++
         }
     }
     return $written.ToArray()

@@ -25,8 +25,42 @@ Reference and control inputs:
 {{control_files}}
 
 Rules:
-- Build deterministic indexes first.
 {{scaffold_prompt_note}}
+- Build deterministic indexes first. Do not begin semantic deep-read until the
+  Artifact Bootstrap Gate below is satisfied.
+- Never create an empty/placeholder core sidecar by hand just to make the
+  artifact list look complete. Missing core artifacts must come from the
+  deterministic indexer.
+
+## Artifact Bootstrap Gate (before semantic deep-read)
+
+1. Inspect `{{output_dir}}` for all seven required core artifacts:
+   `{{member}}-program-analysis.md`, `{{member}}-source-index.yaml`,
+   `{{member}}-program-analysis-summary.yaml`, `{{member}}-routine-index.md`,
+   `{{member}}-message-inventory.yaml`,
+   `{{member}}-routine-logic-details.md`, and
+   `{{member}}-routine-logic-details.yaml`.
+2. If any one is missing, run this deterministic indexer command before doing
+   any semantic writing. It preserves existing artifacts and creates only the
+   missing scaffolds:
+
+```text
+{{index_command_block}}
+```
+
+3. If `py -3` itself is unavailable, run the same command once with `python`
+   replacing `py -3`. If Python starts but the command fails, treat it as the
+   result; do not substitute manual empty files.
+4. Re-inspect all seven paths. If any required artifact is still missing, do
+   not claim a validator pass or `completed` state. Record
+   `batch_status=failed_runtime`, `validator_status=not_run`, the exact missing
+   filenames in `last_error`, and a `next_action` to repair the indexer/source
+   issue. If source is unavailable, use `blocked_missing_source` instead.
+
+{{recovery_context}}
+
+{{tier_execution_contract}}
+
 - Deterministic indexes are pre-analysis scaffolds only. The generated
   {{member}}-program-analysis.md seed, source index, and routine sidecars are
   not final analysis until semantic deep-read replaces pending/thin content

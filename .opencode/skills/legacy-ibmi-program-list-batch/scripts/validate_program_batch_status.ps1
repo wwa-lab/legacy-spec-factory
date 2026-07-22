@@ -50,7 +50,9 @@ $ArtifactRequiredStatuses = @(
     "completed_with_warnings",
     "scanned_unvalidated"
 )
-$NonTerminalStatuses = @("queued", "in_progress")
+# scanned_unvalidated intentionally skipped the semantic final validator, so
+# it is a deferred checkpoint rather than a terminal batch-close status.
+$NonTerminalStatuses = @("queued", "in_progress", "scanned_unvalidated")
 
 $ArtifactUnsafePattern = '[\s<>:"/\\|?*]+'
 $ScaffoldTextBaseNames = @(
@@ -146,6 +148,106 @@ function Get-FieldValue {
         return ""
     }
     return ([string]$property.Value).Trim()
+}
+
+function Get-ManifestTopLevelValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+    $pattern = '(?m)^' + [regex]::Escape($Key) + ':\s*(.*?)\s*$'
+    $text = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+    if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
+    $match = [regex]::Match($text, $pattern)
+    if (-not $match.Success) { return '' }
+    $value = $match.Groups[1].Value.Trim()
+    if ($value.Length -ge 2 -and
+        (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+            ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+        return $value.Substring(1, $value.Length - 2)
+    }
+    return $value
+}
+
+function Get-FileSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [IO.File]::ReadAllBytes($Path)
+        return ([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $hasher.Dispose()
+    }
+}
+
+function Get-ManifestSubagentExpectation {
+    param([Parameter(Mandatory = $true)][string]$ManifestPath, [object[]]$Rows)
+
+    $actualCount = @($Rows | Where-Object {
+        -not [string]::IsNullOrWhiteSpace((Get-FieldValue -Row $_ -Name 'subagent_prompt_path'))
+    }).Count
+    $value = Get-ManifestTopLevelValue -Path $ManifestPath -Key 'subagent_expected_count'
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return [pscustomobject]@{ ExpectedCount = $actualCount; Finding = $null }
+    }
+    $manifestCount = 0
+    if (-not [int]::TryParse($value, [ref]$manifestCount)) {
+        return [pscustomobject]@{ ExpectedCount = $actualCount; Finding = 'Kiro/parallel batch has invalid subagent_expected_count in manifest' }
+    }
+    if ($manifestCount -lt 0) {
+        return [pscustomobject]@{ ExpectedCount = $actualCount; Finding = 'Kiro/parallel batch has negative subagent_expected_count in manifest' }
+    }
+    if ($manifestCount -ne $actualCount) {
+        return [pscustomobject]@{
+            ExpectedCount = [Math]::Max($manifestCount, $actualCount)
+            Finding = 'Kiro/parallel batch subagent_expected_count does not match the status-list worker prompt count'
+        }
+    }
+    return [pscustomobject]@{ ExpectedCount = $actualCount; Finding = $null }
+}
+
+function Get-ManifestProgramExecutionLock {
+    param(
+        [Parameter(Mandatory = $true)][string]$ManifestPath,
+        [Parameter(Mandatory = $true)][string]$Member
+    )
+
+    $empty = [pscustomobject]@{
+        Found = $false
+        SourceIndexSha256 = ''
+        PlanPath = ''
+        PlanSha256 = ''
+    }
+    if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { return $empty }
+    $text = [System.IO.File]::ReadAllText($ManifestPath, [System.Text.Encoding]::UTF8)
+    if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
+    $programsMatch = [regex]::Match($text, '(?ms)^programs:\s*\r?\n(?<body>.*)$')
+    if (-not $programsMatch.Success) { return $empty }
+    $blocks = [regex]::Matches($programsMatch.Groups['body'].Value, '(?ms)^\s{2}-\s*\r?\n(?<block>.*?)(?=^\s{2}-\s*\r?$|\z)')
+    foreach ($blockMatch in $blocks) {
+        $block = $blockMatch.Groups['block'].Value
+        $memberMatch = [regex]::Match($block, '(?m)^\s{4}member:\s*(.*?)\s*$')
+        if (-not $memberMatch.Success) { continue }
+        $candidate = $memberMatch.Groups[1].Value.Trim().Trim([char[]]@('"', "'"))
+        if ($candidate -ne $Member) { continue }
+        $read = {
+            param([string]$key)
+            $match = [regex]::Match($block, '(?m)^\s{4}' + [regex]::Escape($key) + ':\s*(.*?)\s*$')
+            if (-not $match.Success) { return '' }
+            return $match.Groups[1].Value.Trim().Trim([char[]]@('"', "'"))
+        }
+        return [pscustomobject]@{
+            Found = $true
+            SourceIndexSha256 = & $read 'source_index_sha256'
+            PlanPath = & $read 'deep_read_execution_plan_path'
+            PlanSha256 = & $read 'deep_read_execution_plan_sha256'
+        }
+    }
+    return $empty
 }
 
 function Get-ArtifactProgramPrefix {
@@ -270,6 +372,66 @@ function Get-RetainedSemanticArtifacts {
     return @($paths.ToArray() | Sort-Object FullName)
 }
 
+function Get-CurrentPowerShellExecutable {
+    $processPath = (Get-Process -Id $PID).Path
+    if (-not [string]::IsNullOrWhiteSpace($processPath) -and
+        (Test-Path -LiteralPath $processPath -PathType Leaf)) {
+        return $processPath
+    }
+    foreach ($candidateName in @("powershell.exe", "pwsh.exe")) {
+        $candidate = Join-Path $PSHOME $candidateName
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
+    throw "powershell_runtime_unavailable_for_upstream_contract_validation"
+}
+
+function Invoke-UpstreamProgramAnalysisContract {
+    param(
+        [Parameter(Mandatory = $true)][string]$OutputPath,
+        [AllowNull()][string]$ExpectedSizeTier,
+        [AllowNull()][string]$ExpectedSourceIndexSha256,
+        [AllowNull()][string]$ExpectedExecutionPlanSha256
+    )
+
+    $skillsRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $validatorPath = Join-Path (Join-Path (Join-Path $skillsRoot "legacy-ibmi-program-analyzer") "scripts") "validate-program-analysis-contract.ps1"
+    if (-not (Test-Path -LiteralPath $validatorPath -PathType Leaf)) {
+        return @("could not run upstream program-analysis contract validator: missing $validatorPath")
+    }
+
+    try {
+        $engine = Get-CurrentPowerShellExecutable
+        $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $validatorPath, '--analysis-dir', $OutputPath)
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedSizeTier)) {
+            $arguments += @('--expected-size-tier', $ExpectedSizeTier)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedSourceIndexSha256)) {
+            $arguments += @('--expected-source-index-sha256', $ExpectedSourceIndexSha256)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedExecutionPlanSha256)) {
+            $arguments += @('--expected-execution-plan-sha256', $ExpectedExecutionPlanSha256)
+        }
+        $rawOutput = @(& $engine @arguments 2>&1)
+        if ($LASTEXITCODE -eq 0) {
+            return @()
+        }
+        $messages = @(
+            $rawOutput |
+                ForEach-Object { $_.ToString().Trim() } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        )
+        if ($messages.Count -eq 0) {
+            return @("upstream contract validator exited with code $LASTEXITCODE")
+        }
+        return $messages
+    }
+    catch {
+        return @("could not run upstream program-analysis contract validator: $($_.Exception.Message)")
+    }
+}
+
 function Invoke-Validation {
     param([Parameter(Mandatory = $true)][hashtable]$Options)
 
@@ -301,6 +463,22 @@ function Invoke-Validation {
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
         $findings.Add("Missing batch manifest: $manifestPath")
     }
+    elseif ($Options.RequireTerminal -and
+        (Get-ManifestTopLevelValue -Path $manifestPath -Key 'subagent_mode') -eq 'prepare') {
+        if ((Get-ManifestTopLevelValue -Path $manifestPath -Key 'scaffold_mode') -ne 'precreate') {
+            $findings.Add(
+                'Kiro/parallel batch requires scaffold_mode=precreate; reinitialize the batch before terminal validation.'
+            )
+        }
+        $subagentExpectation = Get-ManifestSubagentExpectation -ManifestPath $manifestPath -Rows $rows
+        if ($subagentExpectation.Finding) { $findings.Add([string]$subagentExpectation.Finding) }
+        if ($subagentExpectation.ExpectedCount -gt 0 -and
+            (Get-ManifestTopLevelValue -Path $manifestPath -Key 'status') -ne 'subagent_results_merged') {
+            $findings.Add(
+                'Kiro/parallel batch requires parent merge before terminal validation; run merge_subagent_results.py first.'
+            )
+        }
+    }
     if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) {
         $findings.Add("Missing program batch plan: $planPath")
     }
@@ -314,6 +492,8 @@ function Invoke-Validation {
         $status = Get-FieldValue -Row $row -Name "batch_status"
         $validatorStatus = Get-FieldValue -Row $row -Name "validator_status"
         $outputDirectoryValue = Get-FieldValue -Row $row -Name "output_dir"
+        $sizeTier = Get-FieldValue -Row $row -Name "size_tier"
+        $manifestLock = Get-ManifestProgramExecutionLock -ManifestPath $manifestPath -Member $member
 
         if ([string]::IsNullOrEmpty($member)) {
             $findings.Add("Row ${index}: missing member")
@@ -371,7 +551,13 @@ function Invoke-Validation {
         }
         if ($status -in $script:ArtifactRequiredStatuses) {
             if ($null -eq $outputPath) {
-                $warnings.Add("Row $index ${member}: cannot verify placeholder/empty output_dir '$outputDirectoryValue'")
+                $message = "Row $index ${member}: cannot verify placeholder/empty output_dir '$outputDirectoryValue'"
+                if ($Options.RequireTerminal -and $status -in @("completed", "completed_with_warnings")) {
+                    $findings.Add($message + '; claimed terminal completion requires a concrete output_dir')
+                }
+                else {
+                    $warnings.Add($message)
+                }
                 continue
             }
             if (-not (Test-Path -LiteralPath $outputPath -PathType Container)) {
@@ -424,6 +610,38 @@ function Invoke-Validation {
                 $analysisText = [System.IO.File]::ReadAllText($analysisPath, [System.Text.Encoding]::UTF8)
                 foreach ($finding in @(Find-ReaderFirstLayoutFindings -Text $analysisText)) {
                     $findings.Add("Row $index ${member}: $finding")
+                }
+            }
+
+            if ($Options.RequireTerminal -and
+                $status -in @("completed", "completed_with_warnings") -and
+                $missing.Count -eq 0) {
+                if ($sizeTier.Trim().ToLowerInvariant() -eq 'large_extreme_program') {
+                    if (-not $manifestLock.Found -or
+                        [string]::IsNullOrWhiteSpace($manifestLock.SourceIndexSha256) -or
+                        [string]::IsNullOrWhiteSpace($manifestLock.PlanPath) -or
+                        [string]::IsNullOrWhiteSpace($manifestLock.PlanSha256)) {
+                        $findings.Add("Row $index ${member}: large_extreme_program requires precreated immutable execution locks in batch-scan-manifest.yaml; reinitialize with --scaffold-mode precreate")
+                    }
+                    else {
+                        $sourceIndexPath = Join-Path $outputPath (Get-RequiredArtifactName -Member $member -BaseName 'source-index.yaml')
+                        $planPath = Join-Path $outputPath $manifestLock.PlanPath
+                        if (-not (Test-Path -LiteralPath $sourceIndexPath -PathType Leaf) -or
+                            -not (Test-Path -LiteralPath $planPath -PathType Leaf)) {
+                            $findings.Add("Row $index ${member}: large immutable execution-lock files are missing from output_dir")
+                        }
+                        else {
+                            if ((Get-FileSha256 -Path $sourceIndexPath) -ne $manifestLock.SourceIndexSha256.ToLowerInvariant()) {
+                                $findings.Add("Row $index ${member}: source-index SHA-256 differs from the precreated immutable execution lock")
+                            }
+                            if ((Get-FileSha256 -Path $planPath) -ne $manifestLock.PlanSha256.ToLowerInvariant()) {
+                                $findings.Add("Row $index ${member}: deep-read execution-plan SHA-256 differs from the precreated immutable execution lock")
+                            }
+                        }
+                    }
+                }
+                foreach ($finding in @(Invoke-UpstreamProgramAnalysisContract -OutputPath $outputPath -ExpectedSizeTier $sizeTier -ExpectedSourceIndexSha256 $manifestLock.SourceIndexSha256 -ExpectedExecutionPlanSha256 $manifestLock.PlanSha256)) {
+                    $findings.Add("Row $index ${member}: upstream program-analysis contract failed: $finding")
                 }
             }
         }

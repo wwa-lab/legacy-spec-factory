@@ -111,6 +111,12 @@ compressed narrative summary. Before delivery, validate the artifact set:
   matching routine YAML `summary[]`/`details[]` updates before reading the next checkpoint; merge the
   set into the consolidated routine detail and main wrapper only after all
   retained checkpoints are complete.
+- For `large_extreme_program`, `<PROGRAM>-deep-read-execution-plan.yaml` is a
+  required declared sidecar. Its `planned_deep_read` mapping is the complete
+  window/RLOG/batch allocation, bound to the source-index digest. Each mapping
+  must occur exactly once in its planned batch, and each RLOG detail must cite
+  its allocated source range. Do not edit the plan/source index to hide work;
+  rebuild the deterministic scaffold if either is stale or inconsistent.
 - Final `<PROGRAM>-routine-logic-details.yaml` must not contain
   `routine_logic_inventory.details[].semantic_status: pending_deep_read`.
   Routines assigned to a completed retained batch must use
