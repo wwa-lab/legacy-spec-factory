@@ -26,8 +26,9 @@ Set the team's program folder patterns, name normalization, program tier roots,
 program-set review parent, source inventory cache, and allowed working branch
 patterns. Keep these v0.4.0 controls intact:
 
-- `current_run` as default artifact mode;
-- explicit `approved_document_repo` reuse only;
+- `approved_document_repo` as default artifact mode because the delivery repo
+  contains only SME-reviewed analyses;
+- explicit `current_run` opt-in only for active scan branches;
 - all five program-analysis reader-first sections required;
 - upstream program final validator reused;
 - output directory interpreted as a parent;
@@ -58,7 +59,8 @@ Programs in navigation order:
 - <PROGRAM-1>
 - <PROGRAM-2>
 - <PROGRAM-3>
-Program artifact root: <current working delivery checkout>
+Program artifact root: <local approved document/delivery repo clone>
+Artifact repo mode: approved_document_repo
 Output parent: <program_set_review_parent>
 Optional source root: <needed only for targeted recovery>
 ```

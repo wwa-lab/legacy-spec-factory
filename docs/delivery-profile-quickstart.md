@@ -8,10 +8,12 @@ where controlled reader-first program-set review bundles are written.
 The source repository is read-only evidence and inventory. The delivery
 repository contains finalized per-program analyses and SME review bundles.
 
-- `current_run` (default) resolves only from the supplied working artifact
-  root. No remote-main or arbitrary prior-run fallback is allowed.
-- `approved_document_repo` is explicit opt-in and resolves only from the
-  supplied local approved document/delivery clone.
+- `approved_document_repo` (default) resolves only from the supplied local
+  approved document/delivery clone. The team's delivery repo contains only
+  SME-reviewed program analyses.
+- `current_run` is explicit opt-in and resolves only from the supplied active
+  working artifact root. No arbitrary prior-run or cross-mode fallback is
+  allowed.
 
 ## Start From The Canonical Profile
 
@@ -62,9 +64,9 @@ review generation, and complete fact coverage.
 Working branch: develop-leo
 Review name: credit check
 Programs file: /path/to/programs.txt
-Program artifact root: /path/to/delivery-working-checkout
+Program artifact root: /path/to/approved-document-repo-clone
 Output parent: /path/to/delivery/modules/CAP-ID-0004-program_set_reviews
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Profile: standard_reader_first
 Optional source root: /path/to/source-repo
 ```

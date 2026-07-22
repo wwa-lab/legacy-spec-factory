@@ -312,7 +312,7 @@ function Test-FlowCoreReviewManifest {
     $programs = @($programsValue)
     if ($null -eq $programsValue -or $programs.Count -eq 0) { return @('manifest has no programs[] entries') }
     $runProfile = Get-ReviewMapValue $Manifest 'run_profile' ([ordered]@{})
-    $repoMode = [string](Get-ReviewMapValue $runProfile 'artifact_repo_mode' 'current_run')
+    $repoMode = [string](Get-ReviewMapValue $runProfile 'artifact_repo_mode' 'approved_document_repo')
     # Preserve case-sensitive identity for profiles that intentionally keep
     # program-name case instead of normalizing it to uppercase.
     $byName = [System.Collections.Hashtable]::new([System.StringComparer]::Ordinal)
@@ -323,7 +323,7 @@ function Test-FlowCoreReviewManifest {
         $byName[$name].Add($entry)
         $resolution = Get-ReviewMapValue $entry 'run_resolution'
         if ($null -eq $resolution -and $null -ne (Get-ReviewMapValue $entry 'central_lookup_result')) {
-            $findings.Add("$name uses legacy central_lookup_result; rebuild the manifest with the no-cross-run-reuse builder")
+            $findings.Add("$name uses legacy central_lookup_result; rebuild the manifest with an explicit artifact repo mode")
             continue
         }
         if ($resolution -notin @('analyzed_this_run', 'reused_same_run', 'reused_artifact_repo', 'pending_source', 'blocked_missing_source')) { $findings.Add("$name has invalid run_resolution: $resolution") }

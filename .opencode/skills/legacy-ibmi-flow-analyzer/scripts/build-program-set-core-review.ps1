@@ -32,7 +32,7 @@ function Read-BuildArguments {
     param([object[]]$Arguments)
     $options = [ordered]@{
         ReviewName = $null; ProgramsFile = $null; WorkingRoot = $null; OutputRoot = $null
-        ArtifactRepoMode = 'current_run'; DeliveryRoot = $null; ForceRescanFile = $null
+        ArtifactRepoMode = 'approved_document_repo'; DeliveryRoot = $null; ForceRescanFile = $null
         SourceRoot = $null; InventoryDir = $null; ProgramFirst = $false; Profile = $null
         ProjectRoot = $null; OutputDir = $null; WorkingBranch = $null; CoreReviewProfile = $null; ReviewId = $null
         FlowSlug = $null; ProgramSetSlug = $null
@@ -75,7 +75,7 @@ catch {
 
 try {
     if ($options.ForceRescanFile) {
-        throw '--force-rescan-file is no longer supported for program-flow core review. Rebuild with no cross-run reuse and analyze the program in the current run.'
+        throw '--force-rescan-file is no longer supported for program-flow core review. Use --artifact-repo-mode current_run explicitly when analyzing the program in the current run.'
     }
     if ($options.DeliveryRoot) {
         throw '--delivery-root is no longer supported for program-flow core review. Use --working-root <delivery-working-checkout> as the current-run artifact root.'

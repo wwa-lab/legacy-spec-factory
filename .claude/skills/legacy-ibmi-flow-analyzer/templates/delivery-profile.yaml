@@ -9,14 +9,12 @@
 # reconciliation.
 #
 # Program-set core review supports two explicit artifact modes:
-# - current_run (default): program_artifact_resolution_profile resolves
-#   folder/name patterns under the current working root; output writes to the
-#   named working branch; no remote-main or prior-run artifact satisfies the
-#   default run.
-# - approved_document_repo: after an all-program scan has been reviewed and
-#   merged into the document/delivery repo, an SME can clone that repo locally
-#   and use --artifact-repo-mode approved_document_repo to assemble a selected
-#   program-set review from approved existing artifacts without re-scanning source.
+# - approved_document_repo (default): after an all-program scan has been
+#   reviewed by an SME and merged into the document/delivery repo, use a local
+#   clone as the approved evidence source without re-scanning source.
+# - current_run: explicitly opt in with --artifact-repo-mode current_run when
+#   resolving artifacts from an active working branch; no arbitrary prior-run
+#   or remote-main fallback is allowed in this mode.
 
 program_artifact_resolution_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery

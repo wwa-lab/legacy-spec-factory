@@ -29,9 +29,9 @@ executing the skill performs thematic synthesis. There is no generic
 ```text
 Review name: <business-readable name>
 Programs file: <path>
-Program artifact root: <current-run delivery workspace or approved local clone>
+Program artifact root: <approved local clone by default or current-run root when explicitly selected>
 Output parent: <program-set review parent>
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Profile: standard_reader_first
 Source root: <optional; targeted recovery only>
 ```
@@ -42,13 +42,14 @@ call chain.
 
 ## Evidence Modes
 
-`current_run` is the default. It resolves only under the supplied current
-working artifact root. It must not silently reuse remote main, an arbitrary
-prior run, or another analyst's output.
-
-`approved_document_repo` is explicit opt-in for a supplied local clone that
-contains approved analyses. The manifest must record this mode and each reused
+`approved_document_repo` is the default. It resolves only under the supplied
+local clone of the approved document/delivery repo. The team's repo contains
+only SME-reviewed analyses, so the manifest records this mode and each reused
 program as `reused_artifact_repo`.
+
+`current_run` is explicit opt-in for a supplied active working artifact root.
+It must not silently reuse remote main, an arbitrary prior run, or another
+analyst's output.
 
 ## E2E Procedure
 

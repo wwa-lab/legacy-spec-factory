@@ -21,6 +21,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BUILDER = SCRIPT_DIR / "program_set_core_review.py"
 QUEUE = SCRIPT_DIR / "create_missing_program_scan_queue.py"
 DEFAULT_PROFILE = SCRIPT_DIR.parent / "templates" / "delivery-profile.yaml"
+DEFAULT_ARTIFACT_REPO_MODE = "approved_document_repo"
 
 
 def run_step(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -120,7 +121,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--profile", default=str(DEFAULT_PROFILE), help="delivery-profile.yaml")
     parser.add_argument("--inventory-dir")
     parser.add_argument("--working-branch")
-    parser.add_argument("--artifact-repo-mode", choices=["current_run", "approved_document_repo"], default="current_run")
+    parser.add_argument(
+        "--artifact-repo-mode",
+        choices=["current_run", "approved_document_repo"],
+        default=DEFAULT_ARTIFACT_REPO_MODE,
+        help=(
+            "Artifact source mode; approved_document_repo is the default for SME-reviewed "
+            "delivery artifacts. Use current_run explicitly for an active scan branch."
+        ),
+    )
     parser.add_argument("--core-review-profile", choices=["standard_reader_first", "minimal_reader_first"])
     parser.add_argument("--review-id")
     parser.add_argument("--flow-slug")

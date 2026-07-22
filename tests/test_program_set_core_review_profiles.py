@@ -60,6 +60,16 @@ class ProgramSetCoreReviewProfileTests(unittest.TestCase):
         )
 
         self.assertEqual(standard["core_review_profile"]["name"], "standard_reader_first")
+        self.assertEqual(
+            standard["run_profile"]["artifact_repo_mode"],  # type: ignore[index]
+            "approved_document_repo",
+        )
+        self.assertTrue(
+            all(
+                entry["run_resolution"] == "reused_artifact_repo"
+                for entry in standard["programs"]  # type: ignore[index]
+            )
+        )
         self.assertTrue(standard["core_review_profile"]["include_message_inventory"])
         self.assertEqual(minimal["core_review_profile"]["name"], "minimal_reader_first")
         self.assertFalse(minimal["core_review_profile"]["include_message_inventory"])

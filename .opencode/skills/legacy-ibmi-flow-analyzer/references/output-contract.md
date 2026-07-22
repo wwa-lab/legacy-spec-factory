@@ -173,9 +173,11 @@ Legal `run_resolution` values include:
 - `pending_source`
 - `blocked_missing_source`
 
-`reused_artifact_repo` is legal only with explicit
-`artifact_repo_mode: approved_document_repo`. The default is `current_run`; it
-must never search arbitrary historical output or remote main.
+`reused_artifact_repo` is legal with
+`artifact_repo_mode: approved_document_repo`, which is the default because the
+team's document repo contains only SME-reviewed artifacts. `current_run` is an
+explicit opt-in for active scan branches. Neither mode may search arbitrary
+historical output or silently fall back to the other mode.
 
 ### `program-set-artifact-readiness.yaml`
 

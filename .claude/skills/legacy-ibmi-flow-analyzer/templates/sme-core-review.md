@@ -130,9 +130,9 @@ reading surfaces; they do not replace the complete reader-first main sections.
 | --- | --- |
 | Folder Slug | <FLOW-SLUG>--<PROGRAM-SET-SLUG> |
 | Formal Review Filename | <folder_slug>--sme-core-review.md |
-| Artifact Root | <current-run root or approved local clone> |
-| Artifact Repo Mode | current_run / approved_document_repo |
-| Reuse Policy | current_run_only / approved_document_repo_explicit |
+| Artifact Root | <approved local clone by default or explicit current-run root> |
+| Artifact Repo Mode | approved_document_repo (default) / current_run (explicit) |
+| Reuse Policy | approved_document_repo_clone (default) / current_run_only (explicit) |
 | Core Review Profile | standard_reader_first / minimal_reader_first |
 | Program Order Semantics | SME navigation only; not a confirmed call chain |
 

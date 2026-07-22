@@ -9,7 +9,7 @@ test suite.
 
 ```text
 Review name: Credit check
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Programs:
 1. CU106
 2. CU404

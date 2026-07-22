@@ -25,7 +25,7 @@ Retain this notice in substantial copies or derived versions.
 | Primary evidence | The complete content of five `##` sections in every `<PROGRAM>-program-analysis.md`: Program Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. |
 | Preparation output | Readiness ledger, lossless source pack, normalized source facts, and pending coverage control. |
 | Formal output | Exactly one `<folder_slug>--sme-core-review.md`, written by the LLM executing this skill only after every program is ready and coverage has zero pending facts. |
-| Default policy | `current_run`; `approved_document_repo` is explicit opt-in. |
+| Default policy | `approved_document_repo`; `current_run` is explicit opt-in. |
 | Default profile | `standard_reader_first`; `minimal_reader_first` is explicit opt-in. |
 | Upstream gate | `legacy-ibmi-program-analyzer` final contract validator plus merger readiness checks. |
 | Downstream boundary | SME/Dify review. Module/BRD/spec routing requires a separately migrated compatibility contract and is not implied by this output. |
@@ -39,7 +39,9 @@ auditable, then uses the LLM already executing the skill to perform the only
 semantic step: a thematic cross-program synthesis for SME reading.
 
 In short: merge existing IBM i program-analysis artifacts through a
-program-evidence first workflow with no cross-run reuse by default.
+program-evidence first workflow. The approved document/delivery repository is
+the default source of truth because artifacts enter it only after SME review;
+`current_run` is an explicit opt-in for active scan branches.
 
 ```text
 SME program list + explicit paths
@@ -95,7 +97,7 @@ Collect these values before preparation:
 ```text
 Review name: <business-readable name>
 Programs file: <one program per line or supported CSV>
-Program artifact root: <current-run delivery workspace or approved local clone>
+Program artifact root: <approved local document-repo clone by default, or current-run root when explicitly selected>
 Project root: <delivery project root; writes under its outputs/ folder>
 Output parent: <optional explicit override; parent that will contain the generated bundle folder>
 Profile: standard_reader_first | minimal_reader_first
@@ -112,18 +114,20 @@ Artifact folder/name resolution comes from
 
 ### Artifact Repository Modes
 
-- `current_run` is the default. Resolve only under the supplied current working
-  artifact root. An arbitrary prior run, remote branch, or another analyst's
-  output is not evidence for this run.
-- `approved_document_repo` is legal only when explicitly requested. Resolve
-  only from the supplied local clone of the approved document/delivery
-  repository and record `reused_artifact_repo` in the manifest.
+- `approved_document_repo` is the default. Resolve only from the supplied local
+  clone of the approved document/delivery repository. In this workflow,
+  artifacts in that repository have completed SME review; record
+  `reused_artifact_repo` in the manifest.
+- `current_run` is explicit opt-in. Resolve only under
+  the supplied current working artifact root. An arbitrary prior run, remote
+  branch, or another analyst's output is not evidence for that run.
 
 Record the resulting value in each program's `run_resolution`, using
 `analyzed_this_run`, `reused_same_run`, `reused_artifact_repo`,
 `pending_source`, or `blocked_missing_source` as applicable.
 
-There is no implicit cross-run fallback.
+There is no implicit fallback between the approved repository and current-run
+artifact modes.
 
 Preserve the original SME-supplied programs file at its absolute path until
 final validation finishes. Preparation records that path and its SHA-256 in
@@ -217,6 +221,10 @@ python3 skills/legacy-ibmi-flow-analyzer/scripts/program_set_core_review.py buil
   --profile skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml \
   --project-root <delivery-project-root>
 ```
+
+The default assumes that `<program-artifact-root>` is a local clone of the
+SME-reviewed approved document/delivery repository. For an active scan branch,
+pass `--artifact-repo-mode current_run` explicitly.
 
 Append `--flow-slug <raw-flow-identity>` only when the caller needs an explicit
 flow identity distinct from the review name. The default raw flow identity is

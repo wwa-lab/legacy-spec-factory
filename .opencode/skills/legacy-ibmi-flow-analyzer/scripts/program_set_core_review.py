@@ -199,6 +199,7 @@ RUN_BLOCKED = "blocked_missing_source"
 
 ARTIFACT_REPO_CURRENT_RUN = "current_run"
 ARTIFACT_REPO_APPROVED_DOCUMENT = "approved_document_repo"
+DEFAULT_ARTIFACT_REPO_MODE = ARTIFACT_REPO_APPROVED_DOCUMENT
 
 DEFAULT_SOURCE_INVENTORY_DIR = Path("outputs") / "repo-scan"
 DEFAULT_PROGRAM_LIST_FILENAME = "program-list.csv"
@@ -1032,7 +1033,7 @@ def build_program_entries(
     programs: list[str],
     artifact_root: Path,
     config: dict[str, Any],
-    artifact_repo_mode: str = ARTIFACT_REPO_CURRENT_RUN,
+    artifact_repo_mode: str = DEFAULT_ARTIFACT_REPO_MODE,
 ) -> tuple[list[ProgramEntry], list[str]]:
     lookup = profile_lookup(config)
     workspace = profile_workspace(config)
@@ -1424,7 +1425,7 @@ def build_manifest(
     source_root: Path | None = None,
     inventory_dir: Path | None = None,
     program_first: bool = False,
-    artifact_repo_mode: str = ARTIFACT_REPO_CURRENT_RUN,
+    artifact_repo_mode: str = DEFAULT_ARTIFACT_REPO_MODE,
     core_review_profile: str | None = None,
     review_id: str | None = None,
     flow_slug: str | None = None,
@@ -1612,6 +1613,15 @@ def render_run_profile(manifest: dict[str, Any]) -> str:
     resolution_profile = manifest.get("program_resolution_profile", {}) or {}
     workspace = manifest.get("workspace_profile", {}) or {}
     patterns = ", ".join(str(pattern) for pattern in resolution_profile.get("program_folder_patterns", []))
+    artifact_repo_mode = run_profile.get("artifact_repo_mode") or DEFAULT_ARTIFACT_REPO_MODE
+    reuse_policy = run_profile.get("reuse_policy") or (
+        "approved_document_repo_clone"
+        if artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT
+        else "current_run_only"
+    )
+    cross_run_reuse = run_profile.get(
+        "cross_run_reuse", artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT
+    )
     return "\n".join(
         [
             "| Field | Value |",
@@ -1619,9 +1629,9 @@ def render_run_profile(manifest: dict[str, Any]) -> str:
             f"| Repo | {run_profile.get('repo') or ''} |",
             f"| Working Branch | {run_profile.get('working_branch') or ''} |",
             f"| Artifact Root | {run_profile.get('artifact_root') or ''} |",
-            f"| Artifact Repo Mode | {run_profile.get('artifact_repo_mode') or ARTIFACT_REPO_CURRENT_RUN} |",
-            f"| Reuse Policy | {run_profile.get('reuse_policy') or 'current_run_only'} |",
-            f"| Cross-Run Reuse | {str(run_profile.get('cross_run_reuse', False)).lower()} |",
+            f"| Artifact Repo Mode | {artifact_repo_mode} |",
+            f"| Reuse Policy | {reuse_policy} |",
+            f"| Cross-Run Reuse | {str(cross_run_reuse).lower()} |",
             f"| Program Folder Patterns | {patterns} |",
             f"| Program Set Review Parent | {workspace.get('program_set_review_parent') or ''} |",
         ]
@@ -2292,7 +2302,7 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     if not isinstance(profile.get("core_sections"), list) or not profile.get("core_sections"):
         findings.append("manifest core_review_profile has no core_sections")
     run_profile = manifest.get("run_profile", {}) or {}
-    artifact_repo_mode = run_profile.get("artifact_repo_mode") or ARTIFACT_REPO_CURRENT_RUN
+    artifact_repo_mode = run_profile.get("artifact_repo_mode") or DEFAULT_ARTIFACT_REPO_MODE
     by_name: dict[str, list[dict[str, Any]]] = {}
     for entry in programs:
         name = str(entry.get("normalized_name") or "")
@@ -2302,7 +2312,7 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
         by_name.setdefault(name, []).append(entry)
         if "run_resolution" not in entry and "central_lookup_result" in entry:
             findings.append(
-                f"{name} uses legacy central_lookup_result; rebuild the manifest with the no-cross-run-reuse builder"
+                f"{name} uses legacy central_lookup_result; rebuild the manifest with an explicit artifact repo mode"
             )
             continue
         resolution = entry.get("run_resolution")
@@ -2314,6 +2324,13 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             findings.append(f"{name} analyzed_this_run must use artifact_source delivery_working_branch")
         if resolution == RUN_REUSED and entry.get("artifact_source") != "delivery_working_branch":
             findings.append(f"{name} reused_same_run has invalid artifact_source")
+        if artifact_repo_mode == ARTIFACT_REPO_APPROVED_DOCUMENT and resolution in {
+            RUN_ANALYZED,
+            RUN_REUSED,
+        }:
+            findings.append(
+                f"{name} {resolution} requires artifact_repo_mode {ARTIFACT_REPO_CURRENT_RUN}"
+            )
         if resolution == RUN_ARTIFACT_REPO:
             if artifact_repo_mode != ARTIFACT_REPO_APPROVED_DOCUMENT:
                 findings.append(
@@ -4766,7 +4783,7 @@ def build_command(args: argparse.Namespace) -> int:
     if args.force_rescan_file is not None:
         raise SystemExit(
             "--force-rescan-file is no longer supported for program-flow core review. "
-            "Rebuild with no cross-run reuse and analyze the program in the current run."
+            "Use --artifact-repo-mode current_run explicitly when analyzing the program in the current run."
         )
     if args.delivery_root is not None:
         raise SystemExit(
@@ -4843,10 +4860,11 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--artifact-repo-mode",
         choices=[ARTIFACT_REPO_CURRENT_RUN, ARTIFACT_REPO_APPROVED_DOCUMENT],
-        default=ARTIFACT_REPO_CURRENT_RUN,
+        default=DEFAULT_ARTIFACT_REPO_MODE,
         help=(
-            "Use current_run for active scan branches. Use approved_document_repo when "
-            "--working-root is a local clone containing approved all-program scan artifacts."
+            "Use approved_document_repo by default when --working-root is a local clone "
+            "containing SME-reviewed artifacts. Pass current_run explicitly for active "
+            "scan branches."
         ),
     )
     build.add_argument(
@@ -4866,8 +4884,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Compatibility marker recorded in run_profile; the default workflow is already "
-            "program-evidence first. For approved document repo reuse, pass "
-            "--artifact-repo-mode approved_document_repo."
+            "program-evidence first and approved-document-repo based. For an active scan "
+            "branch, pass --artifact-repo-mode current_run explicitly."
         ),
     )
     build.add_argument("--profile", type=Path, required=True)

@@ -364,7 +364,7 @@ class ProgramSetReaderFirstCoverageTests(unittest.TestCase):
         root: Path,
         profile: str | None = None,
         programs: tuple[str, ...] = ("CU106",),
-        artifact_repo_mode: str = "current_run",
+        artifact_repo_mode: str = "approved_document_repo",
     ):
         artifact_root = root / "artifacts"
         for program in programs:

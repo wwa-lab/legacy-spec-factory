@@ -18,11 +18,11 @@ not authorize transaction-flow reconstruction.
 
 Review name: <REVIEW-NAME>
 Programs file: <PROGRAM-LIST-PATH>
-Program artifact root: <CURRENT-RUN-ARTIFACT-ROOT>
+Program artifact root: <LOCAL-APPROVED-DOCUMENT-REPO-CLONE>
 Project root (default output location): <DELIVERY-PROJECT-ROOT>
 Output parent (仅需覆盖默认 `<项目根目录>/outputs/` 时填写): <CUSTOM-OUTPUT-PARENT-OR-N/A>
 Source root (仅缺失程序定向恢复时需要): <SOURCE-ROOT-OR-N/A>
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Profile: standard_reader_first
 Flow slug: <FLOW-SLUG>
 Program-set slug (可省略，由工具稳定派生): <PROGRAM-SET-SLUG>
@@ -53,9 +53,11 @@ Optional SME context:
    final validator 和 zero-pending coverage。若程序确实没有观察到 message/
    status literal，`Message Inventory` 可以为空或缺失，但必须记录为
    no-observed-message pending，而不能伪造一条 message。
-3. 默认只读取 current_run artifact。只有我明确改为
-   `approved_document_repo` 时，才可读取指定的 approved local repo clone；
-   不要静默复用历史 run、remote main 或他人的 output。
+3. 默认只读取 `approved_document_repo` artifact。当前团队约定进入该
+   GitHub/document repo 的 program analysis 已完成 SME review，因此将其视为
+   approved evidence，并记录 `run_resolution=reused_artifact_repo`。只有我明确
+   改为 `current_run` 时，才可读取当前扫描工作区；不要在两种模式之间静默
+   fallback，也不要读取任意历史 run 或他人的 output。
 4. 每个 program 的主要语义输入必须是完整的 `<PROGRAM>-program-analysis.md`
    中五个 H2：Program Reading Summary、Calculation Logic、Validation Logic、
    Exception Handling、Message Inventory。source pack 必须无损保留，不能先压缩。
@@ -104,11 +106,11 @@ Optional SME context:
     交给 SME / Dify。
 ```
 
-To use approved evidence, change only the explicit mode and root:
+To use current-run exploratory evidence, change only the explicit mode and root:
 
 ```text
-Artifact repo mode: approved_document_repo
-Program artifact root: <LOCAL-APPROVED-DOCUMENT-REPO-CLONE>
+Artifact repo mode: current_run
+Program artifact root: <CURRENT-RUN-ARTIFACT-ROOT>
 ```
 
 That mode change must be visible in the manifest and Run Profile.

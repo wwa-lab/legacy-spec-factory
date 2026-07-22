@@ -170,7 +170,7 @@ function Get-FlowRevalidatedManifest {
         }
     }
     $root = [IO.Path]::GetFullPath($root)
-    $mode = [string](Get-ReconciliationMapValue $runProfile 'artifact_repo_mode' 'current_run')
+    $mode = [string](Get-ReconciliationMapValue $runProfile 'artifact_repo_mode' 'approved_document_repo')
     if ($mode -notin @('current_run', 'approved_document_repo')) {
         $findings.Add("current program-analysis readiness has invalid artifact repo mode: $mode")
     }

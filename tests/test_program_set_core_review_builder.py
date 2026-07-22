@@ -286,6 +286,7 @@ def build_review_fixture(temp_root: Path) -> tuple[Path, Path, dict[str, object]
         artifact_root=working_root,
         config=config,
         working_branch="develop-leo",
+        artifact_repo_mode=BUILDER.ARTIFACT_REPO_CURRENT_RUN,
         programs_file=programs_file,
     )
     manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
@@ -615,6 +616,55 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
 
             self.assertEqual(BUILDER.validate(manifest_path, review_path), [])
 
+    def test_builder_defaults_to_approved_document_repo_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            document_repo = temp_root / "legacy-modernization-delivery"
+            write_compact_artifacts(
+                document_repo / "modules" / "CAP-ID-0003-normal_program" / "CC050"
+            )
+            programs_file = temp_root / "approved-programs.txt"
+            programs_file.write_text("CC050\n", encoding="utf-8")
+
+            config = BUILDER.load_yaml(PROFILE_TEMPLATE)
+            manifest = BUILDER.build_manifest(
+                review_name="Card Auth Posting Core Review",
+                programs=["CC050"],
+                artifact_root=document_repo,
+                config=config,
+                working_branch="main",
+                programs_file=programs_file,
+            )
+
+            entry = manifest["programs"][0]  # type: ignore[index]
+            self.assertEqual(entry["run_resolution"], "reused_artifact_repo")
+            self.assertEqual(entry["artifact_source"], "approved_document_repo")
+            self.assertEqual(
+                manifest["run_profile"]["artifact_repo_mode"],  # type: ignore[index]
+                "approved_document_repo",
+            )
+            self.assertEqual(
+                manifest["run_profile"]["reuse_policy"],  # type: ignore[index]
+                "approved_document_repo_clone",
+            )
+
+    def test_current_run_remains_an_explicit_opt_in(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path, _review_path, manifest = build_review_fixture(Path(temp_dir))
+
+            self.assertEqual(
+                manifest["run_profile"]["artifact_repo_mode"],  # type: ignore[index]
+                "current_run",
+            )
+            self.assertEqual(
+                manifest["programs"][0]["run_resolution"],  # type: ignore[index]
+                "analyzed_this_run",
+            )
+            self.assertEqual(
+                BUILDER.validate_manifest(manifest),
+                [],
+            )
+
     def test_builder_can_reuse_approved_document_repo_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -887,6 +937,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 artifact_root=working_root,
                 config=config,
                 working_branch="develop-leo",
+                artifact_repo_mode=BUILDER.ARTIFACT_REPO_CURRENT_RUN,
             )
             manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
 
@@ -937,6 +988,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 artifact_root=working_root,
                 config=config,
                 working_branch="develop-leo",
+                artifact_repo_mode=BUILDER.ARTIFACT_REPO_CURRENT_RUN,
             )
             first, second = manifest["programs"]  # type: ignore[index]
 
@@ -1054,6 +1106,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 artifact_root=working_root,
                 config=config,
                 working_branch="develop-leo",
+                artifact_repo_mode=BUILDER.ARTIFACT_REPO_CURRENT_RUN,
                 program_first=True,
             )
             programs = {

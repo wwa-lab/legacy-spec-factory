@@ -9,7 +9,7 @@ symbolic; executable fixture bundles live in the repository test suite.
 
 ```text
 Review name: Credit check
-Artifact repo mode: current_run
+Artifact repo mode: approved_document_repo
 Profile: standard_reader_first
 Programs in SME navigation order:
 1. CU106

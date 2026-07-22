@@ -10,6 +10,9 @@ FLOW_ANALYZER = REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "SKILL.md"
 FLOW_OUTPUT_CONTRACT = (
     REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "references" / "output-contract.md"
 )
+FLOW_PROMPT_TEMPLATE = (
+    REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "templates" / "program-flow-prompt.md"
+)
 SME_CORE_TEMPLATE = (
     REPO_ROOT / "skills" / "legacy-ibmi-flow-analyzer" / "templates" / "sme-core-review.md"
 )
@@ -45,12 +48,17 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("The delivery repo name is configurable", skill_text)
         self.assertIn("Do not run deterministic source indexing", skill_text)
 
-    def test_flow_analyzer_defaults_to_program_evidence_first_without_cross_run_reuse(self) -> None:
+    def test_flow_analyzer_defaults_to_approved_document_repo_evidence(self) -> None:
         skill_text = FLOW_ANALYZER.read_text(encoding="utf-8")
         contract_text = FLOW_OUTPUT_CONTRACT.read_text(encoding="utf-8")
+        prompt_text = FLOW_PROMPT_TEMPLATE.read_text(encoding="utf-8")
 
         self.assertIn("program-evidence first", skill_text)
-        self.assertIn("no cross-run reuse", " ".join(skill_text.lower().split()))
+        normalized_skill = " ".join(skill_text.lower().split())
+        self.assertIn("approved_document_repo` is the default", normalized_skill)
+        self.assertIn("current_run` is explicit opt-in", normalized_skill)
+        self.assertIn("Artifact repo mode: approved_document_repo", prompt_text)
+        self.assertIn("Artifact repo mode: current_run", prompt_text)
         for text in (skill_text, contract_text):
             self.assertIn("run_resolution", text)
             self.assertIn("analyzed_this_run", text)
