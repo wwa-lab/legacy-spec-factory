@@ -202,6 +202,23 @@ reader-first section is `not_ready` and blocks the whole formal review. A
 visible and the formal review is still prohibited until final coverage and the
 strict validator pass.
 
+### `approved-artifact-requalification.yaml`
+
+This is a read-only inventory produced against a separate output directory,
+not a formal review input. It contains one row per profile-discovered program
+artifact folder, repository revision metadata, profile/hash metadata, source
+index and execution-plan hashes, validator findings, stable finding codes, and
+one of these classifications: `final_ready`,
+`core_reader_ready_pending`, `format_repairable`,
+`semantic_repair_required`, or `blocked`.
+
+`create_approved_artifact_repair_queue.py` consumes this report and writes one
+prompt per repairable program under `prompt-queue/`. `final_ready` programs are
+not queued. `blocked` programs are written to `blocked-programs.csv` and must
+receive human resolution before a prompt is created. The queue is a targeted
+repair handoff only; it does not alter the approved repository or create a
+program-set formal review.
+
 ### `program-set-reader-first-source-pack.md`
 
 The lossless source pack contains, for every ready distinct program, the

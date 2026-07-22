@@ -80,6 +80,18 @@ class CentralArtifactReuseGuidanceTests(unittest.TestCase):
         self.assertIn("delivery_workspace_profile", skill_text)
         self.assertIn("templates/delivery-profile.yaml", skill_text)
 
+    def test_flow_analyzer_documents_read_only_approved_artifact_requalification(self) -> None:
+        skill_text = FLOW_ANALYZER.read_text(encoding="utf-8")
+        profile_text = DELIVERY_PROFILE_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("Approved Artifact Requalification", skill_text)
+        self.assertIn("requalify_approved_program_artifacts.py", skill_text)
+        self.assertIn("create_approved_artifact_repair_queue.py", skill_text)
+        self.assertIn("one prompt per repairable program", " ".join(skill_text.lower().split()))
+        self.assertIn("approved_artifact_requalification_profile", profile_text)
+        self.assertIn("profile_folder_patterns_only", profile_text)
+        self.assertIn("format_repairable", skill_text)
+        self.assertIn("semantic_repair_required", skill_text)
+
     def test_sme_core_review_template_tracks_omissions_without_full_flow_sections(self) -> None:
         template_text = SME_CORE_TEMPLATE.read_text(encoding="utf-8")
 

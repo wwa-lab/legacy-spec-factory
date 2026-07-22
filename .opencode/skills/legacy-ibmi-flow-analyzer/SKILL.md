@@ -21,7 +21,7 @@ Retain this notice in substantial copies or derived versions.
 | Field | Contract |
 | --- | --- |
 | Problem solved | Merge several finalized, reader-first program analyses into one SME/Dify-ready core review without losing program facts. |
-| Required user input | Review name, program list, program artifact root, and delivery project root (the default output is `<project-root>/outputs/`). Source root is required only for targeted missing-program recovery. |
+| Required user input | Merge mode: review name, ordered program list, program artifact root, and delivery project root. Requalification mode: approved artifact root, profile, and separate output directory. Source root is required only for targeted missing-program recovery. |
 | Primary evidence | The complete content of five `##` sections in every `<PROGRAM>-program-analysis.md`: Program Reading Summary, Calculation Logic, Validation Logic, Exception Handling, and Message Inventory. |
 | Preparation output | Readiness ledger, lossless source pack, normalized source facts, and pending coverage control. |
 | Formal output | Exactly one `<folder_slug>--sme-core-review.md`, written by the LLM executing this skill only after every program is ready and coverage has zero pending facts. |
@@ -366,6 +366,56 @@ Until all readiness rows pass:
 - manifest status remains `blocked_artifact_readiness`;
 - coverage cannot become complete; and
 - `<folder_slug>--sme-core-review.md` must not exist.
+
+## Approved Artifact Requalification
+
+When the approved document repository contains artifacts created before the
+current analyzer contract matured, first run a read-only whole-repository
+requalification. This is separate from a flow merge and does not require a
+program list. Discovery is constrained by the profile's `module_roots`,
+`program_folder_patterns`, and `artifact_file_patterns`; ordinary repository
+folders and flow outputs are not scanned.
+
+```bash
+python3 skills/legacy-ibmi-flow-analyzer/scripts/requalify_approved_program_artifacts.py \
+  --artifact-root <approved-document-repo-clone> \
+  --profile skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml \
+  --output-dir <requalification-output>
+```
+
+On Windows, use `py -3` with the synced `.agents\skills\...` path. The command
+only reads the approved root and writes
+`approved-artifact-requalification.yaml` to the separate output directory.
+Every discovered program is classified as one of:
+
+- `final_ready`: final program-analyzer contract and reader-first readiness pass;
+- `core_reader_ready_pending`: the reader-first surface is usable, but non-core
+  sidecars, deep-read batches, message/RLOG evidence, or terminal status remain;
+- `format_repairable`: deterministic YAML/hash/serialization repair is needed;
+- `semantic_repair_required`: source-backed reader-first or routine analysis
+  work is needed; or
+- `blocked`: identity, trust, path, or artifact ambiguity prevents safe repair.
+
+The report records findings, stable finding codes, tier, artifact path, source
+index/execution-plan hashes, validator status, and repository revision. It is a
+measurement of the current approved repository, not an approval override.
+
+Generate a program-level repair queue only after reviewing that report:
+
+```bash
+python3 skills/legacy-ibmi-flow-analyzer/scripts/create_approved_artifact_repair_queue.py \
+  --report <requalification-output>/approved-artifact-requalification.yaml \
+  --out-dir <repair-queue-output>
+```
+
+The queue creates exactly one prompt per repairable program. It creates no
+prompt for `final_ready` programs and leaves `blocked` rows in
+`blocked-programs.csv` until a human resolves the ambiguity. Large programs
+remain one repair unit, but their prompt must resume deterministic source
+index/deep-read batches in small checkpoints (at most five routines/windows per
+checkpoint); it must not rescan the repository or compress a 30,000-line
+program into one prompt. Repairs happen in an isolated branch or clone, never
+by silently mutating the approved repository.
 
 ## LLM Synthesis Procedure
 
