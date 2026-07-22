@@ -45,9 +45,12 @@ Optional SME context:
    不得覆盖，必须先显式 archive。仅在明确给出 custom output parent 时使用
    `--output-dir`。只追加一次 `<FLOW-SLUG>--<PROGRAM-SET-SLUG>`，不要产生重复嵌套目录。
 2. 对每个 distinct program 调用/复用 legacy-ibmi-program-analyzer 的 final
-   validator。仅文件存在不代表 ready；pending_deep_read、非终态 batch、
-   placeholder、缺少 RLOG、未解决的 message description 或 validator failure
-   都必须阻断整个 review。
+   validator。早期 scan 使用 `core_reader_first_lenient`：只有主
+   `program-analysis.md` 缺失、身份错误，或五个 reader-first 核心 H2 为空/
+   placeholder 才阻断。pending_deep_read、非终态 batch、缺少 RLOG、未解决的
+   message description、sidecar drift 或其它 validator failure 要原样写入
+   `pending_findings`，先让 source pack 进入综合准备；正式 review 仍须等严格
+   final validator 和 zero-pending coverage。
 3. 默认只读取 current_run artifact。只有我明确改为
    `approved_document_repo` 时，才可读取指定的 approved local repo clone；
    不要静默复用历史 run、remote main 或他人的 output。

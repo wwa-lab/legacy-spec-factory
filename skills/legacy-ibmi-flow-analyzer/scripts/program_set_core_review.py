@@ -863,6 +863,7 @@ def assess_artifact_readiness(
     matches: list[str],
     compact_artifacts: dict[str, ArtifactStatus],
     expected_size_tier: str | None = None,
+    strict: bool = False,
 ) -> dict[str, Any]:
     """Apply the early-scan core gate and retain non-core defects as pending.
 
@@ -944,6 +945,12 @@ def assess_artifact_readiness(
 
     findings.extend(blocking_findings)
     findings.extend(pending_findings)
+    if strict:
+        # Final formal-review validation reuses the same resolver but restores
+        # the upstream contract's fail-closed behavior.  Early preparation is
+        # lenient; final handoff is not.
+        blocking_findings = list(findings)
+        pending_findings = list(findings)
     pending_findings = list(dict.fromkeys(pending_findings))
     blocking_findings = list(dict.fromkeys(blocking_findings))
     findings = list(dict.fromkeys(findings))
@@ -3489,6 +3496,7 @@ def revalidate_manifest_program_inputs(
                 matches=matches,
                 compact_artifacts=compact_artifacts,
                 expected_size_tier=detected_tier,
+                strict=True,
             )
         )
         if readiness.get("status") != "ready":

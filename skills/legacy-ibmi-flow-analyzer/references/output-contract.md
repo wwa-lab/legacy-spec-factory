@@ -152,8 +152,9 @@ formal review.
 Keep four meanings separate:
 
 - each program's `artifact_readiness.status` is `ready` or `not_ready`;
-- manifest program-set `artifact_readiness` is `ready` only when every distinct
-  program passes the upstream final contract, otherwise `not_ready`;
+- manifest program-set `artifact_readiness` is `ready` when every distinct
+  program passes the core reader-first gate; strict upstream findings may still
+  be carried as per-program `pending_findings`;
 - manifest program-set lifecycle is `blocked_artifact_readiness` or
   `ready_for_synthesis`, then `complete_exploratory` only after synthesis;
 - manifest `merge_coverage` is `blocked` while readiness is blocked, `pending`

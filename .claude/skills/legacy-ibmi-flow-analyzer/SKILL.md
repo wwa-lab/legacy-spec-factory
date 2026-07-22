@@ -160,32 +160,36 @@ for the extraction and source-fact rules.
 An artifact directory is not ready merely because files exist. Before source
 pack creation, invoke or reuse the final validator from
 `legacy-ibmi-program-analyzer` for every distinct program analysis. A program's
-`programs[].artifact_readiness.status` is `ready` only when all of the following
-hold:
+`programs[].artifact_readiness.status` is `ready` when the primary
+`program-analysis.md` belongs to the requested program and its five
+reader-first sections are present and meaningful (not an empty or placeholder
+shell). The artifact path must also be unambiguous and remain inside the
+supplied artifact root.
 
-- the upstream final contract validator passes;
-- the five reader-first sections are present, complete, and non-placeholder;
-- the program's terminal analysis status is approved or
-  `approved_with_non_blocking_tbd`;
-- no `pending_deep_read`, incomplete retained batch, non-terminal batch status,
-  missing required RLOG, or unresolved blocking coverage remains;
-- exact message/status/literal rows are synchronized, and required message
-  descriptions are not unresolved; and
-- the required main and sidecar artifacts for the program's tier agree. A
-  canonical `large_extreme_program` artifact root is treated as immutable
-  readiness context: the upstream validator is called with that expected tier,
-  so a rewritten normal summary cannot bypass retained deep-read batches.
-  When the program was completed through `legacy-ibmi-program-list-batch`,
-  consume only its terminal batch state after the precreated source-index and
-  execution-plan locks have been checked; a raw large artifact folder without
-  that terminal batch validation remains exploratory, not final-ready.
+The merger uses a **core-first lenient readiness policy** for early scans. The
+upstream final validator still runs when possible, but pending deep reads,
+incomplete retained batches, non-terminal status fields, missing non-core
+sidecars, RLOG/detail drift, and unresolved message descriptions are retained
+as `pending_findings`; they do not block source-pack preparation while the five
+reader-first sections remain useful. These pending items still prevent a
+formal review until the LLM resolves coverage and final validation passes.
+
+A canonical `large_extreme_program` artifact root remains immutable readiness
+context: the upstream validator is called with that expected tier, so a
+rewritten normal summary cannot erase the discrepancy. The discrepancy is
+pending during early intake and enforced at final delivery. When a program was
+completed through `legacy-ibmi-program-list-batch`, consume only its terminal
+batch state after its precreated locks have been checked; an unvalidated raw
+large artifact folder remains exploratory.
 
 Record each check in `program-set-artifact-readiness.yaml` and in the manifest.
+Each row includes `blocking_findings`, `pending_findings`, and
+`readiness_policy: core_reader_first_lenient`.
 The manifest program-set state is:
 
 - `review_status: ready_for_synthesis`, `artifact_readiness: ready`, and
-  `merge_coverage: pending` only when every distinct program readiness row is
-  `ready`;
+  `merge_coverage: pending` when every distinct program passes the core
+  reader-first gate, even if its readiness row contains pending non-core work;
 - `review_status: blocked_artifact_readiness`,
   `artifact_readiness: not_ready`, and `merge_coverage: blocked` when any
   requested program is missing, invalid, ambiguous, incomplete, or

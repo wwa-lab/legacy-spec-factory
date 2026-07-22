@@ -120,6 +120,7 @@ delivery_workspace_profile:
     initial_coverage_status: pending
 
   artifact_readiness_gate:
+    policy: core_reader_first_lenient
     reuse_upstream_program_final_validator: true
     terminal_statuses:
       - approved
@@ -130,10 +131,13 @@ delivery_workspace_profile:
       - Validation Logic
       - Exception Handling
       - Message Inventory
-    block_pending_deep_read: true
-    block_non_terminal_batches: true
-    block_placeholders: true
-    block_unresolved_message_descriptions: true
+    # Only a missing/meaningless core reader-first section blocks early intake.
+    # The remaining checks are preserved as pending_findings and are enforced
+    # again by the strict final validator before formal review handoff.
+    block_pending_deep_read: false
+    block_non_terminal_batches: false
+    block_placeholders: core_sections_only
+    block_unresolved_message_descriptions: false
 
   output_rules:
     analyzed_this_run: read_from_working_root

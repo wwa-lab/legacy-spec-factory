@@ -152,8 +152,9 @@ formal review.
 Keep four meanings separate:
 
 - each program's `artifact_readiness.status` is `ready` or `not_ready`;
-- manifest program-set `artifact_readiness` is `ready` only when every distinct
-  program passes the upstream final contract, otherwise `not_ready`;
+- manifest program-set `artifact_readiness` is `ready` when every distinct
+  program passes the core reader-first gate; strict upstream findings may still
+  be carried as per-program `pending_findings`;
 - manifest program-set lifecycle is `blocked_artifact_readiness` or
   `ready_for_synthesis`, then `complete_exploratory` only after synthesis;
 - manifest `merge_coverage` is `blocked` while readiness is blocked, `pending`
@@ -179,20 +180,24 @@ must never search arbitrary historical output or remote main.
 ### `program-set-artifact-readiness.yaml`
 
 Contains one readiness result per distinct program and the exact upstream
-validator outcome. `ready` requires more than file existence: the upstream
-program finalization validator must pass, terminal status must be approved (or
-approved with only non-blocking TBDs), the five reader-first sections must be
-complete, retained deep-read batches must be terminal, RLOG/message coverage
-must agree, and blocking/unresolved message descriptions must be absent.
+validator outcome. Early intake uses `core_reader_first_lenient`: `ready`
+requires the primary Markdown, correct program identity, safe/unambiguous
+resolution, and meaningful content in all five reader-first sections. Strict
+upstream findings that are outside those core sections (pending deep reads,
+retained batch completion, sidecar/RLOG drift, terminal status, and unresolved
+message descriptions) are retained in `pending_findings` rather than blocking
+source-pack preparation.
 
 The validator reconciles the main analysis with tier-required sidecars,
 including `<PROGRAM>-program-analysis-summary.yaml`,
 `<PROGRAM>-source-index.yaml`, `<PROGRAM>-routine-logic-details.yaml`, and
 `<PROGRAM>-message-inventory.yaml`.
 
-Any missing, ambiguous, placeholder, `pending_deep_read`, non-terminal batch,
-validator failure, or required sidecar mismatch is `not_ready` and blocks the
-whole formal review.
+Missing/ambiguous paths, wrong program identity, or a missing/meaningless core
+reader-first section is `not_ready` and blocks the whole formal review. A
+`ready` row may still contain pending non-core findings; those findings remain
+visible and the formal review is still prohibited until final coverage and the
+strict validator pass.
 
 ### `program-set-reader-first-source-pack.md`
 

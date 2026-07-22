@@ -79,16 +79,19 @@ Rules:
 1. Preserve exact program identity and requested navigation order. Do not infer
    a call chain from that order.
 2. For every distinct program, run or reuse the upstream final program-analysis
-   validator. Require terminal approval, all five complete reader-first H2
-   sections, complete retained batches/RLOG coverage where required, and no
-   blocking placeholder, pending deep read, or unresolved message description.
+   validator. Early intake uses `core_reader_first_lenient`: require the main
+   Markdown, correct identity, and meaningful content in all five reader-first
+   H2 sections. Terminal approval, pending deep reads, retained batch/RLOG
+   coverage, sidecar drift, and unresolved message descriptions are recorded as
+   `pending_findings`; strict final validation still gates the formal review.
 3. Treat --output-dir as the output parent. Resolve one
    <flow-slug>--<program-set-slug> folder and append it exactly once.
-4. If any program is missing or invalid, keep status
-   blocked_artifact_readiness. Create only a targeted missing/invalid-program
-   queue from fresh inventory paths, record unresolved items in
-   blocked-programs.csv, and write no formal review. Do not scan or reanalyze
-   the whole repository.
+4. If any program is missing, misidentified, or has a meaningless core
+   reader-first section, keep status `blocked_artifact_readiness`. Create only
+   a targeted missing/invalid-program queue from fresh inventory paths, record
+   unresolved items in `blocked-programs.csv`, and write no formal review. A
+   program with useful core sections but non-core pending findings remains
+   `ready_for_synthesis` and does not enter the recovery queue.
 5. When all programs are ready, run deterministic preparation. It may write the
    manifest, readiness ledger, lossless reader-first source pack, normalized
    core facts with stable source_fact_id values, and pending coverage. It must
@@ -149,12 +152,13 @@ evidence reference.
 
 ## Blocked-Path Checks
 
-Test at least one missing, placeholder-only, non-terminal, or
+Test at least one missing/placeholder-only core program and one non-terminal or
 `pending_deep_read` program. Expected behavior:
 
-- the manifest remains `blocked_artifact_readiness`;
-- the readiness ledger names the exact failed gate;
-- only the affected programs enter `missing-program-list-batch/`;
+- the missing/placeholder-only core case remains `blocked_artifact_readiness`;
+- the non-terminal/pending-deep-read case is `ready_for_synthesis` with exact
+  `pending_findings` in the readiness ledger;
+- only the blocked case enters `missing-program-list-batch/`;
 - queue entries use exact paths from fresh source inventory;
 - programs without a verified path appear in `blocked-programs.csv`;
 - no whole-repository work queue is created; and

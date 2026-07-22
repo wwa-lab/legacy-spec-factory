@@ -1,24 +1,19 @@
 <#
 Legacy Spec Factory
 Copyright 2026 Leo L Zhang
-
 Original author: Leo L Zhang
 License: Apache License 2.0
-
 Native Windows PowerShell 5.1 preparation module for the controlled LLM
 reader-first program-analysis merger. Deterministic code validates and packages
 source material; it never creates a skeleton or formal SME core review.
 #>
 #requires -version 5.1
-
 Set-StrictMode -Version 2.0
-
 Import-Module (Join-Path $PSScriptRoot 'FlowYaml.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'ProgramSetCoreReview.Markdown.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'ProgramSetCoreReview.Identity.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'ProgramSetCoreReview.Input.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'ProgramSetCoreReview.Readiness.psm1') -Force
-
 $script:RequiredArtifacts = @(
     'program-analysis.md',
     'program-analysis-summary.yaml',
@@ -315,7 +310,7 @@ function New-FlowProgramEntries {
             tier = $tier
             compact_artifacts = $compactArtifacts
             artifact_readiness = $readiness
-            follow_up = $(if ($usableArtifact) { 'none - upstream contract validation and terminal approval passed' } elseif ($hasArtifact) { 'refresh only this program analysis until all artifact-readiness findings are resolved' } elseif ($approved) { 'add or refresh this program in the approved document repo' } else { 'scan only this program in the current run' })
+            follow_up = $(if ($usableArtifact) { 'none - core reader-first readiness gate passed; inspect pending_findings before synthesis' } elseif ($hasArtifact) { 'refresh only this program analysis until core reader-first findings are resolved' } elseif ($approved) { 'add or refresh this program in the approved document repo' } else { 'scan only this program in the current run' })
         }
         $entries.Add($entry)
         $seen[$normalized] = $entry
@@ -487,6 +482,7 @@ function New-FlowCoreReviewManifest {
         run_profile = $runProfile
         program_resolution_profile = [ordered]@{ program_folder_patterns = @(Get-FlowMapValue $lookup 'program_folder_patterns' @('modules/*/{PROGRAM}')); program_name_normalization = Get-FlowMapValue $lookup 'program_name_normalization' ([ordered]@{}) }
         workspace_profile = [ordered]@{ program_set_review_parent = Get-FlowMapValue $workspace 'program_set_review_parent'; program_tier_roots = Get-FlowMapValue $workspace 'program_tier_roots' ([ordered]@{}); write_to_main = [bool](Get-FlowMapValue $workspace 'write_to_main' $false) }
+        readiness_policy = 'core_reader_first_lenient'
         source_inventory = $inventory; programs = $built.Entries; warnings = $built.Warnings
     }
 }

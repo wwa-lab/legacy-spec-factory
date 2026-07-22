@@ -72,13 +72,13 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             (
                 "pending_deep_read",
                 mark_pending_deep_read,
-                "not_ready",
+                "ready",
                 ("pending_deep_read",),
             ),
             (
                 "nonterminal_retained_batch",
                 add_nonterminal_deep_read_batch,
-                "not_ready",
+                "ready",
                 ("deep-read-batch", "pending"),
             ),
             (
@@ -90,7 +90,7 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             (
                 "unresolved_blocking_message_description",
                 mark_unresolved_message_description,
-                "not_ready",
+                "ready",
                 ("message", "unresolved"),
             ),
         )
@@ -118,7 +118,7 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
                     "pending" if expected_status == "ready" else "blocked",
                 )
 
-    def test_large_program_shell_checkpoint_is_not_flow_ready(self) -> None:
+    def test_large_program_shell_checkpoint_is_ready_with_pending_findings(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             artifact_root = root / "artifacts"
@@ -140,10 +140,10 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             )
 
             readiness = manifest["programs"][0]["artifact_readiness"]
-            self.assertEqual(readiness["status"], "not_ready")
-            self.assertEqual(readiness["validator_status"], "failed")
+            self.assertEqual(readiness["status"], "ready")
+            self.assertEqual(readiness["validator_status"], "passed_with_pending")
             self.assertIn("deep-read-batch", json.dumps(readiness).lower())
-            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
+            self.assertEqual(manifest["review_status"], "ready_for_synthesis")
 
     def test_large_tier_path_cannot_be_downgraded_by_summary_yaml(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -171,10 +171,10 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             )
 
             readiness = manifest["programs"][0]["artifact_readiness"]
-            self.assertEqual(readiness["status"], "not_ready")
-            self.assertEqual(readiness["validator_status"], "failed")
+            self.assertEqual(readiness["status"], "ready")
+            self.assertEqual(readiness["validator_status"], "passed_with_pending")
             self.assertIn("large-program tier contract mismatch", json.dumps(readiness).lower())
-            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
+            self.assertEqual(manifest["review_status"], "ready_for_synthesis")
 
     def test_upstream_validator_status_distinguishes_not_run_passed_and_failed(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -201,7 +201,7 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             failed = self.build_manifest(Path(temp_dir), mark_pending_deep_read)[
                 "programs"
             ][0]["artifact_readiness"]
-            self.assertEqual(failed["validator_status"], "failed")
+            self.assertEqual(failed["validator_status"], "passed_with_pending")
 
     def test_generic_artifact_fallback_rejects_another_program_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -248,7 +248,7 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             self.assertIn("identity", json.dumps(readiness).lower())
             self.assertIn("cu999", json.dumps(readiness).lower())
 
-    def test_summary_and_markdown_terminal_status_conflict_is_rejected(self) -> None:
+    def test_summary_and_markdown_terminal_status_conflict_is_pending(self) -> None:
         def conflict(fixture) -> None:
             summary = json.loads(fixture.summary_yaml.read_text(encoding="utf-8"))
             summary["analysis_status"] = "draft"
@@ -260,9 +260,26 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             manifest = self.build_manifest(Path(temp_dir), conflict)
             readiness = manifest["programs"][0]["artifact_readiness"]
-            self.assertEqual(readiness["status"], "not_ready")
+            self.assertEqual(readiness["status"], "ready")
             self.assertIn("conflicting", json.dumps(readiness).lower())
             self.assertEqual(readiness["analysis_status"], "draft")
+
+    def test_missing_non_core_sidecars_are_pending_when_core_markdown_is_useful(self) -> None:
+        def remove_sidecars(fixture) -> None:
+            fixture.summary_yaml.unlink()
+            fixture.source_index_yaml.unlink()
+            fixture.routine_index_markdown.unlink()
+            fixture.message_inventory_yaml.unlink()
+            fixture.routine_details_markdown.unlink()
+            fixture.routine_details_yaml.unlink()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest = self.build_manifest(Path(temp_dir), remove_sidecars)
+            readiness = manifest["programs"][0]["artifact_readiness"]
+            self.assertEqual(readiness["status"], "ready")
+            self.assertEqual(manifest["review_status"], "ready_for_synthesis")
+            self.assertTrue(readiness["pending_findings"])
+            self.assertIn("non-core", json.dumps(readiness).lower())
 
     def test_readiness_artifact_has_one_row_per_distinct_normalized_program(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

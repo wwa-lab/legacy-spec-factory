@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import subprocess
 import sys
 import tempfile
@@ -18,7 +17,7 @@ INTAKE = REPO_ROOT / "scripts/prepare-program-set-core-review.py"
 
 
 class ProgramSetCoreReviewIntakeTests(unittest.TestCase):
-    def test_one_step_intake_creates_actionable_recovery_package_for_semantic_gate_failure(
+    def test_one_step_intake_keeps_semantic_gap_pending_without_recovery_queue(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -92,62 +91,13 @@ class ProgramSetCoreReviewIntakeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             bundle = next(path for path in output_dir.iterdir() if path.is_dir())
             recovery_dir = bundle / "missing-program-list-batch"
-            self.assertTrue((recovery_dir / "recovery-plan.md").is_file())
-            self.assertTrue((recovery_dir / "recovery-status.yaml").is_file())
-            self.assertTrue(
-                (recovery_dir / "prompt-queue" / "0001-CU106.md").is_file()
-            )
-            self.assertTrue(
-                (recovery_dir / "subagent-queue" / "0001-CU106.md").is_file()
-            )
-            self.assertTrue((recovery_dir / "kiro-parallel-runner-prompt.md").is_file())
-            self.assertIn(
-                "## Flow-merge recovery context",
-                (recovery_dir / "subagent-queue" / "0001-CU106.md").read_text(
-                    encoding="utf-8"
-                ),
-            )
-            self.assertIn(
-                "Resume semantic deep-read",
-                (recovery_dir / "recovery-plan.md").read_text(encoding="utf-8"),
-            )
-            with (recovery_dir / "program-list-status.csv").open(
-                "r", encoding="utf-8", newline=""
-            ) as handle:
-                recovery_row = next(csv.DictReader(handle))
-            self.assertEqual(
-                Path(recovery_row["output_dir"]).resolve(), fixture.analysis_dir.resolve()
-            )
-            self.assertEqual(recovery_row["scaffold_status"], "present")
-            self.assertFalse(
-                (
-                    artifact_root
-                    / "modules"
-                    / "CAP-ID-0003-normal_program"
-                    / "CU106"
-                ).exists()
-            )
+            self.assertFalse(recovery_dir.exists())
             self.assertFalse(any(bundle.glob("*--sme-core-review.md")))
             manifest = (bundle / "program-set-core-input-manifest.yaml").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("review_status: blocked_artifact_readiness", manifest)
-
-            # Simulate the targeted worker completing the repair in the path
-            # handed to it. The next build must see one artifact directory,
-            # not an old invalid copy plus a second tier-derived copy.
-            write_finalized_program_artifacts(Path(recovery_row["output_dir"]), "CU106")
-            rerun = subprocess.run(
-                intake_command,
-                text=True,
-                capture_output=True,
-            )
-            self.assertEqual(rerun.returncode, 0, rerun.stderr)
-            self.assertFalse(recovery_dir.exists())
-            rerun_manifest = (bundle / "program-set-core-input-manifest.yaml").read_text(
-                encoding="utf-8"
-            )
-            self.assertIn("review_status: ready_for_synthesis", rerun_manifest)
+            self.assertIn("review_status: ready_for_synthesis", manifest)
+            self.assertIn("pending_deep_read", manifest)
 
     def test_one_step_intake_uses_outputs_under_project_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -870,7 +870,7 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
                 findings,
             )
 
-    def test_builder_marks_missing_normal_program_routine_logic_details_pending(self) -> None:
+    def test_builder_keeps_missing_normal_program_routine_logic_as_pending(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             working_root = temp_root / "delivery-work"
@@ -891,12 +891,13 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             manifest_path, review_path = BUILDER.write_build_outputs(manifest, output_dir)
 
             entry = manifest["programs"][0]
-            self.assertEqual(manifest["review_status"], "blocked_artifact_readiness")
-            self.assertEqual(entry["run_resolution"], "pending_source")
-            self.assertIsNone(entry["artifact_root"])
-            self.assertEqual(entry["artifact_readiness"]["status"], "not_ready")
+            self.assertEqual(manifest["review_status"], "ready_for_synthesis")
+            self.assertEqual(entry["run_resolution"], "analyzed_this_run")
+            self.assertIsNotNone(entry["artifact_root"])
+            self.assertEqual(entry["artifact_readiness"]["status"], "ready")
+            self.assertTrue(entry["artifact_readiness"]["pending_findings"])
             self.assertFalse(review_path.exists())
-            self.assertFalse((manifest_path.parent / "program-set-core-facts.yaml").exists())
+            self.assertTrue((manifest_path.parent / "program-set-core-facts.yaml").exists())
 
     def test_validator_rejects_missing_program_rows_and_full_flow_sections(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
