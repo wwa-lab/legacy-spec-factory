@@ -1,3 +1,9 @@
+# Historical, Non-Active Example
+
+> This v0.1 transaction-flow example is retained for provenance only. It is
+> not an input, output, or acceptance example for the active v0.4.0 Reader-First
+> Program Analysis Merger.
+
 # Flow Analysis: Nightly Card-Transaction Reconciliation (FLOW-NIGHTLY-RECON-001)
 
 ## Metadata

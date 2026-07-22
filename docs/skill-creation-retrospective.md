@@ -52,18 +52,21 @@
 
 更好的起点是具体任务：
 
-> SME 给了一个程序列表，希望我们把这些程序的 Calculation Logic、Validation Logic、Exception Handling、Message Inventory 合并成一个紧凑的 review 文档，同时不能丢掉任何 SME 点名的程序。
+> SME 给了一个程序列表，希望我们把这些程序的 Program Reading Summary、Calculation Logic、Validation Logic、Exception Handling、Message Inventory 完整输入合并成一个可追溯的 review 文档，同时不能丢掉任何 SME 点名的程序或事实。
 
 这就清楚多了。
 
 从这个真实任务出发，我们能推导出 skill 的边界：
 
 - 它不是重新分析每个程序。
-- 它应该优先复用已有 program analysis artifact。
+- 它应该验证并使用每份 finalized `program-analysis.md` 的五个
+  reader-first H2 完整内容。
 - 它不能因为某个 artifact 缺失就静默跳过程序。
-- 它要产出 `program-set-sme-core-review.md`。
-- 它要保留 completeness ledger。
-- 它不能默认生成 full transaction flow，除非用户明确要求。
+- 它要产出唯一命名的
+  `<folder_slug>/<folder_slug>--sme-core-review.md`，不保留 generic alias。
+- 它要保留 completeness ledger 与 zero-pending fact coverage。
+- 它不能生成 full transaction flow、业务规则或 modernization decisions；
+  这些需要另行受控工作流。
 
 这就是 `legacy-ibmi-flow-analyzer` 这类 skill 的核心经验：不是让 AI “多分析一点”，而是让 AI 在正确的层级上做正确的事。
 
@@ -155,7 +158,11 @@ description: ...
 - 关键例外
 - 在整个链路中的位置
 
-比如 flow analyzer 的 description 会明确说：用于把多个 IBM i program-analysis artifacts 合并成 SME program-set core review；默认是 program-evidence first；支持 artifact reuse、force refresh、lookup status；full transaction-flow analysis 只在单独明确请求时使用。
+比如 flow analyzer 的 description 会明确说：用于验证多个 finalized
+IBM i `program-analysis.md`，以完整 reader-first 内容为主要输入，由执行
+skill 的 LLM 合并成唯一 SME/Dify Core Review；默认限定
+`current_run`，仅在显式选择时复用 `approved_document_repo`；完整
+transaction-flow analysis 不在该 skill 契约内。
 
 这不是啰嗦，这是在降低误触发和误执行的风险。
 

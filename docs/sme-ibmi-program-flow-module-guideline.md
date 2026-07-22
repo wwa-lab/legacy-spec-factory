@@ -1,5 +1,14 @@
 # SME IBM i Program / Flow / Module Review Guideline
 
+> **v0.4.0 flow-analyzer routing note:** the active
+> `legacy-ibmi-flow-analyzer` is now the Reader-First Program Analysis Merger,
+> not a full transaction-flow reconstructor. Flow-related sections below that
+> request compact-first input, generic `program-set-sme-core-review.md`, or
+> Nodes/Edges/Replay/Lineage output are historical and non-active. Use
+> [`flow-skill-e2e-guideline.md`](flow-skill-e2e-guideline.md) and the canonical
+> merger prompt/template instead. Program-analyzer and module-analyzer guidance
+> remains applicable where it does not depend on that retired flow contract.
+
 This guideline explains how SMEs and analysts should use
 `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, and
 `legacy-ibmi-module-analyzer` when company LLM token budget is limited and one
@@ -42,63 +51,31 @@ For interrupted runs or cross-session handoff, use
   [`normal`](sme-ibmi-program-analyzer-normal-guideline.md)、
   [`complex`](sme-ibmi-program-analyzer-complex-guideline.md)、
   [`large`](sme-ibmi-program-analyzer-large-guideline.md)。
-- 常用短 prompt 卡片仍可参考
-  [`sme-ibmi-analysis-prompts.md`](sme-ibmi-analysis-prompts.md)。
-- 只看一个程序，就跑 `legacy-ibmi-program-analyzer`。
-- 看一个业务交易从入口到落库，就跑 `legacy-ibmi-flow-analyzer`。
-- 看多个 flow 是否能组成一个可交付业务模块，就跑
-  `legacy-ibmi-module-analyzer`。
-- 内部 LLM 一次最多读 5 个 routine，所以必须先建 `source-index.yaml`
-  并判断 `normal_program` / `complex_normal_program` /
-  `large_extreme_program`。普通程序默认轻量产出；只有复杂或极限场景才加
-  sidecars 和分批 deep read。
-- flow 的默认现场工作流是 program-evidence first：SME 一次输入一个
-  program flow 时，先把每一个 program resolve 成合格的 program-analysis
-  evidence。本次 program-flow 默认不做 cross-run reuse：每个 distinct program
-  都从当前 source repo 分析并生成 current-run artifacts；同一个 program 在同一
-  批 flow 里重复出现时，只复用本次前面已经产出的 artifact。normal program
-  需要 `program-analysis.md`、`program-analysis-summary.yaml`、
-  `source-index.yaml`、`routine-index.md`、`message-inventory.yaml`。complex /
-  large program 还要保留 `routine-logic-details.md`、
-  `routine-logic-details.yaml`、`deep-read-plan.md`、
-  `all-routine-coverage-ledger.md` 和
-  `routine-logic-details/deep-read-batch-*.md` 等必要分批证据。然后才用这些
-  current-run program-level artifacts 组装 `program-set-sme-core-review.md`。
-- flow 和 module 不重新吞多个完整源码，也不拼多个完整 Markdown；它们消费
-  已完成的 program/flow artifacts。`program-set-sme-core-review.md` 只能在
-  每个 SME-provided program 至少达到可支撑四个核心区的证据深度后生成。
-- 旧 delivery artifacts 不再是 program-flow 默认 evidence source。不同人或不同
-  branch 的差异交给 Git diff / PR review 比较，不在本次 flow assembly 前静默复用。
-  `@` 是 program identity 的一部分，所以 `@CU118` 和 `CU118` 不互相命中。
-- 如果 SME 一次输入多个 program flow，也支持，但要拆成多个 flow block。
-  每个 flow block 有自己的 review name、program list 和输出 folder：
-  `modules/CAP-ID-0004-program_set_reviews/{review_slug}/`。同一批 flow
-  可以共用一个 `develop-<person>` branch 和一个 PR；不要把不同业务 flow
-  混成一个 `program-set-sme-core-review.md`。
-- 每次 program-flow 分析前，先查 source repo 默认 cache：
-  `<source-root>/outputs/repo-scan/program-list.csv` 和 `scan-summary.yaml`。
-  如果 `scan-summary.yaml.source_revision_key` 和当前 clean Git source HEAD
-  一致，就复用 `program-list.csv` 定位 source path 和 tier；如果 cache
-  不存在、stale，或 source code dirty，才先跑一次 repo-level inventory scan。
-- 团队应先从
-  `skills/legacy-ibmi-flow-analyzer/templates/delivery-profile.yaml` 复制一份
-  delivery profile。SME/engineer 每次只需要提供
-  `Delivery working branch: develop-<person>`、review name、source repo path
-  和 program list。
-  如果 `develop-<person>` 不存在，就从 `origin/main` 创建；本次 program analysis
-  输出写到这个 branch 的 tier folders。
-- program flow 的稳定输出由 program analyzer + builder + validator 一起固定：
-  先逐个 program 生成足够深度的 program-level artifacts，再用
-  `scripts/build-program-set-core-review.py`（Windows/Cline 通过
-  `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py build`）生成
-  `program-set-core-input-manifest.yaml` 和 `program-set-sme-core-review.md`
-  骨架；填完四个核心区后，再跑
-  `scripts/validate-program-set-core-review.py`（Windows/Cline 通过
-  `py -3 .agents\skills\legacy-ibmi-flow-analyzer\scripts\program_set_core_review.py validate`），确保没有漏 program，也没有
-  混入 full flow 的 Nodes/Edges/Replay 等章节。
-- SME review 的第一屏要能看到 calculation logic、validation logic、
-  exception handling、message inventory、file I/O / SQL state changes，以及
-  哪些地方仍然是 TBD。
+- 单程序分析使用 `legacy-ibmi-program-analyzer`；多个 finalized program
+  analyses 的 SME core review 使用 `legacy-ibmi-flow-analyzer` Reader-First
+  Merger；多个已批准 review 的模块级综合使用 `legacy-ibmi-module-analyzer`。
+- `legacy-ibmi-flow-analyzer` 不再提供 full transaction-flow reconstruction。
+  如果需求是调用图、Replay 或 Lineage，应另行选择并批准专用工作流，不能在
+  Program Analysis Merger 中补造。
+- 每个 program 必须先通过 upstream final validator，并在最终
+  `program-analysis.md` 中完整提供 Program Reading Summary、Calculation
+  Logic、Validation Logic、Exception Handling、Message Inventory 五个 H2。
+- Merger 默认只用 `approved_document_repo` artifact；只有显式选择
+  `current_run` 才能读取 active delivery workspace。`@` 等前缀
+  是 program identity 的一部分。
+- Deterministic builder 只生成 manifest、readiness、无损 source pack、
+  normalized `source_fact_id` facts 和 pending coverage，不能写 review 骨架。
+  执行 skill 的 LLM 读取完整 source pack 后做主题综合，并写唯一
+  `<folder_slug>--sme-core-review.md`。
+- 任一 program 缺失或未通过 readiness 时，整个 set 保持
+  `blocked_artifact_readiness`。仅根据 fresh inventory 为受影响 program 建
+  targeted queue；无可信路径的写 `blocked-programs.csv`，不得全库重扫，
+  也不得生成 partial formal review。
+- `standard_reader_first` 默认保留主阅读路径中的 Message Inventory；
+  `minimal_reader_first` 只能显式选择，且仍要在 Message Coverage Control
+  保留所有 exact message facts、evidence、IDs 和 anchors。
+- 最终必须对 manifest、source pack、facts、coverage、formal review 做五方
+  对账；SME list 顺序只是 navigation，不能写成 confirmed call chain。
 
 ## One-Sentence Rule
 
@@ -112,9 +89,9 @@ evidence needs require it.
 | Scenario | Use | SME question it answers | Main review surface |
 | --- | --- | --- | --- |
 | One program needs review | `legacy-ibmi-program-analyzer` | What does this program calculate, validate, update, call, and message? | `program-analysis.md` plus core artifacts; optional sidecars only when triggered |
-| SME gives a program flow/list for core review | `legacy-ibmi-flow-analyzer` | What are the combined Calculation Logic, Validation Logic, Exception Handling, and Message Inventory across these programs? | `program-set-sme-core-review.md` |
-| SME gives multiple program flows for core review | `legacy-ibmi-flow-analyzer` | What are the core logic summaries for each named flow without mixing business transactions? | One `{review_slug}/program-set-sme-core-review.md` per flow |
-| Full transaction flow analysis is explicitly requested | `legacy-ibmi-flow-analyzer` | How does one business event move across programs, files, SQL, messages, and error paths? | `flow-<FLOW-SLUG>.md` |
+| SME gives a program set/list for core review | `legacy-ibmi-flow-analyzer` | What source-backed calculation, validation, exception, and exact message themes appear across these finalized analyses? | One `<folder_slug>/<folder_slug>--sme-core-review.md` plus readiness/source-pack/fact/coverage controls |
+| SME gives multiple named program sets | `legacy-ibmi-flow-analyzer` once per set | What are the core themes for each set without mixing scopes or losing facts? | One unique bundle and review per set |
+| Full transaction flow analysis is requested | Not `legacy-ibmi-flow-analyzer` v0.4.0 | Which separately authorized workflow can prove calls, runtime order, replay, or lineage? | A separately governed artifact; never add full-flow sections to the merger review |
 | Multiple flows form a module | `legacy-ibmi-module-analyzer` | Is this business module covered enough for BRD/spec handoff? | `module-overview.md`, `03-program-flow.md`, `04-data-flow.md`, `module-review-checklist.md` |
 
 Use the smallest layer that answers the SME question. Do not start at module
@@ -124,26 +101,27 @@ level when the actual question is about one program or one transaction.
 
 1. Read no more than five routine bodies in one LLM turn.
 2. Never paste a full large RPGLE / SQLRPGLE source member into a prompt.
-3. Never concatenate multiple full `program-analysis.md` or `flow.md` files.
-4. For program-flow core review, resolve every SME-provided program to
-   current-run program-analysis evidence first: analyze every distinct program
-   from source, and reuse only artifacts produced earlier in the same run/batch.
-5. Use core compact artifacts first:
-   - `program-analysis-summary.yaml`
-   - `source-index.yaml`
-   - `routine-logic-details.yaml`
-   - `message-inventory.yaml`
-6. Add optional sidecars only when triggered:
+3. The merger preserves the complete five reader-first H2 sections from every
+   finalized `program-analysis.md` in a lossless source pack, then synthesizes;
+   it does not concatenate complete files into the formal review.
+4. Resolve every SME-provided program to a final-validator-passing artifact.
+   Use `approved_document_repo` by default and `current_run` only when explicit.
+5. Treat `program-analysis-summary.yaml`, `source-index.yaml`,
+   `routine-logic-details.yaml`, and `message-inventory.yaml` as readiness and
+   reconciliation support, not as replacements for the main five sections.
+6. Add optional sidecars only when the upstream program tier requires them:
    - `deep-read-plan.md` and `all-routine-coverage-ledger.md` when more than
      one five-routine batch is needed.
    - `file-io-inventory.yaml` when file I/O is dense or state-changing.
    - `field-mutation-matrix.yaml` when persisted field mutations are observed.
    - `sql-inventory.yaml` when embedded SQL / SQLRPGLE evidence is observed.
-7. Open human-readable Markdown only for targeted SME clarification.
+7. The executing skill LLM must read the whole lossless source pack before
+   synthesis; early compact-first summarization is not allowed.
 8. Treat `indexed_only` as structure evidence, not confirmed behavior.
 9. Treat `deep_read` as the minimum evidence level for strong logic claims.
-10. If a flow or module needs a routine that is still `indexed_only`, route
-   back to program analysis for the next five-routine batch.
+10. Any state-impacting routine still `indexed_only`, any pending deep read, or
+    any non-terminal batch blocks merger readiness and routes only that program
+    back to program analysis.
 
 ## Program Tier Rules
 
@@ -723,123 +701,64 @@ SME review layout 必须优先展示:
 请保持简洁，重点支持 SME 做判断。
 ```
 
-### Step 5: Flow Assembly
+### Step 5: Reader-First Program Analysis Merge
 
-Use this after every in-scope program has at least enough compact artifacts to
-support the flow path.
-
-Prompt:
-
-```text
-Use legacy-ibmi-flow-analyzer to assemble one business transaction flow.
-
-Flow slug: <FLOW-SLUG>
-Trigger model: <batch job | menu | subfile | F-key | DB trigger | scheduler | API/remote>
-Entry point: <program/menu/job/API>
-Intent: <standalone_exploratory | chain_ready>
-
-Use present compact program artifacts only. For normal programs, the core
-artifacts may be enough; optional sidecars are required only when triggered or
-when the flow claim needs them:
-<list program artifact directories>
-
-Token constraint:
-- Do not concatenate full program-analysis Markdown.
-- Do not re-analyze routine bodies inline.
-- If a flow edge depends on an indexed_only routine, record the gap and route
-  only that program/routine batch back to program analyzer.
-
-Output must include:
-- Transaction Call Map
-- Flow Replay Path
-- Cross-Program Field Lineage
-- Flow Persistence Matrix
-- Exception Propagation Chain
-- Message carry-forward
-- Missing program/routine artifact list
-- SME questions
-```
-
-中文 Prompt:
+Use this only after every requested program passes the upstream finalization
+gate. The complete five reader-first sections in each final
+`program-analysis.md` are the semantic primary input.
 
 ```text
-请使用 legacy-ibmi-flow-analyzer 组装一个 business transaction flow。
+Use legacy-ibmi-flow-analyzer v0.4.0.
 
-Flow slug: <FLOW-SLUG>
-Trigger model: <batch job | menu | subfile | F-key | DB trigger | scheduler | API/remote>
-Entry point: <program/menu/job/API>
-Intent: <standalone_exploratory | chain_ready>
+Review name: <REVIEW-NAME>
+Programs in SME navigation order: PROGRAM_A, PROGRAM_B, PROGRAM_C
+Program artifact root: <CURRENT-RUN-ROOT>
+Output parent: <PROGRAM-SET-REVIEW-PARENT>
+Profile: standard_reader_first
+Artifact repo mode: approved_document_repo
 
-只使用已经存在的 compact program artifacts。对于 normal program，核心
-artifacts 通常就够；optional sidecars 只有被触发，或 flow claim 需要时才
-必须提供:
-<program artifact directories 列表>
+Run readiness for every distinct program. When all are ready, let deterministic
+tooling prepare the lossless five-section source pack, normalized source_fact_id
+facts, and pending coverage. It must write no review and call no external LLM.
 
-Token 限制:
-- 不要拼接完整 program-analysis Markdown。
-- 不要在 flow 层重新分析 routine body。
-- 如果某个 flow edge 依赖 indexed_only routine，请记录 gap，并只把那个
-  program / routine batch 路由回 program analyzer。
+Then, as the LLM executing the skill, synthesize cross-program themes into one
+<folder_slug>--sme-core-review.md. Complete every fact as included, merged, or
+justified excluded_non_core with real review anchors; no pending fact may remain.
 
-输出必须包含:
-- Transaction Call Map
-- Flow Replay Path
-- Cross-Program Field Lineage
-- Flow Persistence Matrix
-- Exception Propagation Chain
-- Message carry-forward
-- Missing program/routine artifact list
-- SME questions
+Treat SME program order as navigation only, not a call chain. Do not include
+Trigger Inventory, Nodes, Edges, Transaction Call Map, Replay, Persistence,
+Lineage, UI Surfaces, Capability Seeds, or SME Checklist. Run five-way
+manifest/source-pack/facts/coverage/review validation before handoff.
 ```
 
-### Step 6: Flow Repair Batch
+### Step 6: Targeted Program Readiness Repair
 
-Use this when flow assembly exposes missing routine evidence.
-
-Prompt:
+If any program is missing or invalid, write no formal review. From a fresh
+inventory, queue only the affected programs. Put programs without a verified
+path in `blocked-programs.csv`; do not guess paths or launch a whole-repository
+scan.
 
 ```text
-Repair only the missing evidence for this flow.
+Use legacy-ibmi-program-analyzer to finalize exactly one queued program:
+<PROGRAM_NAME>
 
-Flow: <FLOW-SLUG>
-Missing or unsafe claim:
-<claim>
-
-Affected program: <PROGRAM_NAME>
-Affected routines from flow analyzer:
-<routine names>
-
-Run legacy-ibmi-program-analyzer for at most 5 routine bodies.
-Update compact program artifacts.
-Then update the flow only for the affected edge/data/error/message claim.
-
-Do not restart the whole flow.
+Use only its verified source path. Complete the five reader-first H2 sections,
+all required RLOG/deep-read batches, and blocking message descriptions. Run the
+upstream final validator. Do not analyze another program.
 ```
 
-中文 Prompt:
-
-```text
-请只修复这个 flow 缺失的证据，不要重跑整个 flow。
-
-Flow: <FLOW-SLUG>
-缺失或不安全的 claim:
-<claim>
-
-受影响 program: <PROGRAM_NAME>
-flow analyzer 指出的受影响 routines:
-<routine names>
-
-请运行 legacy-ibmi-program-analyzer，本轮最多读取 5 个 routine body。
-更新 compact program artifacts。
-然后只更新这个 flow 里受影响的 edge / data / error / message claim。
-
-不要重启整个 flow analysis。
-```
+After all targeted repairs pass, rerun normal merger preparation from the
+original program list. Never hand-edit readiness or patch a partial review.
 
 ### Step 7: Module Assembly
 
 Use this when multiple approved or reviewable flows belong to one business
 module.
+
+The v0.4.0 `<folder_slug>--sme-core-review.md` is not a legacy full-flow
+artifact and must not be passed directly to the current module-analyzer flow
+input. Use only artifacts accepted by that skill's own contract until a
+separate compatibility migration is implemented and validated.
 
 Prompt:
 

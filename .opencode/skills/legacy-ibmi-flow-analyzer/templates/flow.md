@@ -1,3 +1,9 @@
+# Historical, Non-Active Template
+
+> Retained for provenance of the former transaction-flow analyzer. The active
+> merger uses `sme-core-review.md`; do not instantiate this template during a
+> v0.4.0 merger run.
+
 # Flow Analysis: [Business Event Name] (FLOW-[SLUG]-[NNN])
 
 ## Calculation Logic

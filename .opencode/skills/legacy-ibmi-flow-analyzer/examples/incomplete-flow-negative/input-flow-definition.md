@@ -1,3 +1,8 @@
+# Historical, Non-Active Example
+
+> Retained for provenance of the former transaction-flow analyzer. Use the
+> active `reader-first-merger-blocked` example for v0.4.0 behavior.
+
 # Input: Flow Definition (Incomplete — Negative Case)
 
 **Capability / Module:** Order Submission (ORDER-SUBMIT module)

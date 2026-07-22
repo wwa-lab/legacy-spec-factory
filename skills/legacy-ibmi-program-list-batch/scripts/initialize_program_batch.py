@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import re
 import subprocess
 import sys
 from collections import Counter
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 
@@ -18,6 +19,9 @@ STATUS_COLUMNS = [
     "batch_status",
     "validator_status",
     "scaffold_status",
+    "source_index_sha256",
+    "deep_read_execution_plan_path",
+    "deep_read_execution_plan_sha256",
     "output_dir",
     "prompt_path",
     "subagent_prompt_path",
@@ -151,6 +155,48 @@ def safe_filename(value: str) -> str:
     return cleaned or "program"
 
 
+def program_artifact_filename(member: str, base_name: str) -> str:
+    """Return the portable canonical artifact name used by the source indexer."""
+
+    return f"{safe_filename(member.upper())}-{base_name}"
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def scaffold_execution_lock(
+    *,
+    member: str,
+    size_tier: str,
+    output_dir: str,
+) -> dict[str, str]:
+    """Capture the deterministic large-program allocation before semantic work.
+
+    The plan and source index are editable analysis artifacts, so a final gate
+    needs a copy of their initial byte fingerprints outside the program folder.
+    Empty values deliberately mean that no trustworthy precreated lock exists;
+    terminal validation will then refuse a large-program completion.
+    """
+
+    lock = {
+        "source_index_sha256": "",
+        "deep_read_execution_plan_path": "",
+        "deep_read_execution_plan_sha256": "",
+    }
+    if size_tier.strip() != "large_extreme_program" or not output_dir:
+        return lock
+    output_path = Path(output_dir)
+    source_index_path = output_path / program_artifact_filename(member, "source-index.yaml")
+    plan_path = output_path / program_artifact_filename(member, "deep-read-execution-plan.yaml")
+    if source_index_path.is_file():
+        lock["source_index_sha256"] = file_sha256(source_index_path)
+    if plan_path.is_file():
+        lock["deep_read_execution_plan_path"] = plan_path.name
+        lock["deep_read_execution_plan_sha256"] = file_sha256(plan_path)
+    return lock
+
+
 def looks_like_windows_path(value: str) -> bool:
     return "\\" in value or bool(re.match(r"^[A-Za-z]:", value))
 
@@ -180,6 +226,32 @@ def local_join(root: str, relative_path: str) -> Path:
     return path
 
 
+def recovery_artifact_output_dir(
+    delivery_root: str | None,
+    candidate_artifact_root: str,
+) -> str:
+    """Resolve a flow-recovery target without accepting an escaping path."""
+
+    raw = candidate_artifact_root.strip()
+    if not raw:
+        return ""
+    windows_path = PureWindowsPath(raw)
+    posix_path = PurePosixPath(raw.replace("\\", "/"))
+    parts = list(posix_path.parts)
+    if (
+        not delivery_root
+        or Path(raw).is_absolute()
+        or windows_path.drive
+        or windows_path.root
+        or not parts
+        or any(part in {"", ".", ".."} for part in parts)
+    ):
+        raise ValueError(
+            "candidate_artifact_root must be a non-empty relative path under --delivery-root"
+        )
+    return join_display(delivery_root, *parts)
+
+
 def markdown_code(value: str) -> str:
     text = value or ""
     if not text:
@@ -204,10 +276,13 @@ def tier_root(size_tier: str, tier_roots: dict[str, str] | None = None) -> str:
 def validation_policy(mode: str, member: str) -> str:
     scaffold_check = (
         f"- Before writing final row status, open the generated "
-        f"{member}-program-analysis.md and {member}-routine-logic-details.md "
+        f"{member}-program-analysis.md, {member}-routine-logic-details.md, "
+        f"{member}-routine-logic-details.yaml, and every retained "
+        f"routine-logic-details/{member}-deep-read-batch-*.md "
         "and confirm they do not contain scaffold language such as `Draft wrapper "
-        "seed generated`, `pending semantic deep-read`, `pending semantic detail`, "
-        "`placeholder`, `not-yet-deep-read`, or `not deep-read`."
+        "seed generated`, `pending_deep_read`, `pending semantic "
+        "deep-read`, `pending semantic detail`, `placeholder`, `not-yet-deep-read`, "
+        "or `not deep-read`."
     )
     layout_check = (
         "- Always preserve the reader-first layout headings in the main file: "
@@ -243,10 +318,11 @@ def validation_policy(mode: str, member: str) -> str:
     )
 
 
-def validation_command_block(mode: str, output_dir: str) -> str:
+def validation_command_block(mode: str, output_dir: str, size_tier: str) -> str:
     command = (
         "py -3 .agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\"
-        f"validate_program_analysis_contract.py --analysis-dir \"{output_dir}\""
+        f"validate_program_analysis_contract.py --analysis-dir \"{output_dir}\" "
+        f"--expected-size-tier \"{size_tier}\""
     )
     if mode == "deferred":
         return "\n".join(
@@ -257,6 +333,15 @@ def validation_command_block(mode: str, output_dir: str) -> str:
             ]
         )
     return command
+
+
+def index_command_block(member: str, source_path: str, output_dir: str) -> str:
+    return (
+        "py -3 .agents\\skills\\legacy-ibmi-program-analyzer\\scripts\\"
+        "index_rpg_source.py "
+        f'"{source_path}" --program "{member}" --out-dir "{output_dir}" '
+        "--preserve-existing"
+    )
 
 
 def validation_launcher_note(mode: str) -> str:
@@ -299,6 +384,67 @@ def scaffold_prompt_note(scaffold_status: str) -> str:
     )
 
 
+def tier_execution_contract(size_tier: str, member: str) -> str:
+    """Return the non-negotiable completion rule for tiered semantic work.
+
+    Most of the per-program prompt is intentionally shared so every output has
+    the same reader-first contract.  Large programs need an additional, very
+    visible stop rule because deterministic indexing deliberately creates a
+    complete-looking set of files before their batched semantic deep-read is
+    complete.
+    """
+
+    if size_tier.strip() != "large_extreme_program":
+        return ""
+    return "\n".join(
+        [
+            "## Large-program terminal completion contract",
+            "",
+            f"`{member}` is a `large_extreme_program`: execute its retained deep-read "
+            "checkpoints as the analysis work, not as optional appendices.",
+            "A deterministic index, precreated file, or populated batch-001 file is a "
+            "scaffold/checkpoint, never completion evidence.",
+            f"Before semantic writing, read `{member}-deep-read-execution-plan.yaml`. "
+            "It is the deterministic allocation of every deep-read window, RLOG, and "
+            "batch; do not delete, rewrite, reorder, or remap it or the source index "
+            "to make remaining work disappear.",
+            "Do not write `batch_status=completed`, `completed_with_warnings`, or a "
+            "passing validator status until all four conditions below are true.",
+            "",
+            "1. Every `planned_deep_read` entry in the execution plan has its exact "
+            "planned window-to-RLOG binding in its planned batch. Every retained "
+            "checkpoint is source-backed and free of indexer/pending seed content.",
+            "2. Both `routine_logic_inventory.summary[]` and "
+            "`routine_logic_inventory.details[]` record the completed batch routines "
+            "as `coverage: deep_read` and `semantic_status: deep_read_complete`, with "
+            "the required source-backed semantic fields filled.",
+            "   Each planned RLOG body must cite its allocated source-line range and "
+            "describe the observed trigger, branch/operation, carriers, outcome, and "
+            "exception closure; generic summary text is not completion evidence.",
+            f"3. The completed batch content is consolidated into both "
+            f"`{member}-routine-logic-details.md` and `{member}-program-analysis.md`; "
+            "the final reader-first files must stand on their own rather than link to "
+            "batch shells.",
+            "4. The full program-analysis validator shown below exits successfully after "
+            "the consolidation.",
+            "For a program-list batch intended to reach terminal completion, these "
+            "artifacts must have been created with `--scaffold-mode precreate`, which "
+            "freezes the source-index and execution-plan SHA-256 values in the batch "
+            "manifest. A prompt run without that immutable lock remains exploratory "
+            "and cannot be accepted as a terminal large-program row.",
+            "",
+            "If context, runtime, or source access prevents any checkpoint from being "
+            "completed, keep the row non-complete (`in_progress`, `failed_runtime`, or "
+            "`failed_validator` as applicable) and record the exact next action. Do not "
+            "replace unprocessed checkpoints with a generic summary.",
+            "If the execution plan is missing or its source-index digest no longer "
+            "matches, do not hand-edit a replacement plan. Mark `failed_validator` and "
+            "recreate this program's deterministic scaffold from the approved source "
+            "before restarting its planned deep-read work.",
+        ]
+    )
+
+
 def render_prompt(
     *,
     template: str,
@@ -326,9 +472,22 @@ def render_prompt(
         "intent": intent,
         "output_dir": output_dir,
         "validation_policy": validation_policy(validation_mode, member),
-        "validation_command_block": validation_command_block(validation_mode, output_dir),
+        "validation_command_block": validation_command_block(
+            validation_mode,
+            output_dir,
+            row.get("size_tier", ""),
+        ),
+        "index_command_block": index_command_block(
+            member,
+            source_display(source_root, row.get("path", "")),
+            output_dir,
+        ),
+        "recovery_context": row.get("recovery_context", "").strip(),
         "validation_launcher_note": validation_launcher_note(validation_mode),
         "scaffold_prompt_note": scaffold_prompt_note(row.get("scaffold_status", "")),
+        "tier_execution_contract": tier_execution_contract(
+            row.get("size_tier", ""), member
+        ),
         "reference_paths": bullet_list("Reference paths", reference_paths),
         "control_files": bullet_list("Control files", control_files),
     }
@@ -456,6 +615,9 @@ def build_manifest(
         "scaffold_mode": scaffold_mode,
         "subagent_mode": subagent_mode,
         "max_parallel_agents": max_parallel_agents,
+        "subagent_expected_count": sum(
+            1 for row in rows if row.get("subagent_prompt_path", "").strip()
+        ),
         "subagent_dispatch_plan": str(out_dir / "subagent-dispatch-plan.md") if subagent_mode != "none" else "",
         "kiro_parallel_runner_prompt": str(out_dir / "kiro-parallel-runner-prompt.md") if subagent_mode != "none" else "",
         "cline_parallel_runner_prompt": "",
@@ -483,6 +645,13 @@ def build_manifest(
                 "subagent_result_path": row.get("subagent_result_path", ""),
                 "next_action": row.get("next_action", ""),
                 "scaffold_status": row.get("scaffold_status", ""),
+                "source_index_sha256": row.get("source_index_sha256", ""),
+                "deep_read_execution_plan_path": row.get(
+                    "deep_read_execution_plan_path", ""
+                ),
+                "deep_read_execution_plan_sha256": row.get(
+                    "deep_read_execution_plan_sha256", ""
+                ),
             }
             for index, row in enumerate(rows, start=1)
         ],
@@ -527,6 +696,7 @@ def precreate_scaffold(
             member,
             "--out-dir",
             output_dir,
+            "--preserve-existing",
         ],
         text=True,
         capture_output=True,
@@ -584,6 +754,10 @@ to the JSON file instead.
 ## Per-Program Validation Gate
 
 - This Kiro/parallel batch uses `validation_mode=immediate`.
+- Deterministic scaffolds were precreated before worker dispatch. Confirm that
+  the program analysis, source index, summary, routine index, message
+  inventory, and RLOG artifacts are present before semantic work; if they are
+  not, write `failed_runtime` rather than claiming a validator pass.
 - Follow the embedded per-program analyzer prompt's full reader-first layout.
   Do not replace the main analysis with a summary-only document or a reduced
   custom layout.
@@ -667,7 +841,7 @@ def render_subagent_dispatch_plan(
 - Result directory: {out_dir / "subagent-results"}
 - Kiro/agent parallel runner prompt: {out_dir / "kiro-parallel-runner-prompt.md"}
 - Recommended max parallel workers: {max_parallel_agents}
-- Merge command: `python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir {out_dir}`
+- Merge command: `py -3 .agents\\skills\\legacy-ibmi-program-list-batch\\scripts\\merge_subagent_results.py --batch-dir "{out_dir}"`
 
 ## Launch Rules
 
@@ -684,6 +858,9 @@ def render_subagent_dispatch_plan(
   re-runs the full per-program analyzer validator for every worker result that
   claims success, converts any failure to `failed_validator`, and only then
   updates shared state. Run the batch status validator after that merge.
+- If the Python Launcher is unavailable, rerun the same merge/status command
+  once with `python` replacing `py -3`. Do not use `python3`, PowerShell, or a
+  different runtime-adapter path.
 
 ## Queue
 
@@ -697,7 +874,7 @@ def render_cline_serial_runner_prompt(
     *,
     out_dir: Path,
 ) -> str:
-    return f"""你是运行在 Cline 中的串行 batch 执行器。
+    return rf"""你是运行在 Cline 中的串行 batch 执行器。
 
 目标：
 读取已经生成好的 program prompt queue，并按顺序一次处理一个 program。
@@ -722,6 +899,11 @@ Cline 执行边界：
 - serial runner 不是第二套分析模板；每个 per-program prompt 必须完整遵循
   `legacy-ibmi-program-analyzer` 的主文件 H2 顺序、reader-first sections、
   三组 `Routine Index For ...` 和 RLOG coverage contract。
+- 在每个 program 的 semantic deep-read 前，必须执行该 per-program prompt 的
+  `Artifact Bootstrap Gate`：七个 core artifact 缺任一个时先运行 prompt 中的
+  `index_rpg_source.py ... --preserve-existing` 命令，再复核七个文件。不得手工
+  创建空 sidecar 凑数；仍缺文件时写 `failed_runtime`（缺 source 时
+  `blocked_missing_source`），不得继续或标记完成。
 - 主文件 H2 顺序必须是：`Program Reading Summary` -> `Calculation Logic` ->
   `Validation Logic` -> `Exception Handling` -> `Message Inventory` ->
   `Metadata` -> `Analysis Coverage & Scope` -> `Program Call Map` ->
@@ -779,8 +961,11 @@ Batch manifest:
 全部处理完成后，运行 batch status validator：
 
 ```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir "{out_dir}" --require-terminal
 ```
+
+如果 Windows Python Launcher 不可用，只把上述命令开头的 `py -3` 替换为
+`python` 后重试一次；不要更换校验路径或移除 `--require-terminal`。
 
 现在开始：读取 batch 状态和 prompt queue，列出待处理 prompt 文件，然后从第一个未完成 program 开始串行处理。
 """
@@ -791,7 +976,7 @@ def render_kiro_parallel_runner_prompt(
     out_dir: Path,
     max_parallel_agents: int,
 ) -> str:
-    return f"""你是运行在 Kiro 或支持隔离 worker 的 agent runtime 中的并行 batch 执行器。
+    return rf"""你是运行在 Kiro 或支持隔离 worker 的 agent runtime 中的并行 batch 执行器。
 
 目标：
 读取已经生成好的 subagent queue，并并行启动多个独立 worker 来处理每个 program。
@@ -835,14 +1020,16 @@ Result directory:
 13. 这个 Kiro batch 只接受 `validation_mode=immediate`。如果 manifest 是
     `deferred`，不要启动 worker；要求重新运行 initializer 并使用
     `--validation-mode immediate`。
-14. 每个 worker 必须遵循 embedded per-program prompt 的完整 analyzer layout，
+14. 这个 Kiro batch 也只接受 `scaffold_mode=precreate`。每个 worker 必须从
+    已生成的 deterministic artifacts 开始；不得用空 sidecar 替代缺失 scaffold。
+15. 每个 worker 必须遵循 embedded per-program prompt 的完整 analyzer layout，
     保留三组 `Routine Index For ...` 结构标题，并在写 success result JSON 前
     运行完整的 `validate_program_analysis_contract.py`。
 
 所有 worker 完成后，运行 merge：
 
 ```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/merge_subagent_results.py --batch-dir "{out_dir}"
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\merge_subagent_results.py --batch-dir "{out_dir}"
 ```
 
 merge 会对每个 worker 报告成功的 output directory 再运行一次完整的
@@ -850,8 +1037,11 @@ merge 会对每个 worker 报告成功的 output directory 再运行一次完整
 才运行 batch status validator：
 
 ```text
-python3 skills/legacy-ibmi-program-list-batch/scripts/validate_program_batch_status.py --batch-dir "{out_dir}"
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir "{out_dir}" --require-terminal
 ```
+
+如果 Windows Python Launcher 不可用，只把上述两个命令开头的 `py -3` 替换为
+`python` 后各重试一次；不要使用 `python3`、PowerShell 或不同的 runtime skill 路径。
 
 如果当前 runtime 不能可靠启动隔离 worker：
 - 不要尝试在一个上下文里处理多个 program。
@@ -867,6 +1057,11 @@ def initialize(args: argparse.Namespace) -> None:
         raise SystemExit(
             "Kiro/parallel sub-agent mode requires --validation-mode immediate. "
             "Reinitialize the batch with --validation-mode immediate."
+        )
+    if args.subagent_mode == "prepare" and args.scaffold_mode != "precreate":
+        raise SystemExit(
+            "Kiro/parallel sub-agent mode requires --scaffold-mode precreate. "
+            "Reinitialize the batch so deterministic program artifacts exist before workers start."
         )
     program_list = Path(args.program_list).resolve()
     out_dir = Path(args.out_dir).resolve()
@@ -919,15 +1114,21 @@ def initialize(args: argparse.Namespace) -> None:
         object_type = normalized.get("object_type", "")
         size_tier = normalized.get("size_tier", "")
         is_program = object_type.lower() == "program"
-        output_dir = (
-            join_display(
+        if member and is_program:
+            try:
+                recovery_output_dir = recovery_artifact_output_dir(
+                    args.delivery_root,
+                    normalized.get("candidate_artifact_root", ""),
+                )
+            except ValueError as exc:
+                raise SystemExit(f"{member}: {exc}") from exc
+            output_dir = recovery_output_dir or join_display(
                 args.delivery_root,
                 tier_root(size_tier, getattr(args, "tier_roots", None)),
                 member,
             )
-            if member and is_program
-            else ""
-        )
+        else:
+            output_dir = ""
         prompt_path = ""
         if is_program:
             prompt_path = str(prompt_dir / f"{index:04d}-{safe_filename(member)}.md")
@@ -935,6 +1136,11 @@ def initialize(args: argparse.Namespace) -> None:
             next_action = "start scan"
             scaffold_status = "not_created"
             last_error = ""
+            execution_lock = scaffold_execution_lock(
+                member=member,
+                size_tier=size_tier,
+                output_dir="",
+            )
             if args.scaffold_mode == "precreate":
                 scaffold_status, scaffold_error = precreate_scaffold(
                     member=member,
@@ -942,8 +1148,18 @@ def initialize(args: argparse.Namespace) -> None:
                     source_path=normalized.get("path", ""),
                     output_dir=output_dir,
                 )
+                execution_lock = scaffold_execution_lock(
+                    member=member,
+                    size_tier=size_tier,
+                    output_dir=output_dir,
+                )
                 if scaffold_status == "present":
-                    next_action = "fill details from scaffold"
+                    next_action = (
+                        "complete every retained deep-read batch, consolidate the "
+                        "reader-first analysis, then validate"
+                        if size_tier == "large_extreme_program"
+                        else "fill details from scaffold"
+                    )
                 elif scaffold_status == "blocked_missing_source":
                     batch_status = "blocked_missing_source"
                     next_action = "fix source root/path, then regenerate scaffold"
@@ -957,6 +1173,11 @@ def initialize(args: argparse.Namespace) -> None:
             next_action = "none - row is not a program"
             scaffold_status = "not_applicable"
             last_error = ""
+            execution_lock = scaffold_execution_lock(
+                member=member,
+                size_tier=size_tier,
+                output_dir="",
+            )
         normalized.update(
             {
                 "batch_status": batch_status,
@@ -973,6 +1194,7 @@ def initialize(args: argparse.Namespace) -> None:
                 "next_action": next_action,
                 "handoff_path": "",
                 "scaffold_status": scaffold_status,
+                **execution_lock,
             }
         )
         status_rows.append(normalized)
@@ -1120,9 +1342,10 @@ def build_parser() -> argparse.ArgumentParser:
         choices=sorted(SUBAGENT_MODES),
         default="none",
         help=(
-            "none only generates the normal prompt queue; prepare also writes "
-            "subagent-queue prompts, result JSON targets, and a Kiro/agent "
-            "parallel dispatch plan for isolated per-program worker tasks"
+            "none only generates the normal prompt queue; prepare requires "
+            "--scaffold-mode precreate and also writes subagent-queue prompts, "
+            "result JSON targets, and a Kiro/agent parallel dispatch plan for "
+            "isolated per-program worker tasks"
         ),
     )
     parser.add_argument(

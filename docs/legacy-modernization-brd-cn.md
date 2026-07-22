@@ -102,7 +102,7 @@ Legacy Spec Factory 的核心思路是：
 - **人工批准**：AI 可以提取、组织、起草，但不能替代 SME 和业务方判断。
 - **BRD 事实门控**：四视图 coverage 可以帮助 review，但只有 `confirmed_by_sme`、`code_backed` 或明确批准的证据才能进入 BRD 事实正文。
 
-日常交付可以使用 `daily_delivery` 模式：系统仍然自动跑 context、inventory、program、flow、module、data model 和 BRD 生成，但审批策略从“每个 skill 都停下来 approve”改成 `exception_only`。只有授权/脱敏、关键源码缺失、高风险矛盾、范围不清等问题会中断；其他缺口进入 `TBD-*`、问题包或 `delivery-risk-summary.md`。这种输出是 `status: delivery_draft`，可以被本轮交付接受，但不能直接作为 spec generation、SDD handoff 或审计 baseline。
+日常交付可以使用 `daily_delivery` 模式：系统仍然自动跑 context、inventory、program、program-set review、module、data model 和 BRD 生成，但审批策略从“每个 skill 都停下来 approve”改成 `exception_only`。只有授权/脱敏、关键源码缺失、高风险矛盾、范围不清等问题会中断；其他缺口进入 `TBD-*`、问题包或 `delivery-risk-summary.md`。这种输出是 `status: delivery_draft`，可以被本轮交付接受，但不能直接作为 spec generation、SDD handoff 或审计 baseline。
 
 ## repo 里的真实设计支撑
 
@@ -115,7 +115,9 @@ Legacy Spec Factory 的核心思路是：
 - `legacy-module-context-intake`：把 RAG、source snippet、字段字典、SME 片段或已 review 的模块上下文打包，并为每个 claim 标注 BRD source eligibility；
 - `legacy-ibmi-inventory`：识别 program、file、screen、report、job、object relationship；
 - `legacy-ibmi-program-analyzer`：分析单个程序的 call map、data touch、routine logic、file I/O、validation logic、error handling、coverage；
-- `legacy-ibmi-flow-analyzer`：把多个 program 连接成一个业务 transaction flow；
+- `legacy-ibmi-flow-analyzer`：验证 finalized reader-first program analyses，
+  保留无损 source facts/coverage，并由执行 skill 的 LLM 综合成一份
+  SME/Dify Core Review；不重建 transaction flow；
 - `legacy-ibmi-data-model-analyzer`：分析 DDS / DB2 数据模型和访问路径；
 - `legacy-ibmi-screen-report-analyzer`：分析 DSPF、PRTF、screen、report 逻辑；
 - `legacy-ibmi-runtime-evidence-miner`：从 job log、spool 等运行证据中提取 runtime observation；

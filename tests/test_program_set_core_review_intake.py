@@ -6,33 +6,188 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.fixtures.program_analysis_artifacts import (
+    mark_pending_deep_read,
+    write_finalized_program_artifacts,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INTAKE = REPO_ROOT / "scripts/prepare-program-set-core-review.py"
 
 
-REQUIRED_ARTIFACTS = (
-    "program-analysis.md",
-    "program-analysis-summary.yaml",
-    "source-index.yaml",
-    "routine-index.md",
-    "message-inventory.yaml",
-    "routine-logic-details.md",
-    "routine-logic-details.yaml",
-)
-
-
 class ProgramSetCoreReviewIntakeTests(unittest.TestCase):
-    def test_one_step_intake_creates_manifest_review_and_queue_state(self) -> None:
+    def test_one_step_intake_keeps_semantic_gap_pending_without_recovery_queue(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             artifact_root = root / "artifacts"
-            program_folder = artifact_root / "modules" / "tier" / "CU106"
-            program_folder.mkdir(parents=True)
-            for filename in REQUIRED_ARTIFACTS:
-                (program_folder / f"CU106-{filename}").write_text(
-                    "schema_version: '0.1'\n", encoding="utf-8"
+            fixture = write_finalized_program_artifacts(
+                artifact_root / "modules" / "normal" / "CU106", "CU106"
+            )
+            mark_pending_deep_read(fixture)
+
+            source_root = root / "source"
+            source_file = source_root / "QRPGLESRC" / "CU106.RPGLE"
+            source_file.parent.mkdir(parents=True)
+            source_file.write_text("**FREE\nRETURN;\n", encoding="utf-8")
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.com"],
+                ["git", "config", "user.name", "Test User"],
+                ["git", "add", "QRPGLESRC/CU106.RPGLE"],
+                ["git", "commit", "-m", "test source"],
+            ):
+                subprocess.run(
+                    command,
+                    cwd=source_root,
+                    text=True,
+                    capture_output=True,
+                    check=True,
                 )
+
+            inventory_dir = source_root / "outputs" / "repo-scan"
+            scan_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "scan-ibmi-repo.py"),
+                    str(source_root),
+                    "--out-dir",
+                    str(inventory_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(scan_result.returncode, 0, scan_result.stderr)
+
+            programs_file = root / "programs.txt"
+            programs_file.write_text("CU106\n", encoding="utf-8")
+            output_dir = root / "review"
+            intake_command = [
+                sys.executable,
+                str(INTAKE),
+                "--programs-file",
+                str(programs_file),
+                "--artifact-root",
+                str(artifact_root),
+                "--source-root",
+                str(source_root),
+                "--inventory-dir",
+                str(inventory_dir),
+                "--output-dir",
+                str(output_dir),
+                "--recovery-runner",
+                "kiro_parallel",
+                "--recovery-max-parallel-agents",
+                "2",
+            ]
+            result = subprocess.run(
+                intake_command,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            bundle = next(path for path in output_dir.iterdir() if path.is_dir())
+            recovery_dir = bundle / "missing-program-list-batch"
+            self.assertFalse(recovery_dir.exists())
+            self.assertFalse(any(bundle.glob("*--sme-core-review.md")))
+            manifest = (bundle / "program-set-core-input-manifest.yaml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("review_status: ready_for_synthesis", manifest)
+            self.assertIn("pending_deep_read", manifest)
+
+    def test_one_step_intake_uses_outputs_under_project_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            write_finalized_program_artifacts(
+                artifact_root / "modules" / "tier" / "CU106", "CU106"
+            )
+            source_root = root / "source"
+            source_root.mkdir()
+            project_root = root / "legacy-modernization-delivery"
+            project_root.mkdir()
+            programs_file = root / "programs.txt"
+            programs_file.write_text("CU106\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(INTAKE),
+                    "--programs-file",
+                    str(programs_file),
+                    "--artifact-root",
+                    str(artifact_root),
+                    "--source-root",
+                    str(source_root),
+                    "--project-root",
+                    str(project_root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            bundles = [path for path in (project_root / "outputs").iterdir() if path.is_dir()]
+            self.assertEqual(len(bundles), 1)
+            self.assertTrue((bundles[0] / "program-set-core-input-manifest.yaml").is_file())
+            self.assertFalse((project_root / "program-set-core-input-manifest.yaml").exists())
+
+    def test_one_step_intake_accepts_inline_sme_navigation_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            write_finalized_program_artifacts(
+                artifact_root / "modules" / "tier" / "CU106", "CU106"
+            )
+            source_root = root / "source"
+            source_root.mkdir()
+            output_dir = root / "review"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(INTAKE),
+                    "--review-name",
+                    "Inline Navigation Review",
+                    "--program",
+                    "CU106",
+                    "--artifact-root",
+                    str(artifact_root),
+                    "--source-root",
+                    str(source_root),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            bundle = next(path for path in output_dir.iterdir() if path.is_dir())
+            self.assertEqual(
+                (bundle / "program-list.txt").read_text(encoding="utf-8"),
+                "CU106\n",
+            )
+            manifest = (bundle / "program-set-core-input-manifest.yaml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("kind: generated_from_navigation_order", manifest)
+            source_block = manifest.split("program_list_source:", 1)[1].split(
+                "program_resolution_profile:", 1
+            )[0]
+            self.assertNotIn("path:", source_block)
+
+    def test_one_step_intake_prepares_one_bundle_without_fake_review_or_empty_queue(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            write_finalized_program_artifacts(
+                artifact_root / "modules" / "tier" / "CU106", "CU106"
+            )
             source_root = root / "source"
             source_root.mkdir()
             programs_file = root / "programs.txt"
@@ -57,14 +212,82 @@ class ProgramSetCoreReviewIntakeTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue((output_dir / "program-set-core-input-manifest.yaml").is_file())
-            self.assertTrue((output_dir / "program-set-core-facts.yaml").is_file())
-            self.assertTrue((output_dir / "program-set-sme-core-review.md").is_file())
-            manifest_text = (output_dir / "program-set-core-input-manifest.yaml").read_text(encoding="utf-8")
+            bundles = [path for path in output_dir.iterdir() if path.is_dir()]
+            self.assertEqual(len(bundles), 1)
+            bundle = bundles[0]
+            self.assertTrue((bundle / "program-set-core-input-manifest.yaml").is_file())
+            self.assertTrue((bundle / "program-set-artifact-readiness.yaml").is_file())
+            self.assertTrue((bundle / "program-set-reader-first-source-pack.md").is_file())
+            self.assertTrue((bundle / "program-set-core-facts.yaml").is_file())
+            self.assertTrue((bundle / "program-set-core-coverage.yaml").is_file())
+            self.assertFalse(any(bundle.glob("*--sme-core-review.md")))
+            manifest_text = (bundle / "program-set-core-input-manifest.yaml").read_text(encoding="utf-8")
             self.assertIn("review_name: programs", manifest_text)
-            queue_state = output_dir / "missing-program-list-batch" / "program-set-scan-queue.yaml"
-            self.assertTrue(queue_state.is_file())
-            self.assertIn("no_missing_programs", queue_state.read_text(encoding="utf-8"))
+            self.assertIn("review_status: ready_for_synthesis", manifest_text)
+            self.assertFalse((bundle / "missing-program-list-batch").exists())
+            self.assertFalse((output_dir / "program-set-core-input-manifest.yaml").exists())
+
+            stale_queue = bundle / "missing-program-list-batch"
+            stale_queue.mkdir()
+            (stale_queue / "recovery-status.yaml").write_text(
+                "stale queue artifact\n", encoding="utf-8"
+            )
+            rerun = subprocess.run(
+                [
+                    sys.executable,
+                    str(INTAKE),
+                    "--programs-file",
+                    str(programs_file),
+                    "--artifact-root",
+                    str(artifact_root),
+                    "--source-root",
+                    str(source_root),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(rerun.returncode, 0, rerun.stderr)
+            self.assertFalse(stale_queue.exists())
+
+    def test_ready_rerun_preserves_unknown_recovery_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            artifact_root = root / "artifacts"
+            write_finalized_program_artifacts(
+                artifact_root / "modules" / "tier" / "CU106", "CU106"
+            )
+            source_root = root / "source"
+            source_root.mkdir()
+            programs_file = root / "programs.txt"
+            programs_file.write_text("CU106\n", encoding="utf-8")
+            output_dir = root / "review"
+            command = [
+                sys.executable,
+                str(INTAKE),
+                "--programs-file",
+                str(programs_file),
+                "--artifact-root",
+                str(artifact_root),
+                "--source-root",
+                str(source_root),
+                "--output-dir",
+                str(output_dir),
+            ]
+            first = subprocess.run(command, text=True, capture_output=True)
+            self.assertEqual(first.returncode, 0, first.stderr)
+            bundle = next(path for path in output_dir.iterdir() if path.is_dir())
+            recovery_dir = bundle / "missing-program-list-batch"
+            recovery_dir.mkdir()
+            manual_note = recovery_dir / "analyst-evidence.md"
+            manual_note.write_text("Keep this SME note.\n", encoding="utf-8")
+
+            rerun = subprocess.run(command, text=True, capture_output=True)
+
+            self.assertNotEqual(rerun.returncode, 0)
+            self.assertIn("refusing to replace a queue directory", rerun.stderr)
+            self.assertTrue(manual_note.is_file())
 
 
 if __name__ == "__main__":

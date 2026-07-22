@@ -1,3 +1,9 @@
+# Historical, Non-Active Example
+
+> This v0.1 transaction-flow example is retained for provenance only. It is
+> not an input, output, or acceptance example for the active v0.4.0 Reader-First
+> Program Analysis Merger.
+
 # Flow Analysis: Customer Inquiry from CSR Menu (FLOW-CUST-INQUIRY-001)
 
 ## Metadata

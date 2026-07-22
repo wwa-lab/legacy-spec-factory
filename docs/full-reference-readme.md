@@ -1,5 +1,11 @@
 # Legacy Spec Factory
 
+> **v0.4.0 flow-analyzer override:** entries below that describe
+> `legacy-ibmi-flow-analyzer` as a full transaction-flow/Replay/Lineage producer
+> are retained v0.2.x reference text. The active skill is the Reader-First
+> Program Analysis Merger for coverage-complete SME/Dify Core Reviews; direct
+> module/BRD/spec routing requires a separately migrated compatibility contract.
+
 **New here?** Start with [QUICKSTART.md](QUICKSTART.md) (10-minute
 walkthrough) or study [docs/EXAMPLE-tutorial/](docs/EXAMPLE-tutorial/) (a
 fully-populated minimal project — every artifact in the chain).
@@ -691,7 +697,7 @@ even if the static review score is higher.
 | `legacy-ibmi-runtime-evidence-miner` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-runtime-evidence-miner-v0.1.0-scorecard.md) | 9.57 | 9.57 | Field-pilot ready | Three-runtime positive and negative no-write smoke passed; downstream analyzer integration smoke remains optional |
 | `legacy-ibmi-program-analyzer` | [v0.2.5 scorecard](docs/reviews/legacy-ibmi-program-analyzer-v0.2.5-scorecard.md) | 9.66 | 9.0 | Repo-ready | v0.2.5 is the last reviewed scorecard; v0.2.7 front-loads Calculation Logic, Validation Logic, Exception Handling, and Message Inventory with updated scorecard and execution evidence pending |
 | `legacy-ibmi-program-list-batch` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-program-list-batch-v0.1.0-scorecard.md) | 9.34 | 9.0 | Repo-ready | New Copilot Chat-only batch-control skill; adapter sync and local script smoke passed, prompt-driven company Copilot Chat smoke pending |
-| `legacy-ibmi-flow-analyzer` | [v0.2.2 scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.2.2-scorecard.md) | 9.62 | 9.0 | Repo-ready | v0.2.2 consumes program v0.2.5 Routine Logic Details, routine-local carrier/lineage rows, and routine-local exception closure for flow lineage and exception propagation; three-runtime smoke pending |
+| `legacy-ibmi-flow-analyzer` | [v0.4.0 scorecard](docs/reviews/legacy-ibmi-flow-analyzer-v0.4.0-scorecard.md) | 9.47 | 9.0 | Repo-ready | Controlled Reader-First Program Analysis Merger for coverage-complete SME/Dify Core Reviews; native Windows PowerShell execution and three-runtime prompt smoke were not run |
 | `legacy-ibmi-module-analyzer` | [v0.2.3 scorecard](docs/reviews/legacy-ibmi-module-analyzer-v0.2.3-scorecard.md) | 9.62 | 9.0 | Repo-ready (provisional) | v0.2.3 is the last reviewed scorecard; v0.2.4 focuses module output on overview + Program/Data views with updated scorecard and three-runtime smoke pending |
 | `legacy-ibmi-data-model-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-data-model-analyzer-v0.1.0-scorecard.md) | 9.32 | 9.0 | Repo-ready | Codex and OpenCode smoke passed; Claude Code smoke was blocked by local CLI login |
 | `legacy-ibmi-screen-report-analyzer` | [v0.1.0 scorecard](docs/reviews/legacy-ibmi-screen-report-analyzer-v0.1.0-scorecard.md) | 9.38 | 9.38 | Repo-ready | Positive three-runtime smoke passed; negative stop-condition smoke is still needed for 9.5 |
@@ -856,7 +862,7 @@ full status matrix and scorecard links.
 | 5 | `legacy-ibmi-runtime-evidence-miner` | Legacy BRD factory | Existing | Field-pilot ready (v0.1.0, 9.57); optional integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes` |
 | 6 | `legacy-ibmi-program-analyzer` | Legacy BRD factory | Existing | Repo-ready: v0.2.5 reviewed; v0.2.7 synced with updated scorecard pending; run three-runtime smoke tests |
 | 7 | `legacy-ibmi-program-list-batch` | Legacy BRD factory / operations | New | Repo-ready (v0.1.0, 9.0 capped); controls Copilot Chat-only program-list batches with one-program prompts, status CSV, batch plan, and manifest |
-| 8 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready after v0.2.2 routine-local evidence consumption alignment; run three-runtime smoke tests |
+| 8 | `legacy-ibmi-flow-analyzer` | Legacy BRD factory | Existing | Repo-ready (v0.4.0, 9.0 capped) as a controlled Reader-First Program Analysis Merger for SME/Dify review; run native Windows PowerShell and three-runtime prompt smoke |
 | 9 | `legacy-ibmi-module-analyzer` | Legacy BRD factory | Existing | Repo-ready provisional: v0.2.3 reviewed; v0.2.4 synced with updated scorecard pending; run three-runtime smoke tests |
 | 10 | `legacy-brd-writer` | Legacy BRD factory | Existing | Repo-ready provisional: v0.1.8 reviewed; v0.1.10 synced with updated scorecard pending; run three-runtime smoke before field-pilot label |
 | 11 | `legacy-spec-writer` | Legacy synthesis | Existing | Repo-ready after v0.1.6 analyzer v0.2.5 routine-local evidence consumption; finish remaining smoke |
@@ -884,7 +890,8 @@ as a placeholder. The remaining work is validation and scorecard hardening:
 1. `legacy-ibmi-runtime-evidence-miner` — optionally run integration smoke with program/flow/module analyzers for `runtime_hints` and `bau_notes`.
 2. `legacy-ibmi-data-model-analyzer` — run Claude Code smoke after CLI login is restored.
 3. `legacy-ibmi-screen-report-analyzer` — add and run negative stop-condition smoke.
-4. `legacy-document-evidence-intake`, `legacy-current-state-discovery`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-flow-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, `legacy-spec-writer`, `legacy-sme-review-facilitator`, `legacy-step-validator`, and `legacy-modernization-orchestrator` — finish pending updated scorecards, golden samples, three-runtime smoke, or expanded-route smoke.
+4. `legacy-document-evidence-intake`, `legacy-current-state-discovery`, `legacy-module-context-intake`, `legacy-ibmi-inventory`, `legacy-ibmi-program-analyzer`, `legacy-ibmi-module-analyzer`, `legacy-brd-writer`, `legacy-spec-writer`, `legacy-sme-review-facilitator`, `legacy-step-validator`, and `legacy-modernization-orchestrator` — finish pending updated scorecards, golden samples, three-runtime smoke, or expanded-route smoke.
+5. `legacy-ibmi-flow-analyzer` — run native Windows PowerShell and three-runtime prompt smoke for the reviewed v0.4.0 merger contract; keep it SME/Dify-only until downstream compatibility migration is explicitly approved.
 
 Governance/Infrastructure skills (already implemented):
 - `legacy-runtime-matrix-tester` ✓ Created 2026-05-16
@@ -907,7 +914,7 @@ Governance/Infrastructure skills (already implemented):
 | `legacy-ibmi-inventory` | Discover programs, files, tables, jobs, screens, and reports | `inventory.yaml`, object map | Repo-ready (v0.1.0 reviewed; v0.3.1 synced, updated scorecard pending) |
 | `legacy-ibmi-program-analyzer` | Explain RPGLE/CLLE/COBOL-on-IBM-i logic, control flow, per-routine field calculations, conditioned calculation blocks, outcome reverse traces, front-loaded Validation Logic, routine-local carrier/lineage ties, data flow, key-field lineage, file mutations, and exception closure; supports standalone exploratory inspection before inventory linkage | `program-analysis.md` | Repo-ready (v0.2.5 reviewed; v0.2.7 synced, updated scorecard pending) |
 | `legacy-ibmi-program-list-batch` | Prepare Copilot Chat-only program-list batches with one-program prompt queues, status CSV/Excel tracking, batch plan, durable manifest, and session handoff without weakening the one-program analyzer contract | `program-batch-plan.md`, `program-list-status.csv`, `batch-scan-manifest.yaml`, `prompt-queue/*.md` | Repo-ready (v0.1.0, 9.0 capped; prompt smoke pending) |
-| `legacy-ibmi-flow-analyzer` | Analyze one end-to-end IBM i transaction flow across programs, replay path, edge resolution, field lineage consuming routine-local carriers, persistence purpose, exception chains consuming routine-local closure, and business-readable capability seeds | `flow-<FLOW-SLUG>.md` | Repo-ready (v0.2.2, 9.0 capped; smoke pending) |
+| `legacy-ibmi-flow-analyzer` | Validate a selected set of finalized Reader-First program analyses, preserve lossless facts and coverage controls, and let the executing LLM synthesize one uniquely named SME/Dify Core Review without reconstructing a transaction flow | `<program-set-review-parent>/<flow-slug>--<program-set-slug>/` | Repo-ready (v0.4.0, static 9.47/current 9.0; PowerShell and three-runtime prompt smoke not run) |
 | `legacy-ibmi-module-analyzer` | Assemble a Mermaid-backed focused module package from reviewed module context and approved flow/program evidence, including BRD source eligibility, module replay readiness, Program Flow, Data Flow, edge-resolution coverage, critical field lineage, routine-local evidence carry-forward, persistence purpose, and exception recovery summaries for BRD discovery | `04_modules/<MODULE-SLUG>/` | Repo-ready (v0.2.3 reviewed; v0.2.4 synced, updated scorecard pending) |
 | `legacy-ibmi-data-model-analyzer` | Analyze PF/LF/DDS/DB2 for i data models, access paths, field semantics, CRUD lifecycle, and unresolved data questions | `03_data_models/<DATA-SLUG>/` | Repo-ready (v0.1.0, 9.0 capped; Claude Code smoke pending) |
 | `legacy-ibmi-screen-report-analyzer` | Analyze DSPF, PRTF, screen behavior, function keys, subfiles, spool/report semantics, and SME-visible UI/report behavior | `03_screen_reports/<OBJECT-SLUG>/` | Repo-ready (v0.1.0, 9.38; negative smoke pending) |

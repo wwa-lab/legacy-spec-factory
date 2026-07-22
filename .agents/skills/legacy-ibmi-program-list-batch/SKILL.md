@@ -78,14 +78,23 @@ directly.
   writes its artifacts, it must run the full `legacy-ibmi-program-analyzer`
   validator before starting the next prompt. `scanned_unvalidated` is not a
   successful Cline serial completion state.
+- Every generated per-program prompt, regardless of whether Cline processes it
+  serially or Kiro processes it in an isolated worker, begins with an Artifact
+  Bootstrap Gate. All seven core artifacts must exist before semantic deep-read;
+  missing artifacts must be created only by `index_rpg_source.py`, never as
+  manual empty sidecars. A remaining artifact gap is `failed_runtime` (or
+  `blocked_missing_source`), never `completed`.
 - To preserve throughput, the Cline serial runner should keep chat output to a
   one-line ledger per program and use durable files as memory instead of
   replaying source excerpts or generated artifacts in chat.
 - If Kiro or another runtime truly supports isolated sub-agents, safe
   parallelism means one worker per generated `subagent-queue/*.md` file.
-- Kiro/parallel sub-agent mode uses `validation_mode=immediate` only. Each
-  worker must preserve the full reader-first analyzer layout, keep all three
-  `Routine Index For ...` headings, and run the full per-program analyzer
+- Kiro/parallel sub-agent mode requires both `validation_mode=immediate` and
+  `scaffold_mode=precreate`. Each worker starts with deterministic source
+  index, summary, routine-index, message-inventory, and RLOG artifacts already
+  present. Precreation preserves existing program-specific artifacts and writes
+  only missing scaffolds; it must preserve the full reader-first analyzer layout, keep all
+  three `Routine Index For ...` headings, and run the full per-program analyzer
   validator before reporting `completed/pass`. The parent merge must rerun that
   validator for every successful worker output before updating shared state.
 - Do not carry source excerpts, prior program summaries, or chat history into
@@ -138,15 +147,40 @@ directly.
   - `precreate`: the initializer quickly runs the deterministic source indexer
     for each resolvable program, creates the per-program scaffold artifacts,
     writes `scaffold_status=present`, and leaves the row queued for semantic
-    detail fill.
+    detail fill. For `large_extreme_program`, it also freezes the source-index
+    and deep-read execution-plan SHA-256 values in the CSV/manifest before any
+    semantic worker can edit the artifacts.
+  - Kiro/parallel sub-agent mode always uses `precreate`; it rejects `none` so
+    a worker cannot silently skip deterministic artifact generation.
 - Deterministic source indexes are pre-analysis scaffolds only. A row is not
   complete until semantic source deep-read has replaced pending/thin content in
-  `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`.
+  `<PROGRAM>-program-analysis.md`, `<PROGRAM>-routine-logic-details.md`, every
+  retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoint,
+  and the matching `<PROGRAM>-routine-logic-details.yaml` entries.
+- For a program with retained deep-read checkpoints, Step 2 must discover all
+  declared and actual batch files, natural-sort their numeric suffixes, and
+  process every checkpoint. Each checkpoint covers at most five
+  routines/windows; persist it and write back matching routine YAML
+  `summary[]`/`details[]` state
+  before advancing, then merge the completed set into the consolidated routine
+  detail and main analysis files.
+- For a large program, workers must read
+  `<PROGRAM>-deep-read-execution-plan.yaml` before batch work. Complete every
+  `planned_deep_read` window-to-RLOG/batch mapping exactly once; a deleted later
+  batch, a remapped RLOG, a generic routine shell, or a rewritten plan/source
+  index is a validator failure. Use `--scaffold-mode precreate` for any batch
+  intended to reach terminal large-program completion.
 - Do not mark a row `completed` or `completed_with_warnings` when the main
-  analysis or routine detail file still contains scaffold wording such as
+  analysis, consolidated routine detail, retained checkpoint, or routine YAML
+  still contains scaffold state such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
-  `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
-  `not deep-read`.
+  `pending semantic detail`, `semantic_status: pending_deep_read`,
+  `placeholder`, `not-yet-deep-read`, or `not deep-read`. A routine completed
+  in a retained batch must use `coverage: deep_read` and
+  `semantic_status: deep_read_complete`. An unbatched pure technical utility
+  may retain `coverage: indexed_only` only with
+  `semantic_status: source_backed_complete` and
+  source-backed concise semantic detail and explicit reason/evidence.
 - Do not generate `program-set-sme-core-review.md` as part of this batch step.
   This skill only prepares, tracks, and validates independent per-program
   scans. Use `legacy-ibmi-flow-analyzer` later when an SME-provided flow or
@@ -197,7 +231,7 @@ outputs/program-list-batch/
    - In `--subagent-mode prepare`, also create `subagent-queue/*.md`,
      `subagent-results/`, `subagent-dispatch-plan.md`, and
      `kiro-parallel-runner-prompt.md` for Kiro or runtimes that can launch
-     isolated parallel workers.
+     isolated parallel workers. This mode requires `--scaffold-mode precreate`.
    - Carry any provided reference paths and control file paths into the batch
      plan, manifest, and every generated prompt.
    - Stop after initialization. Do not start semantic program scans in this
@@ -213,6 +247,14 @@ outputs/program-list-batch/
      source index, routine index, and routine logic YAML. Fill the reader-first
      semantic details from source instead of spending the prompt turn on
      deterministic scaffold generation again.
+   - When retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md`
+     files exist, natural-sort and complete all of them. Work on at most five
+     assigned routines/windows in the current checkpoint; persist it, update
+     matching routine YAML `summary[]`/`details[]` records and coverage; use
+     `semantic_status: deep_read_complete` and non-empty structured semantic
+     values for each batched RLOG, and
+     then advance. Do not stop
+     after batch 001 or consolidate before the full retained set is complete.
    - If the program output directory already contains artifacts from an older
      run, overwrite that program's generated analysis artifacts with the
      current skill output. Do not treat old artifacts as a cache.
@@ -249,7 +291,11 @@ outputs/program-list-batch/
      artifacts and must pass validation again before staying `completed`.
 
 5. **Finish the batch**
-   - Validate status consistency.
+   - Validate final status consistency with
+     `validate_program_batch_status.py --batch-dir <batch-dir> --require-terminal`.
+     The same validator without `--require-terminal` is
+     resume-safe during Step 1 and active Step 2 work, so queued or in-progress
+     rows are not finalization errors in that default mode.
    - Treat the batch as complete when every requested row is classified as
      `completed`, `completed_with_warnings`, `skipped_not_program`,
      `blocked_missing_source`, `failed_validator`, or `failed_runtime`.
@@ -304,6 +350,12 @@ Recommended validation-first two-phase mode:
 3. Each prompt starts from the scaffold and fills semantic analysis details.
    The prompt runs the full program-analysis validator immediately after each
    program and only then advances to the next program.
+   For `large_extreme_program`, the generated prompt adds a visible terminal
+   completion contract: index/scaffold files and batch 001 are checkpoints,
+   not completion evidence. Every retained deep-read batch must be completed,
+   its YAML semantic state updated, all detail consolidated into the two
+   reader-first review files, and the validator passed before the row can be
+   marked complete.
 4. In Kiro/agent parallel mode only, after parallel workers finish, merge
    result JSON files:
 
@@ -324,7 +376,7 @@ do all work themselves.
 
 Use `--subagent-mode prepare` when the operator wants to try Kiro/agent
 parallel handoff. This mode requires `--validation-mode immediate` and
-prepares `kiro-parallel-runner-prompt.md`,
+`--scaffold-mode precreate`, then prepares `kiro-parallel-runner-prompt.md`,
 `subagent-queue/*.md` prompts, result JSON targets, and a dispatch plan; it
 does not make Cline/Copilot Chat itself concurrent. Cline should still use
 `cline-serial-runner-prompt.md`.
@@ -340,6 +392,20 @@ Validate batch state:
 ```text
 py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch
 ```
+
+The command above is the resume-safe state check and may be run while rows are
+still `queued` or `in_progress`. At final batch close, require terminal row
+states:
+
+```text
+py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_batch_status.py --batch-dir outputs\program-list-batch --require-terminal
+```
+
+When `--require-terminal` sees a claimed `completed` or
+`completed_with_warnings` row, it also reruns the canonical
+`validate_program_analysis_contract.py` against that artifact directory. This
+prevents a large-program batch shell from being accepted merely because it no
+longer contains an obvious `pending` string.
 
 ## References
 
@@ -381,16 +447,59 @@ py -3 .agents\skills\legacy-ibmi-program-list-batch\scripts\validate_program_bat
   per-program validator passes.
 - Blocked and failed rows have `last_error` and `next_action`.
 - Completed rows must not contain deterministic scaffold or pending deep-read
-  text in `<PROGRAM>-program-analysis.md` or
-  `<PROGRAM>-routine-logic-details.md`.
+  state in `<PROGRAM>-program-analysis.md`,
+  `<PROGRAM>-routine-logic-details.md`, any retained batch checkpoint, or
+  `<PROGRAM>-routine-logic-details.yaml`.
+- Every retained batch checkpoint is completed in natural numeric order with
+  at most five routines/windows, persisted before the next batch, and merged
+  into both final reader surfaces after the complete loop.
+- The final batch status command includes `--require-terminal`; routine
+  resume/progress checks omit it.
 - Kiro merge must re-run the full per-program validator for every worker result
   claiming success; a worker-reported `completed/pass` is not accepted without
-  this parent validation gate.
+  this parent validation gate. Terminal Kiro batch validation also requires
+  that parent merge when at least one worker was prepared. A batch with no
+  dispatchable worker because every program was terminally preflight-blocked
+  may close without a merge. A legacy Kiro queue without
+  `scaffold_mode=precreate` must be reinitialized; it cannot be merged or
+  terminally accepted.
 
 Required per-program artifacts use the `<PROGRAM>-<artifact-name>` pattern,
 for example `CU219B-program-analysis.md`, not shared generic names.
 
 ## Version History
+
+- v0.1.18 (2026-07-22): Immutable large-program batch locks
+  - Records source-index and deep-read execution-plan SHA-256 values during
+    `--scaffold-mode precreate` in both the status CSV and manifest.
+  - Requires terminal validation to compare those locks and rerun the upstream
+    contract, preventing co-tampered plans, deleted batches, or thin shells from
+    being accepted by Cline or Kiro workers.
+
+- v0.1.17 (2026-07-22): Large-program anti-shell terminal gate
+  - Adds a tier-specific generated-prompt contract that treats index files and
+    the first deep-read checkpoint as scaffolds rather than completion proof.
+  - Makes terminal batch validation rerun the canonical upstream program
+    contract for each claimed completed row, so generic or thin large-program
+    batch shells cannot pass by merely removing literal pending markers.
+
+- v0.1.16 (2026-07-22): Shared per-program artifact bootstrap gate
+  - Added a mandatory generated-prompt gate for Cline serial and Kiro worker
+    execution: verify all seven core artifacts before semantic deep-read, run
+    the deterministic indexer for missing scaffolds, and never create empty
+    sidecars manually.
+  - Makes a remaining artifact gap a durable `failed_runtime` or
+    `blocked_missing_source` outcome instead of a possible false completion.
+
+- v0.1.15 (2026-07-20): Retained deep-read batch completion gate
+  - Requires Step 2 to process every retained checkpoint in natural numeric
+    order, at most five routines/windows per checkpoint, with durable YAML
+    write-back before advancing and final consolidation afterward.
+  - Expands the completion guard to nested checkpoint files and pending
+    routine YAML state while preserving source-backed index-only technical
+    utility coverage.
+  - Adds `--require-terminal` for final batch close while retaining the
+    resume-safe validator default during initialization and active work.
 
 - v0.1.13 (2026-07-12): Cline validation-first serial gate
   - Made the generated Cline serial runner require `validation_mode=immediate`.

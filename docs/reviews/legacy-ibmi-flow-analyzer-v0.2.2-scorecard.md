@@ -3,7 +3,8 @@ skill: legacy-ibmi-flow-analyzer
 scorecard_version: v0.2.2
 static_score: 9.62
 decision: repo-ready
-status: current
+status: superseded
+superseded_by: docs/reviews/legacy-ibmi-flow-analyzer-v0.4.0-scorecard.md
 last_verified: 2026-06-02
 runtimes_tested:
   codex: { status: synced, model: gpt-5.4-mini, date: 2026-06-02 }
@@ -13,6 +14,11 @@ evidence_source: docs/runtime-matrix.md
 ---
 
 # Skill Review Scorecard: legacy-ibmi-flow-analyzer v0.2.2
+
+> **Superseded:** the current review record is
+> [`legacy-ibmi-flow-analyzer` v0.4.0](legacy-ibmi-flow-analyzer-v0.4.0-scorecard.md).
+> This v0.2.2 transaction-flow contract is retained only as historical
+> migration evidence and is not the active skill contract.
 
 ## Change Under Review
 

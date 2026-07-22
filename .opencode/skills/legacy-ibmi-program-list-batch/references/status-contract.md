@@ -61,7 +61,7 @@ Add these columns to `program-list-status.csv`:
 | `in_progress` | Claimed by an operator/session. |
 | `completed` | Scan completed and validator passed. |
 | `completed_with_warnings` | Required artifacts exist, with warnings or non-blocking TBDs. |
-| `scanned_unvalidated` | Batch scan artifacts exist, but final program-analysis validation is deferred. |
+| `scanned_unvalidated` | Batch scan artifacts exist, but final program-analysis validation is deferred; this is a resumable checkpoint, never a terminal close. |
 | `blocked_missing_source` | Source path cannot be resolved. |
 | `failed_validator` | Validator failed. |
 | `failed_runtime` | Runtime/tooling failed before valid output. |
@@ -101,6 +101,15 @@ Examples:
 not a completion signal. The next Cline/Copilot prompt must still read source,
 replace pending/thin scaffold text with semantic analysis, and then write the
 final row status according to the selected validation mode.
+
+If retained `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoints
+exist, semantic completion is a durable multi-checkpoint loop. Discover both
+declared and actual checkpoint files, natural-sort by numeric suffix, process
+at most five assigned routines/windows in each checkpoint, persist that
+checkpoint and its matching routine YAML `summary[]`/`details[]` write-back,
+and only then advance.
+After all retained checkpoints are complete, merge the full set into the
+consolidated routine detail and reader-first main analysis.
 
 In Cline, use `cline-serial-runner-prompt.md` and process `prompt-queue/*.md`
 serially. Cline must not use `subagent-queue`, must not call `use_subagents`,
@@ -160,6 +169,21 @@ programs. Deep-read plans, coverage ledgers, and retained
 program is promoted to `complex_normal_program`, `large_extreme_program`, or an
 explicit deep-read continuation.
 
+For `large_extreme_program`, the deterministic artifact set and the first
+batch checkpoint are explicitly pre-analysis checkpoints. They never prove
+completion by themselves: every retained checkpoint must be source-backed,
+the duplicated routine YAML state must move to `deep_read` /
+`deep_read_complete`, and the full batch set must be consolidated into the two
+reader-first review surfaces before the row can claim `completed`.
+The set also includes `<PROGRAM>-deep-read-execution-plan.yaml`: its complete
+planned window/RLOG/batch allocation is authoritative, even when a later batch
+file is absent. A terminal large-program row requires a `precreate`-captured
+source-index SHA-256 and execution-plan SHA-256 in `batch-scan-manifest.yaml`.
+The terminal validator uses those values as immutable locks and rejects a
+self-consistent rewrite of source index + plan. If either lock is missing or
+mismatched, set `failed_validator` and recreate the deterministic scaffold
+from approved source rather than hand-editing a replacement plan.
+
 ## Completion Quality Guard
 
 Deterministic source indexes create pre-analysis scaffolds. They are useful for
@@ -174,10 +198,24 @@ Before a row can stay `completed`, `completed_with_warnings`, or
 - `<PROGRAM>-routine-logic-details.md` must contain reader-useful routine
   details for the RLOG IDs declared in
   `<PROGRAM>-routine-logic-details.yaml`.
-- Neither file may still contain scaffold wording such as
+- Every retained
+  `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` checkpoint must be
+  complete, use the required section layout, contain no more than five
+  routines/windows, and be represented in the final consolidated surfaces.
+- The main analysis, consolidated routine detail, and retained checkpoints may
+  not still contain scaffold wording such as
   `Draft wrapper seed generated`, `pending semantic deep-read`,
   `pending semantic detail`, `placeholder`, `not-yet-deep-read`, or
   `not deep-read`.
+- `<PROGRAM>-routine-logic-details.yaml` may not retain
+  `semantic_status: pending_deep_read`. A routine assigned to a completed
+  retained batch must move from `coverage: indexed_only` to
+  `coverage: deep_read`, set `semantic_status: deep_read_complete`, and replace
+  empty structured seed arrays with source-backed or explanatory values. An
+  unbatched pure technical utility may retain `coverage: indexed_only` only
+  when it has `semantic_status: source_backed_complete`,
+  source-backed concise semantic detail, and explicit reason/evidence for
+  remaining index-only.
 - The main file must preserve the reader-first navigation headings, including
   `### Routine Index For Calculation Logic`,
   `### Routine Index For Validation Logic`, and
@@ -209,8 +247,9 @@ handoff must run the program-analysis validator first and promote the row to
   mark the row complete from old files alone.
 - Do not mark a row `completed` unless the validator passed.
 - Do not mark a row `completed_with_warnings` unless required artifacts exist.
-- Do not treat `scanned_unvalidated` as downstream-ready; it requires final
-  validator execution before reuse.
+- Do not treat `scanned_unvalidated` as terminal or downstream-ready; it
+  requires final validator execution and promotion to `completed` / `pass`
+  before reuse or batch close.
 - Put missing source in `blocked_missing_source`, not `failed_runtime`.
 - Put validator failures in `failed_validator`, not `completed_with_warnings`.
 - Record `last_error` and `next_action` for every blocked or failed row.
@@ -222,11 +261,30 @@ handoff must run the program-analysis validator first and promote the row to
 
 This contract completes the independent program-scan batch only. A batch is
 ready to close when every requested row is classified as `completed`,
-`completed_with_warnings`, `scanned_unvalidated`, `skipped_not_program`,
+`completed_with_warnings`, `skipped_not_program`,
 `blocked_missing_source`, `failed_validator`, or `failed_runtime`. Validated
 rows must satisfy the required per-program artifact and validator rules.
-`scanned_unvalidated` rows are acceptable for closing a fast scan batch but
-remain blocked from downstream use until final validation passes.
+`scanned_unvalidated` remains an open deferred-validation checkpoint until
+final validation passes.
+
+Use the batch validator in two distinct modes:
+
+- Resume-safe progress check (default):
+  `validate_program_batch_status.py --batch-dir <batch-dir>`. This validates
+  state and completed artifact consistency while allowing rows that are still
+  `queued` or `in_progress`.
+- Final batch close:
+  `validate_program_batch_status.py --batch-dir <batch-dir> --require-terminal`.
+  This rejects `queued`, `in_progress`, and `scanned_unvalidated` rows. Every
+  claimed `completed` / `completed_with_warnings` row must have a concrete,
+  resolvable `output_dir`; the validator reruns the canonical program-analysis
+  contract with the CSV `size_tier` as immutable input. Therefore a row
+  classified as `large_extreme_program` cannot bypass retained deep-read
+  batches by rewriting its summary as normal, and a generic large-program shell
+  cannot pass simply because literal `pending` text was removed. Large terminal
+  rows additionally require the precreated execution locks; use
+  `--scaffold-mode precreate` before worker dispatch. Use it before reporting
+  the batch finished.
 
 Do not require `program-set-core-input-manifest.yaml`,
 `program-set-sme-core-review.md`, or the program-set validator for this batch

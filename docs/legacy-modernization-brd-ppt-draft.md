@@ -70,7 +70,9 @@ The repo already contains a skill-based pipeline for legacy understanding:
 - `legacy-module-context-intake`: packages scattered docs/RAG/SME notes and classifies every carried claim for BRD source eligibility
 - `legacy-ibmi-inventory`: identifies programs, files, screens, reports, and object relationships
 - `legacy-ibmi-program-analyzer`: extracts program behavior, calls, I/O, errors, and coverage
-- `legacy-ibmi-flow-analyzer`: connects programs into business transaction flows
+- `legacy-ibmi-flow-analyzer`: validates finalized reader-first program
+  analyses and synthesizes one coverage-complete SME/Dify Core Review; it does
+  not reconstruct transaction flow
 - `legacy-ibmi-module-analyzer`: assembles focused module coverage plus a BRD Source Eligibility Crosswalk
 - `legacy-brd-writer`: drafts the capability-level legacy BRD Package
 - `legacy-sme-review-facilitator`: records SME review decisions and sign-off

@@ -1,3 +1,9 @@
+# Historical, Non-Active Reference
+
+> Retained for provenance of the former transaction-flow analyzer. Trigger
+> discovery is outside the active v0.4.0 Reader-First Program Analysis Merger
+> contract. Do not load this reference during a merger run.
+
 # Trigger Models: How a Flow Starts
 
 A flow is a single business transaction. Every flow begins with **exactly

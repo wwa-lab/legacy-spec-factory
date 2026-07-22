@@ -1,14 +1,20 @@
+# Legacy Spec Factory
+# Copyright 2026 Leo L Zhang
+# Original author: Leo L Zhang
+# License: Apache License 2.0
+#
 # Copy this file into a project/team config location and edit the values for
-# that delivery repository.
-# Program-flow core review supports two explicit artifact modes:
-# - current_run (default): program_artifact_resolution_profile resolves
-#   folder/name patterns under the current working root; output writes to the
-#   named working branch; no remote-main or prior-run artifact satisfies the
-#   default flow run.
-# - approved_document_repo: after an all-program scan has been reviewed and
-#   merged into the document/delivery repo, an SME can clone that repo locally
-#   and use --artifact-repo-mode approved_document_repo to assemble a selected
-#   program flow from approved existing artifacts without re-scanning source.
+# that delivery repository. The v0.4 merger uses the complete reader-first
+# program-analysis.md as semantic primary input and sidecars for readiness and
+# reconciliation.
+#
+# Program-set core review supports two explicit artifact modes:
+# - approved_document_repo (default): after an all-program scan has been
+#   reviewed by an SME and merged into the document/delivery repo, use a local
+#   clone as the approved evidence source without re-scanning source.
+# - current_run: explicitly opt in with --artifact-repo-mode current_run when
+#   resolving artifacts from an active working branch; no arbitrary prior-run
+#   or remote-main fallback is allowed in this mode.
 
 program_artifact_resolution_profile:
   repo: CH-WPS-LENDING-CARDS/legacy-modernization-delivery
@@ -18,13 +24,19 @@ program_artifact_resolution_profile:
     - modules/*/{PROGRAM}
   artifact_file_patterns:
     - "{PROGRAM}-program-analysis.md"
-    - "{PROGRAM}-program-analysis-*.md"
+    - program-analysis.md
     - "{PROGRAM}-program-analysis-summary.yaml"
+    - "{PROGRAM}-source-index.yaml"
+    - "{PROGRAM}-routine-index.md"
+    - "{PROGRAM}-routine-logic-details.md"
     - "{PROGRAM}-routine-logic-details.yaml"
     - "{PROGRAM}-message-inventory.yaml"
-    - program-analysis.md
+    - "{PROGRAM}-program-analysis-*.md"
     - program-analysis-*.md
     - program-analysis-summary.yaml
+    - source-index.yaml
+    - routine-index.md
+    - routine-logic-details.md
     - routine-logic-details.yaml
     - message-inventory.yaml
   program_name_normalization:
@@ -84,7 +96,46 @@ delivery_workspace_profile:
   program_set_review_parent: modules/CAP-ID-0004-program_set_reviews
   program_set_review_path_pattern: "{FLOW_SLUG}--{PROGRAM_SET_SLUG}"
   review_slug_source: review_name
-  review_slug_collision_strategy: append_sequence
+  # Identity is stable by flow slug plus normalized program-set identity.
+  # --output-dir is a parent; the resolver appends this path exactly once.
+  review_slug_collision_strategy: stable_program_set_identity
+
+  merger_output_contract:
+    artifact_version: "0.4"
+    generator_version: "0.4.0"
+    output_dir_semantics: parent
+    append_folder_slug_exactly_once: true
+    preparation_files:
+      - program-list.txt
+      - program-set-core-input-manifest.yaml
+      - program-set-artifact-readiness.yaml
+      - program-set-reader-first-source-pack.md
+      - program-set-core-facts.yaml
+      - program-set-core-coverage.yaml
+    formal_review_filename_pattern: "{FOLDER_SLUG}--sme-core-review.md"
+    generic_review_alias: false
+    deterministic_builder_writes_formal_review: false
+    initial_coverage_status: pending
+
+  artifact_readiness_gate:
+    policy: core_reader_first_lenient
+    reuse_upstream_program_final_validator: true
+    terminal_statuses:
+      - approved
+      - approved_with_non_blocking_tbd
+    required_reader_first_sections:
+      - Program Reading Summary
+      - Calculation Logic
+      - Validation Logic
+      - Exception Handling
+      - Message Inventory
+    # Only a missing/meaningless core reader-first section blocks early intake.
+    # The remaining checks are preserved as pending_findings and are enforced
+    # again by the strict final validator before formal review handoff.
+    block_pending_deep_read: false
+    block_non_terminal_batches: false
+    block_placeholders: core_sections_only
+    block_unresolved_message_descriptions: false
 
   output_rules:
     analyzed_this_run: read_from_working_root
@@ -98,12 +149,15 @@ source_inventory_profile:
   program_list_filename: program-list.csv
   scan_summary_filename: scan-summary.yaml
   freshness_policy: clean_git_head_must_match
-  missing_or_stale_action: rerun_repo_inventory_scan
+  # The merger never launches a whole-repository scan as missing-program
+  # recovery. A missing/stale cache blocks targeted queue creation until the
+  # caller supplies a fresh inventory produced outside this run.
+  missing_or_stale_action: provide_fresh_inventory_or_exact_source_mapping
+  automatic_repo_scan: false
 
-# The core_review_only assembly mode defaults to the standard reader-first
-# profile so the main review includes the exact Message Inventory surface.
-# Keep minimal_reader_first available for teams that explicitly want a more
-# compact reading path.
+# The merger defaults to standard_reader_first. minimal_reader_first is
+# explicit opt-in and moves messages to audit coverage; it never drops message
+# facts or exact literals.
 core_review_profiles:
   minimal_reader_first:
     name: minimal_reader_first
@@ -114,6 +168,8 @@ core_review_profiles:
       - Validation Logic
       - Exception Handling
     include_message_inventory: false
+    message_coverage_section: Message Coverage Control
+    retain_all_message_facts: true
     include_audit_sections: true
   standard_reader_first:
     name: standard_reader_first
@@ -125,6 +181,8 @@ core_review_profiles:
       - Exception Handling
       - Message Inventory
     include_message_inventory: true
+    message_coverage_section: Message Inventory
+    retain_all_message_facts: true
     include_audit_sections: true
 
 core_review_profile:
@@ -137,4 +195,24 @@ core_review_profile:
     - Exception Handling
     - Message Inventory
   include_message_inventory: true
+  message_coverage_section: Message Inventory
+  retain_all_message_facts: true
   include_audit_sections: true
+
+coverage_profile:
+  source_fact_id_required: true
+  legal_dispositions:
+    - included
+    - merged
+    - excluded_non_core
+    - pending
+  final_pending_allowed: false
+  review_anchor_required_for:
+    - included
+    - merged
+  five_way_reconciliation:
+    - manifest
+    - source_pack
+    - core_facts
+    - coverage
+    - formal_review

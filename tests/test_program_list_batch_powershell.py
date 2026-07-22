@@ -39,6 +39,82 @@ def run_powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess
     )
 
 
+def write_batch_control_files(batch_dir: Path, status_row: str) -> None:
+    batch_dir.mkdir(parents=True)
+    (batch_dir / "batch-scan-manifest.yaml").write_text(
+        "programs: []\n", encoding="utf-8"
+    )
+    (batch_dir / "program-batch-plan.md").write_text(
+        "# Plan\n", encoding="utf-8"
+    )
+    (batch_dir / "program-list-status.csv").write_text(
+        "\n".join(
+            [
+                (
+                    "member,batch_status,validator_status,output_dir,owner,"
+                    "session_id,last_error,next_action"
+                ),
+                status_row,
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def write_completed_batch_artifacts(output_dir: Path, member: str) -> None:
+    output_dir.mkdir(parents=True)
+    analysis_text = f"""# Program Analysis: {member}
+
+## Program Reading Summary
+
+Reader-first processing context is complete.
+
+## Calculation Logic
+
+### Calculation Logic Overview
+
+Source-backed calculation overview.
+
+### Routine Index For Calculation Logic
+
+RLOG-{member}-001 calculation detail.
+
+## Validation Logic
+
+### Validation Logic Overview
+
+Source-backed validation overview.
+
+### Routine Index For Validation Logic
+
+RLOG-{member}-001 validation detail.
+
+## Exception Handling
+
+### Exception Flow Overview
+
+Source-backed exception overview.
+
+### Routine Index For Exception Handling
+
+RLOG-{member}-001 exception detail.
+"""
+    artifact_text = {
+        f"{member}-program-analysis.md": analysis_text,
+        f"{member}-routine-logic-details.md": (
+            f"# Routine Logic Details: {member}\n\n"
+            f"RLOG-{member}-001 contains completed semantic detail.\n"
+        ),
+        f"{member}-source-index.yaml": "ok\n",
+        f"{member}-program-analysis-summary.yaml": "ok\n",
+        f"{member}-routine-index.md": "ok\n",
+        f"{member}-message-inventory.yaml": "ok\n",
+        f"{member}-routine-logic-details.yaml": "ok\n",
+    }
+    for artifact, text in artifact_text.items():
+        (output_dir / artifact).write_text(text, encoding="utf-8")
+
+
 class ProgramListBatchPowerShellContractTests(unittest.TestCase):
     def test_native_scripts_exist_and_do_not_delegate_to_python(self) -> None:
         for script in (INITIALIZER, STATUS_VALIDATOR):
@@ -54,11 +130,68 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
         self.assertIn("scaffoldmode", initializer_text.lower())
         self.assertIn("scaffold_status", initializer_text)
         self.assertIn("index-rpg-source.ps1", initializer_text)
+        self.assertIn("Get-TierExecutionContract", initializer_text)
+        self.assertIn("Get-IndexCommandBlock", initializer_text)
+        self.assertIn("index_command_block = Get-IndexCommandBlock", initializer_text)
+        self.assertIn("--preserve-existing", initializer_text)
+        self.assertIn("--canonical-artifact-names", initializer_text)
+        self.assertIn("Large-program terminal completion contract", initializer_text)
+        self.assertIn("batch-001 file is a scaffold/checkpoint", initializer_text)
+        self.assertIn("source_index_sha256", initializer_text)
+        self.assertIn("deep_read_execution_plan_sha256", initializer_text)
+        self.assertIn("--scaffold-mode precreate", initializer_text)
 
         status_validator_text = STATUS_VALIDATOR.read_text(encoding="utf-8")
         self.assertIn("Routine Index For Calculation Logic", status_validator_text)
         self.assertIn("Routine Index For Validation Logic", status_validator_text)
         self.assertIn("Routine Index For Exception Handling", status_validator_text)
+        self.assertIn("Invoke-UpstreamProgramAnalysisContract", status_validator_text)
+        self.assertIn("validate-program-analysis-contract.ps1", status_validator_text)
+        self.assertIn("--expected-size-tier", status_validator_text)
+        self.assertIn('"scanned_unvalidated"', status_validator_text)
+        self.assertIn("upstream program-analysis contract failed", status_validator_text)
+
+    def test_status_validator_static_contract_covers_terminal_and_nested_batches(
+        self,
+    ) -> None:
+        text = STATUS_VALIDATOR.read_text(encoding="utf-8")
+
+        self.assertIn("--require-terminal", text)
+        self.assertIn("-RequireTerminal", text)
+        self.assertRegex(
+            text,
+            r"(?is)\$options(?:\.RequireTerminal|\[['\"]RequireTerminal['\"]\])\s*=\s*\$true",
+        )
+        self.assertIn("*-deep-read-batch-*.md", text)
+        self.assertIn("pending_deep_read", text)
+        self.assertRegex(text, r'\$NonTerminalStatuses\s*=\s*@\([^)]*"scanned_unvalidated"')
+        self.assertIn("claimed terminal completion requires a concrete output_dir", text)
+        self.assertIn("(?:\\r?\\n|$)", text)
+        self.assertNotIn("(?=\\s*(?:#|$))", text)
+        self.assertRegex(
+            text,
+            r"(?is)\$Options\.RequireTerminal.*?\$status\s+-in\s+@\(\"completed\",\s*\"completed_with_warnings\"\).*?Invoke-UpstreamProgramAnalysisContract",
+        )
+
+    def test_status_validator_static_contract_requires_kiro_parent_merge(self) -> None:
+        text = STATUS_VALIDATOR.read_text(encoding="utf-8")
+
+        self.assertIn("Get-ManifestTopLevelValue", text)
+        self.assertIn("Get-ManifestSubagentExpectation", text)
+        self.assertIn("subagent_expected_count", text)
+        self.assertIn("subagent_mode", text)
+        self.assertIn("scaffold_mode", text)
+        self.assertIn("Get-ManifestProgramExecutionLock", text)
+        self.assertIn("precreated immutable execution locks", text)
+        self.assertIn("source-index SHA-256 differs", text)
+        self.assertIn("deep-read execution-plan SHA-256 differs", text)
+        self.assertIn("Kiro/parallel batch requires scaffold_mode=precreate", text)
+        self.assertIn("Kiro/parallel batch requires parent merge before terminal validation", text)
+        self.assertIn("subagent_results_merged", text)
+        self.assertRegex(
+            text,
+            r"(?is)\$Options\.RequireTerminal.*?subagent_mode.*?prepare.*?Get-ManifestSubagentExpectation",
+        )
 
     @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
     def test_router_uses_native_fallback_when_both_python_launchers_fail(self) -> None:
@@ -425,6 +558,105 @@ class ProgramListBatchPowerShellContractTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_status_validator_supports_valueless_terminal_switch_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            batch_dir = Path(temp_dir) / "batch"
+            write_batch_control_files(
+                batch_dir,
+                "CC050,queued,not_run,,,,run next prompt",
+            )
+
+            consistency_result = run_powershell(
+                STATUS_VALIDATOR,
+                "--batch-dir",
+                str(batch_dir),
+            )
+            self.assertEqual(
+                consistency_result.returncode,
+                0,
+                consistency_result.stderr + consistency_result.stdout,
+            )
+
+            for terminal_switch in ("--require-terminal", "-RequireTerminal"):
+                with self.subTest(terminal_switch=terminal_switch):
+                    result = run_powershell(
+                        STATUS_VALIDATOR,
+                        "--batch-dir",
+                        str(batch_dir),
+                        terminal_switch,
+                    )
+
+                    self.assertEqual(
+                        result.returncode,
+                        1,
+                        result.stderr + result.stdout,
+                    )
+                    self.assertIn("queued", result.stdout)
+                    self.assertIn("terminal", result.stdout.lower())
+
+    @unittest.skipIf(POWERSHELL is None, "PowerShell is not installed on this host")
+    def test_status_validator_detects_pending_nested_deep_read_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            batch_dir = root / "batch"
+            delivery_root = root / "delivery"
+            output_dir = (
+                delivery_root
+                / "modules"
+                / "CAP-ID-0001-large_extreme_program"
+                / "SS380"
+            )
+            write_batch_control_files(
+                batch_dir,
+                (
+                    "SS380,completed,pass,"
+                    "modules/CAP-ID-0001-large_extreme_program/SS380,,,,"
+                ),
+            )
+            write_completed_batch_artifacts(output_dir, "SS380")
+            retained_dir = output_dir / "routine-logic-details"
+            retained_dir.mkdir()
+            (retained_dir / "SS380-deep-read-batch-002.md").write_text(
+                """# Routine Logic Details: SS380 - Deep Read Batch 002
+
+## Calculation Logic
+
+Pending semantic deep-read for this batch.
+
+## Validation Logic
+
+Pending semantic deep-read for this batch.
+
+## Exception Handling
+
+Pending semantic deep-read for this batch.
+
+## Routine Details
+
+### RLOG-SS380-001 - SR400
+
+**Semantic status:** pending_deep_read
+""",
+                encoding="utf-8",
+            )
+
+            result = run_powershell(
+                STATUS_VALIDATOR,
+                "--batch-dir",
+                str(batch_dir),
+                "--delivery-root",
+                str(delivery_root),
+            )
+
+            self.assertEqual(
+                result.returncode,
+                1,
+                result.stderr + result.stdout,
+            )
+            self.assertIn("SS380-deep-read-batch-002.md", result.stdout)
+            self.assertIn("pending", result.stdout.lower())
 
 
 if __name__ == "__main__":

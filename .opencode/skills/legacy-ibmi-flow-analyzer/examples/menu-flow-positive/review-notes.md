@@ -1,3 +1,8 @@
+# Historical, Non-Active Review Notes
+
+> These notes assess the former full-flow contract. They are not acceptance
+> criteria for the active reader-first Program Analysis Merger.
+
 # Review Notes: Why This Menu-Flow Analysis Is Good
 
 ## What This Example Demonstrates

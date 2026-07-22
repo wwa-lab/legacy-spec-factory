@@ -52,8 +52,17 @@ class PowerShellRpgSourceIndexerTests(unittest.TestCase):
             "--delivery-profile",
             "--force-rescan",
             "--rescan-reason",
+            "--preserve-existing",
+            "--canonical-artifact-names",
         ):
             self.assertIn(option, core)
+
+        artifact_writer = (MODULE_ROOT / "IndexerArtifacts.psm1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("CanonicalArtifactNames", artifact_writer)
+        self.assertIn("PreserveExisting", artifact_writer)
+        self.assertIn("Get-IndexerArtifactName", artifact_writer)
 
     def test_focused_modules_stay_below_repository_file_limit(self) -> None:
         for path in MODULE_ROOT.glob("Indexer*.psm1"):
@@ -74,8 +83,12 @@ class PowerShellRpgSourceIndexerTests(unittest.TestCase):
             "field-mutation-matrix.yaml",
             "sql-inventory.yaml",
             "routine-logic-details/deep-read-batch-",
+            "deep-read-execution-plan.yaml",
         ):
             self.assertIn(artifact, text)
+        self.assertIn("New-DeepReadExecutionPlan", text)
+        self.assertIn("source_index_sha256", text)
+        self.assertIn("planned_deep_read", text)
 
     def test_native_indexer_smoke_when_powershell_is_available(self) -> None:
         executable = shutil.which("powershell") or shutil.which("pwsh")

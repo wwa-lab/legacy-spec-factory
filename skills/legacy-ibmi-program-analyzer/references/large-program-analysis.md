@@ -220,11 +220,58 @@ Large/extreme artifacts:
 
 | Artifact | Purpose |
 | --- | --- |
+| `<PROGRAM>-deep-read-execution-plan.yaml` | Immutable-at-batch-start allocation of every selected window, source range, RLOG, and retained batch plus the source-index SHA-256. It is required for large/extreme final validation and must not be hand-edited to remove work. |
 | `routine-logic-details/<PROGRAM>-deep-read-batch-001.md` | Required first retained checkpoint for large/extreme batched deep-read. Additional batches continue as `<PROGRAM>-deep-read-batch-002.md`, `<PROGRAM>-deep-read-batch-003.md`, and so on, with at most five routines/windows per batch. |
 
 These files are allowed intermediate artifacts. They do not replace
 `<PROGRAM>-program-analysis.md`, and they must not be treated as business
 conclusions.
+
+### Retained Batch Completion Loop
+
+When one or more retained deep-read checkpoints exist, complete the whole set;
+the presence of batch 001 is not permission to stop after batch 001.
+
+1. Read `<PROGRAM>-deep-read-execution-plan.yaml` first. Its
+   `planned_deep_read` list is the full allocation; do not infer completion
+   from only the batch files still present on disk. Discover checkpoint paths
+   from the plan, summary/YAML declarations, and actual
+   `routine-logic-details/<PROGRAM>-deep-read-batch-*.md` files.
+2. Sort by the numeric batch suffix in natural order (`001`, `002`, ...,
+   `010`), not by an arbitrary filesystem iteration order.
+3. Open only the source windows assigned to the current checkpoint, with at
+   most five routines/windows in that checkpoint.
+4. Replace all deterministic pending seed content with source-backed semantic
+   detail, cite each planned RLOG's allocated source-line range in its routine
+   body, and reject generic filler; then persist the checkpoint before opening
+   the next one.
+5. In the same checkpoint step, atomically update the matching
+   `routine_logic_inventory.summary[]` and `routine_logic_inventory.details[]` entries in
+   `<PROGRAM>-routine-logic-details.yaml`. A routine completed in the batch
+   moves from `coverage: indexed_only` to `coverage: deep_read`, sets
+   `semantic_status: deep_read_complete`, and receives an execution trigger, ordered logic, calculation
+   and branch detail, carrier/lineage ties, outcomes, exception closure, and
+   evidence.
+6. Update the all-routine coverage ledger when present, then continue until no
+   retained checkpoint is pending.
+7. Only after every checkpoint is persisted, merge the full set into
+   `<PROGRAM>-routine-logic-details.md` and the reader-first
+   `<PROGRAM>-program-analysis.md`.
+
+For program-list batches, `--scaffold-mode precreate` records source-index and
+execution-plan SHA-256 values in `batch-scan-manifest.yaml`. The terminal gate
+compares the final files to those locks, so rewriting the plan and source index
+together cannot silently remove a later batch. If a lock/digest fails, mark the
+row `failed_validator`, recreate the deterministic scaffold from approved
+source, and restart the planned deep-read allocation.
+
+`semantic_status: pending_deep_read` is never valid in final routine YAML. A
+pure technical utility that was not assigned to any retained deep-read batch
+may retain `coverage: indexed_only`, but only with
+`semantic_status: source_backed_complete`, a
+status, source-backed concise semantic detail, and an explicit reason/evidence
+for remaining index-only. This exception does not apply to a routine that was
+assigned to a completed retained batch.
 
 Capture:
 
@@ -290,7 +337,8 @@ core calculations, validations, exception paths, or messages. Do not paste
 source code into the batch core sections; use identifiers, normalized logic,
 source ranges, evidence IDs, and `RLOG-*` links instead.
 
-The retained batch/shard files must be consolidated after batch deep-read. The
+The retained batch/shard files must be consolidated after every retained
+checkpoint has completed the loop above. The
 final `<PROGRAM>-program-analysis.md` is the primary SME review document and
 the final `<PROGRAM>-routine-logic-details.md` is the consolidated
 audit/checkpoint document for all routine detail, even for very large programs.
@@ -320,7 +368,8 @@ Windows/Cline: py -3 .agents\skills\legacy-ibmi-program-analyzer\scripts\validat
 macOS/Linux: python3 scripts/validate-program-analysis-contract.py --analysis-dir <DIR>
 ```
 
-The gate checks required wrapper sections, declared sidecar files, RLOG coverage
+The gate checks required wrapper sections, declared and discovered retained
+batch files, pending checkpoint/YAML seed state, RLOG coverage
 from `<PROGRAM>-routine-logic-details.yaml` to both
 `<PROGRAM>-program-analysis.md` and `<PROGRAM>-routine-logic-details.md`, core
 logic routine-index coverage, stale deep-read gap wording, and message
@@ -336,14 +385,20 @@ complete operation detail in `<PROGRAM>-file-io-inventory.md` /
 analysis rows to stable `FIO-*`, `MUT-*`, and `SQL-*` detail IDs instead of
 expanding every operation or host variable inline.
 
-Downstream flow/module analyzers must prefer
+Downstream flow/module analyzers must prefer the finalized reader-first main
+document for semantic meaning. Specifically, the downstream
+`legacy-ibmi-flow-analyzer` Reader-First Program Analysis Merger must use the
+complete `Program Reading Summary`, `Calculation Logic`,
+`Validation Logic`, `Exception Handling`, and `Message Inventory` sections in
+each finalized `<PROGRAM>-program-analysis.md` as its semantic primary input.
+It preserves those sections in a lossless source pack before the executing
+skill LLM performs thematic cross-program synthesis. Machine-readable
 `<PROGRAM>-program-analysis-summary.yaml`, `<PROGRAM>-source-index.yaml`,
-`<PROGRAM>-routine-logic-details.yaml`, and
-`<PROGRAM>-message-inventory.yaml`, `<PROGRAM>-file-io-inventory.yaml`,
-`<PROGRAM>-field-mutation-matrix.yaml`, and `<PROGRAM>-sql-inventory.yaml` when
-aggregating multiple programs. They should not concatenate multiple full
-`<PROGRAM>-program-analysis.md` files; human-readable Markdown is for targeted
-clarification only.
+`<PROGRAM>-routine-logic-details.yaml`, `<PROGRAM>-message-inventory.yaml`, and
+triggered file-I/O/mutation/SQL sidecars remain required for readiness,
+normalization, and coverage reconciliation; they do not replace the final
+reader-first main document. They should not concatenate complete program files;
+the merger must synthesize rather than concatenate them.
 
 ## Routine Card
 

@@ -17,14 +17,21 @@ $ErrorActionPreference = 'Stop'
 function Show-Usage {
     [Console]::Error.WriteLine(
         'Usage: validate-program-analysis-contract.ps1 --analysis-dir <DIR> ' +
-        '[--program-analysis <FILE>]'
+        '[--program-analysis <FILE>] [--expected-size-tier <TIER>] ' +
+        '[--expected-source-index-sha256 <HEX>] [--expected-execution-plan-sha256 <HEX>]'
     )
 }
 
 function Parse-CommandLine {
     param([object[]]$CommandLine)
 
-    $parsed = @{ AnalysisDir = $null; ProgramAnalysis = $null }
+    $parsed = @{
+        AnalysisDir = $null
+        ProgramAnalysis = $null
+        ExpectedSizeTier = $null
+        ExpectedSourceIndexSha256 = $null
+        ExpectedExecutionPlanSha256 = $null
+    }
     for ($index = 0; $index -lt $CommandLine.Count; $index++) {
         $token = [string]$CommandLine[$index]
         if (@('--analysis-dir', '-analysis-dir', '-AnalysisDir') -contains $token) {
@@ -36,6 +43,21 @@ function Parse-CommandLine {
             if ($index + 1 -ge $CommandLine.Count) { throw "Missing value for $token" }
             $index++
             $parsed.ProgramAnalysis = [string]$CommandLine[$index]
+        }
+        elseif (@('--expected-size-tier', '-expected-size-tier', '-ExpectedSizeTier') -contains $token) {
+            if ($index + 1 -ge $CommandLine.Count) { throw "Missing value for $token" }
+            $index++
+            $parsed.ExpectedSizeTier = [string]$CommandLine[$index]
+        }
+        elseif (@('--expected-source-index-sha256', '-expected-source-index-sha256', '-ExpectedSourceIndexSha256') -contains $token) {
+            if ($index + 1 -ge $CommandLine.Count) { throw "Missing value for $token" }
+            $index++
+            $parsed.ExpectedSourceIndexSha256 = [string]$CommandLine[$index]
+        }
+        elseif (@('--expected-execution-plan-sha256', '-expected-execution-plan-sha256', '-ExpectedExecutionPlanSha256') -contains $token) {
+            if ($index + 1 -ge $CommandLine.Count) { throw "Missing value for $token" }
+            $index++
+            $parsed.ExpectedExecutionPlanSha256 = [string]$CommandLine[$index]
         }
         elseif (@('--help', '-help', '-h', '/?') -contains $token) {
             $parsed.Help = $true
@@ -61,7 +83,7 @@ try {
 
     $modulePath = Join-Path (Join-Path $PSScriptRoot 'powershell') 'ProgramAnalysisContract.Validation.psm1'
     Import-Module $modulePath -Force
-    $findings = @(Invoke-ContractValidation $options.AnalysisDir $options.ProgramAnalysis)
+    $findings = @(Invoke-ContractValidation $options.AnalysisDir $options.ProgramAnalysis $options.ExpectedSizeTier $options.ExpectedSourceIndexSha256 $options.ExpectedExecutionPlanSha256)
     if ($findings.Count -gt 0) {
         foreach ($finding in $findings) { [Console]::Error.WriteLine("ERROR: $finding") }
         exit 1
