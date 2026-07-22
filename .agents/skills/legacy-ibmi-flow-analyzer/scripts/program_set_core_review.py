@@ -783,6 +783,11 @@ def core_reader_first_findings(analysis_path: Path | None) -> list[str]:
     for section in CORE_READINESS_SECTIONS:
         block = _core_section_block(markdown, section)
         if not block:
+            if section == "Message Inventory":
+                findings.append(
+                    "message inventory is absent; no observed messages recorded yet"
+                )
+                continue
             findings.append(f"core reader-first section is missing: {section}")
             continue
         surface = _structured_markdown_surface_v04(block)
@@ -801,6 +806,11 @@ def core_reader_first_findings(analysis_path: Path | None) -> list[str]:
             visible_lines.append(line)
         visible = " ".join(visible_lines)
         words = CORE_READINESS_WORD_RE.findall(visible)
+        if section == "Message Inventory" and not visible:
+            findings.append(
+                "message inventory is empty; no observed messages recorded yet"
+            )
+            continue
         if not visible or CORE_READINESS_PLACEHOLDER_RE.search(visible) and len(words) < 8:
             findings.append(
                 f"core reader-first section is placeholder or not meaningful: {section}"
@@ -847,7 +857,10 @@ def classify_readiness_finding(finding: str) -> str:
         return "blocking"
     if "program-analysis.md missing required sections:" in lowered:
         missing = lowered.split("program-analysis.md missing required sections:", 1)[1]
-        if any(section.lower() in missing for section in CORE_READINESS_SECTIONS):
+        hard_core_sections = tuple(
+            section for section in CORE_READINESS_SECTIONS if section != "Message Inventory"
+        )
+        if any(section.lower() in missing for section in hard_core_sections):
             return "blocking"
     # Everything else is retained as a pending repair item: sidecar drift,
     # status/terminal gaps, pending deep reads, message descriptions, RLOG

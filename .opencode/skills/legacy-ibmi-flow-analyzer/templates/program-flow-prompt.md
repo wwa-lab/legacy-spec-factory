@@ -50,7 +50,9 @@ Optional SME context:
    placeholder 才阻断。pending_deep_read、非终态 batch、缺少 RLOG、未解决的
    message description、sidecar drift 或其它 validator failure 要原样写入
    `pending_findings`，先让 source pack 进入综合准备；正式 review 仍须等严格
-   final validator 和 zero-pending coverage。
+   final validator 和 zero-pending coverage。若程序确实没有观察到 message/
+   status literal，`Message Inventory` 可以为空或缺失，但必须记录为
+   no-observed-message pending，而不能伪造一条 message。
 3. 默认只读取 current_run artifact。只有我明确改为
    `approved_document_repo` 时，才可读取指定的 approved local repo clone；
    不要静默复用历史 run、remote main 或他人的 output。

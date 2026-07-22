@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -280,6 +281,27 @@ class ProgramSetReaderFirstReadinessTests(unittest.TestCase):
             self.assertEqual(manifest["review_status"], "ready_for_synthesis")
             self.assertTrue(readiness["pending_findings"])
             self.assertIn("non-core", json.dumps(readiness).lower())
+
+    def test_program_with_no_observed_messages_passes_core_readiness(self) -> None:
+        def remove_messages(fixture) -> None:
+            markdown = fixture.program_analysis.read_text(encoding="utf-8")
+            markdown = re.sub(
+                r"(?ms)^## Message Inventory\s*.*?(?=^##\s+|\Z)",
+                "",
+                markdown,
+            )
+            fixture.program_analysis.write_text(markdown, encoding="utf-8")
+            payload = json.loads(fixture.message_inventory_yaml.read_text(encoding="utf-8"))
+            payload["message_inventory"] = {"summary": [], "details": []}
+            fixture.message_inventory_yaml.write_text(
+                json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest = self.build_manifest(Path(temp_dir), remove_messages)
+            readiness = manifest["programs"][0]["artifact_readiness"]
+            self.assertEqual(readiness["status"], "ready")
+            self.assertIn("no observed messages", json.dumps(readiness).lower())
 
     def test_readiness_artifact_has_one_row_per_distinct_normalized_program(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

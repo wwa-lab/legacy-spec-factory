@@ -163,8 +163,10 @@ pack creation, invoke or reuse the final validator from
 `programs[].artifact_readiness.status` is `ready` when the primary
 `program-analysis.md` belongs to the requested program and its five
 reader-first sections are present and meaningful (not an empty or placeholder
-shell). The artifact path must also be unambiguous and remain inside the
-supplied artifact root.
+shell). `Message Inventory` may be absent or empty when the scan has observed
+no messages/status literals; that condition is recorded as a pending
+no-observed-message finding. The artifact path must also be unambiguous and
+remain inside the supplied artifact root.
 
 The merger uses a **core-first lenient readiness policy** for early scans. The
 upstream final validator still runs when possible, but pending deep reads,

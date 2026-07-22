@@ -182,7 +182,10 @@ must never search arbitrary historical output or remote main.
 Contains one readiness result per distinct program and the exact upstream
 validator outcome. Early intake uses `core_reader_first_lenient`: `ready`
 requires the primary Markdown, correct program identity, safe/unambiguous
-resolution, and meaningful content in all five reader-first sections. Strict
+resolution, and meaningful content in the four logic/behavior reader-first
+sections. `Message Inventory` may be absent or empty when no message/status
+literal was observed; that state is retained as a pending no-observed-message
+finding. Strict
 upstream findings that are outside those core sections (pending deep reads,
 retained batch completion, sidecar/RLOG drift, terminal status, and unresolved
 message descriptions) are retained in `pending_findings` rather than blocking

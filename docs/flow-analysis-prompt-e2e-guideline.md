@@ -80,8 +80,10 @@ Rules:
    a call chain from that order.
 2. For every distinct program, run or reuse the upstream final program-analysis
    validator. Early intake uses `core_reader_first_lenient`: require the main
-   Markdown, correct identity, and meaningful content in all five reader-first
-   H2 sections. Terminal approval, pending deep reads, retained batch/RLOG
+   Markdown, correct identity, and meaningful content in the four logic/behavior
+   reader-first H2 sections. `Message Inventory` may be empty when no
+   message/status literal was observed; record that as pending. Terminal approval,
+   pending deep reads, retained batch/RLOG
    coverage, sidecar drift, and unresolved message descriptions are recorded as
    `pending_findings`; strict final validation still gates the formal review.
 3. Treat --output-dir as the output parent. Resolve one
