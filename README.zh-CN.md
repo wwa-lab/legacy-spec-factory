@@ -13,6 +13,8 @@ evidence contracts、templates 和 documentation。它帮助团队把底层 ARCA
 REF / XREF 数据、程序调用关系，以及 RPG / CL / COBOL / DDS 源码证据，
 转换为结构化、可审查、可复用的现代化知识资产。
 
+**Manager 一句话说明：** Atlas Phoenix Lens 是一套“先画程序调用地图、再沿地图扫描源码”的遗留系统发现方案：它先用 ARCAD REF/XREF 和 Neo4j 建立跨程序调用链，再用 Legacy Spec Factory AI Skills 批量扫描 RPG、CL、COBOL 和 DDS，提取可追溯的业务规则、计算、校验、异常处理及数据使用，最后上传 Dify 供 SME 查询、审核和生成 BRD。
+
 当前仓库聚焦两个连续能力：
 
 1. **生成 Program Flow**：基于 ARCAD REF / XREF 数据生成 Program Flow
