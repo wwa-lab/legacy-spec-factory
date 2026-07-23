@@ -45,6 +45,21 @@ program_artifact_resolution_profile:
       - "@"
     exact_folder_name_match: true
 
+# Read-only inventory for requalifying older artifacts already present in the
+# SME-approved repository. It never writes to the approved root.
+approved_artifact_requalification_profile:
+  enabled: true
+  discovery_mode: profile_folder_patterns_only
+  report_filename: approved-artifact-requalification.yaml
+  repair_queue_mode: one_program_one_prompt
+  blocked_rows_require_manual_resolution: true
+  categories:
+    - final_ready
+    - core_reader_ready_pending
+    - format_repairable
+    - semantic_repair_required
+    - blocked
+
 # Optional compatibility section for single-program analyzer central preflight.
 # The program-flow builder prefers program_artifact_resolution_profile above.
 delivery_artifact_lookup_profile:

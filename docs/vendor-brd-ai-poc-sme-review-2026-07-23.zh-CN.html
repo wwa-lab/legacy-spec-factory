@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vendor BRD AI POC——SME Review 报告</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fffdf8;
+      --text: #1f2933;
+      --muted: #52606d;
+      --line: #d9d1c4;
+      --accent: #8f4e22;
+      --accent-soft: #f6e3cf;
+      --code-bg: #f3f4f6;
+      --quote: #f8f1e7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #f9e6d2 0, transparent 28rem),
+        linear-gradient(180deg, #fcfaf6 0%, var(--bg) 100%);
+      line-height: 1.65;
+    }
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    .hero {
+      padding: 28px 30px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(250,241,229,0.96));
+      box-shadow: 0 18px 50px rgba(92, 66, 37, 0.08);
+    }
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 22px;
+      margin-top: 24px;
+    }
+    .toc, .content {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 16px 40px rgba(92, 66, 37, 0.06);
+    }
+    .toc {
+      padding: 20px 22px;
+    }
+    .toc h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+    .toc ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .toc li {
+      margin: 6px 0;
+    }
+    .toc-level-3 {
+      color: var(--muted);
+    }
+    .toc a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .content {
+      padding: 28px 30px;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      line-height: 1.25;
+      margin: 1.4em 0 0.6em;
+      scroll-margin-top: 24px;
+    }
+    h1:first-child {
+      margin-top: 0;
+    }
+    h1 {
+      font-size: 2.15rem;
+    }
+    h2 {
+      font-size: 1.45rem;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+    h3 {
+      font-size: 1.12rem;
+    }
+    p, ul, ol, table, pre, blockquote {
+      margin: 0 0 16px;
+    }
+    ul, ol {
+      padding-left: 24px;
+    }
+    li {
+      margin: 7px 0;
+    }
+    .checklist-item {
+      list-style: none;
+      margin-left: -24px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .checklist-item input {
+      margin-top: 0.3rem;
+      accent-color: var(--accent);
+    }
+    code {
+      font-family: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", monospace;
+      background: var(--code-bg);
+      border-radius: 6px;
+      padding: 0.1rem 0.35rem;
+      font-size: 0.92em;
+    }
+    pre {
+      overflow-x: auto;
+      padding: 16px 18px;
+      background: #18212b;
+      color: #f8fafc;
+      border-radius: 16px;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow-x: auto;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+    thead th {
+      background: var(--accent-soft);
+    }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      margin-left: 0;
+      padding: 12px 16px;
+      background: var(--quote);
+      border-radius: 0 12px 12px 0;
+    }
+    a {
+      color: var(--accent);
+    }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 22px 0;
+    }
+    .footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+    @media (min-width: 980px) {
+      .layout.with-toc {
+        grid-template-columns: 280px minmax(0, 1fr);
+        align-items: start;
+      }
+      .toc {
+        position: sticky;
+        top: 20px;
+      }
+    }
+    @media (max-width: 700px) {
+      .shell {
+        padding: 18px 12px 32px;
+      }
+      .hero, .content, .toc {
+        border-radius: 18px;
+        padding: 20px 18px;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <h1>Vendor BRD AI POC——SME Review 报告</h1>
+      <p>Standalone HTML view generated from <code>vendor-brd-ai-poc-sme-review-2026-07-23.zh-CN.md</code>. Markdown remains the canonical source.</p>
+    </section>
+    <div class="layout with-toc">
+      <nav class="toc"><h2>Contents</h2><ul><li class="toc-level-1"><a href="#vendor-brd-ai-pocsme-review">Vendor BRD AI POC——SME Review 报告</a></li>
+<li class="toc-level-2"><a href="#1-review">1. Review 结论</a></li>
+<li class="toc-level-3"><a href="#11-review">1.1 管理层初步 Review 补充</a></li>
+<li class="toc-level-2"><a href="#2">2. 评审阶段与严重度口径</a></li>
+<li class="toc-level-2"><a href="#3">3. 评审范围与信息边界</a></li>
+<li class="toc-level-2"><a href="#4-poc">4. POC 的优点</a></li>
+<li class="toc-level-3"><a href="#41">4.1 分析到评审的工作流方向正确</a></li>
+<li class="toc-level-3"><a href="#42">4.2 已经体现出证据意识</a></li>
+<li class="toc-level-3"><a href="#43">4.3 包含人工需求澄清环节</a></li>
+<li class="toc-level-3"><a href="#44">4.4 草稿输出具备较强实用性</a></li>
+<li class="toc-level-2"><a href="#5-sme">5. SME 主要发现</a></li>
+<li class="toc-level-2"><a href="#6-brd">6. BRD 能力专项评估</a></li>
+<li class="toc-level-2"><a href="#7">7. 未加控制直接采用的主要风险</a></li>
+<li class="toc-level-2"><a href="#8-pilot">8. 受控 Pilot 的最低验收标准</a></li>
+<li class="toc-level-3"><a href="#81-challenge-case-pilot-exit-gate">8.1 强制 Challenge Case 与 Pilot Exit Gate</a></li>
+<li class="toc-level-3"><a href="#82-vendor-pilot-scorecard">8.2 Vendor Pilot Scorecard</a></li>
+<li class="toc-level-3"><a href="#83">8.3 最低互操作性契约</a></li>
+<li class="toc-level-3"><a href="#84-abort-criteria">8.4 Abort Criteria</a></li>
+<li class="toc-level-2"><a href="#9-pilot">9. 建议的 Pilot 范围和评审方法</a></li>
+<li class="toc-level-3"><a href="#91-pilot">9.1 Pilot 资源与时间盒</a></li>
+<li class="toc-level-2"><a href="#10-sme">10. 最终 SME 建议</a></li></ul></nav>
+      <article class="content">
+        <h1 id="vendor-brd-ai-pocsme-review">Vendor BRD AI POC——SME Review 报告</h1>
+<h2 id="1-review">1. Review 结论</h2>
+<p><strong>评审结论：有条件接受，但尚不具备正式 BRD 审批条件。</strong></p>
+<p>该 POC 展示了一个面向 RPG/COBOL 类遗留批处理应用的反向工程分析工作台，能够将源代码分析结果组织为候选业务对象、持久化实体、接口、任务、规则、分支、流程视图、需求澄清问题，以及 BRS/FRS 类文档。</p>
+<p>但是，演示尚未证明生成内容可以作为已批准的业务需求基线。目前输出至少混合了以下四类内容：</p>
+<ol><li>遗留系统技术分析；</li><li>AI 推断的业务概念和规则；</li><li>SME 需求澄清材料；</li><li>BRD/FRS、角色矩阵、接口和验收测试类内容。</li></ol>
+<p>因此存在一个实质性风险：格式完整、视觉专业的文档可能被误认为业务事实，而其中部分内容实际上只是 AI 推断或代码抽取出的候选项。</p>
+<p><strong>建议处置：</strong>可以作为内部分析 POC 继续推进，并进入受控 Pilot；但当前输出不应直接作为正式 BRD、迁移基线、正式规格、目标系统设计、审计基线或 SDD handoff 使用。</p>
+<h3 id="11-review">1.1 管理层初步 Review 补充</h3>
+<p>管理层初步评审认为，Vendor 展示的自动建模、BPMN 流程预览、需求文档生成、自动需求澄清和语义对话具有较好的产品价值；但按大模块描述提取基础需求并非明显差异化能力，Legacy Spec Factory 也具备结合模块描述、文档和代码生成模块级候选需求的基础。</p>
+<p>需要明确的是，仅基于模块描述生成的内容只能处于 <code>candidate</code> 或 <code>poc_draft</code> 状态；在没有源码证据、运行时证据或具名 SME 决定前，不得升级为 approved BRD。</p>
+<p>管理层同时指出两个尚未被演示证明、但对 IBM i 遗留系统分析具有决定性影响的问题：</p>
+<ol><li>Vendor 如何完整处理超过 10K 行的大型程序；</li><li>Vendor 如何基于真实调用关系，从跨程序 Program Chain 中提取端到端业务需求。</li></ol>
+<p>因此，这两项应成为受控 Pilot 的强制 Challenge Case 和 Pilot Exit Gate，而不是普通的补充问题。Vendor 即使在一般功能评分上达标，只要任一强制用例不通过，也不得将其输出用于正式 BRD。</p>
+<h2 id="2">2. 评审阶段与严重度口径</h2>
+<p>本报告按三个不同 Gate 判断 Vendor POC。某项发现被标为“阻断”，必须同时说明它阻断的是哪个 Gate；不得把“阻断正式 BRD 审批”误读为“禁止使用脱敏数据开展受控 POC”。</p>
+<table><thead><tr><th>Gate</th><th>目的</th><th>当前结论</th></tr></thead><tbody><tr><td>Sandbox POC</td><td>使用模拟、合成或经批准脱敏的材料验证建模、检索和交互能力</td><td><strong>有条件进入</strong></td></tr>
+<tr><td>Production-data Pilot</td><td>使用真实源代码、日志或业务数据进行受控试点</td><td><strong>暂不允许</strong></td></tr>
+<tr><td>Formal BRD Approval</td><td>允许生成结果成为正式业务需求或迁移基线</td><td><strong>不具备条件</strong></td></tr></tbody></table>
+<p>本文后续的严重度使用 <code>中 / 高 / 阻断</code>，并分别给出三个 Gate 的判断。</p>
+<h2 id="3">3. 评审范围与信息边界</h2>
+<table><thead><tr><th>评审维度</th><th>可观察范围</th></tr></thead><tbody><tr><td>自动建模</td><td>包括持久化实体、接口、任务字段、证据接口、业务对象候选项、规则与分支视图</td></tr>
+<tr><td>流程建模</td><td>包括任务详情、任务关系、BPMN 预览和语义对话</td></tr>
+<tr><td>需求澄清</td><td>包括自动问题清单及回答/证据面板；部分澄清项尚未完成</td></tr>
+<tr><td>文档生成</td><td>包括多章节结构化草稿，以及业务说明、来源/证据、角色、流程、数据/接口表和验收测试类表格</td></tr></tbody></table>
+<p>本次评审仅针对 POC 展示期间可观察到的功能和输出进行评估。评审团队未独立检查源代码仓库、抽取清单、模型 Prompt、中间 JSON、完整 BRD Package、证据坐标、评测集或 SME 决策日志。因此以下内容是对可观察能力和治理风险的评审，不代表已经验证 Vendor 的底层实现准确性。</p>
+<h2 id="4-poc">4. POC 的优点</h2>
+<h3 id="41">4.1 分析到评审的工作流方向正确</h3>
+<p>从程序/源码分析，到任务、数据、规则、流程、问题和文档视图的链路方向合理。SME 可以检查具体候选项，而不必直接面对一份没有结构的长篇 AI 文本。</p>
+<h3 id="42">4.2 已经体现出证据意识</h3>
+<p>界面展示了源代码行号、程序/对象标识、证据接口数量以及来源/证据列。生成文档也尝试携带来源引用和证据等级。这是构建可审计反向工程流程的正确基础。</p>
+<h3 id="43">4.3 包含人工需求澄清环节</h3>
+<p>自动需求澄清是有价值的功能。POC 已经认识到：代码不能完全说明业务意图，必须将问题返回给业务或技术 SME 确认。</p>
+<h3 id="44">4.4 草稿输出具备较强实用性</h3>
+<p>POC 输出包括业务章节、流程步骤、角色、接口、数据对象和验收测试类行项目。如果进一步增加清晰的状态标签和证据链接，这些内容可以加速发现和评审工作。</p>
+<h2 id="5-sme">5. SME 主要发现</h2>
+<table><thead><tr><th>ID</th><th>发现</th><th>Sandbox POC</th><th>Production Pilot</th><th>BRD Approval</th><th>必须采取的措施</th></tr></thead><tbody><tr><td>SME-001</td><td>尚未证明每一条业务陈述都有稳定证据坐标，当前只看到语义快照、<code>businessFunctionLogicDigest</code> 等宽泛来源。</td><td>高</td><td><strong>阻断</strong></td><td><strong>阻断</strong></td><td>每个行为、规则、数据对象、流程步骤、问题和测试行链接稳定证据 ID，以及程序/成员/行号或文档页码坐标。</td></tr>
+<tr><td>SME-002</td><td>已观察行为与推断业务意图没有充分分离，候选对象、实体、规则和生成文本看起来具有相同权威性。</td><td>高</td><td><strong>阻断</strong></td><td><strong>阻断</strong></td><td>强制使用 <code>observed</code>、<code>inferred</code>、<code>candidate</code>、<code>SME-confirmed</code>、<code>contradicted</code>、<code>unresolved</code>、<code>not evidenced</code> 标签。</td></tr>
+<tr><td>SME-003</td><td>尚未展示受治理的澄清闭环，没有证明回答人、角色、日期、证据、处置结论和回写历史。</td><td>高</td><td><strong>阻断</strong></td><td><strong>阻断</strong></td><td>每个问题或规则持久化 SME 身份、角色、日期、回答、证据、处置和复审历史。</td></tr>
+<tr><td>SME-004</td><td>BRD、FRS、技术分析、接口目录、角色矩阵和验收测试内容混在同一文档中。</td><td>中</td><td>高</td><td><strong>阻断</strong></td><td>分离遗留 BRD、技术证据附录、开放问题台账和正式规格/测试输出，并建立独立 Gate。</td></tr>
+<tr><td>SME-005</td><td>流程模型主要是代码推导的任务/调用流，尚未证明业务场景、异常、重启和业务结果完整。</td><td>高</td><td>高</td><td><strong>阻断</strong></td><td>检查触发、参与者、前置条件、输入、决策、输出、异常、重试/重启、控制总数和完成条件。</td></tr>
+<tr><td>SME-006</td><td>持久化实体和业务对象候选缺少业务所有权、生命周期、身份标识和权威系统确认。</td><td>中</td><td>高</td><td>高</td><td>SME 确认业务含义、所有者、生命周期、标识和 Source of Truth 前保持候选状态。</td></tr>
+<tr><td>SME-007</td><td>角色权限未证明实际授权、职责分离、紧急访问和审批政策来源。</td><td>中</td><td>高</td><td><strong>阻断</strong></td><td>将角色/安全内容标记为 observed、inferred 或 open，并由安全负责人确认。</td></tr>
+<tr><td>SME-008</td><td>验收测试类行项目包含预期结果，但没有运行时样本、Golden Master 或测试执行证据。</td><td>高</td><td>高</td><td><strong>阻断</strong></td><td>在运行时证据或 SME 批准前仅称为场景种子，不得称为正式验收标准。</td></tr>
+<tr><td>SME-009</td><td>数量统计不能说明完整性，没有定义抽取覆盖、矛盾、来源覆盖和准确率指标。</td><td>中</td><td>高</td><td>高</td><td>建立标注样本，测量覆盖率、准确率/召回率、矛盾数、问题关闭率和 SME 修正率。</td></tr>
+<tr><td>SME-010</td><td>文档仍有“见开放问题”等占位内容，但视觉完成度可能掩盖草稿状态。</td><td>中</td><td>高</td><td><strong>阻断</strong></td><td>添加非审批水印、状态、负责人、范围、版本、证据快照 Hash 和阻断 TBD 数量。</td></tr>
+<tr><td>SME-011</td><td>没有证明版本漂移、重复运行一致性和源码变化后的影响分析。</td><td>中</td><td>高</td><td><strong>阻断</strong></td><td>保存源码、模型、Prompt 和配置版本；每次重跑输出机器可读差异和影响报告。</td></tr>
+<tr><td>SME-012</td><td>没有展示安全与数据处理控制，代码、日志和业务字段可能发送到 AI 服务。</td><td>高</td><td><strong>阻断</strong></td><td><strong>阻断</strong></td><td>提供部署/数据流、保留策略、访问控制、租户隔离、脱敏、训练退出机制、DPA 和审计日志。</td></tr>
+<tr><td>SME-013</td><td>尚未证明能够完整分析超过 10K 行的大型程序，包括分段覆盖、跨段状态传递、异常路径和无静默截断。</td><td>高</td><td>高</td><td><strong>阻断</strong></td><td>使用真实 10K-20K 行程序进行挑战测试，输出读取清单、Routine Index、分段覆盖、跨段数据/控制流和稳定证据坐标。</td></tr>
+<tr><td>SME-014</td><td>尚未证明能够从跨程序链路中提取端到端需求，当前 BPMN 可能主要反映单程序或局部任务关系。</td><td>高</td><td>高</td><td><strong>阻断</strong></td><td>使用包含 5-10 个程序的真实业务链，验证源码支撑的调用边、字段传递、数据库持久化、异常传播、重启和最终业务结果。</td></tr></tbody></table>
+<h2 id="6-brd">6. BRD 能力专项评估</h2>
+<table><thead><tr><th>BRD 能力</th><th>评估</th><th>对应发现</th><th>说明</th></tr></thead><tbody><tr><td>功能目的和范围</td><td>部分具备</td><td>SME-004、SME-010</td><td>文档有目的章节，但范围字段仍开放，业务边界尚未独立确认。</td></tr>
+<tr><td>业务场景/用例</td><td>部分具备到偏弱</td><td>SME-005</td><td>有程序/任务描述，但端到端业务场景和异常场景尚未充分证明。</td></tr>
+<tr><td>渠道和用户触点</td><td>尚未证明</td><td>SME-005</td><td>尚未以有证据的 BRD 章节呈现调度器、操作台、文件/API、报表和人工干预。</td></tr>
+<tr><td>系统接口</td><td>部分具备</td><td>SME-001、SME-006</td><td>接口和数据表有价值，但接口所有者、方向、时序、失败语义、版本和对账责任尚未明确。</td></tr>
+<tr><td>处理流程</td><td>部分具备</td><td>SME-005</td><td>BPMN/任务流程是良好起点，但重启/恢复、控制点和业务结果需要单独评审。</td></tr>
+<tr><td>校验规则</td><td>部分具备</td><td>SME-002、SME-008</td><td>规则和分支已展示，但规则状态、业务意图和验证证据尚未持续分离。</td></tr>
+<tr><td>错误处理</td><td>偏弱/尚未证明</td><td>SME-005</td><td>未展示完整错误分类、操作员动作、重试/重启、部分成功处理和升级路径。</td></tr>
+<tr><td>依赖关系</td><td>部分具备</td><td>SME-001、SME-006</td><td>展示了程序/对象关系，但业务、运维、调度、数据和外部依赖责任不完整。</td></tr>
+<tr><td>可追溯性</td><td>部分具备</td><td>SME-001、SME-011</td><td>存在 ID 和来源列，但尚未证明端到端双向追溯和可重复生成。</td></tr>
+<tr><td>SME 审批门</td><td>尚未证明</td><td>SME-003</td><td>问题界面不等于有姓名、日期、范围和证据的 SME 签署。</td></tr>
+<tr><td>大型程序分析</td><td>尚未证明</td><td>SME-013</td><td>演示没有说明 10K+ 行源码的分段策略、覆盖清单、跨段语义保持或防静默截断机制。</td></tr>
+<tr><td>Program Chain 需求提取</td><td>尚未证明</td><td>SME-005、SME-014</td><td>展示了任务关系和 BPMN，但没有证明调用边、字段血缘、异常传播和业务结果来自完整的跨程序证据链。</td></tr></tbody></table>
+<h2 id="7">7. 未加控制直接采用的主要风险</h2>
+<ol><li><strong>业务确定性虚高：</strong>代码模式被直接转换为需求，没有区分实现行为和业务意图。</li><li><strong>审批责任被稀释：</strong>格式完整的文档使推断内容看起来像 SME 已批准的事实。</li><li><strong>批处理行为不完整：</strong>重启、重跑、恢复、控制总数、调度窗口和运维异常容易被静态模型遗漏。</li><li><strong>可追溯性断裂：</strong>来源名称或摘要不足以重现某条陈述背后的确切证据。</li><li><strong>下游污染：</strong>草稿 BRD 可能在正式审批前被复用为 FRS、验收标准、目标设计或迁移范围。</li><li><strong>敏感数据暴露：</strong>代码和生产样本可能在没有批准的数据处理设计下跨越租户或模型边界。</li></ol>
+<h2 id="8-pilot">8. 受控 Pilot 的最低验收标准</h2>
+<p>Vendor 应在一个范围明确的能力上，使用已标注样本和指定 SME，证明以下内容：</p>
+<ul><li>提供不可变的源码快照 ID、授权状态、敏感性、脱敏状态和精确坐标的证据清单。</li><li>至少抽取 20 条行为/规则/流程进行抽样验证，SME 可以在一到两步内从文档陈述导航到源证据。</li><li>分别呈现 observed behavior、inferred rule、candidate object、open question 和 SME-approved decision。</li><li>问题流程包含负责人、SME 角色、回答、证据、日期、决策状态和审计历史。</li><li>矛盾和缺失证据必须阻断审批，不能静默选择某一个答案。</li><li>使用相同源码快照、模型/Prompt 版本和配置重复运行，并在发生变化时生成机器可读差异。</li><li>明确批处理控制：触发、调度、重启/恢复、重试、重复处理、部分失败、控制总数、对账和人工干预。</li><li>生成包含功能目的、场景、渠道/触点、接口、流程、校验、错误处理和依赖关系的 BRD Package，并显示每一节的证据覆盖率和未解决 TBD。</li><li>生成正式签署记录，包含 SME 姓名、角色、日期、范围和限制；任何 AI 生成内容都不得在没有该记录的情况下升级为 approved。</li><li>提供源代码、日志、数据抽取、Prompt、模型托管、保留期限和访问控制方面的安全/数据处理证据。</li></ul>
+<h3 id="81-challenge-case-pilot-exit-gate">8.1 强制 Challenge Case 与 Pilot Exit Gate</h3>
+<h4 id="challenge-case-a10k">Challenge Case A：10K+ 行大型程序</h4>
+<p>选择一个 10K-20K 行的真实 RPG 或 COBOL 程序，并验证：</p>
+<ul><li>不允许因上下文窗口、解析器限制或超时发生静默截断；</li><li>提供覆盖整个源码范围的读取清单、分段边界、Snapshot Hash 和处理状态；</li><li>列出全部 Procedure、Subroutine 和主要分支，无法分析的区域必须显式标记；</li><li>保持跨分析分段的变量、状态、文件访问和控制流关系；</li><li>关键正常路径、异常路径和业务规则可以回到稳定源码坐标；</li><li>在相同 Snapshot、模型、Prompt 和配置下重跑，核心结果一致或差异可解释。</li></ul>
+<h4 id="challenge-case-bprogram-chain">Challenge Case B：Program Chain</h4>
+<p>选择一条包含 5-10 个程序的真实业务链，至少覆盖 CL 与 RPG/COBOL、数据库文件、一个外部接口和一个异常/重启路径，并验证：</p>
+<ul><li>SME 提供的 Program 导航顺序只能作为分析范围，不能直接当作真实调用链；</li><li>每条被声明为 confirmed 的调用边必须有源码或运行时证据；</li><li>无法确认的动态调用必须标记为 <code>unresolved</code>，不得补写为确定关系；</li><li>输出跨程序字段血缘、状态码和参数传递、数据库持久化、异常传播及最终业务结果；</li><li>覆盖 Commit/Rollback、重试、重启、部分失败、控制总数和人工干预；</li><li>BRD 中每个关键端到端步骤均可回到对应程序、调用边和证据坐标。</li></ul>
+<p>上述两项是 Pilot Exit 的强制通过项，不参与加权平均抵消：任何一项失败，都阻断正式 BRD Approval。对真实生产数据开展测试前，仍须先通过安全、授权和数据处理 Gate。</p>
+<h3 id="82-vendor-pilot-scorecard">8.2 Vendor Pilot Scorecard</h3>
+<p><code>docs/skill-review-gate.md</code> 适用于仓库 Skill，不直接用于 Vendor 产品或普通报告。本次 Pilot 应使用独立 Scorecard：</p>
+<table><thead><tr><th>维度</th><th>权重</th><th>核心判断</th></tr></thead><tbody><tr><td>语义准确性</td><td>25%</td><td>observed behavior、规则和流程是否经抽样验证</td></tr>
+<tr><td>证据可追溯性</td><td>20%</td><td>声明能否稳定回到证据 ID 和精确坐标</td></tr>
+<tr><td>SME 治理闭环</td><td>15%</td><td>问题、回答、决定、人员、日期和回写是否完整</td></tr>
+<tr><td>安全与数据治理</td><td>15%</td><td>数据是否出域、保留、训练、访问和脱敏是否受控</td></tr>
+<tr><td>可重复性与版本控制</td><td>10%</td><td>相同输入能否重现，版本变化能否解释</td></tr>
+<tr><td>Legacy Spec Factory 互操作性</td><td>10%</td><td>能否导出并无损映射证据、状态和决策数据</td></tr>
+<tr><td>效率收益</td><td>5%</td><td>是否减少 SME/技术分析时间且不降低质量</td></tr></tbody></table>
+<p>Scorecard 的通过阈值应在 Pilot kickoff 时由业务、技术、安全和采购共同确认；不能沿用针对 <code>SKILL.md</code> 的 9.0/9.5 Gate。</p>
+<h3 id="83">8.3 最低互操作性契约</h3>
+<p>Vendor 不必采用 Legacy Spec Factory 的内部文件布局，但至少应支持导出或 API 提供以下语义：</p>
+<pre><code class="language-yaml">claim_id:
+knowledge_type:
+status:
+statement:
+evidence_ids: []
+source_coordinates: []
+confidence:
+open_questions: []
+sme_decision:
+snapshot_hash:
+model_version:
+prompt_version:</code></pre>
+<p>接入 Pilot 必须验证 Vendor 输出能否映射到 Module Context、BRD Review 和 SME Decision Log，且映射过程中不丢失证据坐标、状态或审批历史。</p>
+<h3 id="84-abort-criteria">8.4 Abort Criteria</h3>
+<p>出现以下任一情况时，应暂停或终止 Pilot，而不是用更多生成页面掩盖质量问题：</p>
+<ul><li>未经批准的生产数据、客户代码或敏感日志出域；</li><li>Vendor 无法说明数据保留、模型训练使用、租户隔离或删除机制；</li><li>抽样中的 unsupported claim 超过 5%，或关键业务陈述无法回到稳定证据；</li><li>observed behavior 的 SME 修正率持续高于 20%；</li><li>相同源码、模型、Prompt 和配置重跑后的核心结果无法解释地变化；</li><li>系统隐藏矛盾证据、自动选择答案或把 unresolved 内容标为 confirmed；</li><li>Vendor 无法导出结构化证据、状态和 SME 决策记录；</li><li>10K+ 行大型程序出现静默截断、未登记的源码区间或跨段关键语义丢失；</li><li>Program Chain 将 SME 导航顺序误作调用链、生成无证据调用边，或遗漏关键异常/重启结果；</li><li>两轮评审后，SME Review 时间相对基线未减少至少 30%，且质量没有可量化提升。</li></ul>
+<p>5%、20% 和 30% 是建议起始阈值，Pilot kickoff 时可根据样本复杂度调整，但安全、证据伪造和审批越权属于零容忍项。</p>
+<h2 id="9-pilot">9. 建议的 Pilot 范围和评审方法</h2>
+<p>建议选择一个范围明确的批处理能力，包含：</p>
+<ul><li>5-10 个程序，并至少包含一个 10K+ 行大型程序；</li><li>1 条正常路径和至少 3 条异常路径；</li><li>至少 1 个外部接口和 1 个持久化数据结构；</li><li>可取得的源代码行号证据和少量运行时样本；</li><li>1 名业务 SME、1 名 IBM i 技术 SME 和 1 名运维/安全评审人。</li></ul>
+<p>评审应采用分层抽样，而不是只看最漂亮的页面：</p>
+<ol><li>5 条高置信度 observed behavior；</li><li>5 条 inferred rule；</li><li>5 个候选数据/业务对象；</li><li>5 条流程或异常路径；</li><li>全部未解决和矛盾项。</li></ol>
+<p>Pilot 应测量准确率、证据链接成功率、SME 修正率、问题关闭率、重复运行一致性和节省的评审时间。完成标准应基于这些指标，而不是生成页数或抽取对象数量。</p>
+<h3 id="91-pilot">9.1 Pilot 资源与时间盒</h3>
+<p>建议以一个业务能力为单位，安排 1-2 周受控 Pilot：</p>
+<ul><li>5-10 个程序，1 条正常路径和至少 3 条异常路径；</li><li>20-30 条分层抽样声明；</li><li>1 名业务 SME、1 名 IBM i 技术 SME、1 名运维/安全评审人；</li><li>Vendor 和 Legacy Spec Factory 各指定 1 名技术集成负责人。</li></ul>
+<p>工作量不应简单按程序数量线性估算；异常路径、外部接口、运行时证据和文档质量通常比程序数量更能决定评审成本。</p>
+<h2 id="10-sme">10. 最终 SME 建议</h2>
+<p><strong>建议：有条件推进。</strong></p>
+<p>该 POC 值得继续，因为它确实针对遗留系统发现阶段的一个实际瓶颈：将难以理解的遗留源代码分析转化为可视化、可评审的业务材料。下一阶段应优先强化证据和治理层，再在一个受控能力上验证语义准确性。</p>
+<p>从产品能力看，自动建模、BPMN、需求文档生成、自动需求澄清和语义对话值得继续评估；从技术适用性看，最终判断必须取决于 10K+ 行大型程序和 Program Chain 两项 Challenge Case，而不能依据 UI 完整度、生成页数或对象数量。</p>
+<p>在 SME-002、SME-003、SME-004 和 SME-008 关闭之前，所有输出都应标记为：</p>
+<blockquote><p>内部 POC 草稿——基于源码的分析和 AI 辅助推断；不是已批准的 BRD、正式需求、验收基线或目标设计。</p></blockquote>
+<p>本报告不构成对任何生成业务规则、业务对象、角色/权限、接口契约、验收标准或现代化决策的批准。</p>
+        <p class="footer">Rendered by <code>scripts/render_stakeholder_html.py</code>.</p>
+      </article>
+    </div>
+  </div>
+</body>
+</html>
