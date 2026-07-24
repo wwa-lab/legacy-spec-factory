@@ -1,5 +1,11 @@
 # Atlas Phoenix Lens - 内部开源共创申报稿
 
+> **历史材料：**本文件保留早期内部开源共创申报口径，不再作为当前路演的
+> 事实源。请以[中文 README](../README.zh-CN.md)和
+> [中文路演稿](atlas-phoenix-lens-pitch.zh-CN.md)中的 Atlas Engineering
+> Delivery Hub / Atlas Phoenix Lens 定位为准。当前已交付语言范围为 RPG、
+> CL 和 DDS；COBOL 属于未来愿景。
+
 ## 项目一句话
 
 Atlas Phoenix Lens 是 Atlas Engineering Delivery Hub / Seven Mountains
@@ -11,7 +17,7 @@ SDLC 叙事下的 M3 Discovery 能力，通过 Program Flow Map 和 agent skills
 Atlas Phoenix Lens 不是直接把 RPG 代码翻译成 Java，而是作为 Atlas
 Engineering Delivery Hub 的 M3 Discovery 能力，先帮助团队理解 legacy system
 behavior。它从 ARCAD REF / XREF、program call relationships、RPG / CL /
-COBOL / DDS source evidence 等低层证据出发，先通过上游 Neo4j Program Flow
+DDS source evidence 等低层证据出发，先通过上游 Neo4j Program Flow
 Map 形成程序调用视图，再用 Legacy Spec Factory skills 沿着 flow 扫描源码，
 提取 observed behavior、calculation logic、validation logic、exception
 handling、data usage、operational evidence 和 SME review questions。

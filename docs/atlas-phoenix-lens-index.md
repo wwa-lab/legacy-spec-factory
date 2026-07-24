@@ -1,90 +1,122 @@
-# Atlas Phoenix Lens Materials Index
+# Atlas Phoenix Lens Roadshow And Review Materials
 
-This page is the navigation hub for Atlas Phoenix Lens open collaboration and
-review materials.
+This page is the current navigation hub for the Atlas Phoenix Lens roadshow,
+demo, and technical review materials.
 
-## Fast Path
+## Positioning
 
-If you only have a few minutes:
+```text
+Atlas Engineering Delivery Hub
+  -> Discovery (M3)
+     -> Atlas Phoenix Lens
+        -> Program Flow Map
+        -> Evidence Core
+        -> Dify Knowledge Activation
+        -> SME Governance
+```
 
-1. Read the main README: [../README.md](../README.md)
-2. Review the Delivery Hub positioning and implementation design diagrams in
-   the README.
-3. Open the mini sample:
-   [samples/atlas-phoenix-lens-mini-output/](samples/atlas-phoenix-lens-mini-output/)
-4. Use the pitch notes:
-   [atlas-phoenix-lens-pitch.md](atlas-phoenix-lens-pitch.md)
-5. For Chinese submission wording, use:
-   [open-collaboration-submission.zh-CN.md](open-collaboration-submission.zh-CN.md)
+Atlas Engineering Delivery Hub is the unified project. Atlas Phoenix Lens is
+the Discovery capability being demonstrated. Legacy Spec Factory is the
+technical implementation name of the Evidence Core in this repository.
 
-## Repository Entrypoints
+## Roadshow Fast Path
+
+For a short review:
+
+1. Open the Chinese or English repository landing page.
+2. Use the matching roadshow pitch and speaker notes.
+3. Show the Delivery Hub-to-Discovery positioning visual.
+4. Walk through the Dify demo using one bounded SME Program Flow.
+5. Drill from a Dify response to an Evidence ID and source coordinate.
+6. Close with the company-value and cross-platform method story.
+
+## Current Entrypoints
 
 | Material | Purpose |
 | --- | --- |
-| [English README](../README.md) | Default repository landing page |
-| [Chinese README](../README.zh-CN.md) | Chinese repository landing page |
+| [Chinese README](../README.zh-CN.md) | Primary Chinese capability and implementation overview |
+| [English README](../README.md) | Primary English capability and implementation overview |
+| [中文 Confluence 项目介绍](atlas-phoenix-lens-confluence-project-detail.zh-CN.md) | One-page Chinese project detail designed for direct copy into Confluence |
+| [English Confluence project detail](atlas-phoenix-lens-confluence-project-detail.md) | One-page English project detail designed for direct copy into Confluence |
+| [中文项目详细介绍](atlas-phoenix-lens-project-detail.zh-CN.md) | Current long-form project detail for management review and roadshow preparation |
+| [English Project Detail](atlas-phoenix-lens-project-detail.md) | English long-form project detail for management review and roadshow preparation |
+| [中文路演稿](atlas-phoenix-lens-pitch.zh-CN.md) | 30-second pitch, 3-minute talk track, five-slide story, Dify demo narration, and Q&A |
+| [English pitch](atlas-phoenix-lens-pitch.md) | English roadshow script, demo narration, Q&A, and claim guardrails |
 | [Contribution guide](../CONTRIBUTING.md) | How to contribute docs, skills, samples, contracts, and validation changes |
-| [Full historical README](full-reference-readme.md) | Longer historical design/reference notes |
 
-## Submission Materials
-
-| Material | Purpose |
-| --- | --- |
-| [Open collaboration submission draft](open-collaboration-submission.md) | English-oriented submission/reference draft |
-| [中文一页申报稿](open-collaboration-submission.zh-CN.md) | Chinese one-page draft for internal submission forms |
-| [Pitch and speaker notes](atlas-phoenix-lens-pitch.md) | 30-second pitch, 3-minute talk track, slide outline, demo narration, Q&A |
-
-## Technical Handoff Materials
+## Demo Evidence
 
 | Material | Purpose |
 | --- | --- |
-| [Program Flow Map export contract](program-flow-map-export-contract.md) | Expected upstream Neo4j Program Flow Map handoff package |
-| [RPG code scan E2E guideline](rpg-code-scan-e2e-guideline.md) | Current RPG source-code scan E2E path |
-| [New team flow scan quickstart](new-team-flow-scan-quickstart.md) | Adoption path for teams starting flow scanning |
-| [Flow analysis agent prompt E2E guideline](flow-analysis-prompt-e2e-guideline.md) | Single-prompt E2E test path for Codex / Claude Code style agents |
-| [Flow analysis Copilot Chat E2E guideline](flow-analysis-copilot-chat-e2e-guideline.md) | Segmented one-program-per-chat flow test path for GitHub Copilot Chat |
-| [Skill card index](skill-card-index.md) | Overview of available skills |
-| [Skill families](skill-families.md) | Skill family map and relationships |
-
-## Sample Outputs
-
-| Material | Purpose |
-| --- | --- |
+| [Program Flow Map export contract](program-flow-map-export-contract.md) | Defines the bounded upstream navigation package |
 | [Mini output sample](samples/atlas-phoenix-lens-mini-output/) | Synthetic sample from Program Flow export to modernization evidence |
 | [Program Flow export sample](samples/atlas-phoenix-lens-mini-output/program-flow-export.sample.csv) | Minimal upstream handoff CSV |
-| [Program analysis sample](samples/atlas-phoenix-lens-mini-output/program-analysis.sample.md) | Single-program evidence sample |
-| [Flow analysis sample](samples/atlas-phoenix-lens-mini-output/flow-analysis.sample.md) | Cross-program behavior-chain sample |
-| [Modernization evidence sample](samples/atlas-phoenix-lens-mini-output/modernization-evidence.sample.yaml) | Machine-readable evidence sample |
+| [Program analysis sample](samples/atlas-phoenix-lens-mini-output/program-analysis.sample.md) | Single-program evidence with reviewable findings |
+| [Flow analysis sample](samples/atlas-phoenix-lens-mini-output/flow-analysis.sample.md) | Multi-program synthesis sample |
+| [Modernization evidence sample](samples/atlas-phoenix-lens-mini-output/modernization-evidence.sample.yaml) | Machine-readable evidence package |
 
 ## Visual Assets
 
 | Asset | Purpose |
 | --- | --- |
-| [Promotional visual](assets/atlas-phoenix-lens-promo.png) | README hero / internal showcase visual |
-| [Delivery Hub static visual](assets/atlas-engineering-delivery-hub-static.png) | Static frame restored from the Atlas Engineering Delivery Hub animated visual for README positioning |
-| [Delivery Hub positioning SVG](assets/atlas-phoenix-lens-delivery-hub-position.svg) | Shows Atlas Phoenix Lens as M3 Discovery under Atlas Engineering Delivery Hub |
-| [Delivery Hub positioning Mermaid source](assets/atlas-phoenix-lens-delivery-hub-position.mmd) | Editable source for the positioning diagram |
-| [Implementation design SVG](assets/atlas-phoenix-lens-design.svg) | Architecture/design diagram |
-| [Implementation design Mermaid source](assets/atlas-phoenix-lens-design.mmd) | Editable source for the implementation diagram |
+| [Delivery Hub Discovery visual](assets/atlas-engineering-delivery-hub-discovery-desktop.png) | Primary roadshow visual showing Atlas Phoenix Lens under Discovery |
+| [Delivery Hub positioning SVG](assets/atlas-phoenix-lens-delivery-hub-position.svg) | Compact lifecycle positioning diagram |
+| [Delivery Hub positioning source](assets/atlas-phoenix-lens-delivery-hub-position.mmd) | Editable Mermaid source |
+| [Phoenix Lens design SVG](assets/atlas-phoenix-lens-design.svg) | Three-layer implementation and governance diagram |
+| [Phoenix Lens design source](assets/atlas-phoenix-lens-design.mmd) | Editable Mermaid source |
+| [Phoenix Lens technical promotional visual](assets/atlas-phoenix-lens-promo.png) | Secondary technical visual for the program-flow and evidence story |
 
-## Narrative Anchors
+## Technical Adoption Materials
 
-Use these phrases consistently:
+| Material | Purpose |
+| --- | --- |
+| [RPG code scan E2E guideline](rpg-code-scan-e2e-guideline.md) | Current RPG source-code scan path |
+| [New team flow scan quickstart](new-team-flow-scan-quickstart.md) | Adoption path for a new team |
+| [Flow analysis prompt E2E guideline](flow-analysis-prompt-e2e-guideline.md) | Agent-based flow-analysis test path |
+| [Flow analysis Copilot Chat guideline](flow-analysis-copilot-chat-e2e-guideline.md) | Segmented one-program-per-chat test path |
+| [Skill card index](skill-card-index.md) | Current skill catalog |
+| [Skill families](skill-families.md) | Skill relationships and workflow map |
 
-- **Atlas Phoenix Lens**: M3 Discovery capability within the Atlas Engineering
-  Delivery Hub / Seven Mountains SDLC narrative.
-- **Legacy Spec Factory**: repository skill/tooling package behind the
-  evidence workflow.
-- **Program Flow Map**: upstream Neo4j application that turns ARCAD REF / XREF
-  data into program-call navigation.
-- **Structured modernization evidence**: traceable outputs for SME review, BRD
-  generation, gap analysis, target architecture, and application retirement
-  decisions.
+## Current Claim Baseline
 
-## Open Items
+Use these statements consistently:
 
-- Add the upstream Neo4j Program Flow Map repo name and link.
-- Replace or supplement the synthetic mini sample with an approved redacted
-  internal sample.
-- Confirm whether any screenshots, repo names, source names, or business fields
-  need additional redaction before final submission.
+- **Atlas Engineering Delivery Hub:** the unified project and lifecycle system.
+- **Atlas Phoenix Lens:** the Discovery capability being demonstrated.
+- **Program Flow Map:** the cross-program scope and navigation layer.
+- **Legacy Spec Factory:** the Evidence Core implementation package in this
+  repository.
+- **Dify:** the current internal bounded-retrieval and orchestration
+  implementation layer.
+- **Current technology focus:** IBM i / AS400 with RPG, CL, and DDS.
+- **COBOL:** future vision, not a current delivered capability.
+- **Cross-platform value:** the method is reusable, while each new platform
+  requires its own adapter, skills, benchmark, and SME validation.
+- **BRD output:** a draft until supported by qualified evidence or a named SME
+  decision.
+
+## Historical Materials
+
+The following files preserve earlier submission wording. They are reference
+history, not the current roadshow source of truth:
+
+- [English open-collaboration submission](open-collaboration-submission.md)
+- [中文内部开源共创申报稿](open-collaboration-submission.zh-CN.md)
+- [Full historical README](full-reference-readme.md)
+
+When current roadshow wording conflicts with these historical materials, use
+the current README and roadshow pitch.
+
+## Open Validation Items
+
+- Verify end-to-end evidence and state mapping across Program Flow Map,
+  Evidence Core, and Dify.
+- Confirm that Dify preserves required metadata and can return a claim to an
+  Evidence ID, source coordinate, version, and snapshot.
+- Complete SME decision write-back and BRD approval-state controls.
+- Run challenge cases for a real 10K+ line RPG program and a 5-10-program
+  chain.
+- Replace or supplement the synthetic sample with an approved redacted
+  internal example.
+- Confirm final redaction of screenshots, repository names, source names, and
+  business fields before the roadshow.

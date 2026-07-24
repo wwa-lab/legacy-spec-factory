@@ -1,5 +1,12 @@
 # Atlas Phoenix Lens - Open Collaboration Submission Draft
 
+> **Historical material:** this file preserves the earlier open-collaboration
+> submission wording. It is not the current roadshow source of truth. Use
+> [the English README](../README.md) and
+> [the current roadshow pitch](atlas-phoenix-lens-pitch.md) for the approved
+> Atlas Engineering Delivery Hub / Atlas Phoenix Lens positioning. The current
+> delivered language scope is RPG, CL, and DDS; COBOL is a future vision.
+
 ## Project Summary
 
 **Atlas Phoenix Lens** is the M3 Discovery capability within the Atlas
@@ -7,7 +14,7 @@ Engineering Delivery Hub / Seven Mountains SDLC narrative. It scans RPG code
 and turns legacy system behavior into structured modernization evidence.
 
 It helps migration teams move from low-level IBM i / AS400 evidence, such as
-ARCAD REF / XREF data, program-call relationships, RPG / CL / COBOL / DDS
+ARCAD REF / XREF data, program-call relationships, RPG / CL / DDS
 source, and file/table usage, into a business-readable evidence layer that can
 support BRD generation, gap analysis, target-architecture planning, and
 application retirement decisions.
@@ -46,7 +53,7 @@ Atlas Phoenix Lens provides a two-stage discovery workflow:
 
 2. **Source-code scanning with skills**
    - Use Program Flow outputs as the navigation map for source-code scanning.
-   - Run Legacy Spec Factory skills against RPG / CL / COBOL / DDS programs.
+   - Run Legacy Spec Factory skills against RPG / CL / DDS programs.
    - Extract observed behavior, calculation logic, validation logic, exception
      handling, data usage, operational evidence, and SME questions.
    - Prepare structured modernization evidence for downstream BRD, spec,

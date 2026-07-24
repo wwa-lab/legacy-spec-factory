@@ -2,102 +2,137 @@
 
 English | [中文](README.zh-CN.md)
 
-![Atlas Phoenix Lens promotional visual](docs/assets/atlas-phoenix-lens-promo.png)
+![Atlas Engineering Delivery Hub highlighting Atlas Phoenix Lens in Discovery](docs/assets/atlas-engineering-delivery-hub-discovery-desktop.png)
 
-**Atlas Phoenix Lens** is the **M3 Discovery** capability within the
-**Atlas Engineering Delivery Hub** / Seven Mountains SDLC narrative. It scans
-RPG code and turns legacy system behavior into structured modernization
-evidence.
+> **Atlas Phoenix Lens is the Discovery capability of Atlas Engineering
+> Delivery Hub: understand the legacy estate before deciding how to modernize
+> it.**
 
-This repository packages the **Legacy Spec Factory** skills, tooling, evidence
-contracts, templates, and documentation behind that capability. It helps teams
-turn low-level ARCAD REF / XREF data, program-call relationships, and RPG / CL /
-COBOL / DDS source evidence into structured, reviewable modernization
-knowledge.
+**Atlas Engineering Delivery Hub** is the unified engineering delivery system
+across Planning, Estimation, Discovery, Build, Testing, Deployment, and
+Maintenance. **Atlas Phoenix Lens** is its **Discovery (M3)** capability, not a
+separate project alongside the Delivery Hub.
 
-The current repository is focused on two connected capabilities:
+Phoenix Lens starts from ARCAD REF / XREF, program flows, legacy documents, and
+source code. It recovers what a legacy system actually does and turns that
+knowledge into traceable, reviewable modernization evidence. The current
+internal implementation uses **Dify** for bounded retrieval, business
+questions, and orchestration. The **Legacy Spec Factory** in this repository is
+the Evidence Core behind that experience, providing source scanning, evidence
+governance, SME gates, and traceability.
 
-1. **Program-flow discovery**: generate Program Flow Maps from ARCAD REF / XREF
-   data so teams can understand how legacy programs call each other. The Neo4j
-   import and Program Flow Map application currently live in a separate
-   company-internal repository (`TBD: internal Program Flow Map repo link`).
-2. **Source-code scanning with skills**: use the discovered flow as the
-   navigation map for agent skills that inspect source code and extract
-   business behavior, calculation logic, validation logic, exception handling,
-   data usage, and operational evidence.
+> **Map the flow. Scan the code. Activate the knowledge.**
 
-The project does **not** directly translate legacy source into Java or cloud
-services. Its purpose is to recover business intent, preserve source evidence,
-surface SME questions, and prepare trusted inputs for BRDs, gap analysis,
-target architecture planning, application retirement, and AI-native SDLC
-handoff.
+Phoenix Lens does **not** directly translate legacy source into Java or cloud
+services. It first separates observed behavior, inferred rules, open questions,
+and named SME decisions. Only reviewed knowledge moves into the downstream
+Build, Testing, and Deployment stages of Atlas Engineering Delivery Hub.
 
 For the full historical README and deeper design notes, see
 [docs/full-reference-readme.md](docs/full-reference-readme.md).
 
 ## Delivery Hub Positioning
 
-Atlas Phoenix Lens sits under the Atlas Engineering Delivery Hub as the
-Discovery-stage lens between early planning/estimation and downstream build,
-testing, deployment, and maintenance work.
+```text
+Atlas Engineering Delivery Hub
+  Planning -> Estimation -> Discovery -> Build -> Testing -> Deployment -> Maintenance
+                            |
+                            `-- Atlas Phoenix Lens
+                                Program Flow Map
+                                + Evidence Core
+                                + Dify Knowledge Activation
+                                + SME Governance
+```
 
-![Atlas Engineering Delivery Hub Seven Mountains SDLC static visual](docs/assets/atlas-engineering-delivery-hub-static.png)
+This repository and the roadshow focus only on Atlas Phoenix Lens. Build Agent
+and Deployment Agent are other lifecycle capabilities within Atlas Engineering
+Delivery Hub; they are not presented as capabilities already delivered by
+Phoenix Lens.
 
 ![Atlas Phoenix Lens position in Atlas Engineering Delivery Hub](docs/assets/atlas-phoenix-lens-delivery-hub-position.svg)
 
 Editable source:
 [docs/assets/atlas-phoenix-lens-delivery-hub-position.mmd](docs/assets/atlas-phoenix-lens-delivery-hub-position.mmd).
 
-## Current Scope
+## Why It Matters
 
-Atlas Phoenix Lens currently ships as a two-repository capability:
+The largest unknown in legacy modernization is rarely whether new code can be
+generated. It is whether the organization has a complete, current, traceable
+model of existing behavior:
+
+- business rules are distributed across RPG, CL, DDS, database access, batch,
+  screens, reports, and runtime conventions;
+- documents may be outdated or disconnected from the source snapshot being
+  modernized;
+- one business flow can cross programs, files, interfaces, exceptions, and
+  restart paths;
+- critical knowledge is concentrated in a small number of experienced SMEs;
+- an AI summary can look complete while mixing observed facts, inference, and
+  unsupported assumptions.
+
+Every missed rule or dependency can become requirements rework, a testing gap,
+a delayed migration, an unsafe retirement, or a production incident.
+
+> The greatest risk is not that the team cannot generate new code. It is that
+> the team generates the wrong system without fully understanding the old one.
+
+## Current Implementation: One Capability, Three Layers
+
+| Phoenix Lens component | Current responsibility | Implementation boundary |
+| --- | --- | --- |
+| **Program Flow Map** | Establish cross-program navigation and business scope from ARCAD REF / XREF | The Neo4j application lives in an upstream company-internal repository; a flow is navigation evidence, not an automatically approved business fact |
+| **Evidence Core** | Scan source and extract behavior, rules, data, exceptions, and TBDs while enforcing SME gates and traceability | Implemented in this repository through Legacy Spec Factory skills, contracts, templates, and validators |
+| **Dify Implementation Layer** | Provide bounded retrieval, business Q&A, orchestration, and BRD draft generation over documents and program-analysis results | The current internal implementation route; Dify is not the Canonical Evidence Source and cannot approve business facts |
+
+The end-to-end path is:
+
+```text
+ARCAD REF / XREF + legacy documents + source
+  -> Program Flow Map: select a bounded business flow
+  -> Evidence Core: RPG / CL / DDS scanning and evidence governance
+  -> Module Context / Evidence Map: separate fact, inference, contradiction, and TBD
+  -> Dify: metadata-scoped retrieval, business Q&A, and BRD draft
+  -> SME Review / Decision / Write-back
+  -> reviewed Modernization Knowledge Package
+  -> downstream Atlas Engineering Delivery Hub stages
+```
+
+### The Current Role of Dify
+
+The current internal implementation places legacy documents and program
+analysis results into Dify knowledge bases. An SME Program Flow constrains the
+retrieval scope before business questions or BRD drafts are generated. This
+supports rapid validation of retrieval strategies, prompts, response formats,
+and SME readability.
+
+Dify operates within three boundaries:
+
+1. Dify stores searchable copies; Canonical Evidence remains in versioned,
+   structured artifacts.
+2. Retrieval must be constrained by metadata such as capability, module,
+   program, source version, snapshot, and evidence strength.
+3. Generated content remains `candidate`, `poc_draft`, or `in_review` until
+   supported by qualified evidence or a named SME decision.
+
+## Current Capability And Future Vision
 
 | Area | Status |
 | --- | --- |
-| Neo4j Program Flow Map application | Upstream company-internal repository, link pending |
-| Program Flow Map export contract | Documented here as the handoff boundary |
-| Legacy Spec Factory skills | Included in this repository under `skills/` |
-| RPG / CL / COBOL / DDS source scanning | Included through agent skills, templates, validators, and guidance |
-| BRD / spec / handoff generation | Supported as downstream outputs after review gates |
+| IBM i / AS400 discovery method | Current focus |
+| RPG, CL, and DDS source and context analysis | Current implementation |
+| Program Flow Map navigation | Current internal capability |
+| Legacy Spec Factory Evidence Core | Available in this repository |
+| Dify retrieval, Q&A, and orchestration | Current internal implementation route |
+| Dify metadata governance, decision write-back, and scaled evaluation | Being strengthened / pilot control |
+| COBOL analysis | Future vision; not delivered as a current capability |
+| Other legacy platforms | Future extension through platform adapters, skills, benchmarks, and SME validation |
 
-This repository is the evidence and skill layer. It consumes Program Flow Map
-outputs, scans source code along those flows, and produces structured
-modernization evidence. It does not host the Neo4j application itself yet.
-
-## Naming
-
-| Name | Meaning |
-| --- | --- |
-| **Atlas Phoenix Lens** | M3 Discovery capability narrative used under Atlas Engineering Delivery Hub and open collaboration communication |
-| **Legacy Spec Factory** | Repository skill/tooling package that powers the evidence workflow |
-| **Program Flow Map** | Upstream Neo4j application that visualizes ARCAD REF / XREF relationships |
-| **Modernization evidence** | Structured output used for SME review, BRD/gap analysis, and target-architecture planning |
-
-## Why It Matters
-
-Legacy modernization often fails because teams treat the old system as only a
-code-conversion problem. In practice, the hardest part is discovering what the
-legacy system actually does, which behaviors matter to the business, and which
-parts are safe to retire, redesign, or preserve.
-
-This is why Atlas Phoenix Lens does not start by converting RPG to Java. It
-first creates an evidence layer: what was observed in source or runtime, what
-is only inferred, what SMEs have confirmed, and what modernization decisions are
-still open. Code conversion can come later, after behavior and business meaning
-are understood.
-
-Atlas Phoenix Lens provides a reusable evidence layer between legacy systems
-and modernization delivery:
-
-```text
-ARCAD REF / XREF data
-  -> internal Neo4j Program Flow Map repo (TBD)
-  -> Program Flow Map
-  -> targeted source-code scan with skills
-  -> evidence-backed program / flow analysis
-  -> SME questions and modernization-ready business evidence
-  -> BRD / spec / handoff packages when approved
-```
+The reusable method is broader than one language. Scope discovery, evidence
+contracts, knowledge classification, SME governance, traceability, and
+metadata-scoped retrieval can be shared across platforms. Every new legacy
+technology still requires its own adapter, scanning skills, benchmark, and SME
+validation; method portability does not mean that platform support already
+exists.
 
 ## Implementation Design Overview
 
@@ -106,22 +141,22 @@ ARCAD REF / XREF data
 Editable source:
 [docs/assets/atlas-phoenix-lens-design.mmd](docs/assets/atlas-phoenix-lens-design.mmd).
 
-## Demo Scenario
+## Roadshow Demo
 
-A short evaluation path for reviewers:
+The primary demo uses Dify as the user-facing entry point and repository
+artifacts to prove the evidence governance behind it:
 
 1. Export ARCAD REF / XREF relationship data from the IBM i estate.
-2. Load that data into the upstream Neo4j Program Flow Map repository.
-3. Select a representative transaction flow, such as an account update, card
-   adjudication, nightly batch, or customer journey step.
-4. Export the flow package: program list, call edges, optional field trace, and
-   source-member hints.
-5. Use `legacy-ibmi-program-list-batch` to prepare a resumable code-scan queue.
-6. Use `legacy-ibmi-program-analyzer` for each program on the flow.
-7. Use `legacy-ibmi-flow-analyzer` to merge the selected program findings into
-   one business-readable SME review.
-8. Review generated `BEH-*`, `BR-*`, and `TBD-*` evidence with SMEs before
-   using it for BRD, gap analysis, or target-architecture planning.
+2. Select a business-relevant Program Flow in the Program Flow Map.
+3. Show Evidence Core outputs for RPG, CL, and DDS, including source
+   coordinates and TBDs.
+4. Apply metadata filters for the same flow in Dify.
+5. Ask business questions about behavior, rules, data impact, and exceptions.
+6. Trace Dify responses back to Evidence IDs, source coordinates, and the
+   source snapshot.
+7. Generate a BRD draft with `poc_draft` or `in_review` status.
+8. Show how SME review and the decision log prevent AI inference from being
+   promoted automatically into business fact.
 
 ## Sample Output Package
 
@@ -174,7 +209,7 @@ Template:
 ### 2. Business-Logic Discovery From Source Code
 
 - Use Program Flow outputs as the guide for source-code scanning.
-- Analyze RPG / CL / COBOL / DDS one program or one flow at a time.
+- Analyze RPG, CL, and DDS one program or one flow at a time.
 - Extract observed behavior, calculations, validations, file I/O, dependencies,
   exception paths, and operational evidence.
 - Produce structured evidence with stable IDs, source coordinates, coverage
@@ -182,43 +217,75 @@ Template:
 - Feed downstream module analysis, BRD generation, spec writing, and migration
   planning only after review gates pass.
 
-## Open Collaboration Fit
+### 3. Dify Knowledge Activation
 
-Atlas Phoenix Lens is designed as an internal open collaboration capability
-rather than a one-off project script. It supports:
+- Store documents and program-analysis results as metadata-rich searchable
+  copies.
+- Use the SME Program Flow to constrain capability, module, and program scope.
+- Support business Q&A, evidence drill-down, and BRD draft generation.
+- Keep Canonical Evidence, approval state, and downstream contracts under
+  independent control.
 
-- **AI-friendly reuse**: clear Markdown, YAML, CSV, examples, validators, and
-  stable evidence IDs.
-- **Cross-team standardization**: one repeatable way to describe program flows,
-  source findings, evidence strength, and SME decisions.
-- **Portable agent skills**: canonical skills live under `skills/` and can be
-  synced to Codex, Claude Code, and OpenCode adapters.
-- **Modernization acceleration**: teams can reuse flow maps, code-scan prompts,
-  evidence contracts, and review checklists instead of rebuilding discovery
-  methods from scratch.
-- **Target-architecture support**: outputs can support future-state planning,
-  legacy / .NET application retirement, and AI-assisted SDLC handoff.
+## Company Impact And Commercial Value
 
-For a submission-ready overview, see
-[docs/open-collaboration-submission.md](docs/open-collaboration-submission.md).
-Chinese one-page draft:
-[docs/open-collaboration-submission.zh-CN.md](docs/open-collaboration-submission.zh-CN.md).
-Pitch and speaker notes:
-[docs/atlas-phoenix-lens-pitch.md](docs/atlas-phoenix-lens-pitch.md).
-Materials index:
-[docs/atlas-phoenix-lens-index.md](docs/atlas-phoenix-lens-index.md).
-Contribution guide:
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Atlas Phoenix Lens is not valuable merely because it can produce a document
+faster. Its value is reducing uncertainty and evidence risk across a
+modernization portfolio:
+
+- **Release delivery capacity:** reduce repeated code reading, context
+  reconstruction, and broad SME explanation.
+- **Avoid downstream rework:** reduce requirements, design, testing, and
+  migration rework caused by misunderstood legacy behavior.
+- **Preserve institutional knowledge:** retain critical behavior, evidence, and
+  named SME decisions as maintainable organizational assets.
+- **Reuse at portfolio scale:** share flow contracts, evidence models, review
+  gates, and Dify orchestration rather than rebuilding discovery methods.
+- **Support reliable retirement:** distinguish behavior that must be preserved,
+  redesigned, consolidated, or safely retired.
+
+```text
+Annual measurable net value
+  = released Discovery and SME capacity
+  + avoided evidence-related rework
+  + avoided duplicate solution build
+  + validated early-retirement value
+  - annual Phoenix Lens operating cost
+```
+
+Benefits must be validated through an owned baseline, comparable pilot data,
+and Finance-approved unit costs. Targets and scenario calculations must not be
+presented as realized savings.
+
+## Roadshow And Collaboration Materials
+
+- Confluence-ready English project detail:
+  [docs/atlas-phoenix-lens-confluence-project-detail.md](docs/atlas-phoenix-lens-confluence-project-detail.md)
+- Confluence-ready Chinese project detail:
+  [docs/atlas-phoenix-lens-confluence-project-detail.zh-CN.md](docs/atlas-phoenix-lens-confluence-project-detail.zh-CN.md)
+- English project detail:
+  [docs/atlas-phoenix-lens-project-detail.md](docs/atlas-phoenix-lens-project-detail.md)
+- Chinese project detail:
+  [docs/atlas-phoenix-lens-project-detail.zh-CN.md](docs/atlas-phoenix-lens-project-detail.zh-CN.md)
+- Chinese roadshow script:
+  [docs/atlas-phoenix-lens-pitch.zh-CN.md](docs/atlas-phoenix-lens-pitch.zh-CN.md)
+- English pitch and speaker notes:
+  [docs/atlas-phoenix-lens-pitch.md](docs/atlas-phoenix-lens-pitch.md)
+- Materials index:
+  [docs/atlas-phoenix-lens-index.md](docs/atlas-phoenix-lens-index.md)
+- Historical submission draft:
+  [docs/open-collaboration-submission.md](docs/open-collaboration-submission.md)
+- Contribution guide:
+  [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Roadmap
 
 | Phase | Focus |
 | --- | --- |
-| Phase 1 | Stabilize the bilingual README, design diagram, promotional visual, and submission narrative |
-| Phase 2 | Finalize the upstream Program Flow Map export contract and add the internal repo link |
-| Phase 3 | Expand the current mini sample into a richer redacted demo package |
-| Phase 4 | Strengthen the E2E demo from Program Flow export to modernization evidence |
-| Phase 5 | Package stakeholder-facing HTML / slide material for internal adoption |
+| P0 | Complete the evidence, metadata, state, and approval mapping across Program Flow Map, Evidence Core, and Dify |
+| P1 | Strengthen the SME Decision Log, BRD gate, write-back, and retrieval/generation evaluation set |
+| P1 | Validate completeness and traceability with a real 10K+ line RPG program and a 5-10 program chain |
+| P2 | Expand the redacted demo, roadshow materials, and portfolio-adoption measures |
+| Future | Add COBOL and other legacy adapters, skills, and benchmarks only after the current-platform baseline passes |
 
 ## Repository Layout
 

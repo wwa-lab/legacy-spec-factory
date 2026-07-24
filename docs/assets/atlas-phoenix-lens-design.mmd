@@ -1,44 +1,47 @@
-flowchart LR
-  legacy["IBM i / AS400 legacy estate<br/>RPG, CL, COBOL, DDS"]
-  xref["ARCAD REF / XREF exports<br/>program calls, objects, fields"]
-  source["Source repositories<br/>RPG / CL / COBOL / DDS members"]
-
-  subgraph upstream["Upstream Program Flow Map repo (TBD)"]
-    neo4j["Neo4j graph store<br/>CALLS relationships"]
-    flowapp["Program Flow Map application<br/>flow visualization and exports"]
+flowchart TB
+  subgraph currentInputs["Current IBM i / AS400 inputs"]
+    direction LR
+    xref["ARCAD REF / XREF"]
+    documents["Approved and redacted<br/>legacy documents"]
+    source["RPG / CL / DDS source"]
   end
 
-  subgraph lens["Atlas Phoenix Lens<br/>Legacy Spec Factory repository"]
-    flowinput["Program Flow outputs<br/>selected flow, program list, field trace"]
-    batch["legacy-ibmi-program-list-batch<br/>prompt queue and scan tracking"]
-    program["legacy-ibmi-program-analyzer<br/>single-program source evidence"]
-    flow["legacy-ibmi-flow-analyzer<br/>cross-program behavior chain"]
-    module["legacy-ibmi-module-analyzer<br/>module context assembly"]
-    brd["legacy-brd-writer<br/>reviewable BRD package"]
-    validator["legacy-step-validator<br/>gate and contract validation"]
-  end
+  map["1. Program Flow Map<br/>Neo4j relationships + SME-selected scope"]
+  core["2. Evidence Core<br/>program / flow / data analysis<br/>observed / inferred / contradiction / TBD"]
+  canonical["Versioned Canonical Evidence<br/>authorization / coordinates / hash / snapshot / review state"]
+  dify["3. Current Dify Implementation Layer<br/>metadata-scoped retrieval + business Q&A + BRD draft"]
+  sme["4. SME Governance<br/>evidence drill-down + decision log + write-back"]
+  package["Reviewed Modernization Knowledge Package"]
+  downstream["Atlas Engineering Delivery Hub<br/>downstream design and delivery"]
+  future["Future platform extension<br/>COBOL / other adapters + skills + benchmark"]
 
-  subgraph evidence["Structured modernization evidence"]
-    observed["Observed behavior<br/>BEH-*"]
-    rules["Business rule seeds<br/>BR-* needs SME review"]
-    questions["Open questions<br/>TBD-*"]
-    outputs["BRD / spec / handoff inputs<br/>after approval gates"]
-  end
+  xref --> map
+  map --> core
+  documents --> core
+  source --> core
+  core --> canonical
+  canonical -. approved searchable copies .-> dify
+  map -. capability / module / program scope .-> dify
+  dify --> sme
+  canonical --> sme
+  sme -. named decision write-back .-> canonical
+  sme --> package --> downstream
+  future -. requires platform validation .-> core
 
-  legacy --> xref
-  legacy --> source
-  xref --> neo4j --> flowapp --> flowinput
-  source --> program
-  flowinput --> batch --> program --> flow --> module --> brd
-  flowinput --> flow
-  program --> observed
-  flow --> observed
-  module --> rules
-  brd --> outputs
-  validator -. validates .- batch
-  validator -. validates .- program
-  validator -. validates .- flow
-  validator -. validates .- module
-  validator -. validates .- brd
-  observed --> questions
-  rules --> questions
+  classDef input fill:#10243f,stroke:#7aa7d9,color:#ffffff
+  classDef map fill:#153a2f,stroke:#4bd39c,color:#ffffff
+  classDef core fill:#182238,stroke:#20c8ff,color:#ffffff
+  classDef canonical fill:#263852,stroke:#7aa7d9,color:#ffffff
+  classDef dify fill:#302452,stroke:#b79cff,color:#ffffff
+  classDef governance fill:#4b1d16,stroke:#f4a83a,color:#ffffff
+  classDef output fill:#071933,stroke:#20c8ff,color:#ffffff,stroke-width:3px
+  classDef future fill:#363636,stroke:#a0a0a0,color:#ffffff,stroke-dasharray: 5 5
+
+  class xref,documents,source input
+  class map map
+  class core core
+  class canonical canonical
+  class dify dify
+  class sme governance
+  class package,downstream output
+  class future future
