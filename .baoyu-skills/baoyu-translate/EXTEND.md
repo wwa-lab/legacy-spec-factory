@@ -1,0 +1,35 @@
+target_language: en
+default_mode: refined
+audience: "business leaders, competition judges, and technical reviewers"
+style: "formal, business-focused, and technically precise"
+chunk_threshold: 4000
+chunk_max_words: 5000
+
+glossary:
+  - from: "Atlas Engineering Delivery Hub"
+    to: "Atlas Engineering Delivery Hub"
+    note: "Official parent project name; keep unchanged."
+  - from: "Atlas Phoenix Lens"
+    to: "Atlas Phoenix Lens"
+    note: "Official Discovery capability name; keep unchanged."
+  - from: "Legacy Spec Factory"
+    to: "Legacy Spec Factory"
+    note: "Technical implementation name of the Evidence Core; keep unchanged."
+  - from: "Program Flow Map"
+    to: "Program Flow Map"
+  - from: "Evidence Core"
+    to: "Evidence Core"
+  - from: "Dify Implementation Layer"
+    to: "Dify Implementation Layer"
+  - from: "SME Governance"
+    to: "SME Governance"
+  - from: "Modernization Knowledge Package"
+    to: "Modernization Knowledge Package"
+  - from: "当前内部实现"
+    to: "current internal implementation"
+  - from: "未来愿景"
+    to: "future vision"
+  - from: "事实源"
+    to: "Source of Truth"
+  - from: "遗留系统"
+    to: "legacy system"
