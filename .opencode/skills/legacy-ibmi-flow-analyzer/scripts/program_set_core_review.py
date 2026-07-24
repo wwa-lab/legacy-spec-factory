@@ -1122,14 +1122,18 @@ def build_program_entries(
                 else "core reader-first gate passed; carry non-core readiness items as pending: "
                 + "; ".join(str(item) for item in pending)
             )
-            resolved_artifact_root = found_artifact_root
+            resolved_artifact_root = found_artifact_root if len(matches) == 1 else None
         elif found_artifact_root:
             run_resolution = RUN_PENDING
             source = "source_scan_required"
             follow_up = "refresh program analysis until readiness passes: " + "; ".join(
                 str(item) for item in readiness["findings"]
             )
-            resolved_artifact_root = None
+            # Keep the candidate directory available for the scan-result merge
+            # path.  It is not trusted for formal SME handoff while readiness
+            # is pending, but its existing scan output is still useful input
+            # for an explicitly labelled exploratory draft.
+            resolved_artifact_root = found_artifact_root
         else:
             run_resolution = RUN_PENDING
             source = "source_scan_required"
@@ -2029,7 +2033,11 @@ def write_build_outputs(manifest: dict[str, Any], output_dir: Path) -> tuple[Pat
     }
     layout.readiness_path.write_text(dump_yaml(readiness), encoding="utf-8")
 
-    if manifest.get("review_status") == REVIEW_STATUS_COMPLETE:
+    has_candidate_scan_results = any(
+        str(entry.get("artifact_root") or "").strip()
+        for entry in manifest.get("programs", []) or []
+    )
+    if manifest.get("review_status") == REVIEW_STATUS_COMPLETE or has_candidate_scan_results:
         artifact_root = Path(str(manifest["run_profile"]["artifact_root"]))
         source_pack = build_reader_first_source_pack(manifest, artifact_root)
         facts = build_core_facts(manifest, artifact_root)

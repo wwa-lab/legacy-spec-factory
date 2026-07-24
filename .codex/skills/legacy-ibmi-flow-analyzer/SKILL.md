@@ -207,6 +207,28 @@ readiness now means no formal review.
 Do not downgrade a semantic failure to “file present.” Do not synthesize a
 partial formal review.
 
+## Scan-Result Merge Path
+
+The strict readiness state above controls **formal SME/Dify handoff**. It does
+not prevent the practical task of combining scan results that already exist.
+When the request is simply to merge program scan results into one flow result,
+continue with the available candidate artifact directories even when one or
+more readiness rows are pending:
+
+- copy every available reader-first section verbatim into the source pack;
+- normalize only facts that are actually present in those sections;
+- preserve missing sections, identity gaps, draft status, and deep-read gaps as
+  `pending_findings` or explicit unavailable-program markers;
+- allow the executing skill LLM to write
+  `<folder_slug>--partial-draft.md` with `draft_exploratory` status; and
+- never call that draft a formal SME Core Review or mark it approved.
+
+The draft is the normal working output for scan-result aggregation. It must
+not infer a call chain from the supplied program order, and it must contain a
+pending-findings section so the remaining program-analysis work is visible.
+The strict `validate` command remains the final gate before producing the
+canonical `<folder_slug>--sme-core-review.md` handoff artifact.
+
 ## Deterministic Preparation Contract
 
 Run the preparation command from the canonical skill or a synced runtime
@@ -286,9 +308,10 @@ review filename are stable for the same normalized program set and distinct
 for a different flow or program set.
 
 When readiness is blocked, preparation writes the control/readiness artifacts
-needed to explain the block, creates a targeted queue only when recovery is
-possible, and writes no formal review. Do not treat a partial source pack as a
-synthesis input.
+needed to explain the block, preserves any resolved candidate scan results in
+the source pack/facts/coverage bundle, creates a targeted queue only when
+recovery is possible, and writes no formal review. The LLM may use that bundle
+only for the explicitly labelled `draft_exploratory` scan-result merge path.
 
 ## Missing And Invalid Program Recovery
 
@@ -419,7 +442,20 @@ by silently mutating the approved repository.
 
 ## LLM Synthesis Procedure
 
-Once preparation reports `ready_for_synthesis`, the LLM executing this skill:
+For a scan-result merge, the LLM executing this skill may begin after the
+preparation bundle exists, even when the manifest is blocked:
+
+1. Reads the manifest and every readiness row.
+2. Reads the entire available source pack, including every available section
+   for every resolved program.
+3. Writes `<folder_slug>--partial-draft.md` with `draft_exploratory` status,
+   preserving pending findings and unavailable-program markers. It must not
+   use the formal review filename or claim SME/Dify approval. Follow
+   [`templates/partial-draft.md`](templates/partial-draft.md) so the draft
+   uses the same reader-first section order as the formal review.
+
+For the strict handoff path, once preparation reports `ready_for_synthesis`,
+the LLM executing this skill:
 
 1. Reads the manifest and every readiness row.
 2. Reads the entire source pack, including all five sections for every program.

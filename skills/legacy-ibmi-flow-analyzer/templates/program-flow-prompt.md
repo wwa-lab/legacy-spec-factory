@@ -69,11 +69,17 @@ Optional SME context:
 5. Deterministic scripts 只能准备 manifest、readiness、lossless source pack、
    normalized facts 和 pending coverage；不得生成 skeleton/formal review，
    不得调用外部 LLM，不得假装已经完成跨程序综合。
-6. 只有每个 program 的 `artifact_readiness.status=ready`，且 manifest 为
+6. 本请求默认是 scan-result merge：即使某个 program 的 readiness 仍为
+   pending，也要读取已存在的 candidate artifact，把可用的 reader-first
+   sections 合并进 source pack，并由正在执行本 skill 的 LLM 生成
+   `<folder_slug>--partial-draft.md`。草稿必须标记 `draft_exploratory`，
+   明确列出 pending findings，并严格遵循
+   `templates/partial-draft.md` 的 reader-first 章节顺序，不得冒充正式
+   SME Core Review。
+   只有在所有 program 的 `artifact_readiness.status=ready`，且 manifest 为
    `review_status=ready_for_synthesis`、`artifact_readiness=ready`、
-   `merge_coverage=pending` 后，才由正在执行本 skill 的 LLM 阅读完整 source
-   pack，并在 working memory 中按跨程序主题进行综合与 anchor planning。
-   不要简单拼接 program files。
+   `merge_coverage=pending` 后，才可继续生成正式 handoff review。
+   不要把程序文件机械拼接成未经标记的正式结果。
 7. 每个 normalized fact 都要保留稳定 `source_fact_id`。每个 planned material
    row 要有唯一 anchor / Review Row ID 和 Source Fact Refs；只有 coverage 中
    完整互相声明的 `merged` fact group 才能共用一个且只定义一次的 anchor。
@@ -81,8 +87,9 @@ Optional SME context:
 8. Coverage 中每个 fact 必须且只能是 included、merged、excluded_non_core、
    pending 之一。最终不得有 pending；material calculation、validation、
    exception、exact message/status/literal/generic handler token 不得以“精简”
-   为由排除。有任何 pending 时不得写正式 review；如必须保存中间稿，只能用
-   `<folder_slug>--partial-draft.md`，且不得使用 final front matter/H1。
+   为由排除。正式 review 最终不得有 pending；scan-result merge 仍可写
+   `<folder_slug>--partial-draft.md`，但必须使用 `draft_exploratory` 状态、
+   不得使用正式 review 的 front matter/H1，也不得交给 SME/Dify 作为最终 handoff。
 9. Coverage 零 pending 后，Review 唯一正式文件名必须是
    `<folder_slug>--sme-core-review.md`。不要创建通用
    `program-set-sme-core-review.md` alias。写入完成时，将 manifest 更新为
