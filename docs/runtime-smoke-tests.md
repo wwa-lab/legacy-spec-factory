@@ -1073,8 +1073,9 @@ Pass criteria:
 
 - reports `blocked_artifact_readiness`, top-level `artifact_readiness:
   not_ready`, and `merge_coverage: blocked`;
-- does not create or propose a formal or partial CU106 review, source pack, or
-  normalized facts from an incomplete set;
+- in this no-write smoke test, does not create artifacts; when execution is
+  allowed, an incomplete set may still produce a non-formal source pack/facts
+  bundle and `draft_exploratory` merge draft, never a formal review;
 - treats CCB11 as the only recovery target and never queues CU106;
 - because inventory is stale, records CCB11 in `blocked-programs.csv` without
   guessing a path and requests a fresh externally prepared inventory or exact

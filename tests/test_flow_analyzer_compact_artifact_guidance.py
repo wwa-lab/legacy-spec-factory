@@ -18,8 +18,11 @@ class FlowAnalyzerReaderFirstGuidanceTests(unittest.TestCase):
         template_text = (FLOW_ANALYZER_DIR / "templates" / "sme-core-review.md").read_text(
             encoding="utf-8"
         )
+        partial_template_text = (
+            FLOW_ANALYZER_DIR / "templates" / "partial-draft.md"
+        ).read_text(encoding="utf-8")
 
-        for text in (skill_text, contract_text, template_text):
+        for text in (skill_text, contract_text, template_text, partial_template_text):
             self.assertIn("program-analysis-summary.yaml", text)
             self.assertIn("source-index.yaml", text)
             self.assertIn("routine-logic-details.yaml", text)
@@ -97,6 +100,31 @@ class FlowAnalyzerReaderFirstGuidanceTests(unittest.TestCase):
         self.assertNotIn("## Edges", template_text)
         self.assertNotIn("## Flow Replay Path", template_text)
         self.assertNotIn("## Flow Persistence Matrix", template_text)
+
+    def test_partial_draft_uses_the_same_reader_first_order(self) -> None:
+        template_text = (
+            FLOW_ANALYZER_DIR / "templates" / "partial-draft.md"
+        ).read_text(encoding="utf-8")
+        expected_sections = [
+            "## Program Set Reading Summary",
+            "## Cross-Program Processing Overview",
+            "## Calculation Logic",
+            "## Validation Logic",
+            "## Exception Handling",
+            "## Message Inventory",
+            "## Core Completeness Ledger",
+            "## Coverage Reconciliation",
+            "## Sources",
+            "## Run Profile",
+            "## Source Inventory Cache",
+        ]
+        positions = [template_text.index(section) for section in expected_sections]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("draft_exploratory", template_text)
+        self.assertIn("pending", template_text)
+        self.assertNotIn("## Nodes", template_text)
+        self.assertNotIn("## Edges", template_text)
+        self.assertNotIn("## Transaction Call Map", template_text)
 
 
 if __name__ == "__main__":

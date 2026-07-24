@@ -531,7 +531,13 @@ def _thematic_tables(
 
 
 def build_reader_first_source_pack(manifest: dict[str, Any], artifact_root: Path) -> str:
-    """Copy all five complete H2 blocks for each distinct ready program."""
+    """Copy available reader-first blocks for every distinct scan result.
+
+    A pending program is still useful during the scan-result merge phase.  Its
+    available sections are copied verbatim and missing/unusable input is
+    represented as a control note, never as invented evidence.  Formal SME
+    handoff remains guarded by the strict readiness validator.
+    """
 
     lines = [
         "# Program Set Reader-First Source Pack",
@@ -548,26 +554,36 @@ def build_reader_first_source_pack(manifest: dict[str, Any], artifact_root: Path
         program = str(entry.get("normalized_name") or "")
         relative_root = str(entry.get("artifact_root") or "")
         identity = (program, relative_root)
-        if not program or not relative_root or identity in seen:
+        if not program or identity in seen:
             continue
         seen.add(identity)
-        path = _analysis_path(artifact_root / relative_root, program)
-        if not path:
-            continue
-        markdown = path.read_text(encoding="utf-8")
+        path = _analysis_path(artifact_root / relative_root, program) if relative_root else None
         lines.extend(
             [
                 "",
-                f"<!-- BEGIN LOSSLESS PROGRAM {program}: {_relative(artifact_root, path)} -->",
+                f"<!-- BEGIN LOSSLESS PROGRAM {program}: "
+                f"{_relative(artifact_root, path) if path else 'scan-result-unavailable'} -->",
                 f"# Program: {program}",
                 "",
             ]
         )
-        blocks = reader_section_blocks(markdown, SOURCE_SECTIONS)
-        for section in SOURCE_SECTIONS:
-            block = blocks[section]
-            if block:
-                lines.extend((block, ""))
+        if path:
+            markdown = path.read_text(encoding="utf-8")
+            blocks = reader_section_blocks(markdown, SOURCE_SECTIONS)
+            for section in SOURCE_SECTIONS:
+                block = blocks[section]
+                if block:
+                    lines.extend((block, ""))
+        else:
+            findings = (entry.get("artifact_readiness") or {}).get("findings", [])
+            lines.extend(
+                [
+                    "> Scan result is unavailable for this requested program.",
+                    "> This marker is control metadata, not source evidence.",
+                ]
+            )
+            for finding in findings or ["no usable program-analysis.md was resolved"]:
+                lines.append(f"> Pending finding: {finding}")
         lines.append(f"<!-- END LOSSLESS PROGRAM {program} -->")
     return "\n".join(lines).rstrip() + "\n"
 
@@ -710,11 +726,23 @@ def build_core_facts(manifest: dict[str, Any], artifact_root: Path) -> dict[str,
             {
                 "program": program,
                 "run_resolution": entry.get("run_resolution"),
-                "source_status": "complete" if path else "pending",
+                "source_status": (
+                    "complete"
+                    if path and (entry.get("artifact_readiness") or {}).get("status") == "ready"
+                    else "available_pending"
+                    if path
+                    else "pending"
+                ),
                 "source_files": source_files,
                 "facts": facts,
                 "source_fact_ids": [fact["source_fact_id"] for fact in flattened],
-                "unresolved_reason": None if path else "ready program-analysis.md is unavailable",
+                "unresolved_reason": (
+                    None
+                    if path and (entry.get("artifact_readiness") or {}).get("status") == "ready"
+                    else "scan result is available but artifact readiness is pending"
+                    if path
+                    else "program-analysis.md is unavailable"
+                ),
             }
         )
     return {

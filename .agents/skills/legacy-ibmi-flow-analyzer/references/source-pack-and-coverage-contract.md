@@ -5,7 +5,7 @@ analysis and the formal cross-program SME review.
 
 ## Source Pack Boundary
 
-For every distinct ready program, extract the complete bodies of these five
+For every distinct resolved scan result, extract the available bodies of these five
 top-level sections from the final `<PROGRAM>-program-analysis.md`:
 
 ```text
@@ -25,14 +25,14 @@ The five sections in the main Markdown are the semantic primary input. YAML
 and Markdown sidecars may confirm row completeness and add stable machine
 fields; they must not displace or contradict the primary input.
 
-## Readiness Before Extraction
+## Readiness Before Formal Handoff
 
-Only a program that passes the upstream finalization validator and merger
-readiness checks may enter a ready source pack. A failed, missing, ambiguous,
-placeholder, pending-deep-read, non-terminal-batch, or blocking/required
-message-description gap blocks formal synthesis for the whole set. Do not
-create a mixed “ready enough” source pack. A concrete evidence-bounded
-non-blocking unresolved/TBD carried by terminal
+The strict readiness gate controls formal synthesis and handoff. A failed,
+missing, ambiguous, placeholder, pending-deep-read, non-terminal-batch, or
+blocking/required message-description gap remains visible as a pending finding
+or unavailable-program marker in a scan-result merge. It blocks the formal
+review, but it does not prevent preserving available scan output in the source
+pack. A concrete evidence-bounded non-blocking unresolved/TBD carried by terminal
 `approved_with_non_blocking_tbd` remains legal input and must be preserved; it
 is not equivalent to an empty TODO or scaffold placeholder.
 

@@ -42,7 +42,9 @@ queue containing CU404 only:
   program-list.txt
   program-set-core-input-manifest.yaml
   program-set-artifact-readiness.yaml
-  program-set-core-coverage.yaml       # blocked; no fact mappings
+  program-set-reader-first-source-pack.md  # available sections + pending markers
+  program-set-core-facts.yaml              # facts from available scan results
+  program-set-core-coverage.yaml       # pending; draft merge not yet reconciled
   missing-program-list-batch/
     program-list.csv                 # CU404 only
     prompt-queue/
@@ -60,8 +62,10 @@ In that case it writes no `program-list.csv` and no `prompt-queue/`. When all
 programs are ready, the adapter is not run and
 `missing-program-list-batch/` does not exist.
 
-While blocked, `program-set-reader-first-source-pack.md`,
-`program-set-core-facts.yaml`, and every formal review filename must be absent.
+While blocked, the source pack and core facts may be present when candidate
+scan results exist. They are valid only for an explicitly labelled
+`draft_exploratory` scan-result merge. Every formal review filename must be
+absent.
 
 After CU404 is completed and its upstream validator passes, rerun preparation
 from the original two-program list. Only then may the executing skill LLM read

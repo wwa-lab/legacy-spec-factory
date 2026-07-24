@@ -114,7 +114,7 @@ class ProgramSetCoreReviewProfileTests(unittest.TestCase):
         self.assertEqual(first["review_id"], reordered["review_id"])
         self.assertNotEqual(first["folder_slug"], different["folder_slug"])
 
-    def test_missing_program_blocks_source_pack_facts_and_formal_review(self) -> None:
+    def test_missing_program_keeps_scan_merge_inputs_but_blocks_formal_review(self) -> None:
         manifest = BUILDER.build_manifest(
             review_name="Blocked Synthetic Review",
             programs=["CCB11", "CU106"],
@@ -134,10 +134,13 @@ class ProgramSetCoreReviewProfileTests(unittest.TestCase):
         self.assertEqual(manifest["merge_coverage"], "blocked")
         self.assertEqual(missing["artifact_readiness"]["status"], "not_ready")
         self.assertFalse(review_path.exists())
-        self.assertFalse((manifest_path.parent / "program-set-reader-first-source-pack.md").exists())
-        self.assertFalse((manifest_path.parent / "program-set-core-facts.yaml").exists())
+        source_pack = manifest_path.parent / "program-set-reader-first-source-pack.md"
+        facts_path = manifest_path.parent / "program-set-core-facts.yaml"
+        self.assertTrue(source_pack.exists())
+        self.assertTrue(facts_path.exists())
+        self.assertIn("Scan result is unavailable for this requested program", source_pack.read_text(encoding="utf-8"))
         coverage = BUILDER.load_yaml(manifest_path.parent / "program-set-core-coverage.yaml")
-        self.assertEqual(coverage["coverage_status"], "blocked_artifact_readiness")
+        self.assertEqual(coverage["coverage_status"], "pending")
 
     def test_validator_rejects_legacy_rollup_and_call_map_forms(self) -> None:
         manifest = {

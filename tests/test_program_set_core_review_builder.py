@@ -793,7 +793,6 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             blocked_entry = {
                 **manifest["programs"][0],
                 "run_resolution": BUILDER.RUN_PENDING,
-                "artifact_root": None,
                 "artifact_source": "source_scan_required",
                 "artifact_readiness": {
                     "status": "not_ready",
@@ -809,8 +808,13 @@ class ProgramSetCoreReviewBuilderTests(unittest.TestCase):
             }
             BUILDER.write_build_outputs(blocked, output_dir)
 
-            self.assertFalse(source_pack.exists())
-            self.assertFalse(facts.exists())
+            self.assertTrue(source_pack.exists())
+            self.assertTrue(facts.exists())
+            self.assertIn("BEGIN LOSSLESS PROGRAM CC050", source_pack.read_text(encoding="utf-8"))
+            coverage = BUILDER.load_yaml(
+                manifest_path.parent / BUILDER.CORE_COVERAGE_FILENAME
+            )
+            self.assertEqual(coverage["coverage_status"], "pending")
             self.assertTrue(
                 (manifest_path.parent / BUILDER.CORE_COVERAGE_FILENAME).is_file()
             )

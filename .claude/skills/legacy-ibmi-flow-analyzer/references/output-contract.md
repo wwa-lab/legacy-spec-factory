@@ -76,14 +76,17 @@ Artifact resolution and workspace placement are configured by
 `program_artifact_resolution_profile` and `delivery_workspace_profile` in the
 delivery profile.
 
-When readiness is blocked, the default bundle is:
+When readiness is blocked, the bundle is still useful for scan-result
+aggregation when candidate artifact directories exist:
 
 ```text
 <output-parent>/<folder_slug>/
   program-list.txt
   program-set-core-input-manifest.yaml
   program-set-artifact-readiness.yaml
-  program-set-core-coverage.yaml       # overall blocked; no synthesized fact mappings
+  program-set-reader-first-source-pack.md  # available sections plus pending markers
+  program-set-core-facts.yaml              # facts from available scan results
+  program-set-core-coverage.yaml            # pending coverage for draft merge
   missing-program-list-batch/          # created by the adapter for a blocked manifest
 ```
 
@@ -109,10 +112,31 @@ plan to this same directory. The recovery runner must repair an existing
 program directory, because duplicate artifact roots remain a blocking
 ambiguity.
 
-Do not write `program-set-reader-first-source-pack.md`,
-`program-set-core-facts.yaml`, the uniquely named formal review, or a generic
-review alias while blocked. Partial source-pack/fact content is not a legal
-synthesis input.
+The uniquely named formal review and any generic review alias are still
+forbidden while blocked. The source pack and normalized facts are legal inputs
+for an explicitly labelled `draft_exploratory` scan-result merge; they are not
+evidence that formal handoff readiness passed.
+
+The partial draft must follow [`templates/partial-draft.md`](../templates/partial-draft.md).
+Its primary section order is the same as the formal reader-first review:
+
+```text
+## Program Set Reading Summary
+## Cross-Program Processing Overview
+## Calculation Logic
+## Validation Logic
+## Exception Handling
+## Message Inventory
+## Core Completeness Ledger
+## Coverage Reconciliation
+## Sources
+## Run Profile
+## Source Inventory Cache
+```
+
+The difference is status, not reading structure: a partial draft may retain
+`pending`, `not_ready`, and unavailable-program markers, while the formal
+review may not.
 
 ## Artifact Roles
 
@@ -221,7 +245,7 @@ program-set formal review.
 
 ### `program-set-reader-first-source-pack.md`
 
-The lossless source pack contains, for every ready distinct program, the
+The lossless source pack contains, for every resolved distinct program, the
 complete bodies of:
 
 1. `## Program Reading Summary`
